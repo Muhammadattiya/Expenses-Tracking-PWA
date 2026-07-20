@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ios-blue: #007AFF;
+}
