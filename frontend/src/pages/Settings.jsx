@@ -48,6 +48,8 @@ const Settings = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [dataStatus, setDataStatus] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   const fetchData = async () => {
   try {
@@ -177,8 +179,22 @@ const confirmDelete = async () => {
   const handleExport = async () => {
   try {
     const data = await getTransactions();
+    const backup = {
+      formatVersion: 1,
+      exportedAt: new Date().toISOString(),
+      transactions: data.map((transaction) => ({
+        title: transaction.title,
+        amount: transaction.amount,
+        type: transaction.type,
+        date: transaction.date,
+        account: transaction.account ? { name: transaction.account.name, type: transaction.account.type } : undefined,
+        category: transaction.category ? { name: transaction.category.name, type: transaction.category.type } : undefined,
+        from_account: transaction.from_account ? { name: transaction.from_account.name, type: transaction.from_account.type } : undefined,
+        to_account: transaction.to_account ? { name: transaction.to_account.name, type: transaction.to_account.type } : undefined,
+      })),
+    };
 
-    const dataStr = JSON.stringify(data, null, 2);
+    const dataStr = JSON.stringify(backup, null, 2);
     const dataBlob = new Blob([dataStr], {
       type: "application/json",
     });
@@ -192,8 +208,10 @@ const confirmDelete = async () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setDataStatus(`تم تصدير ${backup.transactions.length} معاملة بنجاح.`);
   } catch (error) {
-    console.error("❌ خطأ في التصدير:", error);
+    setDataStatus(error.response?.data?.message || 'تعذر تصدير البيانات.');
   }
 };
 
@@ -201,7 +219,6 @@ const confirmDelete = async () => {
     fileInputRef.current.click();
   };
 
-  // دالة الاستيراد بعد ربطها بالباك إند
   const handleImportFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -209,21 +226,16 @@ const confirmDelete = async () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
+        setIsImporting(true);
+        setDataStatus('جارٍ قراءة واستيراد الملف...');
         const importedData = JSON.parse(event.target.result);
-        
-        // إرسال البيانات للباك إند
         const result = await importTransactions(importedData);
-
-alert(
-  `تم الاستيراد بنجاح: تم إضافة ${result.insertedTransactions} معاملة.`
-);
-
-fetchData();
+        setDataStatus(`تم استيراد ${result.insertedTransactions} معاملة. أُضيف ${result.createdAccounts} حساب و${result.createdCategories} فئة عند الحاجة.`);
+        fetchData();
       } catch (error) {
-        console.error('❌ خطأ في قراءة أو رفع الملف:', error);
-        alert('تأكد من أن الملف بصيغة JSON صحيحة.');
+        setDataStatus(error.response?.data?.message || 'تأكد من أن الملف بصيغة JSON صحيحة.');
       } finally {
-        // تفريغ حقل الملف عشان تقدر ترفع نفس الملف تاني لو حبيت
+        setIsImporting(false);
         e.target.value = null; 
       }
     };
@@ -382,21 +394,23 @@ fetchData();
 
       {/* قسم الاستيراد والتصدير */}
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
-        <h3 className="text-lg font-semibold mb-4 text-gray-200">إدارة البيانات</h3>
+        <h3 className="text-lg font-semibold mb-1 text-gray-200">إدارة البيانات</h3>
+        <p className="text-sm text-gray-400 mb-4">الاستيراد ينشئ الحسابات والفئات الناقصة تلقائيًا ويحفظ كل معاملة في حسابها الصحيح.</p>
         
         <div className="flex gap-3">
-          <button onClick={handleExport} className="flex-1 flex flex-col items-center justify-center gap-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-4 rounded-2xl hover:bg-blue-500/30 transition-colors active:scale-95">
+          <button onClick={handleExport} className="flex-1 flex flex-col items-center justify-center gap-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-4 rounded-2xl hover:bg-blue-500/30 transition-colors">
             <Download className="w-6 h-6" /> 
             <span className="text-sm">تصدير</span>
           </button>
 
           <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
           
-          <button onClick={handleImportClick} className="flex-1 flex flex-col items-center justify-center gap-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-4 rounded-2xl hover:bg-purple-500/30 transition-colors active:scale-95">
+          <button onClick={handleImportClick} disabled={isImporting} className="flex-1 flex flex-col items-center justify-center gap-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-4 rounded-2xl hover:bg-purple-500/30 transition-colors disabled:opacity-50">
             <Upload className="w-6 h-6" /> 
             <span className="text-sm">استيراد</span>
           </button>
         </div>
+        {dataStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-gray-300">{dataStatus}</p>}
       </section>
 
       <ConfirmModal

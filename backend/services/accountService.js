@@ -1,17 +1,17 @@
 const Account = require("../models/Account");
 const Transaction = require("../models/Transaction");
 
-const getAccounts = async () => {
-  return await Account.find().sort({ createdAt: -1 });
+const getAccounts = async (userId) => {
+  return Account.find({ user: userId }).sort({ createdAt: -1 });
 };
 
-const createAccount = async (data) => {
-  const account = new Account(data);
+const createAccount = async (userId, data) => {
+  const account = new Account({ ...data, user: userId });
   return await account.save();
 };
 
-const updateAccount = async (id, data) => {
-  const account = await Account.findByIdAndUpdate(id, data, {
+const updateAccount = async (userId, id, data) => {
+  const account = await Account.findOneAndUpdate({ _id: id, user: userId }, data, {
     new: true,
     runValidators: true,
   });
@@ -23,8 +23,8 @@ const updateAccount = async (id, data) => {
   return account;
 };
 
-const deleteAccount = async (id) => {
-  const account = await Account.findById(id);
+const deleteAccount = async (userId, id) => {
+  const account = await Account.findOne({ _id: id, user: userId });
 
   if (!account) {
     const err = new Error("Account not found.");
@@ -49,7 +49,7 @@ const hasTransactions = await Transaction.exists({
     throw err;
   }
 
-  await Account.findByIdAndDelete(id);
+  await Account.deleteOne({ _id: id, user: userId });
 };
 
 module.exports = {

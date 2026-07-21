@@ -2,8 +2,8 @@ const Transaction = require("../models/Transaction");
 const Account = require("../models/Account");
 const Category = require("../models/Category");
 
-const getTransactions = async () => {
-  return await Transaction.find()
+const getTransactions = async (userId) => {
+  return Transaction.find({ user: userId })
   .populate("account")
   .populate("category")
   .populate("from_account")
@@ -11,11 +11,11 @@ const getTransactions = async () => {
   .sort({ date: -1 });
 };
 
-const validateReferences = async (data) => {
+const validateReferences = async (userId, data) => {
   if (data.type === "transfer") {
     const [fromAccount, toAccount] = await Promise.all([
-      Account.findById(data.from_account),
-      Account.findById(data.to_account),
+      Account.findOne({ _id: data.from_account, user: userId }),
+      Account.findOne({ _id: data.to_account, user: userId }),
     ]);
 
     if (!fromAccount) {
@@ -30,8 +30,8 @@ const validateReferences = async (data) => {
   }
 
   const [account, category] = await Promise.all([
-    Account.findById(data.account),
-    Category.findById(data.category),
+    Account.findOne({ _id: data.account, user: userId }),
+    Category.findOne({ _id: data.category, user: userId }),
   ]);
 
   if (!account) {
@@ -43,9 +43,9 @@ const validateReferences = async (data) => {
   }
 };
 
-const createTransaction = async (data) => {
-  await validateReferences(data);
-  const transaction = await Transaction.create(data);
+const createTransaction = async (userId, data) => {
+  await validateReferences(userId, data);
+  const transaction = await Transaction.create({ ...data, user: userId });
 
 return await Transaction.findById(transaction._id)
   .populate("account")
@@ -54,9 +54,9 @@ return await Transaction.findById(transaction._id)
   .populate("to_account");
 };
 
-const updateTransaction = async (id, data) => {
-  await validateReferences(data);
-  const transaction = await Transaction.findByIdAndUpdate(id, data, {
+const updateTransaction = async (userId, id, data) => {
+  await validateReferences(userId, data);
+  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, data, {
   new: true,
   runValidators: true,
 })
@@ -72,8 +72,8 @@ const updateTransaction = async (id, data) => {
   return transaction;
 };
 
-const deleteTransaction = async (id) => {
-  const transaction = await Transaction.findById(id);
+const deleteTransaction = async (userId, id) => {
+  const transaction = await Transaction.findOne({ _id: id, user: userId });
 
   if (!transaction) {
     const err = new Error("Transaction not found.");
@@ -81,102 +81,61 @@ const deleteTransaction = async (id) => {
     throw err;
   }
 
-  await Transaction.findByIdAndDelete(id);
+  await Transaction.deleteOne({ _id: id, user: userId });
 };
 
-const importTransactions = async (transactions) => {
-  if (!Array.isArray(transactions)) {
-    throw new Error("Invalid import data.");
-  }
+const importTransactions = async (userId, backup) => {
+  const transactions = Array.isArray(backup) ? backup : backup?.transactions;
+  if (!Array.isArray(transactions)) throw new Error('Invalid backup file.');
 
-  const cleanedTransactions = [];
+  const accounts = await Account.find({ user: userId });
+  const categories = await Category.find({ user: userId });
+  const accountByName = new Map(accounts.map((account) => [account.name.trim().toLowerCase(), account]));
+  const categoryByKey = new Map(categories.map((category) => [`${category.type}:${category.name.trim().toLowerCase()}`, category]));
+  let createdAccounts = 0;
+  let createdCategories = 0;
 
-  for (const t of transactions) {
-    const transaction = { ...t };
-
-    delete transaction._id;
-    delete transaction.__v;
-
-    let account = null;
-    let fromAccount = null;
-    let toAccount = null;
-    let category = null;
-
-    if (transaction.account) {
-      account = await Account.findOne({
-        name: transaction.account,
-      });
-
-      if (!account) {
-        account = await Account.create({
-          name: transaction.account,
-          type: "cash",
-        });
-      }
-
-      transaction.account = account._id;
-    }
-
-    if (transaction.from_account) {
-      fromAccount = await Account.findOne({
-        name: transaction.from_account,
-      });
-
-      if (!fromAccount) {
-        fromAccount = await Account.create({
-          name: transaction.from_account,
-          type: "cash",
-        });
-      }
-
-      transaction.from_account = fromAccount._id;
-    }
-
-    if (transaction.to_account) {
-      toAccount = await Account.findOne({
-        name: transaction.to_account,
-      });
-
-      if (!toAccount) {
-        toAccount = await Account.create({
-          name: transaction.to_account,
-          type: "cash",
-        });
-      }
-
-      transaction.to_account = toAccount._id;
-    }
-
-    if (
-      transaction.category &&
-      transaction.type !== "transfer"
-    ) {
-      category = await Category.findOne({
-        name: transaction.category,
-        type: transaction.type,
-      });
-
-      if (!category) {
-        category = await Category.create({
-          name: transaction.category,
-          type: transaction.type,
-        });
-      }
-
-      transaction.category = category._id;
-    }
-
-    cleanedTransactions.push(transaction);
-  }
-
-  const inserted = await Transaction.insertMany(
-    cleanedTransactions
-  );
-
-  return {
-    success: true,
-    insertedTransactions: inserted.length,
+  const referenceName = (reference, fallback) => {
+    if (typeof reference === 'object' && reference) return reference.name || fallback;
+    return fallback || reference;
   };
+  const resolveAccount = async (reference, fallbackName, type = 'cash') => {
+    const name = referenceName(reference, fallbackName)?.trim();
+    if (!name) throw new Error('Every imported transaction must include an account name.');
+    const key = name.toLowerCase();
+    if (accountByName.has(key)) return accountByName.get(key);
+    const accountType = typeof reference === 'object' && reference ? reference.type : type;
+    const account = await Account.create({ user: userId, name, type: ['cash', 'bank', 'wallet'].includes(accountType) ? accountType : 'cash' });
+    accountByName.set(key, account); createdAccounts += 1;
+    return account;
+  };
+  const resolveCategory = async (reference, fallbackName, type) => {
+    const name = referenceName(reference, fallbackName)?.trim();
+    if (!name) throw new Error('Every imported income or expense must include a category name.');
+    const key = `${type}:${name.toLowerCase()}`;
+    if (categoryByKey.has(key)) return categoryByKey.get(key);
+    const category = await Category.create({ user: userId, name, type });
+    categoryByKey.set(key, category); createdCategories += 1;
+    return category;
+  };
+
+  const inserted = [];
+  for (const source of transactions) {
+    if (!source || !['income', 'expense', 'transfer'].includes(source.type) || !source.title || !Number.isFinite(Number(source.amount))) {
+      throw new Error('The backup contains an invalid transaction.');
+    }
+    const transaction = { user: userId, title: source.title.trim(), amount: Number(source.amount), type: source.type, date: source.date || new Date() };
+    if (source.type === 'transfer') {
+      transaction.from_account = (await resolveAccount(source.from_account, source.fromAccountName, source.fromAccountType))._id;
+      transaction.to_account = (await resolveAccount(source.to_account, source.toAccountName, source.toAccountType))._id;
+    } else {
+      transaction.account = (await resolveAccount(source.account, source.accountName, source.accountType))._id;
+      transaction.category = (await resolveCategory(source.category, source.categoryName, source.type))._id;
+    }
+    inserted.push(transaction);
+  }
+  await Transaction.insertMany(inserted);
+  return { success: true, insertedTransactions: inserted.length, createdAccounts, createdCategories };
 };
 
 module.exports = {

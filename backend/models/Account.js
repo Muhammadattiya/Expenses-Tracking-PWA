@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 const accountSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   type: {
@@ -17,5 +17,7 @@ const accountSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+accountSchema.index({ user: 1, name: 1 }, { unique: true });
 
 module.exports = mongoose.model('Account', accountSchema);
