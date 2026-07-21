@@ -1,0 +1,9 @@
+const router = require('express').Router();
+const auth = require('../middleware/auth');
+const controller = require('../controllers/investmentController');
+router.use(auth);
+router.get('/gold-price', controller.goldPrice);
+router.get('/', controller.list);
+router.post('/', controller.create);
+router.delete('/:id', controller.remove);
+module.exports = router;

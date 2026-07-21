@@ -45,7 +45,7 @@ const Dashboard = () => {
     // فلترة المعاملات بناءً على الحساب المختار
     const filtered = allTransactions.filter(t => {
       if (selectedAccount === 'all') return true;
-      return t.account === selectedAccount || t.from_account === selectedAccount || t.to_account === selectedAccount;
+      return t.account?._id === selectedAccount || t.from_account?._id === selectedAccount || t.to_account?._id === selectedAccount;
     });
 
     let totalIncome = 0;
@@ -59,8 +59,8 @@ const Dashboard = () => {
       } else if (t.type === 'transfer') {
         // لو مختار حساب بعينه، التحويل هيأثر على الرصيد بالزيادة أو النقصان
         if (selectedAccount !== 'all') {
-          if (t.to_account === selectedAccount) totalIncome += t.amount;
-          if (t.from_account === selectedAccount) totalExpense += t.amount;
+          if (t.to_account?._id === selectedAccount) totalIncome += t.amount;
+          if (t.from_account?._id === selectedAccount) totalExpense += t.amount;
         }
       }
     });
@@ -93,7 +93,7 @@ const confirmDeleteTransaction = async () => {
   // المعاملات اللي هتتعرض في القائمة تحت (بعد الفلترة)
   const displayedTransactions = allTransactions.filter(t => {
     if (selectedAccount === 'all') return true;
-    return t.account === selectedAccount || t.from_account === selectedAccount || t.to_account === selectedAccount;
+    return t.account?._id === selectedAccount || t.from_account?._id === selectedAccount || t.to_account?._id === selectedAccount;
   });
 
   if (isLoading) {
@@ -116,7 +116,7 @@ const confirmDeleteTransaction = async () => {
         >
           <option value="all" className="bg-[#1c1c1e]">جميع الحسابات</option>
           {accounts.map(acc => (
-            <option key={acc._id} value={acc.name} className="bg-[#1c1c1e]">{acc.name}</option>
+            <option key={acc._id} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
           ))}
         </select>
       </div>
@@ -158,7 +158,7 @@ const confirmDeleteTransaction = async () => {
         {displayedTransactions.length === 0 ? (
           <p className="text-center text-gray-500 py-8 bg-white/5 rounded-3xl border border-white/5">لا توجد معاملات</p>
         ) : (
-          displayedTransactions.slice(0, 15).map((transaction) => (
+          displayedTransactions.map((transaction) => (
             <TransactionCard
   key={transaction._id}
   transaction={transaction}

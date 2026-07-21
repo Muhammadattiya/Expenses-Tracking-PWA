@@ -5,6 +5,8 @@ const errorHandler = require("./middleware/errorHandler");
 const transactionsRoutes = require("./routes/transactions");
 const accountsRoutes = require("./routes/accounts");
 const categoriesRoutes = require("./routes/categories");
+const authRoutes = require('./routes/auth');
+const investmentRoutes = require('./routes/investments');
 
 const app = express();
 
@@ -26,6 +28,8 @@ app.use(
 app.use("/api/transactions", transactionsRoutes);
 app.use("/api/accounts", accountsRoutes);
 app.use("/api/categories", categoriesRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/investments', investmentRoutes);
 
 app.use(errorHandler);
 module.exports = app;

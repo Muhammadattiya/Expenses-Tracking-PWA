@@ -2,7 +2,7 @@ const transactionService = require("../services/transactionService");
 
 const getTransactions = async (req, res) => {
   try {
-    const transactions = await transactionService.getTransactions();
+    const transactions = await transactionService.getTransactions(req.user.id);
 
     res.status(200).json(transactions);
   } catch (error) {
@@ -14,7 +14,7 @@ const getTransactions = async (req, res) => {
 
 const createTransaction = async (req, res) => {
   try {
-    const transaction = await transactionService.createTransaction(req.body);
+    const transaction = await transactionService.createTransaction(req.user.id, req.body);
 
     res.status(201).json(transaction);
   } catch (error) {
@@ -27,7 +27,7 @@ const createTransaction = async (req, res) => {
 const updateTransaction = async (req, res) => {
   try {
     const transaction = await transactionService.updateTransaction(
-      req.params.id,
+      req.user.id, req.params.id,
       req.body
     );
 
@@ -41,7 +41,7 @@ const updateTransaction = async (req, res) => {
 
 const deleteTransaction = async (req, res) => {
   try {
-    await transactionService.deleteTransaction(req.params.id);
+    await transactionService.deleteTransaction(req.user.id, req.params.id);
 
     res.status(200).json({
       message: "Transaction deleted successfully.",
@@ -57,7 +57,7 @@ const deleteTransaction = async (req, res) => {
 
 const importTransactions = async (req, res) => {
   try {
-    const result = await transactionService.importTransactions(req.body);
+    const result = await transactionService.importTransactions(req.user.id, req.body);
 
     res.status(200).json(result);
   } catch (error) {

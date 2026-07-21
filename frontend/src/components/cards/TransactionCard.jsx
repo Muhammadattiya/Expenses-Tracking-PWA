@@ -57,8 +57,8 @@ const TransactionCard = ({
 
           <p className="text-xs text-gray-400">
             {transaction.type === "transfer"
-              ? `${transaction.from_account} ➜ ${transaction.to_account}`
-              : transaction.category}
+              ? `${transaction.from_account?.name || ''} ⟶ ${transaction.to_account?.name || ''}`
+              : transaction.category?.name}
           </p>
         </div>
 

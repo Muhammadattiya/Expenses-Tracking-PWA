@@ -3,3 +3,5 @@
 @theme {
   --color-ios-blue: #007AFF;
 }
+
+.field { @apply w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-blue-400; }

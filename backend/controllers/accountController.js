@@ -2,7 +2,7 @@ const accountService = require("../services/accountService");
 
 const getAccounts = async (req, res) => {
   try {
-    const accounts = await accountService.getAccounts();
+    const accounts = await accountService.getAccounts(req.user.id);
 
     res.status(200).json(accounts);
   } catch (error) {
@@ -14,7 +14,7 @@ const getAccounts = async (req, res) => {
 
 const createAccount = async (req, res) => {
   try {
-    const account = await accountService.createAccount(req.body);
+    const account = await accountService.createAccount(req.user.id, req.body);
 
     res.status(201).json(account);
   } catch (error) {
@@ -27,7 +27,7 @@ const createAccount = async (req, res) => {
 const updateAccount = async (req, res) => {
   try {
     const account = await accountService.updateAccount(
-      req.params.id,
+      req.user.id, req.params.id,
       req.body
     );
 
@@ -41,7 +41,7 @@ const updateAccount = async (req, res) => {
 
 const deleteAccount = async (req, res) => {
   try {
-    await accountService.deleteAccount(req.params.id);
+    await accountService.deleteAccount(req.user.id, req.params.id);
 
     res.status(200).json({
       message: "Account deleted successfully.",

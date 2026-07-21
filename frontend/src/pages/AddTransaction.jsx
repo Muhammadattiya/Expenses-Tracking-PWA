@@ -43,9 +43,9 @@ const AddTransaction = () => {
 
         // تعيين قيم افتراضية للحقول لو في حسابات موجودة
         if (accountsData.length > 0) {
-          setAccount(accountsData[0].name);
-          setFromAccount(accountsData[0].name);
-          setToAccount(accountsData.length > 1 ? accountsData[1].name : accountsData[0].name);
+          setAccount(accountsData[0]._id);
+          setFromAccount(accountsData[0]._id);
+          setToAccount(accountsData.length > 1 ? accountsData[1]._id : accountsData[0]._id);
         }
       } catch (error) {
         console.error('❌ خطأ في جلب البيانات:', error);
@@ -174,7 +174,7 @@ const AddTransaction = () => {
                 className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
               >
                 {accounts.map(acc => (
-                  <option key={`from-${acc._id}`} value={acc.name} className="bg-[#1c1c1e]">{acc.name}</option>
+                  <option key={`from-${acc._id}`} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
                 ))}
               </select>
             </div>
@@ -187,7 +187,7 @@ const AddTransaction = () => {
                 className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
               >
                 {accounts.map(acc => (
-                  <option key={`to-${acc._id}`} value={acc.name} className="bg-[#1c1c1e]">{acc.name}</option>
+                  <option key={`to-${acc._id}`} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
                 ))}
               </select>
             </div>
@@ -202,7 +202,7 @@ const AddTransaction = () => {
                 className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
               >
                 {accounts.map(acc => (
-                  <option key={acc._id} value={acc.name} className="bg-[#1c1c1e]">{acc.name}</option>
+                  <option key={acc._id} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
                 ))}
               </select>
             </div>
@@ -217,7 +217,7 @@ const AddTransaction = () => {
               >
                 <option value="" disabled className="bg-[#1c1c1e]">اختر الفئة...</option>
                 {categories[type].map(cat => (
-                  <option key={cat._id} value={cat.name} className="bg-[#1c1c1e]">{cat.name}</option>
+                  <option key={cat._id} value={cat._id} className="bg-[#1c1c1e]">{cat.name}</option>
                 ))}
               </select>
             </div>
