@@ -1,5 +1,9 @@
-import { useState, useEffect } from 'react';
-import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2 } from "lucide-react";
+
+import { getAccounts } from "../api/accounts";
+import { getCategories } from "../api/categories";
+import { createTransaction } from "../api/transactions";
 
 const AddTransaction = () => {
   // الحالات (States) الأساسية
@@ -22,13 +26,10 @@ const AddTransaction = () => {
   useEffect(() => {
     const fetchFormData = async () => {
       try {
-        const [accountsRes, categoriesRes] = await Promise.all([
-          fetch('http://localhost:5000/api/accounts'),
-          fetch('http://localhost:5000/api/categories')
+        const [accountsData, categoriesData] = await Promise.all([
+          getAccounts(),
+          getCategories(),
         ]);
-
-        const accountsData = await accountsRes.json();
-        const categoriesData = await categoriesRes.json();
 
         setAccounts(accountsData);
 
@@ -75,20 +76,15 @@ const AddTransaction = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await createTransaction(payload);
 
-      if (response.ok) {
-        setAmount('');
-        setTitle('');
-        setCategory('');
-        alert('تم تسجيل المعاملة بنجاح!');
-      }
+      setAmount('');
+      setTitle('');
+      setCategory('');
+      alert('تم تسجيل المعاملة بنجاح!');
     } catch (error) {
       console.error('❌ خطأ في حفظ المعاملة:', error);
+      alert('حدث خطأ أثناء حفظ المعاملة.');
     }
   };
 

@@ -1,5 +1,35 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Wallet, Tag, Loader2, Download, Upload } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import {
+  Plus,
+  Wallet,
+  Tag,
+  Loader2,
+  Download,
+  Upload,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+
+import {
+  getAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+} from "../api/accounts";
+
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from "../api/categories";
+
+import {
+  getTransactions,
+  importTransactions,
+} from "../api/transactions";
+
+import ConfirmModal from "../components/modals/ConfirmModal";
 
 const Settings = () => {
   const [accounts, setAccounts] = useState([]);
@@ -13,81 +43,159 @@ const Settings = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryType, setNewCategoryType] = useState('expense');
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchData = async () => {
-    try {
-      const [accountsRes, categoriesRes] = await Promise.all([
-        fetch('http://localhost:5000/api/accounts'),
-        fetch('http://localhost:5000/api/categories')
-      ]);
-      setAccounts(await accountsRes.json());
-      setCategories(await categoriesRes.json());
-    } catch (error) {
-      console.error('❌ خطأ في جلب البيانات:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  try {
+    const [accountsData, categoriesData] = await Promise.all([
+      getAccounts(),
+      getCategories(),
+    ]);
+
+    setAccounts(accountsData);
+    setCategories(categoriesData);
+  } catch (error) {
+    console.error("❌ Error:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const handleAddAccount = async (e) => {
-    e.preventDefault();
-    if (!newAccountName.trim()) return;
-    try {
-      const res = await fetch('http://localhost:5000/api/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newAccountName, type: newAccountType })
-      });
-      if (res.ok) {
-        setNewAccountName('');
-        fetchData();
-      }
-    } catch (error) {
-      console.error('❌ خطأ في إضافة الحساب:', error);
-    }
-  };
+  e.preventDefault();
+
+  if (!newAccountName.trim()) return;
+
+  try {
+    await createAccount({
+      name: newAccountName,
+      type: newAccountType,
+    });
+
+    setNewAccountName("");
+    fetchData();
+  } catch (error) {
+    console.error("❌ خطأ في إضافة الحساب:", error);
+  }
+};
 
   const handleAddCategory = async (e) => {
-    e.preventDefault();
-    if (!newCategoryName.trim()) return;
-    try {
-      const res = await fetch('http://localhost:5000/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCategoryName, type: newCategoryType })
-      });
-      if (res.ok) {
-        setNewCategoryName('');
-        fetchData();
-      }
-    } catch (error) {
-      console.error('❌ خطأ في إضافة الفئة:', error);
-    }
-  };
+  e.preventDefault();
+
+  if (!newCategoryName.trim()) return;
+
+  try {
+    await createCategory({
+      name: newCategoryName,
+      type: newCategoryType,
+    });
+    
+
+    setNewCategoryName("");
+    fetchData();
+  } catch (error) {
+    console.error("❌ خطأ في إضافة الفئة:", error);
+  }
+};
+
+const handleEditAccount = async (account) => {
+  const newName = prompt("اسم الحساب الجديد", account.name);
+
+  if (!newName || newName.trim() === "" || newName === account.name) return;
+
+  try {
+    await updateAccount(account._id, {
+      name: newName,
+      type: account.type,
+    });
+
+    fetchData();
+  } catch (error) {
+    alert(error.response?.data?.message || "حدث خطأ أثناء تعديل الحساب");
+  }
+};
+
+const handleDeleteAccount = (account) => {
+  setSelectedAccount(account);
+  setDeleteType("account");
+  setDeleteModalOpen(true);
+};
+
+const handleEditCategory = async (category) => {
+  const newName = prompt("اسم الفئة الجديد", category.name);
+
+  if (!newName || newName.trim() === "" || newName === category.name) return;
+
+  try {
+    await updateCategory(category._id, {
+      name: newName,
+      type: category.type,
+    });
+
+    fetchData();
+  } catch (error) {
+    alert(error.response?.data?.message || "حدث خطأ أثناء تعديل الفئة");
+  }
+};
+
+const handleDeleteCategory = (category) => {
+  setSelectedCategory(category);
+  setDeleteType("category");
+  setDeleteModalOpen(true);
+};
+
+const confirmDelete = async () => {
+  setIsDeleting(true);
+  try {
+  if (deleteType === "account") {
+    await deleteAccount(selectedAccount._id);
+  } else if (deleteType === "category") {
+    await deleteCategory(selectedCategory._id);
+  }
+
+  await fetchData();
+
+  setDeleteModalOpen(false);
+  setSelectedAccount(null);
+  setSelectedCategory(null);
+  setDeleteType(null);
+} catch (error) {
+  alert(error.response?.data?.message || "حدث خطأ أثناء الحذف");
+} finally {
+  setIsDeleting(false);
+}
+};
 
   const handleExport = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/transactions');
-      const data = await res.json();
-      
-      const dataStr = JSON.stringify(data, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `expenses_backup_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('❌ خطأ في تصدير البيانات:', error);
-      alert('حدث خطأ أثناء تصدير البيانات');
-    }
-  };
+  try {
+    const data = await getTransactions();
+
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `expenses_backup_${new Date().toISOString().split("T")[0]}.json`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("❌ خطأ في التصدير:", error);
+  }
+};
 
   const handleImportClick = () => {
     fileInputRef.current.click();
@@ -104,20 +212,13 @@ const Settings = () => {
         const importedData = JSON.parse(event.target.result);
         
         // إرسال البيانات للباك إند
-        const res = await fetch('http://localhost:5000/api/transactions/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(importedData)
-        });
+        const result = await importTransactions(importedData);
 
-        if (res.ok) {
-          const result = await res.json();
-          alert(`تم الاستيراد بنجاح: تم إضافة ${result.insertedCount} معاملة.`);
-          // إعادة جلب البيانات لتحديث واجهة المستخدم
-          fetchData();
-        } else {
-          alert('حدث خطأ أثناء الرفع للسيرفر.');
-        }
+alert(
+  `تم الاستيراد بنجاح: تم إضافة ${result.insertedTransactions} معاملة.`
+);
+
+fetchData();
       } catch (error) {
         console.error('❌ خطأ في قراءة أو رفع الملف:', error);
         alert('تأكد من أن الملف بصيغة JSON صحيحة.');
@@ -173,13 +274,35 @@ const Settings = () => {
           </div>
         </form>
 
-        <div className="flex flex-wrap gap-2">
-          {accounts.map(acc => (
-            <div key={acc._id} className="bg-black/40 border border-white/10 px-4 py-2 rounded-xl text-sm text-gray-300 flex items-center gap-2">
-              <span>{acc.name}</span>
-            </div>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-3">
+  {accounts.map((acc) => (
+    <div
+      key={acc._id}
+      className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 flex items-center justify-between gap-4 min-w-[180px]"
+    >
+      <div>
+        <p className="text-white font-medium">{acc.name}</p>
+        <p className="text-xs text-gray-400 capitalize">{acc.type}</p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleEditAccount(acc)}
+          className="w-9 h-9 rounded-full bg-white/10 border border-white/10 hover:bg-blue-500/20 transition flex items-center justify-center"
+        >
+          <Pencil size={16} className="text-blue-400" />
+        </button>
+
+        <button
+          onClick={() => handleDeleteAccount(acc)}
+          className="w-9 h-9 rounded-full bg-white/10 border border-white/10 hover:bg-red-500/20 transition flex items-center justify-center"
+        >
+          <Trash2 size={16} className="text-red-400" />
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
       </section>
 
       {/* قسم إدارة الفئات - تم تعديل التصميم للموبايل */}
@@ -211,13 +334,50 @@ const Settings = () => {
           </div>
         </form>
 
-        <div className="flex flex-wrap gap-2">
-          {categories.map(cat => (
-            <div key={cat._id} className={`border px-4 py-2 rounded-xl text-sm flex items-center gap-2 ${cat.type === 'expense' ? 'bg-red-500/10 border-red-500/20 text-red-300' : 'bg-green-500/10 border-green-500/20 text-green-300'}`}>
-              <span>{cat.name}</span>
-            </div>
-          ))}
-        </div>
+        <div className="flex flex-wrap gap-3">
+  {categories.map((cat) => (
+    <div
+      key={cat._id}
+      className={`rounded-xl px-4 py-3 border flex items-center justify-between gap-4 min-w-[180px] ${
+        cat.type === "expense"
+          ? "bg-red-500/10 border-red-500/20"
+          : "bg-green-500/10 border-green-500/20"
+      }`}
+    >
+      <div>
+        <p
+          className={`font-medium ${
+            cat.type === "expense"
+              ? "text-red-300"
+              : "text-green-300"
+          }`}
+        >
+          {cat.name}
+        </p>
+
+        <p className="text-xs text-gray-400 capitalize">
+          {cat.type}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleEditCategory(cat)}
+          className="w-9 h-9 rounded-full bg-white/10 border border-white/10 hover:bg-blue-500/20 transition flex items-center justify-center"
+        >
+          <Pencil size={16} className="text-blue-400" />
+        </button>
+
+        <button
+          onClick={() => handleDeleteCategory(cat)}
+          className="w-9 h-9 rounded-full bg-white/10 border border-white/10 hover:bg-red-500/20 transition flex items-center justify-center"
+        >
+          <Trash2 size={16} className="text-red-400" />
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
       </section>
 
       {/* قسم الاستيراد والتصدير */}
@@ -238,6 +398,28 @@ const Settings = () => {
           </button>
         </div>
       </section>
+
+      <ConfirmModal
+        open={deleteModalOpen}
+        title={deleteType === "account" ? "حذف الحساب" : "حذف الفئة"}
+        message={
+          deleteType === "account"
+            ? `هل تريد حذف الحساب "${selectedAccount?.name}" ؟`
+            : `هل تريد حذف الفئة "${selectedCategory?.name}" ؟`
+        }
+        confirmText={isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "حذف"}
+        cancelText="إلغاء"
+        confirmColor="red"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+  if (isDeleting) return;
+
+  setDeleteModalOpen(false);
+  setSelectedAccount(null);
+  setSelectedCategory(null);
+  setDeleteType(null);
+}}
+      />
     </div>
   );
 };

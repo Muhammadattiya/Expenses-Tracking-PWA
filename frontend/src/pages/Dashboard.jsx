@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
-import { ArrowDown, ArrowUp, Wallet, Loader2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
+
+import {
+    getAccounts,
+} from "../api/accounts";
+
+import {
+  getTransactions,
+  deleteTransaction,
+} from "../api/transactions";
+import ConfirmModal from "../components/modals/ConfirmModal";
+import TransactionCard from "../components/cards/TransactionCard";
 
 const Dashboard = () => {
   const [allTransactions, setAllTransactions] = useState([]);
@@ -7,26 +18,25 @@ const Dashboard = () => {
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [totals, setTotals] = useState({ balance: 0, income: 0, expense: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const [transactionsRes, accountsRes] = await Promise.all([
-          fetch('http://localhost:5000/api/transactions'),
-          fetch('http://localhost:5000/api/accounts')
-        ]);
-        
-        const transactionsData = await transactionsRes.json();
-        const accountsData = await accountsRes.json();
+  try {
+    const [transactionsData, accountsData] = await Promise.all([
+      getTransactions(),
+      getAccounts(),
+    ]);
 
-        setAllTransactions(transactionsData);
-        setAccounts(accountsData);
-      } catch (error) {
-        console.error('❌ خطأ في جلب البيانات:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setAllTransactions(transactionsData);
+    setAccounts(accountsData);
+  } catch (error) {
+    console.error("❌ Error:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
     fetchData();
   }, []);
@@ -61,6 +71,24 @@ const Dashboard = () => {
       balance: totalIncome - totalExpense
     });
   }, [allTransactions, selectedAccount]);
+
+const handleDeleteTransaction = (transaction) => {
+  setSelectedTransaction(transaction);
+  setDeleteModalOpen(true);
+};
+
+const handleEditTransaction = () => {};
+
+const confirmDeleteTransaction = async () => {
+  try {
+    await deleteTransaction(selectedTransaction._id);
+    setAllTransactions(prev=>prev.filter(t=>t._id!==selectedTransaction._id));
+    setDeleteModalOpen(false);
+    setSelectedTransaction(null);
+  } catch(error){
+    alert(error.response?.data?.message || "حدث خطأ أثناء الحذف");
+  }
+};
 
   // المعاملات اللي هتتعرض في القائمة تحت (بعد الفلترة)
   const displayedTransactions = allTransactions.filter(t => {
@@ -131,39 +159,25 @@ const Dashboard = () => {
           <p className="text-center text-gray-500 py-8 bg-white/5 rounded-3xl border border-white/5">لا توجد معاملات</p>
         ) : (
           displayedTransactions.slice(0, 15).map((transaction) => (
-            <div key={transaction._id} className="bg-white/5 backdrop-blur-md border border-white/5 p-4 rounded-2xl flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-xl ${
-                  transaction.type === 'expense' ? 'bg-red-500/10 text-red-400' :
-                  transaction.type === 'income' ? 'bg-green-500/10 text-green-400' :
-                  'bg-blue-500/10 text-blue-400'
-                }`}>
-                  {transaction.type === 'expense' ? <ArrowUp className="w-5 h-5" /> : 
-                   transaction.type === 'income' ? <ArrowDown className="w-5 h-5" /> : 
-                   <Wallet className="w-5 h-5" />}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-100">{transaction.title}</h3>
-                  <p className="text-xs text-gray-400">
-                    {transaction.type === 'transfer' 
-                      ? `${transaction.from_account} ➔ ${transaction.to_account}`
-                      : transaction.category}
-                  </p>
-                </div>
-              </div>
-              
-              <div className={`font-bold ${
-                transaction.type === 'expense' ? 'text-red-400' :
-                transaction.type === 'income' ? 'text-green-400' :
-                'text-blue-400'
-              }`}>
-                {transaction.type === 'expense' ? '-' : transaction.type === 'income' ? '+' : ''}
-                {transaction.amount} ج.م
-              </div>
-            </div>
+            <TransactionCard
+  key={transaction._id}
+  transaction={transaction}
+  onEdit={handleEditTransaction}
+  onDelete={handleDeleteTransaction}
+/>
           ))
         )}
       </div>
+      <ConfirmModal
+        open={deleteModalOpen}
+        title="حذف المعاملة"
+        message={selectedTransaction ? `هل تريد حذف "${selectedTransaction.title}"؟` : ""}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="red"
+        onConfirm={confirmDeleteTransaction}
+        onCancel={() => {setDeleteModalOpen(false);setSelectedTransaction(null);}}
+      />
     </div>
   );
 };

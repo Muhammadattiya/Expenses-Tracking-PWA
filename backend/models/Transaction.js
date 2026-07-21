@@ -21,23 +21,37 @@ const transactionSchema = new mongoose.Schema({
     default: Date.now
   },
   // --- حقول الدخل والمصروف ---
-  account: {
-    type: String,
-    required: function() { return this.type !== 'transfer'; }
+account: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Account",
+  required: function () {
+    return this.type !== "transfer";
   },
-  category: {
-    type: String,
-    required: function() { return this.type !== 'transfer'; }
+},
+
+category: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Category",
+  required: function () {
+    return this.type !== "transfer";
   },
-  // --- حقول التحويلات ---
-  from_account: {
-    type: String,
-    required: function() { return this.type === 'transfer'; }
+},
+
+from_account: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Account",
+  required: function () {
+    return this.type === "transfer";
   },
-  to_account: {
-    type: String,
-    required: function() { return this.type === 'transfer'; }
-  }
+},
+
+to_account: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Account",
+  required: function () {
+    return this.type === "transfer";
+  },
+},
 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);
