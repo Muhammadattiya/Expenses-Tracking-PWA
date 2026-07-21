@@ -1,26 +1,19 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Account = require('../models/Account');
 
-// جلب كل الحسابات
-router.get('/', async (req, res) => {
-  try {
-    const accounts = await Account.find();
-    res.json(accounts);
-  } catch (error) {
-    res.status(500).json({ message: 'خطأ في جلب الحسابات', error: error.message });
-  }
-});
+const {
+  getAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+} = require("../controllers/accountController");
 
-// إضافة حساب جديد
-router.post('/', async (req, res) => {
-  try {
-    const newAccount = new Account(req.body);
-    const savedAccount = await newAccount.save();
-    res.status(201).json(savedAccount);
-  } catch (error) {
-    res.status(400).json({ message: 'خطأ في إضافة الحساب', error: error.message });
-  }
-});
+router.get("/", getAccounts);
+
+router.post("/", createAccount);
+
+router.put("/:id", updateAccount);
+
+router.delete("/:id", deleteAccount);
 
 module.exports = router;
