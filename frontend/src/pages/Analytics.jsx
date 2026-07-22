@@ -237,27 +237,6 @@ export default function Analytics() {
         <ListCard title="أعلى الحسابات (التدفق الصافي)" rows={data.accounts} color="text-blue-400" />
       </div>
 
-      {/* Heatmap */}
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
-        <h2 className="mb-4 text-lg font-semibold text-gray-200">خريطة الإنفاق الأسبوعية (Heatmap)</h2>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {data.heatmap.map((cell) => {
-             const maxAmount = Math.max(...data.heatmap.map(e => e.amount), 1);
-             const intensity = Math.min(0.9, 0.1 + (cell.amount / maxAmount) * 0.8);
-             return (
-              <div 
-                key={cell.day} 
-                title={money(cell.amount)} 
-                className="flex flex-col items-center justify-center rounded-xl py-3 sm:py-4 text-white font-medium shadow-sm transition-transform hover:scale-105 cursor-pointer" 
-                style={{ backgroundColor: `rgba(244, 63, 94, ${intensity})` }}
-              >
-                <span className="text-xs sm:text-sm opacity-90 mb-1">{['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'][cell.day]}</span>
-                <span className="text-[10px] sm:text-xs opacity-75 hidden sm:block">{cell.amount > 0 ? money(cell.amount) : '-'}</span>
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
     </div>
   );

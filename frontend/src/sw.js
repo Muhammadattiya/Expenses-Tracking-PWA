@@ -1,11 +1,22 @@
-import { precacheAndRoute } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
+import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, NetworkFirst, NetworkOnly } from 'workbox-strategies';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
 import { ExpirationPlugin } from 'workbox-expiration';
 
 // Precache the manifest (injected by Vite PWA)
 precacheAndRoute(self.__WB_MANIFEST || []);
+
+// Setup SPA Navigation fallback so the app works offline
+try {
+  const handler = createHandlerBoundToURL('/index.html');
+  const navigationRoute = new NavigationRoute(handler, {
+    denylist: [new RegExp('^/api')],
+  });
+  registerRoute(navigationRoute);
+} catch (e) {
+  console.log('NavigationRoute fallback error:', e);
+}
 
 // Background Sync for failed POST/PUT/DELETE requests
 const bgSyncPlugin = new BackgroundSyncPlugin('api-syncQueue', {
@@ -63,7 +74,7 @@ self.addEventListener('push', (event) => {
         url: data.url || '/',
       },
     };
-    event.waitUntil(self.registration.showNotification(data.title || 'مصروفي', options));
+    event.waitUntil(self.registration.showNotification(data.title || 'Finova', options));
   }
 });
 

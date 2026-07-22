@@ -15,8 +15,8 @@ export default defineConfig({
       injectRegister: 'auto',
       pwaAssets: false,
       manifest: {
-        name: 'Masrofy',
-        short_name: 'Masrofy',
+        name: 'Finova',
+        short_name: 'Finova',
         description: 'مدير المصروفات والاستثمارات الشخصي',
         theme_color: '#09090b',
         background_color: '#09090b',
