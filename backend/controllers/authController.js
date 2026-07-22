@@ -10,3 +10,6 @@ exports.me = async (req, res, next) => {
 exports.updateProfile = async (req, res, next) => {
   try { res.json(await authService.updateProfile(req.user.id, req.body)); } catch (error) { next(error); }
 };
+exports.deleteAllData = async (req, res, next) => {
+  try { await authService.deleteAllUserData(req.user.id); res.status(204).end(); } catch (error) { next(error); }
+};

@@ -1,6 +1,7 @@
 const Transaction = require("../models/Transaction");
 const Account = require("../models/Account");
 const Category = require("../models/Category");
+const { adoptLegacyData } = require('./legacyDataService');
 
 const getTransactions = async (userId) => {
   return Transaction.find({ user: userId })
@@ -44,8 +45,9 @@ const validateReferences = async (userId, data) => {
 };
 
 const createTransaction = async (userId, data) => {
-  await validateReferences(userId, data);
-  const transaction = await Transaction.create({ ...data, user: userId });
+  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
+  await validateReferences(userId, normalizedData);
+  const transaction = await Transaction.create({ ...normalizedData, user: userId });
 
 return await Transaction.findById(transaction._id)
   .populate("account")
@@ -55,8 +57,9 @@ return await Transaction.findById(transaction._id)
 };
 
 const updateTransaction = async (userId, id, data) => {
-  await validateReferences(userId, data);
-  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, data, {
+  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
+  await validateReferences(userId, normalizedData);
+  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, normalizedData, {
   new: true,
   runValidators: true,
 })
@@ -85,8 +88,11 @@ const deleteTransaction = async (userId, id) => {
 };
 
 const importTransactions = async (userId, backup) => {
-  const transactions = Array.isArray(backup) ? backup : backup?.transactions;
-  if (!Array.isArray(transactions)) throw new Error('Invalid backup file.');
+  await adoptLegacyData(userId);
+  const transactions = Array.isArray(backup)
+    ? backup
+    : backup?.transactions || backup?.data?.transactions || backup?.data?.items || backup?.items || backup?.records || Object.values(backup || {}).find(Array.isArray);
+  if (!Array.isArray(transactions)) throw new Error('Invalid backup file: no transactions array was found.');
 
   const accounts = await Account.find({ user: userId });
   const categories = await Category.find({ user: userId });
@@ -120,17 +126,44 @@ const importTransactions = async (userId, backup) => {
   };
 
   const inserted = [];
-  for (const source of transactions) {
-    if (!source || !['income', 'expense', 'transfer'].includes(source.type) || !source.title || !Number.isFinite(Number(source.amount))) {
-      throw new Error('The backup contains an invalid transaction.');
+  const normalizeType = (value) => {
+    const type = String(value || '').trim().toLowerCase();
+    if (['income', '\u062f\u062e\u0644', 'in'].includes(type)) return 'income';
+    if (['expense', '\u0645\u0635\u0631\u0648\u0641', 'expense ', 'out'].includes(type)) return 'expense';
+    if (['transfer', '\u062a\u062d\u0648\u064a\u0644', 'transfer '].includes(type)) return 'transfer';
+    return null;
+  };
+  const normalizeAmount = (value) => Number(String(value ?? '').replace(/[,\u060c\s]/g, '').replace(/[^0-9.-]/g, ''));
+
+  for (const account of backup?.accounts || []) {
+    await resolveAccount(account, account?.name, account?.type);
+  }
+
+  if (data.type === 'settlement') {
+    const account = await Account.findOne({ _id: data.account, user: userId });
+    if (!account) throw new Error('Account not found.');
+    return;
+  }
+  for (const category of backup?.categories || []) {
+    const categoryType = normalizeType(category?.type);
+    if (categoryType === 'income' || categoryType === 'expense') await resolveCategory(category, category?.name, categoryType);
+  }
+
+  for (const [index, source] of transactions.entries()) {
+    const type = normalizeType(source?.type || source?.transactionType || source?.transaction_type || source?.kind || source?.category?.type);
+    const amount = normalizeAmount(source?.amount ?? source?.amountEGP ?? source?.amount_egp ?? source?.value ?? source?.total);
+    const categoryLabel = typeof source?.category === 'object' ? source.category?.name : source?.category;
+    const title = String(source?.title || source?.description || source?.transaction_name || source?.label || source?.name || source?.note || categoryLabel || 'معاملة مستوردة').trim();
+    if (!source || !type || !Number.isFinite(amount) || amount < 0) {
+      throw new Error(`Invalid transaction at row ${index + 1}. Found fields: ${Object.keys(source || {}).join(', ') || 'none'}. Add an amount and type.`);
     }
-    const transaction = { user: userId, title: source.title.trim(), amount: Number(source.amount), type: source.type, date: source.date || new Date() };
-    if (source.type === 'transfer') {
-      transaction.from_account = (await resolveAccount(source.from_account, source.fromAccountName, source.fromAccountType))._id;
-      transaction.to_account = (await resolveAccount(source.to_account, source.toAccountName, source.toAccountType))._id;
+    const transaction = { user: userId, title, amount, type, date: source.date || source.datetime || source.createdAt || new Date() };
+    if (type === 'transfer') {
+      transaction.from_account = (await resolveAccount(source.from_account || source.fromAccount, source.fromAccountName, source.fromAccountType))._id;
+      transaction.to_account = (await resolveAccount(source.to_account || source.toAccount, source.toAccountName, source.toAccountType))._id;
     } else {
       transaction.account = (await resolveAccount(source.account, source.accountName, source.accountType))._id;
-      transaction.category = (await resolveCategory(source.category, source.categoryName, source.type))._id;
+      transaction.category = (await resolveCategory(source.category, source.categoryName, type))._id;
     }
     inserted.push(transaction);
   }

@@ -14,7 +14,7 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['income', 'expense', 'transfer'],
+    enum: ['income', 'expense', 'transfer', 'settlement'],
     required: true
   },
   date: {
@@ -34,7 +34,7 @@ category: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "Category",
   required: function () {
-    return this.type !== "transfer";
+    return ['income', 'expense'].includes(this.type);
   },
 },
 
