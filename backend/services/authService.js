@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Account = require('../models/Account');
+const Category = require('../models/Category');
+const Transaction = require('../models/Transaction');
+const Investment = require('../models/Investment');
+const Receivable = require('../models/Receivable');
 const AppError = require('../utils/AppError');
+const { adoptLegacyData } = require('./legacyDataService');
 
 const signToken = (user) => jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
@@ -17,6 +23,7 @@ const googleSignIn = async (credential) => {
     { googleId: profile.sub, email: profile.email, name: profile.name || profile.email, picture: profile.picture },
     { upsert: true, new: true, runValidators: true },
   );
+  await adoptLegacyData(user._id);
   return { token: signToken(user), user };
 };
 
@@ -29,4 +36,14 @@ const updateProfile = async (userId, data) => {
   return user;
 };
 
-module.exports = { googleSignIn, updateProfile };
+const deleteAllUserData = async (userId) => {
+  await Promise.all([
+    Transaction.deleteMany({ user: userId }),
+    Investment.deleteMany({ user: userId }),
+    Receivable.deleteMany({ user: userId }),
+    Account.deleteMany({ user: userId }),
+    Category.deleteMany({ user: userId }),
+  ]);
+};
+
+module.exports = { googleSignIn, updateProfile, deleteAllUserData };

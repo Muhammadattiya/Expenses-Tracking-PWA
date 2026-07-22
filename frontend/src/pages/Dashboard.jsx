@@ -50,6 +50,7 @@ const Dashboard = () => {
 
     let totalIncome = 0;
     let totalExpense = 0;
+    let totalSettlements = 0;
 
     filtered.forEach(t => {
       if (t.type === 'income') {
@@ -62,13 +63,15 @@ const Dashboard = () => {
           if (t.to_account?._id === selectedAccount) totalIncome += t.amount;
           if (t.from_account?._id === selectedAccount) totalExpense += t.amount;
         }
+      } else if (t.type === 'settlement') {
+        totalSettlements += t.amount;
       }
     });
 
     setTotals({
       income: totalIncome,
       expense: totalExpense,
-      balance: totalIncome - totalExpense
+      balance: totalIncome - totalExpense + totalSettlements
     });
   }, [allTransactions, selectedAccount]);
 

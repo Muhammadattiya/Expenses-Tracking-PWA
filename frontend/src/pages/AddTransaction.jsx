@@ -156,7 +156,6 @@ const AddTransaction = () => {
           <label className="block text-xs text-gray-400 mb-1 ml-1">الوصف</label>
           <input
             type="text"
-            required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="مثال: غداء، تحويل لكاش..."

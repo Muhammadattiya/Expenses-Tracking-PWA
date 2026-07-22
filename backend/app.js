@@ -7,6 +7,8 @@ const accountsRoutes = require("./routes/accounts");
 const categoriesRoutes = require("./routes/categories");
 const authRoutes = require('./routes/auth');
 const investmentRoutes = require('./routes/investments');
+const receivableRoutes = require('./routes/receivables');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use("/api/accounts", accountsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/investments', investmentRoutes);
+app.use('/api/receivables', receivableRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.use(errorHandler);
 module.exports = app;

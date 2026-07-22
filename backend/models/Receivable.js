@@ -1,0 +1,20 @@
+const mongoose = require('mongoose');
+
+const participantSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  owedAmount: { type: Number, required: true, min: 0 },
+  paidAmount: { type: Number, default: 0, min: 0 },
+  payments: [{ amount: { type: Number, required: true }, account: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true }, paidAt: { type: Date, default: Date.now } }],
+}, { _id: true });
+
+const receivableSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  title: { type: String, required: true, trim: true },
+  paidAmount: { type: Number, required: true, min: 0 },
+  paidFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
+  expenseTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
+  participants: { type: [participantSchema], default: [] },
+  createdAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+module.exports = mongoose.model('Receivable', receivableSchema);

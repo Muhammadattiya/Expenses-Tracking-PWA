@@ -182,6 +182,8 @@ const confirmDelete = async () => {
     const backup = {
       formatVersion: 1,
       exportedAt: new Date().toISOString(),
+      accounts: accounts.map(({ name, type }) => ({ name, type })),
+      categories: categories.map(({ name, type }) => ({ name, type })),
       transactions: data.map((transaction) => ({
         title: transaction.title,
         amount: transaction.amount,
