@@ -11,6 +11,9 @@ import {
   AlertTriangle,
   Banknote,
   X,
+  ChevronRight,
+  Bell,
+  Database,
 } from "lucide-react";
 
 import {
@@ -45,6 +48,7 @@ const Settings = () => {
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeView, setActiveView] = useState('main'); // main, notifications, accounts, categories, data
   const fileInputRef = useRef(null);
 
   const [newAccountName, setNewAccountName] = useState('');
@@ -397,11 +401,59 @@ const Settings = () => {
 
   return (
     <div className="p-4 pt-12 pb-24 min-h-screen text-white bg-[#0a0a0c] space-y-6 relative">
-      <h2 className="text-2xl font-bold text-center tracking-wide text-gray-100">
-        الإعدادات
+      <h2 className="text-2xl font-bold text-center tracking-wide text-gray-100 flex items-center justify-center gap-3">
+        {activeView !== 'main' && (
+          <button onClick={() => setActiveView('main')} className="text-gray-400 hover:text-white p-2">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        )}
+        <span>
+          {activeView === 'main' && 'الإعدادات'}
+          {activeView === 'notifications' && 'الإشعارات'}
+          {activeView === 'accounts' && 'إدارة الحسابات'}
+          {activeView === 'categories' && 'إدارة الفئات'}
+          {activeView === 'data' && 'إدارة البيانات'}
+        </span>
+        {activeView !== 'main' && <div className="w-10"></div>}
       </h2>
 
-      {/* قسم الإشعارات */}
+      {activeView === 'main' && (
+        <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)] divide-y divide-white/5 overflow-hidden">
+          <button onClick={() => setActiveView('notifications')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400"><Bell size={20} /></div>
+              <span className="text-lg font-medium text-gray-200">الإشعارات الفورية</span>
+            </div>
+            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
+          </button>
+          
+          <button onClick={() => setActiveView('accounts')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400"><Wallet size={20} /></div>
+              <span className="text-lg font-medium text-gray-200">إدارة الحسابات</span>
+            </div>
+            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
+          </button>
+          
+          <button onClick={() => setActiveView('categories')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><Tag size={20} /></div>
+              <span className="text-lg font-medium text-gray-200">إدارة الفئات</span>
+            </div>
+            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
+          </button>
+
+          <button onClick={() => setActiveView('data')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-500/20 p-2 rounded-xl text-purple-400"><Database size={20} /></div>
+              <span className="text-lg font-medium text-gray-200">إدارة البيانات</span>
+            </div>
+            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
+          </button>
+        </section>
+      )}
+
+      {activeView === 'notifications' && (
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
         <h3 className="text-lg font-semibold mb-1 text-gray-200">الإشعارات الفورية (Push)</h3>
         <p className="text-sm text-gray-400 mb-4">احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.</p>
@@ -417,8 +469,9 @@ const Settings = () => {
         </div>
         {pushStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-gray-300">{pushStatus}</p>}
       </section>
+      )}
 
-      {/* قسم إدارة الحسابات */}
+      {activeView === 'accounts' && (
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-400">
           <Wallet className="w-5 h-5" /> الحسابات
@@ -484,8 +537,9 @@ const Settings = () => {
           </button>
         </form>
       </section>
+      )}
 
-      {/* قسم إدارة الفئات */}
+      {activeView === 'categories' && (
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
           <Tag className="w-5 h-5" /> الفئات
@@ -549,42 +603,45 @@ const Settings = () => {
           </button>
         </form>
       </section>
+      )}
 
-      {/* قسم الاستيراد والتصدير */}
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
-        <h3 className="text-lg font-semibold mb-1 text-gray-200">إدارة البيانات</h3>
-        <p className="text-sm text-gray-400 mb-4">الاستيراد ينشئ الحسابات والفئات الناقصة تلقائيًا ويحفظ كل معاملة في حسابها الصحيح.</p>
-        
-        <div className="flex gap-3">
-          <button onClick={handleExport} className="flex-1 flex flex-col items-center justify-center gap-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-4 rounded-2xl hover:bg-blue-500/30 transition-colors">
-            <Download className="w-6 h-6" /> 
-            <span className="text-sm">تصدير</span>
-          </button>
-
-          <input type="file" accept=".json,.csv" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
+      {activeView === 'data' && (
+      <div className="space-y-6">
+        <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
+          <h3 className="text-lg font-semibold mb-1 text-gray-200">إدارة البيانات</h3>
+          <p className="text-sm text-gray-400 mb-4">الاستيراد ينشئ الحسابات والفئات الناقصة تلقائيًا ويحفظ كل معاملة في حسابها الصحيح.</p>
           
-          <button onClick={handleImportClick} disabled={isImporting} className="flex-1 flex flex-col items-center justify-center gap-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-4 rounded-2xl hover:bg-purple-500/30 transition-colors disabled:opacity-50">
-            <Upload className="w-6 h-6" /> 
-            <span className="text-sm">استيراد</span>
-          </button>
-        </div>
-        {dataStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-gray-300">{dataStatus}</p>}
-      </section>
+          <div className="flex gap-3">
+            <button onClick={handleExport} className="flex-1 flex flex-col items-center justify-center gap-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-4 rounded-2xl hover:bg-blue-500/30 transition-colors">
+              <Download className="w-6 h-6" /> 
+              <span className="text-sm">تصدير</span>
+            </button>
 
-      {/* قسم حذف جميع البيانات */}
-      <section className="bg-red-500/5 backdrop-blur-xl border border-red-500/20 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
-        <h3 className="text-lg font-semibold mb-1 text-red-400 flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5" /> منطقة الخطر
-        </h3>
-        <p className="text-sm text-gray-400 mb-4">حذف جميع البيانات نهائياً بما في ذلك المعاملات والحسابات والفئات والاستثمارات والمستحقات. لا يمكن التراجع عن هذا الإجراء.</p>
-        <button
-          onClick={() => setWipeModalOpen(true)}
-          className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-4 rounded-2xl hover:bg-red-500/30 transition-colors font-semibold"
-        >
-          <Trash2 className="w-5 h-5" />
-          مسح جميع البيانات
-        </button>
-      </section>
+            <input type="file" accept=".json,.csv" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
+            
+            <button onClick={handleImportClick} disabled={isImporting} className="flex-1 flex flex-col items-center justify-center gap-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-4 rounded-2xl hover:bg-purple-500/30 transition-colors disabled:opacity-50">
+              <Upload className="w-6 h-6" /> 
+              <span className="text-sm">استيراد</span>
+            </button>
+          </div>
+          {dataStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-gray-300">{dataStatus}</p>}
+        </section>
+
+        <section className="bg-red-500/5 backdrop-blur-xl border border-red-500/20 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
+          <h3 className="text-lg font-semibold mb-1 text-red-400 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" /> منطقة الخطر
+          </h3>
+          <p className="text-sm text-gray-400 mb-4">حذف جميع البيانات نهائياً بما في ذلك المعاملات والحسابات والفئات والاستثمارات والمستحقات. لا يمكن التراجع عن هذا الإجراء.</p>
+          <button
+            onClick={() => setWipeModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-4 rounded-2xl hover:bg-red-500/30 transition-colors font-semibold"
+          >
+            <Trash2 className="w-5 h-5" />
+            مسح جميع البيانات
+          </button>
+        </section>
+      </div>
+      )}
 
       {/* Edit Modal */}
       {editModalOpen && (
