@@ -34,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/receivables', receivableRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 app.use(errorHandler);
 module.exports = app;

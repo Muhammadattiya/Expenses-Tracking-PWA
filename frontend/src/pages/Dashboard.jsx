@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
 
 import {
     getAccounts,
@@ -9,40 +9,45 @@ import {
   getTransactions,
   deleteTransaction,
 } from "../api/transactions";
-import ConfirmModal from "../components/modals/ConfirmModal";
 import TransactionCard from "../components/cards/TransactionCard";
+import EditTransactionModal from "../components/modals/EditTransactionModal";
 
 const Dashboard = () => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('all');
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  
   const [totals, setTotals] = useState({ balance: 0, income: 0, expense: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const [transactionsData, accountsData] = await Promise.all([
+        getTransactions(),
+        getAccounts(),
+      ]);
+
+      setAllTransactions(transactionsData);
+      setAccounts(accountsData);
+    } catch (error) {
+      console.error("❌ Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [transactionsData, accountsData] = await Promise.all([
-          getTransactions(),
-          getAccounts(),
-        ]);
-
-        setAllTransactions(transactionsData);
-        setAccounts(accountsData);
-      } catch (error) {
-        console.error("❌ Error:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
   useEffect(() => {
-    // فلترة المعاملات بناءً على الحساب المختار
+    // فلترة المعاملات بناءً على الحساب المختار (لكي نحسب الرصيد الإجمالي)
     const filtered = allTransactions.filter(t => {
       if (selectedAccount === 'all') return true;
       return t.account?._id === selectedAccount || t.from_account?._id === selectedAccount || t.to_account?._id === selectedAccount;
@@ -50,18 +55,41 @@ const Dashboard = () => {
 
     let totalIncome = 0;
     let totalExpense = 0;
+    let currentMonthIncome = 0;
+    let currentMonthExpense = 0;
     let totalSettlements = 0;
+    let totalAdjustments = 0;
+
+    if (selectedAccount === 'all') {
+      totalAdjustments = accounts.reduce((sum, acc) => sum + (acc.balance_adjustment || 0), 0);
+    } else {
+      const acc = accounts.find(a => a._id === selectedAccount);
+      totalAdjustments = acc?.balance_adjustment || 0;
+    }
+
+    const currentMonth = selectedMonth.getMonth();
+    const currentYear = selectedMonth.getFullYear();
 
     filtered.forEach(t => {
+      const tDate = new Date(t.date);
+      const isCurrentMonth = tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+
       if (t.type === 'income') {
         totalIncome += t.amount;
+        if (isCurrentMonth) currentMonthIncome += t.amount;
       } else if (t.type === 'expense') {
         totalExpense += t.amount;
+        if (isCurrentMonth) currentMonthExpense += t.amount;
       } else if (t.type === 'transfer') {
-        // لو مختار حساب بعينه، التحويل هيأثر على الرصيد بالزيادة أو النقصان
         if (selectedAccount !== 'all') {
-          if (t.to_account?._id === selectedAccount) totalIncome += t.amount;
-          if (t.from_account?._id === selectedAccount) totalExpense += t.amount;
+          if (t.to_account?._id === selectedAccount) {
+            totalIncome += t.amount;
+            if (isCurrentMonth) currentMonthIncome += t.amount;
+          }
+          if (t.from_account?._id === selectedAccount) {
+            totalExpense += t.amount;
+            if (isCurrentMonth) currentMonthExpense += t.amount;
+          }
         }
       } else if (t.type === 'settlement') {
         totalSettlements += t.amount;
@@ -69,34 +97,54 @@ const Dashboard = () => {
     });
 
     setTotals({
-      income: totalIncome,
-      expense: totalExpense,
-      balance: totalIncome - totalExpense + totalSettlements
+      income: currentMonthIncome,
+      expense: currentMonthExpense,
+      balance: totalIncome - totalExpense + totalSettlements + totalAdjustments
     });
-  }, [allTransactions, selectedAccount]);
+  }, [allTransactions, selectedAccount, selectedMonth, accounts]);
 
-  const handleDeleteTransaction = (transaction) => {
+  const handleTransactionClick = (transaction) => {
     setSelectedTransaction(transaction);
-    setDeleteModalOpen(true);
+    setEditModalOpen(true);
   };
 
-  const handleEditTransaction = () => {};
+  const handleEditSuccess = () => {
+    setEditModalOpen(false);
+    setSelectedTransaction(null);
+    fetchData(); // Reload data
+  };
 
-  const confirmDeleteTransaction = async () => {
+  const confirmDeleteTransaction = async (transaction) => {
     try {
-      await deleteTransaction(selectedTransaction._id);
-      setAllTransactions(prev=>prev.filter(t=>t._id!==selectedTransaction._id));
-      setDeleteModalOpen(false);
+      await deleteTransaction(transaction._id);
+      setAllTransactions(prev=>prev.filter(t=>t._id!==transaction._id));
+      setEditModalOpen(false);
       setSelectedTransaction(null);
     } catch(error){
       alert(error.response?.data?.message || "حدث خطأ أثناء الحذف");
     }
   };
 
-  // المعاملات اللي هتتعرض في القائمة تحت (بعد الفلترة)
+  const handlePrevMonth = () => {
+    setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  // المعاملات اللي هتتعرض في القائمة تحت (بعد الفلترة بالحساب والشهر)
   const displayedTransactions = allTransactions.filter(t => {
-    if (selectedAccount === 'all') return true;
-    return t.account?._id === selectedAccount || t.from_account?._id === selectedAccount || t.to_account?._id === selectedAccount;
+    // 1. Account Filter
+    if (selectedAccount !== 'all' && t.account?._id !== selectedAccount && t.from_account?._id !== selectedAccount && t.to_account?._id !== selectedAccount) {
+      return false;
+    }
+    // 2. Month Filter
+    const tDate = new Date(t.date);
+    if (tDate.getMonth() !== selectedMonth.getMonth() || tDate.getFullYear() !== selectedMonth.getFullYear()) {
+      return false;
+    }
+    return true;
   });
 
   // تجميع المعاملات باليوم
@@ -137,6 +185,20 @@ const Dashboard = () => {
 
       {/* قسم الإحصائيات العلوية */}
       <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)] mb-8">
+        
+        {/* Month Selector */}
+        <div className="flex justify-between items-center mb-6 bg-white/5 p-2 rounded-2xl border border-white/5">
+          <button onClick={handlePrevMonth} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition">
+            <ChevronRight className="w-5 h-5 text-gray-300" />
+          </button>
+          <span className="text-sm font-bold text-gray-100 tracking-wider">
+            {selectedMonth.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+          </span>
+          <button onClick={handleNextMonth} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition">
+            <ChevronLeft className="w-5 h-5 text-gray-300" />
+          </button>
+        </div>
+
         <p className="text-gray-400 text-sm mb-1 text-center">الرصيد المتاح</p>
         <h1 className="text-4xl font-bold text-center text-white mb-6 tracking-wider">
           {totals.balance.toLocaleString('ar-EG')} <span className="text-lg text-gray-400">ج.م</span>
@@ -164,13 +226,13 @@ const Dashboard = () => {
       {/* قسم المعاملات بناءً على الفلتر */}
       <div className="mb-4 flex justify-between items-end">
         <h2 className="text-xl font-bold text-gray-100">
-          {selectedAccount === 'all' ? 'جميع المعاملات' : `معاملات: ${selectedAccount}`}
+          {selectedAccount === 'all' ? 'المعاملات' : `معاملات: ${accounts.find(a => a._id === selectedAccount)?.name}`}
         </h2>
       </div>
 
       <div className="space-y-6">
         {displayedTransactions.length === 0 ? (
-          <p className="text-center text-gray-500 py-8 bg-white/5 rounded-3xl border border-white/5">لا توجد معاملات</p>
+          <p className="text-center text-gray-500 py-8 bg-white/5 rounded-3xl border border-white/5">لا توجد معاملات في هذا الشهر</p>
         ) : (
           sortedDates.map(dateKey => {
             const dateObj = new Date(dateKey);
@@ -189,8 +251,7 @@ const Dashboard = () => {
                     <TransactionCard
                       key={transaction._id}
                       transaction={transaction}
-                      onEdit={handleEditTransaction}
-                      onDelete={handleDeleteTransaction}
+                      onClick={handleTransactionClick}
                     />
                   ))}
                 </div>
@@ -200,15 +261,15 @@ const Dashboard = () => {
         )}
       </div>
 
-      <ConfirmModal
-        open={deleteModalOpen}
-        title="حذف المعاملة"
-        message={selectedTransaction ? `هل تريد حذف "${selectedTransaction.title}"؟` : ""}
-        confirmText="حذف"
-        cancelText="إلغاء"
-        confirmColor="red"
-        onConfirm={confirmDeleteTransaction}
-        onCancel={() => {setDeleteModalOpen(false);setSelectedTransaction(null);}}
+      <EditTransactionModal
+        open={editModalOpen}
+        transaction={selectedTransaction}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onDelete={confirmDeleteTransaction}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

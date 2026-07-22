@@ -12,6 +12,10 @@ const categorySchema = new mongoose.Schema({
     enum: ['income', 'expense'],
     required: true
   },
+  icon: {
+    type: String,
+    default: 'Tag'
+  },
   createdAt: {
     type: Date,
     default: Date.now

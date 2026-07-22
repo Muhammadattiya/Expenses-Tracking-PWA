@@ -12,6 +12,14 @@ const accountSchema = new mongoose.Schema({
     enum: ['cash', 'bank', 'wallet'],
     default: 'cash'
   },
+  icon: {
+    type: String,
+    default: 'Wallet'
+  },
+  balance_adjustment: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now

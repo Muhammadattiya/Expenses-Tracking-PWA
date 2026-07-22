@@ -51,7 +51,7 @@ export default function PWABadge() {
   };
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-3">
+    <div className="fixed bottom-24 left-4 z-[60] flex flex-col gap-3">
       {/* Install Prompt */}
       {showInstallBtn && (
         <div className="bg-blue-600 text-white px-4 py-3 rounded-2xl shadow-lg border border-blue-500/50 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4">
