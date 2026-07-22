@@ -71,7 +71,62 @@ const sendNotification = async (req, res) => {
   }
 };
 
+const broadcastNotification = async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
+      return res.status(401).json({ message: 'Unauthorized. Invalid API Key.' });
+    }
+
+    const { title, body, url } = req.body;
+    
+    // Find ALL subscriptions
+    const subscriptions = await Subscription.find({});
+    
+    if (subscriptions.length === 0) {
+      return res.status(404).json({ message: 'No subscriptions found in the database.' });
+    }
+
+    const payload = JSON.stringify({
+      title: title || 'إشعار جديد',
+      body: body || 'لديك رسالة جديدة',
+      url: url || '/'
+    });
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    const sendPromises = subscriptions.map(sub => 
+      webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: sub.keys },
+        payload
+      ).then(() => {
+        successCount++;
+      }).catch(err => {
+        failureCount++;
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          // Subscription has expired or is no longer valid
+          return Subscription.findByIdAndDelete(sub._id);
+        }
+        console.error('Error sending notification:', err);
+      })
+    );
+
+    await Promise.all(sendPromises);
+
+    res.status(200).json({ 
+      message: 'Broadcast completed.',
+      totalSent: subscriptions.length,
+      successful: successCount,
+      failed: failureCount
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error broadcasting notification', error: error.message });
+  }
+};
+
 module.exports = {
   subscribe,
-  sendNotification
+  sendNotification,
+  broadcastNotification
 };
