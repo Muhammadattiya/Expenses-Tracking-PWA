@@ -23,20 +23,20 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-  try {
-    const [transactionsData, accountsData] = await Promise.all([
-      getTransactions(),
-      getAccounts(),
-    ]);
+      try {
+        const [transactionsData, accountsData] = await Promise.all([
+          getTransactions(),
+          getAccounts(),
+        ]);
 
-    setAllTransactions(transactionsData);
-    setAccounts(accountsData);
-  } catch (error) {
-    console.error("❌ Error:", error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+        setAllTransactions(transactionsData);
+        setAccounts(accountsData);
+      } catch (error) {
+        console.error("❌ Error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
     fetchData();
   }, []);
@@ -75,29 +75,40 @@ const Dashboard = () => {
     });
   }, [allTransactions, selectedAccount]);
 
-const handleDeleteTransaction = (transaction) => {
-  setSelectedTransaction(transaction);
-  setDeleteModalOpen(true);
-};
+  const handleDeleteTransaction = (transaction) => {
+    setSelectedTransaction(transaction);
+    setDeleteModalOpen(true);
+  };
 
-const handleEditTransaction = () => {};
+  const handleEditTransaction = () => {};
 
-const confirmDeleteTransaction = async () => {
-  try {
-    await deleteTransaction(selectedTransaction._id);
-    setAllTransactions(prev=>prev.filter(t=>t._id!==selectedTransaction._id));
-    setDeleteModalOpen(false);
-    setSelectedTransaction(null);
-  } catch(error){
-    alert(error.response?.data?.message || "حدث خطأ أثناء الحذف");
-  }
-};
+  const confirmDeleteTransaction = async () => {
+    try {
+      await deleteTransaction(selectedTransaction._id);
+      setAllTransactions(prev=>prev.filter(t=>t._id!==selectedTransaction._id));
+      setDeleteModalOpen(false);
+      setSelectedTransaction(null);
+    } catch(error){
+      alert(error.response?.data?.message || "حدث خطأ أثناء الحذف");
+    }
+  };
 
   // المعاملات اللي هتتعرض في القائمة تحت (بعد الفلترة)
   const displayedTransactions = allTransactions.filter(t => {
     if (selectedAccount === 'all') return true;
     return t.account?._id === selectedAccount || t.from_account?._id === selectedAccount || t.to_account?._id === selectedAccount;
   });
+
+  // تجميع المعاملات باليوم
+  const groupedTransactions = displayedTransactions.reduce((acc, curr) => {
+    const d = new Date(curr.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(curr);
+    return acc;
+  }, {});
+  
+  const sortedDates = Object.keys(groupedTransactions).sort((a, b) => new Date(b) - new Date(a));
 
   if (isLoading) {
     return (
@@ -157,20 +168,38 @@ const confirmDeleteTransaction = async () => {
         </h2>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-6">
         {displayedTransactions.length === 0 ? (
           <p className="text-center text-gray-500 py-8 bg-white/5 rounded-3xl border border-white/5">لا توجد معاملات</p>
         ) : (
-          displayedTransactions.map((transaction) => (
-            <TransactionCard
-  key={transaction._id}
-  transaction={transaction}
-  onEdit={handleEditTransaction}
-  onDelete={handleDeleteTransaction}
-/>
-          ))
+          sortedDates.map(dateKey => {
+            const dateObj = new Date(dateKey);
+            return (
+              <div key={dateKey}>
+                <h3 className="text-gray-400 text-sm font-semibold mb-3 px-2 flex justify-between items-center border-b border-white/10 pb-2">
+                  <span>
+                    {dateObj.toLocaleDateString('ar-EG', { weekday: 'long' })}
+                  </span>
+                  <span>
+                    {dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' })}
+                  </span>
+                </h3>
+                <div className="space-y-3">
+                  {groupedTransactions[dateKey].map(transaction => (
+                    <TransactionCard
+                      key={transaction._id}
+                      transaction={transaction}
+                      onEdit={handleEditTransaction}
+                      onDelete={handleDeleteTransaction}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
+
       <ConfirmModal
         open={deleteModalOpen}
         title="حذف المعاملة"

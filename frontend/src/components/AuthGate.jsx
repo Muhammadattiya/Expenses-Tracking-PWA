@@ -27,13 +27,19 @@ export default function AuthGate({ children }) {
           setLoading(false);
         }
       }});
-      window.google.accounts.id.renderButton(document.getElementById('google-sign-in'), { theme: 'outline', size: 'large', width: 280, text: 'continue_with' });
+      const btn = document.getElementById('google-sign-in');
+      if (btn) window.google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large', width: 280, text: 'continue_with' });
     };
     document.head.appendChild(script); return () => script.remove();
   }, [user, clientId]);
+
   useEffect(() => {
-    if (!user && clientId && window.google) window.google.accounts.id.renderButton(document.getElementById('google-sign-in'), { theme: 'outline', size: 'large', width: 280, text: 'continue_with' });
+    if (!loading && !user && clientId && window.google) {
+      const btn = document.getElementById('google-sign-in');
+      if (btn) window.google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large', width: 280, text: 'continue_with' });
+    }
   }, [user, clientId, loading]);
+
   if (loading) return <div className="min-h-screen grid place-items-center bg-zinc-950"><Loader2 className="animate-spin text-blue-400" /></div>;
   if (user) return children;
   return <main dir="rtl" className="min-h-screen grid place-items-center bg-zinc-950 p-6 text-center text-white"><section className="w-full max-w-sm rounded-3xl border border-white/10 bg-white/5 p-8"><WalletCards className="mx-auto mb-4 text-blue-400" size={42}/><h1 className="text-2xl font-bold">مصروفي</h1><p className="my-3 text-sm text-gray-400">سجّل دخولك لحماية حساباتك ومعاملاتك.</p>{clientId ? <div id="google-sign-in" className="flex justify-center"/> : <p className="rounded-xl bg-amber-400/10 p-3 text-sm text-amber-200">أضف VITE_GOOGLE_CLIENT_ID في ملف البيئة لتفعيل تسجيل Google.</p>}{signInError && <p className="mt-4 rounded-xl bg-red-500/10 p-3 text-sm text-red-200">{signInError}</p>}</section></main>;

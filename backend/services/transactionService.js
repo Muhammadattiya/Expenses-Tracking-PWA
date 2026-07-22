@@ -5,11 +5,11 @@ const { adoptLegacyData } = require('./legacyDataService');
 
 const getTransactions = async (userId) => {
   return Transaction.find({ user: userId })
-  .populate("account")
-  .populate("category")
-  .populate("from_account")
-  .populate("to_account")
-  .sort({ date: -1 });
+    .populate("account")
+    .populate("category")
+    .populate("from_account")
+    .populate("to_account")
+    .sort({ date: -1 });
 };
 
 const validateReferences = async (userId, data) => {
@@ -18,125 +18,9 @@ const validateReferences = async (userId, data) => {
       Account.findOne({ _id: data.from_account, user: userId }),
       Account.findOne({ _id: data.to_account, user: userId }),
     ]);
-
-    if (!fromAccount) {
-      throw new Error("Source account not found.");
-    }
-
-    if (!toAccount) {
-      throw new Error("Destination account not found.");
-    }
-
+    if (!fromAccount) throw new Error("Source account not found.");
+    if (!toAccount) throw new Error("Destination account not found.");
     return;
-  }
-
-  const [account, category] = await Promise.all([
-    Account.findOne({ _id: data.account, user: userId }),
-    Category.findOne({ _id: data.category, user: userId }),
-  ]);
-
-  if (!account) {
-    throw new Error("Account not found.");
-  }
-
-  if (!category) {
-    throw new Error("Category not found.");
-  }
-};
-
-const createTransaction = async (userId, data) => {
-  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
-  await validateReferences(userId, normalizedData);
-  const transaction = await Transaction.create({ ...normalizedData, user: userId });
-
-return await Transaction.findById(transaction._id)
-  .populate("account")
-  .populate("category")
-  .populate("from_account")
-  .populate("to_account");
-};
-
-const updateTransaction = async (userId, id, data) => {
-  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
-  await validateReferences(userId, normalizedData);
-  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, normalizedData, {
-  new: true,
-  runValidators: true,
-})
-  .populate("account")
-  .populate("category")
-  .populate("from_account")
-  .populate("to_account");
-
-  if (!transaction) {
-    throw new Error("Transaction not found.");
-  }
-
-  return transaction;
-};
-
-const deleteTransaction = async (userId, id) => {
-  const transaction = await Transaction.findOne({ _id: id, user: userId });
-
-  if (!transaction) {
-    const err = new Error("Transaction not found.");
-    err.statusCode = 404;
-    throw err;
-  }
-
-  await Transaction.deleteOne({ _id: id, user: userId });
-};
-
-const importTransactions = async (userId, backup) => {
-  await adoptLegacyData(userId);
-  const transactions = Array.isArray(backup)
-    ? backup
-    : backup?.transactions || backup?.data?.transactions || backup?.data?.items || backup?.items || backup?.records || Object.values(backup || {}).find(Array.isArray);
-  if (!Array.isArray(transactions)) throw new Error('Invalid backup file: no transactions array was found.');
-
-  const accounts = await Account.find({ user: userId });
-  const categories = await Category.find({ user: userId });
-  const accountByName = new Map(accounts.map((account) => [account.name.trim().toLowerCase(), account]));
-  const categoryByKey = new Map(categories.map((category) => [`${category.type}:${category.name.trim().toLowerCase()}`, category]));
-  let createdAccounts = 0;
-  let createdCategories = 0;
-
-  const referenceName = (reference, fallback) => {
-    if (typeof reference === 'object' && reference) return reference.name || fallback;
-    return fallback || reference;
-  };
-  const resolveAccount = async (reference, fallbackName, type = 'cash') => {
-    const name = referenceName(reference, fallbackName)?.trim();
-    if (!name) throw new Error('Every imported transaction must include an account name.');
-    const key = name.toLowerCase();
-    if (accountByName.has(key)) return accountByName.get(key);
-    const accountType = typeof reference === 'object' && reference ? reference.type : type;
-    const account = await Account.create({ user: userId, name, type: ['cash', 'bank', 'wallet'].includes(accountType) ? accountType : 'cash' });
-    accountByName.set(key, account); createdAccounts += 1;
-    return account;
-  };
-  const resolveCategory = async (reference, fallbackName, type) => {
-    const name = referenceName(reference, fallbackName)?.trim();
-    if (!name) throw new Error('Every imported income or expense must include a category name.');
-    const key = `${type}:${name.toLowerCase()}`;
-    if (categoryByKey.has(key)) return categoryByKey.get(key);
-    const category = await Category.create({ user: userId, name, type });
-    categoryByKey.set(key, category); createdCategories += 1;
-    return category;
-  };
-
-  const inserted = [];
-  const normalizeType = (value) => {
-    const type = String(value || '').trim().toLowerCase();
-    if (['income', '\u062f\u062e\u0644', 'in'].includes(type)) return 'income';
-    if (['expense', '\u0645\u0635\u0631\u0648\u0641', 'expense ', 'out'].includes(type)) return 'expense';
-    if (['transfer', '\u062a\u062d\u0648\u064a\u0644', 'transfer '].includes(type)) return 'transfer';
-    return null;
-  };
-  const normalizeAmount = (value) => Number(String(value ?? '').replace(/[,\u060c\s]/g, '').replace(/[^0-9.-]/g, ''));
-
-  for (const account of backup?.accounts || []) {
-    await resolveAccount(account, account?.name, account?.type);
   }
 
   if (data.type === 'settlement') {
@@ -144,31 +28,217 @@ const importTransactions = async (userId, backup) => {
     if (!account) throw new Error('Account not found.');
     return;
   }
-  for (const category of backup?.categories || []) {
-    const categoryType = normalizeType(category?.type);
-    if (categoryType === 'income' || categoryType === 'expense') await resolveCategory(category, category?.name, categoryType);
+
+  const [account, category] = await Promise.all([
+    Account.findOne({ _id: data.account, user: userId }),
+    Category.findOne({ _id: data.category, user: userId }),
+  ]);
+  if (!account) throw new Error("Account not found.");
+  if (!category) throw new Error("Category not found.");
+};
+
+const createTransaction = async (userId, data) => {
+  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
+  await validateReferences(userId, normalizedData);
+  const transaction = await Transaction.create({ ...normalizedData, user: userId });
+
+  return await Transaction.findById(transaction._id)
+    .populate("account")
+    .populate("category")
+    .populate("from_account")
+    .populate("to_account");
+};
+
+const updateTransaction = async (userId, id, data) => {
+  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
+  await validateReferences(userId, normalizedData);
+  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, normalizedData, {
+    new: true,
+    runValidators: true,
+  })
+    .populate("account")
+    .populate("category")
+    .populate("from_account")
+    .populate("to_account");
+
+  if (!transaction) throw new Error("Transaction not found.");
+  return transaction;
+};
+
+const deleteTransaction = async (userId, id) => {
+  const transaction = await Transaction.findOne({ _id: id, user: userId });
+  if (!transaction) {
+    const err = new Error("Transaction not found.");
+    err.statusCode = 404;
+    throw err;
+  }
+  await Transaction.deleteOne({ _id: id, user: userId });
+};
+
+// ─── Import ────────────────────────────────────────────────────────────────────
+
+const importTransactions = async (userId, backup) => {
+  await adoptLegacyData(userId);
+
+  // 1. Find the transactions array from whatever shape the backup is
+  const transactions = Array.isArray(backup)
+    ? backup
+    : backup?.transactions || backup?.data?.transactions || backup?.data?.items
+      || backup?.items || backup?.records
+      || Object.values(backup || {}).find(Array.isArray);
+  if (!Array.isArray(transactions)) {
+    throw new Error('Invalid backup file: no transactions array was found.');
   }
 
-  for (const [index, source] of transactions.entries()) {
-    const type = normalizeType(source?.type || source?.transactionType || source?.transaction_type || source?.kind || source?.category?.type);
-    const amount = normalizeAmount(source?.amount ?? source?.amountEGP ?? source?.amount_egp ?? source?.value ?? source?.total);
-    const categoryLabel = typeof source?.category === 'object' ? source.category?.name : source?.category;
-    const title = String(source?.title || source?.description || source?.transaction_name || source?.label || source?.name || source?.note || categoryLabel || 'معاملة مستوردة').trim();
-    if (!source || !type || !Number.isFinite(amount) || amount < 0) {
-      throw new Error(`Invalid transaction at row ${index + 1}. Found fields: ${Object.keys(source || {}).join(', ') || 'none'}. Add an amount and type.`);
+  // 2. Build lookup maps from existing DB records
+  const existingAccounts = await Account.find({ user: userId });
+  const existingCategories = await Category.find({ user: userId });
+  const accountByName = new Map(existingAccounts.map((a) => [a.name.trim().toLowerCase(), a]));
+  const categoryByKey = new Map(existingCategories.map((c) => [`${c.type}:${c.name.trim().toLowerCase()}`, c]));
+  let createdAccounts = 0;
+  let createdCategories = 0;
+
+  // Helper: extract a usable name string from various source fields
+  const extractName = (...sources) => {
+    for (const src of sources) {
+      if (src == null) continue;
+      const name = (typeof src === 'object' ? src.name : String(src)).trim();
+      if (name) return name;
     }
-    const transaction = { user: userId, title, amount, type, date: source.date || source.datetime || source.createdAt || new Date() };
-    if (type === 'transfer') {
-      transaction.from_account = (await resolveAccount(source.from_account || source.fromAccount, source.fromAccountName, source.fromAccountType))._id;
-      transaction.to_account = (await resolveAccount(source.to_account || source.toAccount, source.toAccountName, source.toAccountType))._id;
-    } else {
-      transaction.account = (await resolveAccount(source.account, source.accountName, source.accountType))._id;
-      transaction.category = (await resolveCategory(source.category, source.categoryName, type))._id;
-    }
-    inserted.push(transaction);
+    return null;
+  };
+
+  // Helper: find-or-create account by name
+  const resolveAccount = async (name, typeHint = 'cash') => {
+    if (!name) return null;
+    const key = name.trim().toLowerCase();
+    if (accountByName.has(key)) return accountByName.get(key);
+    const accountType = ['cash', 'bank', 'wallet'].includes(typeHint) ? typeHint : 'cash';
+    const account = await Account.create({ user: userId, name: name.trim(), type: accountType });
+    accountByName.set(key, account);
+    createdAccounts += 1;
+    return account;
+  };
+
+  // Helper: find-or-create category by name + type
+  const resolveCategory = async (name, type) => {
+    if (!name) return null;
+    const key = `${type}:${name.trim().toLowerCase()}`;
+    if (categoryByKey.has(key)) return categoryByKey.get(key);
+    const category = await Category.create({ user: userId, name: name.trim(), type });
+    categoryByKey.set(key, category);
+    createdCategories += 1;
+    return category;
+  };
+
+  const normalizeType = (value) => {
+    const t = String(value || '').trim().toLowerCase();
+    if (['income', 'دخل', 'in'].includes(t)) return 'income';
+    if (['expense', 'مصروف', 'out'].includes(t)) return 'expense';
+    if (['transfer', 'تحويل'].includes(t)) return 'transfer';
+    if (['settlement', 'تسوية', 'settle'].includes(t)) return 'settlement';
+    return null;
+  };
+
+  const normalizeAmount = (value) =>
+    Number(String(value ?? '').replace(/[,،\s]/g, '').replace(/[^0-9.\-]/g, ''));
+
+  // 3. Pre-create accounts & categories listed in the backup metadata
+  for (const acc of backup?.accounts || []) {
+    const name = extractName(acc, acc?.name);
+    if (name) await resolveAccount(name, acc?.type);
   }
-  await Transaction.insertMany(inserted);
-  return { success: true, insertedTransactions: inserted.length, createdAccounts, createdCategories };
+  for (const cat of backup?.categories || []) {
+    const catType = normalizeType(cat?.type);
+    const name = extractName(cat, cat?.name);
+    if (name && (catType === 'income' || catType === 'expense')) {
+      await resolveCategory(name, catType);
+    }
+  }
+
+  // 4. Process each transaction row
+  const inserted = [];
+  const skipped = [];
+
+  for (const [index, source] of transactions.entries()) {
+    try {
+      const type = normalizeType(
+        source?.type || source?.transactionType || source?.transaction_type || source?.kind
+      );
+      const amount = normalizeAmount(
+        source?.amount ?? source?.amountEGP ?? source?.amount_egp ?? source?.value ?? source?.total
+      );
+
+      if (!source || !type || !Number.isFinite(amount) || amount < 0) {
+        skipped.push(index + 1);
+        continue;
+      }
+
+      // Category name (could be a string like "Workspace" or an object { name, type })
+      const categoryName = extractName(source?.category, source?.categoryName);
+
+      // Title: prefer explicit title fields, then notes, then category name
+      const title = String(
+        source?.title || source?.description || source?.transaction_name
+        || source?.label || source?.notes || source?.note
+        || categoryName || 'معاملة مستوردة'
+      ).trim() || 'معاملة مستوردة';
+
+      let dateVal = source?.date || source?.datetime || source?.createdAt;
+      if (typeof dateVal === 'string' && /^\d+$/.test(dateVal)) dateVal = Number(dateVal);
+      const date = dateVal ? new Date(dateVal) : new Date();
+
+      const transaction = { user: userId, title, amount, type, date };
+
+      if (type === 'transfer') {
+        // Support: from_account/fromAccount/account (source) + to_account/toAccount (dest)
+        const fromName = extractName(
+          source?.from_account, source?.fromAccount, source?.fromAccountName,
+          source?.account, source?.accountName
+        );
+        const toName = extractName(
+          source?.to_account, source?.toAccount, source?.toAccountName
+        );
+        if (!fromName || !toName) { skipped.push(index + 1); continue; }
+
+        const fromAcc = await resolveAccount(fromName, source?.fromAccountType || source?.accountType);
+        const toAcc = await resolveAccount(toName, source?.toAccountType);
+        transaction.from_account = fromAcc._id;
+        transaction.to_account = toAcc._id;
+
+      } else if (type === 'settlement') {
+        const accName = extractName(source?.account, source?.accountName);
+        if (!accName) { skipped.push(index + 1); continue; }
+        transaction.account = (await resolveAccount(accName, source?.accountType))._id;
+
+      } else {
+        // income or expense
+        const accName = extractName(source?.account, source?.accountName);
+        if (!accName) { skipped.push(index + 1); continue; }
+        transaction.account = (await resolveAccount(accName, source?.accountType))._id;
+
+        if (!categoryName) { skipped.push(index + 1); continue; }
+        transaction.category = (await resolveCategory(categoryName, type))._id;
+      }
+
+      inserted.push(transaction);
+    } catch (err) {
+      skipped.push(index + 1);
+    }
+  }
+
+  // 5. Bulk insert all valid transactions
+  if (inserted.length > 0) {
+    await Transaction.insertMany(inserted);
+  }
+
+  return {
+    success: true,
+    insertedTransactions: inserted.length,
+    skippedRows: skipped.length,
+    createdAccounts,
+    createdCategories,
+  };
 };
 
 module.exports = {

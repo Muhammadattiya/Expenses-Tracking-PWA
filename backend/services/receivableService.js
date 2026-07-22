@@ -4,15 +4,26 @@ const Account = require('../models/Account');
 const AppError = require('../utils/AppError');
 
 const Category = require('../models/Category');
-const list = (userId) => Receivable.find({ user: userId }).populate('paidFrom').populate('participants.payments.account').sort({ createdAt: -1 });
+const list = (userId) => Receivable.find({ user: userId }).populate('paidFrom').populate('receivedTo').populate('participants.payments.account').sort({ createdAt: -1 });
 const create = async (userId, data) => {
   const paidAmount = Number(data.paidAmount);
+  const receivedAmount = Number(data.receivedAmount) || 0;
   const account = await Account.findOne({ _id: data.paidFrom, user: userId });
   if (!account || !Number.isFinite(paidAmount) || paidAmount <= 0) throw new AppError('Choose the account and amount you paid.', 400);
-  let category = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
-  if (!category) category = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
-  const expense = await Transaction.create({ user: userId, title: data.title, amount: paidAmount, type: 'expense', account: account._id, category: category._id });
-  return Receivable.create({ user: userId, title: data.title, paidAmount, paidFrom: account._id, expenseTransaction: expense._id, participants: data.participants || [] });
+  if (receivedAmount < 0 || receivedAmount > paidAmount) throw new AppError('Received amount must be between 0 and the paid amount.', 400);
+  let receivedToAccount = null;
+  if (receivedAmount > 0 && data.receivedTo) {
+    receivedToAccount = await Account.findOne({ _id: data.receivedTo, user: userId });
+    if (!receivedToAccount) throw new AppError('Receiving account not found.', 404);
+  }
+  const netExpense = paidAmount - receivedAmount;
+  let expense = null;
+  if (netExpense > 0) {
+    let category = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
+    if (!category) category = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
+    expense = await Transaction.create({ user: userId, title: data.title, amount: netExpense, type: 'expense', account: account._id, category: category._id });
+  }
+  return Receivable.create({ user: userId, title: data.title, paidAmount, paidFrom: account._id, receivedAmount, receivedTo: receivedToAccount?._id || null, expenseTransaction: expense?._id || null, participants: data.participants || [] });
 };
 const recordPayment = async (userId, receivableId, participantId, data) => {
   const receivable = await Receivable.findOne({ _id: receivableId, user: userId });

@@ -8,6 +8,7 @@ import {
   Upload,
   Pencil,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 import {
@@ -28,6 +29,8 @@ import {
   getTransactions,
   importTransactions,
 } from "../api/transactions";
+
+import { deleteAllUserData } from "../api/auth";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
 
@@ -50,6 +53,8 @@ const Settings = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [dataStatus, setDataStatus] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [wipeModalOpen, setWipeModalOpen] = useState(false);
+  const [isWiping, setIsWiping] = useState(false);
 
   const fetchData = async () => {
   try {
@@ -176,6 +181,22 @@ const confirmDelete = async () => {
 }
 };
 
+  const handleWipeData = async () => {
+    setIsWiping(true);
+    try {
+      await deleteAllUserData();
+      setAccounts([]);
+      setCategories([]);
+      setWipeModalOpen(false);
+      setDataStatus('تم مسح جميع البيانات بنجاح.');
+      window.location.reload();
+    } catch (error) {
+      setDataStatus(error.response?.data?.message || 'تعذر مسح البيانات.');
+    } finally {
+      setIsWiping(false);
+    }
+  };
+
   const handleExport = async () => {
   try {
     const data = await getTransactions();
@@ -225,17 +246,47 @@ const confirmDelete = async () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const fileType = file.name.split('.').pop().toLowerCase();
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         setIsImporting(true);
         setDataStatus('جارٍ قراءة واستيراد الملف...');
-        const importedData = JSON.parse(event.target.result);
+        
+        let importedData;
+        if (fileType === 'csv') {
+          const text = event.target.result;
+          const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+          if (lines.length < 2) throw new Error('ملف CSV فارغ أو غير صالح.');
+          
+          const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+          importedData = [];
+          
+          for (let i = 1; i < lines.length; i++) {
+            // Split by comma, ignoring commas inside double quotes
+            const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
+            const obj = {};
+            headers.forEach((header, index) => {
+              // Only assign if the value exists
+              if (values[index] !== undefined) {
+                obj[header] = values[index];
+              }
+            });
+            importedData.push(obj);
+          }
+        } else {
+          // Assume JSON by default
+          importedData = JSON.parse(event.target.result);
+        }
+
         const result = await importTransactions(importedData);
-        setDataStatus(`تم استيراد ${result.insertedTransactions} معاملة. أُضيف ${result.createdAccounts} حساب و${result.createdCategories} فئة عند الحاجة.`);
+        let msg = `تم استيراد ${result.insertedTransactions} معاملة. أُضيف ${result.createdAccounts} حساب و${result.createdCategories} فئة عند الحاجة.`;
+        if (result.skippedRows > 0) msg += ` تم تخطي ${result.skippedRows} صف غير صالح.`;
+        setDataStatus(msg);
         fetchData();
       } catch (error) {
-        setDataStatus(error.response?.data?.message || 'تأكد من أن الملف بصيغة JSON صحيحة.');
+        setDataStatus(error.response?.data?.message || 'تأكد من أن الملف بصيغة صالحة (JSON أو CSV).');
       } finally {
         setIsImporting(false);
         e.target.value = null; 
@@ -258,7 +309,7 @@ const confirmDelete = async () => {
         الإعدادات
       </h2>
 
-      {/* قسم إدارة الحسابات - تم تعديل التصميم للموبايل */}
+      {/* قسم إدارة الحسابات */}
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-400">
           <Wallet className="w-5 h-5" /> إدارة الحسابات
@@ -319,7 +370,7 @@ const confirmDelete = async () => {
 </div>
       </section>
 
-      {/* قسم إدارة الفئات - تم تعديل التصميم للموبايل */}
+      {/* قسم إدارة الفئات */}
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-green-400">
           <Tag className="w-5 h-5" /> إدارة الفئات
@@ -405,7 +456,7 @@ const confirmDelete = async () => {
             <span className="text-sm">تصدير</span>
           </button>
 
-          <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
+          <input type="file" accept=".json,.csv" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
           
           <button onClick={handleImportClick} disabled={isImporting} className="flex-1 flex flex-col items-center justify-center gap-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-4 rounded-2xl hover:bg-purple-500/30 transition-colors disabled:opacity-50">
             <Upload className="w-6 h-6" /> 
@@ -414,6 +465,32 @@ const confirmDelete = async () => {
         </div>
         {dataStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-gray-300">{dataStatus}</p>}
       </section>
+
+      {/* قسم حذف جميع البيانات */}
+      <section className="bg-red-500/5 backdrop-blur-xl border border-red-500/20 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
+        <h3 className="text-lg font-semibold mb-1 text-red-400 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5" /> منطقة الخطر
+        </h3>
+        <p className="text-sm text-gray-400 mb-4">حذف جميع البيانات نهائياً بما في ذلك المعاملات والحسابات والفئات والاستثمارات والمستحقات. لا يمكن التراجع عن هذا الإجراء.</p>
+        <button
+          onClick={() => setWipeModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-4 rounded-2xl hover:bg-red-500/30 transition-colors font-semibold"
+        >
+          <Trash2 className="w-5 h-5" />
+          مسح جميع البيانات
+        </button>
+      </section>
+
+      <ConfirmModal
+        open={wipeModalOpen}
+        title="مسح جميع البيانات"
+        message="هل أنت متأكد من حذف جميع بياناتك؟ سيتم حذف كل المعاملات والحسابات والفئات والاستثمارات والمستحقات نهائياً. لا يمكن التراجع عن هذا الإجراء!"
+        confirmText={isWiping ? <Loader2 className="w-4 h-4 animate-spin" /> : "مسح الكل"}
+        cancelText="إلغاء"
+        confirmColor="red"
+        onConfirm={handleWipeData}
+        onCancel={() => { if (!isWiping) setWipeModalOpen(false); }}
+      />
 
       <ConfirmModal
         open={deleteModalOpen}

@@ -55,10 +55,20 @@ const TransactionCard = ({
             {transaction.title}
           </h3>
 
-          <p className="text-xs text-gray-400">
-            {transaction.type === "transfer"
-              ? `${transaction.from_account?.name || ''} ⟶ ${transaction.to_account?.name || ''}`
-              : transaction.category?.name}
+          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+            {transaction.type === "transfer" ? (
+              <span className="flex items-center gap-1">
+                <span className="bg-white/10 px-2 py-0.5 rounded text-[10px]">{transaction.from_account?.name || 'حساب محذوف'}</span>
+                <span>⟶</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded text-[10px]">{transaction.to_account?.name || 'حساب محذوف'}</span>
+              </span>
+            ) : (
+              <>
+                <span>{transaction.category?.name || 'بدون فئة'}</span>
+                <span className="w-1 h-1 rounded-full bg-gray-500 inline-block"></span>
+                <span className="text-gray-500">{transaction.account?.name || 'حساب محذوف'}</span>
+              </>
+            )}
           </p>
         </div>
 

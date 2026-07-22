@@ -12,6 +12,8 @@ const receivableSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   paidAmount: { type: Number, required: true, min: 0 },
   paidFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
+  receivedAmount: { type: Number, default: 0, min: 0 },
+  receivedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null },
   expenseTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
   participants: { type: [participantSchema], default: [] },
   createdAt: { type: Date, default: Date.now },

@@ -4,4 +4,11 @@
   --color-ios-blue: #007AFF;
 }
 
+body {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 .field { @apply w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-blue-400; }
