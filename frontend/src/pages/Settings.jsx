@@ -119,14 +119,6 @@ const Settings = () => {
     }
   };
 
-  const handleTestNotification = async () => {
-    try {
-      await sendNotification({ title: 'تجربة إشعار', body: 'هذا إشعار تجريبي من مدير المصاريف الخاصة بك!' });
-    } catch(error) {
-      setPushStatus('تعذر إرسال الإشعار التجريبي.');
-    }
-  };
-
   const fetchData = async () => {
     try {
       const [accountsData, categoriesData, transactionsData] = await Promise.all([
@@ -456,18 +448,16 @@ const Settings = () => {
       {activeView === 'notifications' && (
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
         <h3 className="text-lg font-semibold mb-1 text-gray-200">الإشعارات الفورية (Push)</h3>
-        <p className="text-sm text-gray-400 mb-4">احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.</p>
+        <p className="text-sm text-gray-400 mb-6">احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.</p>
         
-        <div className="flex gap-3">
-          <button onClick={handleSubscribe} className="flex-1 flex flex-col items-center justify-center gap-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-3 rounded-2xl hover:bg-blue-500/30 transition-colors">
-            <span className="text-sm font-semibold">تفعيل الإشعارات</span>
-          </button>
-          
-          <button onClick={handleTestNotification} className="flex-1 flex flex-col items-center justify-center gap-1 bg-green-500/20 text-green-400 border border-green-500/30 py-3 rounded-2xl hover:bg-green-500/30 transition-colors">
-            <span className="text-sm font-semibold">إرسال إشعار تجريبي</span>
+        <div className="mb-6">
+          <button onClick={handleSubscribe} className="w-full flex items-center justify-center gap-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-3 rounded-2xl hover:bg-blue-500/30 transition-colors">
+            <Bell className="w-5 h-5" />
+            <span className="text-sm font-semibold">تفعيل استلام الإشعارات على هذا الجهاز</span>
           </button>
         </div>
-        {pushStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-gray-300">{pushStatus}</p>}
+
+        {pushStatus && <p className="mt-4 rounded-xl bg-white/5 p-3 text-sm text-gray-300 text-center">{pushStatus}</p>}
       </section>
       )}
 
