@@ -71,6 +71,8 @@ web_modules/
 .env.example
 .agents
 .env*
+**/.env
+**/.env.*
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
