@@ -51,10 +51,10 @@ export default function PWABadge() {
   };
 
   return (
-    <div className="fixed bottom-24 left-4 z-[60] flex flex-col gap-3">
+    <div className="fixed top-4 left-4 right-4 z-[60] flex flex-col gap-3 max-w-md mx-auto">
       {/* Install Prompt */}
       {showInstallBtn && (
-        <div className="bg-blue-600 text-white px-4 py-3 rounded-2xl shadow-lg border border-blue-500/50 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4">
+        <div className="bg-blue-600 text-white px-4 py-3 rounded-2xl shadow-lg border border-blue-500/50 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
           <div className="flex items-center gap-2">
             <Download className="w-5 h-5" />
             <div className="text-sm">
@@ -81,7 +81,7 @@ export default function PWABadge() {
 
       {/* Update Prompt */}
       {needRefresh && (
-        <div className="bg-zinc-800 text-white px-4 py-3 rounded-2xl shadow-lg border border-zinc-700 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4">
+        <div className="bg-zinc-800 text-white px-4 py-3 rounded-2xl shadow-lg border border-zinc-700 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
           <div className="flex items-center gap-2">
             <RefreshCw className="w-5 h-5 text-amber-400" />
             <div className="text-sm">
