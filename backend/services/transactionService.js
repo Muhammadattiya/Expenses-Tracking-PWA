@@ -9,7 +9,8 @@ const getTransactions = async (userId) => {
     .populate("category")
     .populate("from_account")
     .populate("to_account")
-    .sort({ date: -1 });
+    .sort({ date: -1 })
+    .lean();
 };
 
 const validateReferences = async (userId, data) => {

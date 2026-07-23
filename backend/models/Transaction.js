@@ -10,7 +10,13 @@ const transactionSchema = new mongoose.Schema({
   amount: {
     type: Number,
     required: true,
-    min: 0
+    validate: {
+      validator: function(v) {
+        if (['income', 'expense'].includes(this.type)) return v >= 0;
+        return true;
+      },
+      message: 'Amount must be positive for income and expense.'
+    }
   },
   type: {
     type: String,
@@ -19,6 +25,7 @@ const transactionSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
+    required: true,
     default: Date.now
   },
   // --- حقول الدخل والمصروف ---
@@ -56,5 +63,8 @@ to_account: {
 });
 
 transactionSchema.index({ user: 1, date: -1 });
+// Add composite indexes for common dashboard filters and aggregation
+transactionSchema.index({ user: 1, type: 1, date: -1 });
+transactionSchema.index({ user: 1, account: 1, date: -1 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

@@ -70,7 +70,7 @@ export default function AuthGate({ children }) {
       <section className="w-full max-w-sm rounded-3xl border border-white/10 bg-white/5 p-8">
         <WalletCards className="mx-auto mb-4 text-blue-400" size={42}/>
         <h1 className="text-2xl font-bold">Finova</h1>
-        <p className="my-3 text-sm text-gray-400">سجّل دخولك لحماية حساباتك ومعاملاتك.</p>
+        <p className="my-3 text-sm text-[var(--color-text-muted)]">سجّل دخولك لحماية حساباتك ومعاملاتك.</p>
         
         {clientId ? (
           <div ref={googleBtnRef} className="flex justify-center min-h-[40px]"/>

@@ -4,8 +4,12 @@ import { updateTransaction } from "../../api/transactions";
 import { getAccounts } from "../../api/accounts";
 import { getCategories } from "../../api/categories";
 import ConfirmModal from "./ConfirmModal";
+import { useNotification } from "../../contexts/NotificationContext";
+import CustomSelect from "../ui/CustomSelect";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess }) => {
+  const { t } = useLanguage();
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [account, setAccount] = useState("");
@@ -18,6 +22,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
   const [categories, setCategories] = useState([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const { showToast } = useNotification();
 
   useEffect(() => {
     if (open && transaction) {
@@ -67,7 +72,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
       await updateTransaction(transaction._id, payload);
       onSuccess();
     } catch (error) {
-      alert("حدث خطأ أثناء تعديل المعاملة");
+      showToast(t('modals.editTransactionError', 'حدث خطأ أثناء تعديل المعاملة'), "error");
     } finally {
       setIsUpdating(false);
     }
@@ -77,48 +82,48 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#121214] border border-white/10 rounded-3xl p-6 w-full max-w-sm flex flex-col max-h-[90vh] overflow-y-auto">
+      <div className="bg-[var(--color-surface)] border border-white/10 rounded-3xl p-6 w-full max-w-sm flex flex-col max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">
-            تعديل المعاملة
+          <h3 className="text-xl font-bold text-[var(--color-text-main)]">
+            {t('modals.editTransactionTitle', 'تعديل المعاملة')}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">
             <X size={24} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1 ml-1">المبلغ</label>
+            <label className="block text-sm text-[var(--color-text-muted)] mb-1 ml-1">{t('modals.amountLabel', 'المبلغ')}</label>
             <div className="relative">
               <input
                 type="number"
                 required
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-3 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
               />
-              <span className="absolute left-4 top-3 text-gray-500 font-medium">ج.م</span>
+              <span className="absolute left-4 top-3 text-[var(--color-text-muted)] font-medium">ج.م</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1 ml-1">الوصف</label>
+            <label className="block text-sm text-[var(--color-text-muted)] mb-1 ml-1">{t('modals.descriptionLabel', 'الوصف')}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50"
+              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-3 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1 ml-1">التاريخ</label>
+            <label className="block text-sm text-[var(--color-text-muted)] mb-1 ml-1">{t('modals.dateLabel', 'التاريخ')}</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50"
+              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-3 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
               style={{ colorScheme: 'dark' }}
             />
           </div>
@@ -126,56 +131,43 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
           {transaction.type === 'transfer' ? (
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-sm text-blue-400/80 mb-1 ml-1">من حساب</label>
-                <select
+                <label className="block text-sm text-blue-400/80 mb-1 ml-1">{t('modals.fromAccount', 'من حساب')}</label>
+                <CustomSelect
                   value={fromAccount}
-                  onChange={(e) => setFromAccount(e.target.value)}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-3 text-white focus:outline-none focus:border-blue-500/50 appearance-none text-sm"
-                >
-                  {accounts.map(acc => (
-                    <option key={`from-${acc._id}`} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
-                  ))}
-                </select>
+                  onChange={setFromAccount}
+                  options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                  placeholder={t('modals.selectAccount', 'اختر الحساب')}
+                />
               </div>
               <div className="flex-1">
-                <label className="block text-sm text-green-400/80 mb-1 ml-1">إلى حساب</label>
-                <select
+                <label className="block text-sm text-green-400/80 mb-1 ml-1">{t('modals.toAccount', 'إلى حساب')}</label>
+                <CustomSelect
                   value={toAccount}
-                  onChange={(e) => setToAccount(e.target.value)}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-3 text-white focus:outline-none focus:border-blue-500/50 appearance-none text-sm"
-                >
-                  {accounts.map(acc => (
-                    <option key={`to-${acc._id}`} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
-                  ))}
-                </select>
+                  onChange={setToAccount}
+                  options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                  placeholder={t('modals.selectAccount', 'اختر الحساب')}
+                />
               </div>
             </div>
           ) : (
             <>
               <div>
-                <label className="block text-sm text-gray-400 mb-1 ml-1">الحساب</label>
-                <select
+                <label className="block text-sm text-[var(--color-text-muted)] mb-1 ml-1">{t('modals.accountLabel', 'الحساب')}</label>
+                <CustomSelect
                   value={account}
-                  onChange={(e) => setAccount(e.target.value)}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
-                >
-                  {accounts.map(acc => (
-                    <option key={acc._id} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
-                  ))}
-                </select>
+                  onChange={setAccount}
+                  options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                  placeholder={t('modals.selectAccount', 'اختر الحساب')}
+                />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1 ml-1">الفئة</label>
-                <select
+                <label className="block text-sm text-[var(--color-text-muted)] mb-1 ml-1">{t('modals.categoryLabel', 'الفئة')}</label>
+                <CustomSelect
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
-                >
-                  <option value="" disabled className="bg-[#1c1c1e]">اختر الفئة...</option>
-                  {filteredCategories.map(cat => (
-                    <option key={cat._id} value={cat._id} className="bg-[#1c1c1e]">{cat.name}</option>
-                  ))}
-                </select>
+                  onChange={setCategory}
+                  options={filteredCategories.map(cat => ({ value: cat._id, label: cat.name }))}
+                  placeholder={t('modals.selectCategory', 'اختر الفئة...')}
+                />
               </div>
             </>
           )}
@@ -186,24 +178,24 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
               disabled={isUpdating}
               className="bg-blue-500 w-full py-3.5 flex items-center justify-center rounded-xl text-white font-bold hover:bg-blue-600 transition-colors gap-2"
             >
-              {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5"/> حفظ التعديلات</>}
+              {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5"/> {t('modals.saveChanges', 'حفظ التعديلات')}</>}
             </button>
             <button
               type="button"
               onClick={() => setDeleteConfirmOpen(true)}
               className="bg-red-500/10 border border-red-500/20 w-full py-3 flex items-center justify-center rounded-xl text-red-400 font-bold hover:bg-red-500/20 transition-colors gap-2"
             >
-              <Trash2 className="w-5 h-5" /> مسح المعاملة
+              <Trash2 className="w-5 h-5" /> {t('modals.deleteTransaction', 'مسح المعاملة')}
             </button>
           </div>
         </form>
 
         <ConfirmModal
           open={deleteConfirmOpen}
-          title="مسح المعاملة"
-          message={`هل أنت متأكد من مسح المعاملة "${transaction.title}"؟`}
-          confirmText="نعم، امسحها"
-          cancelText="إلغاء"
+          title={t('modals.deleteTransactionTitle', 'مسح المعاملة')}
+          message={`${t('modals.deleteTransactionConfirm', 'هل أنت متأكد من مسح المعاملة')} "${transaction.title}"؟`}
+          confirmText={t('modals.yesDelete', 'نعم، امسحها')}
+          cancelText={t('modals.cancelBtn', 'إلغاء')}
           confirmColor="red"
           onConfirm={() => {
             setDeleteConfirmOpen(false);

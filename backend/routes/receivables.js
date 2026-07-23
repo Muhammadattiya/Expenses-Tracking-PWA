@@ -1,5 +1,10 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth');
 const controller = require('../controllers/receivableController');
-router.use(auth); router.get('/', controller.list); router.post('/', controller.create); router.post('/:id/participants/:participantId/payments', controller.payment);
+router.use(auth); 
+router.get('/', controller.list); 
+router.post('/', controller.create); 
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
+router.post('/:id/participants/:participantId/payments', controller.payment);
 module.exports = router;

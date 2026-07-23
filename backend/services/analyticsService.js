@@ -6,7 +6,7 @@ const getAnalytics = async (userId, query) => {
   if (query.search) filter.title = { $regex: query.search, $options: 'i' };
   if (query.account) filter.account = query.account;
   if (query.category) filter.category = query.category;
-  const transactions = await Transaction.find(filter).populate('category account').sort({ date: 1 });
+  const transactions = await Transaction.find(filter).populate('category account').sort({ date: 1 }).lean();
   const summary = { income: 0, expense: 0, settlements: 0 };
   const buckets = new Map(); const categories = new Map(); const accounts = new Map(); const heatmap = Array.from({ length: 7 }, (_, day) => ({ day, amount: 0 }));
   for (const transaction of transactions) {

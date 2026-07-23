@@ -1,17 +1,242 @@
-import { useEffect, useState } from 'react';
-import { HandCoins, Plus, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { HandCoins, Plus, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { ListSkeleton } from '../components/ui/Skeletons';
 import { getAccounts } from '../api/accounts';
-import { createReceivable, getReceivables, recordPayment } from '../api/receivables';
+import { createReceivable, getReceivables, recordPayment, updateReceivable, deleteReceivable } from '../api/receivables';
+import CustomSelect from '../components/ui/CustomSelect';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const money = (value) => new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(value || 0);
 export default function Receivables() {
-  const [items, setItems] = useState([]); const [accounts, setAccounts] = useState([]); const [error, setError] = useState(''); const [payment, setPayment] = useState({});
-  const [form, setForm] = useState({ title: '', paidAmount: '', paidFrom: '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] });
-  const load = async () => { const [receivables, accountList] = await Promise.all([getReceivables(), getAccounts()]); setItems(receivables); setAccounts(accountList); setForm((value) => ({ ...value, paidFrom: value.paidFrom || accountList[0]?._id || '', receivedTo: value.receivedTo || '' })); };
-  useEffect(() => { load().catch(() => setError('تعذر تحميل المبالغ المستحقة.')); }, []);
+  const { t, lang } = useLanguage();
+  const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP' }).format(value || 0);
+  const [items, setItems] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [error, setError] = useState('');
+  const [payment, setPayment] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [form, setForm] = useState({ _id: null, title: '', paidAmount: '', paidFrom: '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] });
+
+  const load = async () => {
+    try {
+      const [receivables, accountList] = await Promise.all([getReceivables(), getAccounts()]);
+      setItems(receivables);
+      setAccounts(accountList);
+      setForm((value) => ({ ...value, paidFrom: value.paidFrom || accountList[0]?._id || '', receivedTo: value.receivedTo || '' }));
+    } catch {
+      setError(t('receivables.loadError', 'تعذر تحميل المبالغ المستحقة.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
   const addParticipant = () => setForm({ ...form, participants: [...form.participants, { name: '', owedAmount: '' }] });
-  const netExpense = Math.max(0, (Number(form.paidAmount) || 0) - (Number(form.receivedAmount) || 0));
-  const submit = async (event) => { event.preventDefault(); try { await createReceivable({ ...form, paidAmount: Number(form.paidAmount), receivedAmount: Number(form.receivedAmount) || 0, participants: form.participants.map((p) => ({ ...p, owedAmount: Number(p.owedAmount) })) }); setForm({ title: '', paidAmount: '', paidFrom: accounts[0]?._id || '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] }); await load(); } catch (err) { setError(err.response?.data?.message || 'تعذر حفظ المبلغ المستحق.'); } };
-  const pay = async (item, participant) => { const values = payment[participant._id] || {}; try { await recordPayment(item._id, participant._id, { amount: Number(values.amount), account: values.account }); setPayment({ ...payment, [participant._id]: {} }); await load(); } catch (err) { setError(err.response?.data?.message || 'تعذر تسجيل السداد.'); } };
-  return <div className="space-y-5"><header><p className="text-blue-400 text-sm">تسديدات الأصدقاء لا تُحتسب كدخل</p><h1 className="text-2xl font-bold">المبالغ المستحقة</h1></header><p className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4 text-sm text-blue-100">دفعتك الأصلية تُسجل كمصروف (الفرق بين ما دفعته وما استلمته)، وكل مبلغ تستلمه يُسجل كتسوية على الحساب الذي تحدده.</p><form onSubmit={submit} className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-5"><input required className="field" placeholder="اسم الخروجة أو الفاتورة" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}/>{/* ما دفعته */}<label className="text-xs text-gray-400 block">ما دفعته</label><div className="grid grid-cols-2 gap-2"><input required className="field" type="number" min="1" placeholder="المبلغ اللي دفعته" value={form.paidAmount} onChange={(e) => setForm({ ...form, paidAmount: e.target.value })}/><select required className="field" value={form.paidFrom} onChange={(e) => setForm({ ...form, paidFrom: e.target.value })}>{accounts.map((account) => <option key={account._id} value={account._id}>{account.name}</option>)}</select></div>{/* ما استلمته */}<label className="text-xs text-gray-400 block">ما استلمته (اختياري)</label><div className="grid grid-cols-2 gap-2"><input className="field" type="number" min="0" max={form.paidAmount || undefined} placeholder="المبلغ اللي وصلك" value={form.receivedAmount} onChange={(e) => setForm({ ...form, receivedAmount: e.target.value })}/><select className="field" value={form.receivedTo} onChange={(e) => setForm({ ...form, receivedTo: e.target.value })}><option value="">الحساب المستلم</option>{accounts.map((account) => <option key={account._id} value={account._id}>{account.name}</option>)}</select></div>{Number(form.paidAmount) > 0 && <p className="text-xs text-gray-300 bg-white/5 rounded-xl p-2 text-center">صافي المصروف اللي هيتسجل: <span className="font-bold text-blue-300">{money(netExpense)}</span></p>}{form.participants.map((participant, index) => <div className="grid grid-cols-2 gap-2" key={index}><input required className="field" placeholder="اسم الشخص" value={participant.name} onChange={(e) => setForm({ ...form, participants: form.participants.map((p, i) => i === index ? { ...p, name: e.target.value } : p) })}/><input required className="field" type="number" min="1" placeholder="مستحق عليه" value={participant.owedAmount} onChange={(e) => setForm({ ...form, participants: form.participants.map((p, i) => i === index ? { ...p, owedAmount: e.target.value } : p) })}/></div>)}<button type="button" onClick={addParticipant} className="text-sm text-blue-300">+ إضافة شخص</button><button className="flex w-full justify-center gap-2 rounded-2xl bg-blue-500 py-3 font-bold"><Plus size={18}/> تسجيل الدفعة</button></form>{error && <p className="text-sm text-red-300">{error}</p>}<div className="space-y-3">{items.map((item) => <section key={item._id} className="rounded-2xl border border-white/10 bg-white/5 p-4"><h2 className="font-bold flex gap-2"><HandCoins size={18}/>{item.title}</h2><p className="mt-1 text-xs text-gray-400">دفعت {money(item.paidAmount)} من {item.paidFrom?.name}{item.receivedAmount > 0 && <> · استلمت {money(item.receivedAmount)}{item.receivedTo?.name ? ` على ${item.receivedTo.name}` : ''}</>}</p>{item.paidAmount - (item.receivedAmount || 0) > 0 && <p className="text-xs text-blue-300">صافي المصروف: {money(item.paidAmount - (item.receivedAmount || 0))}</p>}{item.participants.map((participant) => { const left = participant.owedAmount - participant.paidAmount; const values = payment[participant._id] || {}; return <div key={participant._id} className="mt-3 border-t border-white/5 pt-3 text-sm"><div className="flex justify-between"><span>{participant.name}<small className="block text-gray-400">المتبقي {money(left)}</small></span>{left <= 0 && <CheckCircle2 className="text-green-400" size={20}/>}</div>{left > 0 && <div className="mt-2 grid grid-cols-3 gap-2"><input className="field" type="number" max={left} placeholder="المبلغ" value={values.amount || ''} onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, amount: e.target.value } })}/><select className="field" value={values.account || ''} onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, account: e.target.value } })}><option value="">الحساب المستلم</option>{accounts.map((account) => <option key={account._id} value={account._id}>{account.name}</option>)}</select><button onClick={() => pay(item, participant)} className="rounded-xl bg-green-500/15 text-green-300">تحصيل</button></div>}</div>; })}</section>)}</div></div>;
+  const removeParticipant = (index) => setForm({ ...form, participants: form.participants.filter((_, i) => i !== index) });
+
+  const netExpense = Math.max(0, (Number(form.paidAmount) || 0) - (Number(form.receivedAmount) || 0) - form.participants.reduce((sum, p) => sum + (Number(p.owedAmount) || 0), 0));
+
+  const submit = async (event) => {
+    event.preventDefault();
+    try {
+      const data = {
+        ...form,
+        paidAmount: Number(form.paidAmount),
+        receivedAmount: Number(form.receivedAmount) || 0,
+        participants: form.participants.map((p) => ({ ...p, owedAmount: Number(p.owedAmount) }))
+      };
+      
+      if (form._id) {
+        await updateReceivable(form._id, data);
+      } else {
+        await createReceivable(data);
+      }
+      
+      setForm({ _id: null, title: '', paidAmount: '', paidFrom: accounts[0]?._id || '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] });
+      setError('');
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || t('receivables.saveError', 'تعذر حفظ المبلغ المستحق.'));
+    }
+  };
+
+  const pay = async (item, participant) => {
+    const values = payment[participant._id] || {};
+    try {
+      await recordPayment(item._id, participant._id, { amount: Number(values.amount), account: values.account });
+      setPayment({ ...payment, [participant._id]: {} });
+      setError('');
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || t('receivables.paymentError', 'تعذر تسجيل السداد.'));
+    }
+  };
+
+  const editItem = (item) => {
+    setForm({
+      _id: item._id,
+      title: item.title,
+      paidAmount: item.paidAmount,
+      paidFrom: item.paidFrom?._id || '',
+      receivedAmount: item.receivedAmount || '',
+      receivedTo: item.receivedTo?._id || '',
+      participants: item.participants.map(p => ({ _id: p._id, name: p.name, owedAmount: p.owedAmount }))
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const deleteItem = async (id) => {
+    if (!window.confirm(t('receivables.confirmDelete', 'هل أنت متأكد من حذف هذا المبلغ المستحق؟ سيتم التراجع عن المعاملات المرتبطة به.'))) return;
+    try {
+      await deleteReceivable(id);
+      setError('');
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || t('receivables.deleteError', 'تعذر حذف المبلغ.'));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="animate-fade-in p-4 space-y-6">
+        <ListSkeleton count={6} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 pt-8 animate-fade-in space-y-6">
+      <header>
+        <p className="text-brand-blue text-sm">{t('receivables.headerNotice', 'تسديدات الأصدقاء لا تُحتسب كدخل')}</p>
+        <h1 className="text-2xl font-bold">{t('receivables.title', 'المبالغ المستحقة')}</h1>
+      </header>
+      
+      <p className="glass-panel border-brand-blue/30 bg-brand-blue/10 p-4 text-sm text-[var(--color-text-main)] leading-relaxed rounded-[2rem]" dangerouslySetInnerHTML={{__html: t('receivables.infoText', 'المبلغ الذي دفعته سيتم خصمه بالكامل، ولكن <strong>نصيبك الفعلي فقط</strong> سيُسجل كمصروف (الفرق بين ما دفعته، ما استلمته، وما على أصدقائك). المدفوعات المستلمة تعتبر تسوية للحساب بدون التأثير على التقارير.')}}>
+      </p>
+
+      <form onSubmit={submit} className="space-y-4 glass-panel p-6 rounded-[2rem]">
+        <h2 className="text-lg font-bold">{form._id ? t('receivables.editTitle', 'تعديل مبلغ مستحق') : t('receivables.addTitle', 'إضافة مبلغ مستحق')}</h2>
+        
+        <input required className="field text-lg" placeholder={t('receivables.outingName', 'اسم الخروجة أو الفاتورة')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        
+        <label className="text-sm font-medium text-[var(--color-text-main)] block">{t('receivables.totalPaid', 'ما دفعته الإجمالي')}</label>
+        <div className="grid grid-cols-2 gap-3">
+          <input required className="field" type="number" min="1" placeholder={t('receivables.paidAmount', 'المبلغ اللي دفعته')} value={form.paidAmount} onChange={(e) => setForm({ ...form, paidAmount: e.target.value })} />
+          <CustomSelect value={form.paidFrom} onChange={(v) => setForm({ ...form, paidFrom: v })} options={accounts.map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.selectAccount', 'اختر الحساب')} />
+        </div>
+
+        <label className="text-sm font-medium text-[var(--color-text-main)] block pt-2">{t('receivables.receivedImmediately', 'ما استلمته فورا (اختياري)')}</label>
+        <div className="grid grid-cols-2 gap-3">
+          <input className="field" type="number" min="0" max={form.paidAmount || undefined} placeholder={t('receivables.amountReceived', 'المبلغ اللي وصلك')} value={form.receivedAmount} onChange={(e) => setForm({ ...form, receivedAmount: e.target.value })} />
+          <CustomSelect value={form.receivedTo} onChange={(v) => setForm({ ...form, receivedTo: v })} options={accounts.map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
+        </div>
+
+        <div className="space-y-3 pt-4 border-t border-white/10">
+          <label className="text-sm font-medium text-[var(--color-text-main)] block">{t('receivables.friendsOwes', 'مستحقات الأصدقاء')}</label>
+          {form.participants.map((participant, index) => (
+            <div className="flex gap-2" key={index}>
+              <div className="grid grid-cols-2 gap-3 flex-1">
+                <input required className="field" placeholder={t('receivables.personName', 'اسم الشخص')} value={participant.name} onChange={(e) => setForm({ ...form, participants: form.participants.map((p, i) => i === index ? { ...p, name: e.target.value } : p) })} />
+                <input required className="field" type="number" min="1" placeholder={t('receivables.amountOwed', 'مستحق عليه')} value={participant.owedAmount} onChange={(e) => setForm({ ...form, participants: form.participants.map((p, i) => i === index ? { ...p, owedAmount: e.target.value } : p) })} />
+              </div>
+              {form.participants.length > 1 && (
+                <button type="button" onClick={() => removeParticipant(index)} className="p-3 bg-brand-red/10 text-brand-red rounded-xl hover:bg-brand-red/20 transition">
+                  <Trash2 size={20} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        <button type="button" onClick={addParticipant} className="text-sm font-medium text-brand-blue hover:text-brand-blue/80 transition-colors">{t('receivables.addPerson', '+ إضافة شخص آخر')}</button>
+        
+        {Number(form.paidAmount) > 0 && (
+          <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex justify-between items-center mt-2">
+            <span className="text-sm text-[var(--color-text-muted)]">{t('receivables.yourShare', 'نصيبك من المصروف (سيُسجل في التقارير):')}</span>
+            <span className="font-bold text-brand-blue tracking-wide">{money(netExpense)}</span>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <button type="submit" className="flex-1 flex justify-center items-center gap-2 rounded-xl bg-brand-blue py-3.5 font-bold text-[var(--color-text-main)] hover:bg-brand-blue/90 transition">
+            <Plus size={20} /> {form._id ? t('receivables.saveChanges', 'حفظ التعديلات') : t('receivables.recordPaymentBtn', 'تسجيل الدفعة')}
+          </button>
+          {form._id && (
+            <button type="button" onClick={() => setForm({ _id: null, title: '', paidAmount: '', paidFrom: accounts[0]?._id || '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] })} className="px-5 rounded-xl bg-white/10 font-bold text-[var(--color-text-main)] hover:bg-white/20 transition">
+              {t('receivables.cancel', 'إلغاء')}
+            </button>
+          )}
+        </div>
+      </form>
+
+      {error && <p className="text-sm text-brand-red bg-brand-red/10 p-3 rounded-xl border border-brand-red/20">{error}</p>}
+
+      <div className="space-y-4">
+        {items.map((item) => {
+          const actualShare = item.paidAmount - (item.receivedAmount || 0) - item.participants.reduce((s, p) => s + p.owedAmount, 0);
+          return (
+            <section key={item._id} className="glass-panel p-5 rounded-[2rem]">
+              <div className="flex justify-between items-start">
+                <h2 className="font-bold flex gap-2 items-center text-lg">
+                  <HandCoins size={20} className="text-brand-blue" />
+                  {item.title}
+                </h2>
+                <div className="flex gap-2">
+                  <button onClick={() => editItem(item)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-blue transition bg-white/5 rounded-lg"><Pencil size={16}/></button>
+                  <button onClick={() => deleteItem(item._id)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-red transition bg-white/5 rounded-lg"><Trash2 size={16}/></button>
+                </div>
+              </div>
+              
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-[var(--color-text-main)]">
+                  {t('receivables.iPaid', 'دفعت')} {money(item.paidAmount)}
+                </span>
+                {item.receivedAmount > 0 && (
+                  <span className="bg-brand-green/10 border border-brand-green/20 px-2.5 py-1 rounded-lg text-brand-green">
+                    {t('receivables.iReceived', 'استلمت')} {money(item.receivedAmount)} {t('receivables.immediately', 'فورا')}
+                  </span>
+                )}
+                {actualShare > 0 && (
+                  <span className="bg-brand-red/10 border border-brand-red/20 px-2.5 py-1 rounded-lg text-brand-red">
+                    {t('receivables.myShare', 'نصيبك:')} {money(actualShare)}
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-4 space-y-4">
+                {item.participants.map((participant) => {
+                  const left = participant.owedAmount - participant.paidAmount;
+                  const values = payment[participant._id] || {};
+                  
+                  return (
+                    <div key={participant._id} className="border-t border-white/5 pt-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-[var(--color-text-main)]">{participant.name}</span>
+                          <span className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                            {t('receivables.paidPart', 'المدفوع:')} {money(participant.paidAmount)} / {t('receivables.remainingPart', 'المتبقي:')} <strong className="text-[var(--color-text-main)] font-medium">{money(left)}</strong>
+                          </span>
+                        </div>
+                        {left <= 0 && <CheckCircle2 className="text-brand-green" size={24} />}
+                      </div>
+
+                      {left > 0 && (
+                        <div className="mt-3 flex gap-2">
+                          <input className="field w-1/3" type="number" max={left} placeholder={t('receivables.amount', 'المبلغ')} value={values.amount || ''} onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, amount: e.target.value } })} />
+                          <div className="flex-1">
+                            <CustomSelect value={values.account || ''} onChange={(v) => setPayment({ ...payment, [participant._id]: { ...values, account: v } })} options={accounts.map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
+                          </div>
+                          <button onClick={() => pay(item, participant)} className="rounded-xl bg-brand-green/20 text-brand-green font-medium px-4 hover:bg-brand-green/30 transition-colors">{t('receivables.collect', 'تحصيل')}</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

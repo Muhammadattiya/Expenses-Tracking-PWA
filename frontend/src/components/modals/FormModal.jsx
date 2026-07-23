@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const FormModal = ({
   open,
@@ -7,8 +8,8 @@ const FormModal = ({
   icon = null,
   children,
   size = "md",
-  saveText = "حفظ",
-  cancelText = "إلغاء",
+  saveText,
+  cancelText,
   saveColor = "blue",
   loading = false,
   disabled = false,
@@ -17,6 +18,11 @@ const FormModal = ({
   onSave,
   onCancel,
 }) => {
+  const { t } = useLanguage();
+
+  const finalSaveText = saveText || t('modals.save', 'حفظ');
+  const finalCancelText = cancelText || t('modals.cancelBtn', 'إلغاء');
+
   useEffect(() => {
     if (!open || !closeOnEsc) return;
     const h = (e) => {
@@ -47,13 +53,13 @@ const FormModal = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`w-full ${width} max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 bg-white/10 backdrop-blur-2xl shadow-2xl`}
+        className={`w-full ${width} max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 bg-[var(--color-surface)] backdrop-blur-2xl shadow-2xl`}
       >
         <div className="border-b border-white/10 p-6">
-          {icon && <div className="mb-3 text-white">{icon}</div>}
-          <h2 className="text-2xl font-semibold text-white">{title}</h2>
+          {icon && <div className="mb-3 text-[var(--color-text-main)]">{icon}</div>}
+          <h2 className="text-2xl font-semibold text-[var(--color-text-main)]">{title}</h2>
           {subtitle && (
-            <p className="mt-2 text-sm text-gray-300">{subtitle}</p>
+            <p className="mt-2 text-sm text-[var(--color-text-main)]">{subtitle}</p>
           )}
         </div>
 
@@ -66,9 +72,9 @@ const FormModal = ({
             type="button"
             onClick={onCancel}
             disabled={loading || disabled}
-            className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 text-[var(--color-text-main)] transition hover:bg-white/10 disabled:opacity-50"
           >
-            {cancelText}
+            {finalCancelText}
           </button>
 
           <button
@@ -77,7 +83,7 @@ const FormModal = ({
             disabled={loading || disabled}
             className={`flex-1 rounded-2xl py-3 text-white transition disabled:opacity-50 ${color}`}
           >
-            {saveText}
+            {finalSaveText}
           </button>
         </div>
       </div>

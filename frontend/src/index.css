@@ -1,14 +1,75 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ios-blue: #007AFF;
+  --font-sans: 'Outfit', sans-serif;
+  
+  --color-brand-blue: #007AFF;
+  --color-brand-green: #34C759;
+  --color-brand-red: #FF3B30;
+  
+  /* Default (Dark) Midnight theme */
+  --color-background: var(--bg-main);
+  --color-surface: var(--bg-surface);
+  --color-surface-hover: var(--bg-surface-hover);
+  --color-surface-active: var(--bg-surface-active);
+  --color-border: var(--border-glass);
+  
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+
+  --animate-slide-up: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in: fadeIn 0.3s ease-out forwards;
+  --animate-scale-in: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
 }
 
 body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-text-main);
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.field { @apply w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-blue-400; }
+/* Light / Dark Mode Variables */
+:root {
+  /* Default is Dark Mode */
+  --bg-main: #0D0D0D;
+  --bg-surface: rgba(28, 28, 30, 0.6);
+  --bg-surface-hover: rgba(255, 255, 255, 0.06);
+  --bg-surface-active: rgba(255, 255, 255, 0.1);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --text-main: #ffffff;
+  --text-muted: #9ca3af;
+  --text-gold: rgba(253, 230, 138, 0.7); /* amber-200/70 */
+}
+
+html.light {
+  /* Premium Glass Light Mode */
+  --bg-main: #f1f5f9;
+  --bg-surface: rgba(255, 255, 255, 0.85);
+  --bg-surface-hover: rgba(255, 255, 255, 1);
+  --bg-surface-active: rgba(255, 255, 255, 0.95);
+  --border-glass: rgba(15, 23, 42, 0.08);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-gold: #b45309; /* amber-700 */
+}
+
+.field { @apply w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text-main)] outline-none focus:border-brand-blue/50 focus:shadow-md transition-all duration-300; }
+.glass-panel { @apply bg-[var(--color-surface)] backdrop-blur-2xl border border-[var(--color-border)] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-xl; }
