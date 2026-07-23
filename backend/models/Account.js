@@ -27,5 +27,6 @@ const accountSchema = new mongoose.Schema({
 });
 
 accountSchema.index({ user: 1, name: 1 }, { unique: true });
+accountSchema.index({ user: 1, type: 1 });
 
 module.exports = mongoose.model('Account', accountSchema);

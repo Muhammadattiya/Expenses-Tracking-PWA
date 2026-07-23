@@ -38,23 +38,42 @@ registerRoute(
     cacheName: 'api-cache',
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 100,
+        maxEntries: 200,
         maxAgeSeconds: 24 * 60 * 60, // 24 hours
       }),
     ],
   })
 );
 
-// StaleWhileRevalidate for images, fonts, and external assets
+// Fonts cache (Cache First)
 registerRoute(
-  ({ request }) => request.destination === 'image' || request.destination === 'font' || request.destination === 'style',
+  ({ request }) => request.destination === 'font',
+  new StaleWhileRevalidate({
+    cacheName: 'fonts-cache',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+    ],
+  })
+);
+
+// Image cache (Stale While Revalidate)
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new StaleWhileRevalidate({
+    cacheName: 'images-cache',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+    ],
+  })
+);
+
+// CSS and JS cache (Stale While Revalidate)
+registerRoute(
+  ({ request }) => request.destination === 'style' || request.destination === 'script',
   new StaleWhileRevalidate({
     cacheName: 'assets-cache',
     plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-      }),
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
   })
 );
@@ -75,6 +94,16 @@ self.addEventListener('push', (event) => {
       },
     };
     event.waitUntil(self.registration.showNotification(data.title || 'Finova', options));
+    // Send message to all open clients (tabs)
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      clientList.forEach((client) => {
+        client.postMessage({
+          type: 'PUSH_NOTIFICATION',
+          title: data.title || 'Finova',
+          body: data.body || 'لديك إشعار جديد'
+        });
+      });
+    });
   }
 });
 

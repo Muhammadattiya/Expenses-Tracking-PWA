@@ -1,12 +1,13 @@
 import { useEffect } from "react";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const ConfirmModal = ({
   open,
   title,
   message,
   icon = null,
-  confirmText = "تأكيد",
-  cancelText = "إلغاء",
+  confirmText,
+  cancelText,
   confirmColor = "red",
   loading = false,
   disabled = false,
@@ -16,6 +17,11 @@ const ConfirmModal = ({
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useLanguage();
+  
+  const finalConfirmText = confirmText || t('modals.confirm', 'تأكيد');
+  const finalCancelText = cancelText || t('modals.cancelBtn', 'إلغاء');
+
   useEffect(() => {
     if (!open || !closeOnEsc) return;
     const handleKeyDown = (e) => {
@@ -45,23 +51,23 @@ const ConfirmModal = ({
       }}
     >
       <div
-        className={`w-full ${modalWidth} rounded-3xl border border-white/10 bg-white/10 backdrop-blur-2xl p-6 shadow-2xl`}
+        className={`w-full ${modalWidth} rounded-3xl border border-white/10 bg-[var(--color-surface)] backdrop-blur-2xl p-6 shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
-        {icon && <div className="mb-4 flex justify-center text-white">{icon}</div>}
+        {icon && <div className="mb-4 flex justify-center text-[var(--color-text-main)]">{icon}</div>}
 
-        <h2 className="mb-2 text-xl font-semibold text-white">{title}</h2>
+        <h2 className="mb-2 text-xl font-semibold text-[var(--color-text-main)]">{title}</h2>
 
-        <div className="text-sm leading-6 text-gray-300">{message}</div>
+        <div className="text-sm leading-6 text-[var(--color-text-main)]">{message}</div>
 
         <div className="mt-8 flex gap-3">
           <button
             type="button"
             onClick={onCancel}
             disabled={loading || disabled}
-            className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 text-white transition hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-3 text-[var(--color-text-main)] transition hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {cancelText}
+            {finalCancelText}
           </button>
 
           <button
@@ -70,7 +76,7 @@ const ConfirmModal = ({
             disabled={loading || disabled}
             className={`flex-1 rounded-2xl py-3 text-white transition disabled:opacity-50 disabled:cursor-not-allowed ${buttonColor}`}
           >
-            {confirmText}
+            {finalConfirmText}
           </button>
         </div>
       </div>

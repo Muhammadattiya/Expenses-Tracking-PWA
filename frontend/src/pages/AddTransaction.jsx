@@ -1,15 +1,30 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2 } from "lucide-react";
 
 import { getAccounts } from "../api/accounts";
 import { getCategories } from "../api/categories";
 import { createTransaction } from "../api/transactions";
+import CustomDatePicker from "../components/ui/CustomDatePicker";
+import CustomSelect from "../components/ui/CustomSelect";
+import { useNotification } from "../contexts/NotificationContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const AddTransaction = () => {
   // الحالات (States) الأساسية
   const [type, setType] = useState('expense');
   const [amount, setAmount] = useState('');
   const [title, setTitle] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const { showToast } = useNotification();
+  const { t } = useLanguage();
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })();
+
+  const isToday = date === todayStr;
+  const isYesterday = date === yesterdayStr;
+  const isCustom = !isToday && !isYesterday;
   
   // حالات القوائم الديناميكية
   const [accounts, setAccounts] = useState([]);
@@ -64,7 +79,7 @@ const AddTransaction = () => {
       type,
       amount: Number(amount),
       title,
-      date: new Date().toISOString(),
+      date: new Date(date).toISOString(),
     };
 
     if (type === 'transfer') {
@@ -81,10 +96,11 @@ const AddTransaction = () => {
       setAmount('');
       setTitle('');
       setCategory('');
-      alert('تم تسجيل المعاملة بنجاح!');
+      setDate(new Date().toISOString().split('T')[0]);
+      showToast(t('addTransaction.successMsg', 'تم تسجيل المعاملة بنجاح!'), 'success');
     } catch (error) {
       console.error('❌ خطأ في حفظ المعاملة:', error);
-      alert('حدث خطأ أثناء حفظ المعاملة.');
+      showToast(error.response?.data?.message || t('addTransaction.errorMsg', 'حدث خطأ أثناء حفظ المعاملة.'), 'error');
     }
   };
 
@@ -98,143 +114,172 @@ const AddTransaction = () => {
   }
 
   return (
-    <div className="p-4 pt-12 pb-24 min-h-screen text-white bg-[#0a0a0c]">
-      <h2 className="text-2xl font-bold mb-6 text-center tracking-wide text-gray-100">
-        إضافة معاملة
+    <div className="p-4 pt-8 animate-fade-in">
+      <h2 className="text-2xl font-bold mb-8 text-center tracking-wide text-[var(--color-text-main)]">
+        {t('addTransaction.title', 'إضافة معاملة')}
       </h2>
 
       {/* Segmented Control */}
-      <div className="flex bg-black/40 p-1 rounded-2xl mb-8 border border-white/5 shadow-inner">
+      <div className="flex bg-black/10 dark:bg-black/30 p-1.5 rounded-[1.5rem] mb-10 border border-[var(--color-border)] shadow-inner">
         <button
           type="button"
           onClick={() => setType('expense')}
-          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-1 ${
-            type === 'expense' ? 'bg-red-500/20 text-red-400 shadow-md border border-red-500/20' : 'text-gray-400'
+          className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+            type === 'expense' ? 'bg-brand-red text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(255,59,48,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
           }`}
         >
-          <ArrowUp className="h-4 w-4" /> مصروف
+          <ArrowUp className="h-4 w-4" /> {t('addTransaction.expense', 'مصروف')}
         </button>
         <button
           type="button"
           onClick={() => setType('income')}
-          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-1 ${
-            type === 'income' ? 'bg-green-500/20 text-green-400 shadow-md border border-green-500/20' : 'text-gray-400'
+          className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+            type === 'income' ? 'bg-brand-green text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(52,199,89,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
           }`}
         >
-          <ArrowDown className="h-4 w-4" /> دخل
+          <ArrowDown className="h-4 w-4" /> {t('addTransaction.income', 'دخل')}
         </button>
         <button
           type="button"
           onClick={() => setType('transfer')}
-          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-1 ${
-            type === 'transfer' ? 'bg-blue-500/20 text-blue-400 shadow-md border border-blue-500/20' : 'text-gray-400'
+          className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+            type === 'transfer' ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
           }`}
         >
-          <Repeat className="h-4 w-4" /> تحويل
+          <Repeat className="h-4 w-4" /> {t('addTransaction.transfer', 'تحويل')}
         </button>
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleSubmit} className="space-y-5 bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
+      <form onSubmit={handleSubmit} className="space-y-6 glass-panel p-6 rounded-[2rem]">
         
-        <div>
-          <label className="block text-xs text-gray-400 mb-1 ml-1">المبلغ</label>
-          <div className="relative">
+        {/* Massive Amount Input */}
+        <div className="mb-2 flex flex-col items-center justify-center py-4 border-b border-white/5">
+          <label className="text-xs text-[var(--color-text-muted)] font-bold mb-2 uppercase tracking-widest">{t('addTransaction.amount', 'المبلغ')}</label>
+          <div className="flex items-end justify-center gap-2 w-full">
             <input
               type="number"
               required
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white text-lg focus:outline-none focus:border-blue-500/50 transition-colors"
+              placeholder="0"
+              className="bg-transparent text-center text-6xl font-bold text-[var(--color-text-main)] focus:outline-none w-full max-w-[220px] placeholder-gray-800 transition-colors"
+              style={{ caretColor: type === 'expense' ? '#FF3B30' : type === 'income' ? '#34C759' : '#007AFF' }}
             />
-            <span className="absolute left-4 top-3.5 text-gray-500 font-medium">ج.م</span>
+            <span className="text-xl text-[var(--color-text-muted)] font-medium mb-2">{t('nav.currency', 'ج.م')}</span>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs text-gray-400 mb-1 ml-1">الوصف</label>
+          <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.description', 'الوصف')}</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="مثال: غداء، تحويل لكاش..."
-            className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+            placeholder={t('addTransaction.descPlaceholder', 'مثال: غداء، تحويل لكاش...')}
+            className="field"
           />
         </div>
 
+        <div>
+          <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.date', 'التاريخ')}</label>
+          <div className="flex bg-black/10 dark:bg-black/30 p-1.5 rounded-[1.2rem] border border-[var(--color-border)] shadow-inner">
+            <button
+              type="button"
+              onClick={() => setDate(todayStr)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                isToday ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+              }`}
+            >
+              {t('addTransaction.today', 'اليوم')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDate(yesterdayStr)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                isYesterday ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+              }`}
+            >
+              {t('addTransaction.yesterday', 'أمس')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDatePickerOpen(true)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                isCustom ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+              }`}
+            >
+              {isCustom ? date : t('addTransaction.customDate', 'تاريخ')}
+            </button>
+          </div>
+        </div>
+
         {type === 'transfer' ? (
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-xs text-blue-400/80 mb-1 ml-1">من حساب</label>
-              <select
+              <label className="block text-xs font-bold text-brand-blue mb-2 ml-1 tracking-wide">{t('addTransaction.fromAccount', 'من حساب')}</label>
+              <CustomSelect
                 value={fromAccount}
-                onChange={(e) => setFromAccount(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
-              >
-                {accounts.map(acc => (
-                  <option key={`from-${acc._id}`} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
-                ))}
-              </select>
+                onChange={setFromAccount}
+                options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                placeholder={t('addTransaction.fromAccountPlaceholder', 'اختر حساب التحويل')}
+              />
             </div>
             
             <div className="flex-1">
-              <label className="block text-xs text-green-400/80 mb-1 ml-1">إلى حساب</label>
-              <select
+              <label className="block text-xs font-bold text-brand-green mb-2 ml-1 tracking-wide">{t('addTransaction.toAccount', 'إلى حساب')}</label>
+              <CustomSelect
                 value={toAccount}
-                onChange={(e) => setToAccount(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
-              >
-                {accounts.map(acc => (
-                  <option key={`to-${acc._id}`} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
-                ))}
-              </select>
+                onChange={setToAccount}
+                options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                placeholder={t('addTransaction.toAccountPlaceholder', 'اختر حساب الاستلام')}
+              />
             </div>
           </div>
         ) : (
           <>
             <div>
-              <label className="block text-xs text-gray-400 mb-1 ml-1">الحساب</label>
-              <select
+              <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.account', 'الحساب')}</label>
+              <CustomSelect
                 value={account}
-                onChange={(e) => setAccount(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
-              >
-                {accounts.map(acc => (
-                  <option key={acc._id} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
-                ))}
-              </select>
+                onChange={setAccount}
+                options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                placeholder={t('addTransaction.accountPlaceholder', 'اختر الحساب...')}
+              />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1 ml-1">الفئة (Category)</label>
-              <select
-                required
+              <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.category', 'الفئة')}</label>
+              <CustomSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-2xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 appearance-none"
-              >
-                <option value="" disabled className="bg-[#1c1c1e]">اختر الفئة...</option>
-                {categories[type].map(cat => (
-                  <option key={cat._id} value={cat._id} className="bg-[#1c1c1e]">{cat.name}</option>
-                ))}
-              </select>
+                onChange={setCategory}
+                options={categories[type].map(cat => ({ value: cat._id, label: cat.name }))}
+                placeholder={t('addTransaction.categoryPlaceholder', 'اختر الفئة...')}
+              />
             </div>
           </>
         )}
 
         <button
           type="submit"
-          className={`w-full flex items-center justify-center gap-2 py-4 mt-6 rounded-2xl font-bold text-lg shadow-[0_0_20px_rgba(0,0,0,0.2)] transition-all duration-300 ${
-            type === 'expense' ? 'bg-red-500 hover:bg-red-600 text-white' :
-            type === 'income' ? 'bg-green-500 hover:bg-green-600 text-white' :
-            'bg-blue-500 hover:bg-blue-600 text-white'
+          className={`w-full flex items-center justify-center gap-2 py-4 mt-8 rounded-2xl font-bold text-lg shadow-xl transition-all duration-300 active:scale-95 ${
+            type === 'expense' ? 'bg-brand-red hover:bg-red-600 text-[var(--color-text-main)]' :
+            type === 'income' ? 'bg-brand-green hover:bg-green-600 text-[var(--color-text-main)]' :
+            'bg-brand-blue hover:bg-blue-600 text-[var(--color-text-main)]'
           }`}
         >
-          <CheckCircle2 className="h-5 w-5" />
-          تأكيد وحفظ
+          <CheckCircle2 className="h-6 w-6" />
+          {t('addTransaction.submit', 'تأكيد وحفظ')}
         </button>
       </form>
+
+      {isDatePickerOpen && (
+        <CustomDatePicker
+          value={date}
+          onChange={setDate}
+          onClose={() => setIsDatePickerOpen(false)}
+        />
+      )}
     </div>
   );
 };

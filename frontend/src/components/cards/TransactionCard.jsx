@@ -31,15 +31,15 @@ const TransactionCard = ({ transaction, onClick }) => {
   return (
     <div 
       onClick={() => onClick(transaction)}
-      className="bg-white/5 backdrop-blur-md border border-white/5 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-white/10 transition"
+      className="bg-[var(--color-surface)] backdrop-blur-md border border-[var(--color-border)] p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-[var(--color-surface-hover)] active:scale-95 transition-all duration-300 shadow-sm"
     >
       <div className="flex items-center gap-3">
         <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
           <LeftIconToRender className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="font-semibold text-gray-100">{transaction.title}</h3>
-          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+          <h3 className="font-semibold text-[var(--color-text-main)]">{transaction.title}</h3>
+          <p className="text-xs text-[var(--color-text-muted)] mt-1 flex items-center gap-1.5">
             {transaction.type === "transfer" ? (
               <span className="flex items-center gap-1">
                 <span className="bg-white/10 px-2 py-0.5 rounded text-[10px]">{transaction.from_account?.name || 'حساب محذوف'}</span>
@@ -50,7 +50,7 @@ const TransactionCard = ({ transaction, onClick }) => {
               <>
                 <span>{transaction.category?.name || 'بدون فئة'}</span>
                 <span className="w-1 h-1 rounded-full bg-gray-500 inline-block"></span>
-                <span className="text-gray-500">{transaction.account?.name || 'حساب محذوف'}</span>
+                <span className="text-[var(--color-text-muted)]">{transaction.account?.name || 'حساب محذوف'}</span>
               </>
             )}
           </p>
@@ -62,9 +62,9 @@ const TransactionCard = ({ transaction, onClick }) => {
           {sign}{transaction.amount} ج.م
         </div>
         <div className={`p-3 rounded-xl ${
-          transaction.type === 'expense' ? 'bg-red-500/10 text-red-400' :
-          transaction.type === 'income' ? 'bg-green-500/10 text-green-400' :
-          'bg-blue-500/10 text-blue-400'
+          transaction.type === 'expense' ? 'bg-brand-red/10 text-brand-red' :
+          transaction.type === 'income' ? 'bg-brand-green/10 text-brand-green' :
+          'bg-brand-blue/10 text-brand-blue'
         }`}>
           <RightIconToRender className="w-5 h-5" />
         </div>

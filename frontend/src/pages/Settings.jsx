@@ -42,8 +42,15 @@ import { deleteAllUserData } from "../api/auth";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
 import IconPicker, { getIconComponent } from "../components/IconPicker";
+import { useNotification } from "../contexts/NotificationContext";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { Settings as SettingsIcon } from "lucide-react";
 
 const Settings = () => {
+  const { showToast } = useNotification();
+  const { t, lang, setLang } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -97,10 +104,10 @@ const Settings = () => {
 
   const handleSubscribe = async () => {
     try {
-      setPushStatus('جارٍ التفعيل...');
+      setPushStatus(t('settings.pushActivating', 'جارٍ التفعيل...'));
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        throw new Error('لم يتم إعطاء صلاحية الإشعارات');
+        throw new Error(t('settings.pushPermissionDenied', 'لم يتم إعطاء صلاحية الإشعارات'));
       }
       const registration = await navigator.serviceWorker.ready;
       
@@ -112,10 +119,10 @@ const Settings = () => {
       });
       
       await subscribeToNotifications(subscription);
-      setPushStatus('تم تفعيل الإشعارات بنجاح!');
+      setPushStatus(t('settings.pushSuccess', 'تم تفعيل الإشعارات بنجاح!'));
     } catch (error) {
       console.error('Push error:', error);
-      setPushStatus('تعذر تفعيل الإشعارات: ' + error.message);
+      setPushStatus(t('settings.pushError', 'تعذر تفعيل الإشعارات: ') + error.message);
     }
   };
 
@@ -156,7 +163,7 @@ const Settings = () => {
 
   const handleEditBalance = async (account) => {
     const currentBalance = getAccountBalance(account);
-    const newBalanceStr = prompt(`تعديل رصيد حساب "${account.name}"\n\nالرصيد الحالي: ${currentBalance.toLocaleString('ar-EG')} ج.م\n\nأدخل الرصيد الجديد:`, currentBalance);
+    const newBalanceStr = prompt(`${t('settings.editBalanceTitle', 'تعديل رصيد حساب')} "${account.name}"\n\n${t('settings.currentBalance', 'الرصيد الحالي:')} ${currentBalance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${t('settings.egp', 'ج.م')}\n\n${t('settings.enterNewBalance', 'أدخل الرصيد الجديد:')}`, currentBalance);
     
     if (newBalanceStr === null || newBalanceStr.trim() === '') return;
     const newBalance = Number(newBalanceStr);
@@ -170,7 +177,7 @@ const Settings = () => {
       await updateAccount(account._id, { balance_adjustment: newAdjustment });
       await fetchData();
     } catch (error) {
-      alert('حدث خطأ أثناء تعديل الرصيد');
+      showToast(t('settings.balanceUpdateError', 'حدث خطأ أثناء تعديل الرصيد'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -238,7 +245,7 @@ const Settings = () => {
       await fetchData();
       closeEditModal();
     } catch (error) {
-      alert(error.response?.data?.message || "حدث خطأ أثناء التعديل");
+      showToast(error.response?.data?.message || t('settings.editError', 'حدث خطأ أثناء التعديل'), 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -270,7 +277,7 @@ const Settings = () => {
       setSelectedCategory(null);
       setDeleteType(null);
     } catch (error) {
-      alert(error.response?.data?.message || "حدث خطأ أثناء الحذف");
+      showToast(error.response?.data?.message || t('settings.deleteError', 'حدث خطأ أثناء الحذف'), 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -284,10 +291,10 @@ const Settings = () => {
       setCategories([]);
       setTransactions([]);
       setWipeModalOpen(false);
-      setDataStatus('تم مسح جميع البيانات بنجاح.');
+      setDataStatus(t('settings.wipeSuccess', 'تم مسح جميع البيانات بنجاح.'));
       window.location.reload();
     } catch (error) {
-      setDataStatus(error.response?.data?.message || 'تعذر مسح البيانات.');
+      setDataStatus(error.response?.data?.message || t('settings.wipeError', 'تعذر مسح البيانات.'));
     } finally {
       setIsWiping(false);
     }
@@ -323,9 +330,9 @@ const Settings = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      setDataStatus(`تم تصدير ${backup.transactions.length} معاملة بنجاح.`);
+      setDataStatus(t('settings.exportSuccess', 'تم تصدير المعاملات بنجاح.'));
     } catch (error) {
-      setDataStatus(error.response?.data?.message || 'تعذر تصدير البيانات.');
+      setDataStatus(error.response?.data?.message || t('settings.exportError', 'تعذر تصدير البيانات.'));
     }
   };
 
@@ -343,13 +350,13 @@ const Settings = () => {
     reader.onload = async (event) => {
       try {
         setIsImporting(true);
-        setDataStatus('جارٍ قراءة واستيراد الملف...');
+        setDataStatus(t('settings.importReading', 'جارٍ قراءة واستيراد الملف...'));
         
         let importedData;
         if (fileType === 'csv') {
           const text = event.target.result;
           const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-          if (lines.length < 2) throw new Error('ملف CSV فارغ أو غير صالح.');
+          if (lines.length < 2) throw new Error(t('settings.importCsvError', 'ملف CSV فارغ أو غير صالح.'));
           
           const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
           importedData = [];
@@ -369,12 +376,11 @@ const Settings = () => {
         }
 
         const result = await importTransactions(importedData);
-        let msg = `تم استيراد ${result.insertedTransactions} معاملة. أُضيف ${result.createdAccounts} حساب و${result.createdCategories} فئة عند الحاجة.`;
-        if (result.skippedRows > 0) msg += ` تم تخطي ${result.skippedRows} صف غير صالح.`;
+        let msg = t('settings.importSuccessMsg', 'تم استيراد المعاملات بنجاح.');
         setDataStatus(msg);
         fetchData();
       } catch (error) {
-        setDataStatus(error.response?.data?.message || 'تأكد من أن الملف بصيغة صالحة (JSON أو CSV).');
+        setDataStatus(error.response?.data?.message || t('settings.importFormatError', 'تأكد من أن الملف بصيغة صالحة (JSON أو CSV).'));
       } finally {
         setIsImporting(false);
         e.target.value = null; 
@@ -392,79 +398,130 @@ const Settings = () => {
   }
 
   return (
-    <div className="p-4 pt-12 pb-24 min-h-screen text-white bg-[#0a0a0c] space-y-6 relative">
-      <h2 className="text-2xl font-bold text-center tracking-wide text-gray-100 flex items-center justify-center gap-3">
+    <div className="p-4 pt-8 animate-fade-in space-y-6">
+      <h2 className="text-2xl font-bold text-center tracking-wide text-[var(--color-text-main)] flex items-center justify-center gap-3">
         {activeView !== 'main' && (
-          <button onClick={() => setActiveView('main')} className="text-gray-400 hover:text-white p-2">
+          <button onClick={() => setActiveView('main')} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] p-2">
             <ChevronRight className="w-6 h-6" />
           </button>
         )}
-        <span>
-          {activeView === 'main' && 'الإعدادات'}
-          {activeView === 'notifications' && 'الإشعارات'}
-          {activeView === 'accounts' && 'إدارة الحسابات'}
-          {activeView === 'categories' && 'إدارة الفئات'}
-          {activeView === 'data' && 'إدارة البيانات'}
+        <span className="text-[var(--color-text-main)]">
+          {activeView === 'main' && t('nav.settings')}
+          {activeView === 'appSettings' && t('settings.appSettings')}
+          {activeView === 'notifications' && t('settings.pushNotifications')}
+          {activeView === 'accounts' && t('settings.accountManagement')}
+          {activeView === 'categories' && t('settings.categoryManagement')}
+          {activeView === 'data' && t('settings.dataManagement')}
         </span>
         {activeView !== 'main' && <div className="w-10"></div>}
       </h2>
 
       {activeView === 'main' && (
-        <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)] divide-y divide-white/5 overflow-hidden">
-          <button onClick={() => setActiveView('notifications')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
+        <section className="glass-panel rounded-[2rem] divide-y divide-[var(--color-border)] overflow-hidden">
+          <button onClick={() => setActiveView('appSettings')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400"><Bell size={20} /></div>
-              <span className="text-lg font-medium text-gray-200">الإشعارات الفورية</span>
+              <div className="bg-orange-500/20 p-2 rounded-xl text-orange-400"><SettingsIcon size={20} /></div>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.appSettings')}</span>
             </div>
-            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
-          </button>
-          
-          <button onClick={() => setActiveView('accounts')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400"><Wallet size={20} /></div>
-              <span className="text-lg font-medium text-gray-200">إدارة الحسابات</span>
-            </div>
-            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
-          </button>
-          
-          <button onClick={() => setActiveView('categories')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><Tag size={20} /></div>
-              <span className="text-lg font-medium text-gray-200">إدارة الفئات</span>
-            </div>
-            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
+            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
           </button>
 
-          <button onClick={() => setActiveView('data')} className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors">
+          <button onClick={() => setActiveView('notifications')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-brand-blue/20 p-2 rounded-xl text-brand-blue"><Bell size={20} /></div>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.pushNotifications')}</span>
+            </div>
+            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          </button>
+          
+          <button onClick={() => setActiveView('accounts')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-brand-blue/20 p-2 rounded-xl text-brand-blue"><Wallet size={20} /></div>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.accountManagement')}</span>
+            </div>
+            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          </button>
+          
+          <button onClick={() => setActiveView('categories')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-brand-green/20 p-2 rounded-xl text-brand-green"><Tag size={20} /></div>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.categoryManagement')}</span>
+            </div>
+            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          </button>
+
+          <button onClick={() => setActiveView('data')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
             <div className="flex items-center gap-3">
               <div className="bg-purple-500/20 p-2 rounded-xl text-purple-400"><Database size={20} /></div>
-              <span className="text-lg font-medium text-gray-200">إدارة البيانات</span>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.dataManagement')}</span>
             </div>
-            <ChevronRight className="text-gray-500 w-5 h-5 rotate-180" />
+            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
           </button>
         </section>
       )}
 
+      {activeView === 'appSettings' && (
+        <section className="glass-panel rounded-[2rem] p-5">
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-3">
+              <span className="text-[var(--color-text-main)] font-medium text-lg">{t('settings.language')}</span>
+              <div className="flex bg-black/10 dark:bg-black/30 rounded-xl p-1 border border-[var(--color-border)] w-full">
+                <button 
+                  onClick={() => setLang('ar')} 
+                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${lang === 'ar' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                >
+                  {t('settings.arabic', 'العربية')}
+                </button>
+                <button 
+                  onClick={() => setLang('en')} 
+                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${lang === 'en' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                >
+                  {t('settings.english', 'English')}
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <span className="text-[var(--color-text-main)] font-medium text-lg">{t('settings.theme')}</span>
+              <div className="flex bg-black/10 dark:bg-black/30 rounded-xl p-1 border border-[var(--color-border)] w-full">
+                <button 
+                  onClick={() => toggleTheme('dark')} 
+                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${theme === 'dark' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                >
+                  {t('settings.dark', 'Dark')}
+                </button>
+                <button 
+                  onClick={() => toggleTheme('light')} 
+                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${theme === 'light' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                >
+                  {t('settings.light', 'Light')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {activeView === 'notifications' && (
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
-        <h3 className="text-lg font-semibold mb-1 text-gray-200">الإشعارات الفورية (Push)</h3>
-        <p className="text-sm text-gray-400 mb-6">احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.</p>
+      <section className="glass-panel p-6 rounded-[2rem]">
+        <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.pushNotifications', 'الإشعارات الفورية (Push)')}</h3>
+        <p className="text-sm text-[var(--color-text-muted)] mb-6">{t('settings.pushDesc', 'احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.')}</p>
         
         <div className="mb-6">
           <button onClick={handleSubscribe} className="w-full flex items-center justify-center gap-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-3 rounded-2xl hover:bg-blue-500/30 transition-colors">
             <Bell className="w-5 h-5" />
-            <span className="text-sm font-semibold">تفعيل استلام الإشعارات على هذا الجهاز</span>
+            <span className="text-sm font-semibold">{t('settings.pushActivateBtn', 'تفعيل استلام الإشعارات على هذا الجهاز')}</span>
           </button>
         </div>
 
-        {pushStatus && <p className="mt-4 rounded-xl bg-white/5 p-3 text-sm text-gray-300 text-center">{pushStatus}</p>}
+        {pushStatus && <p className="mt-4 rounded-xl bg-white/5 p-3 text-sm text-[var(--color-text-main)] text-center">{pushStatus}</p>}
       </section>
       )}
 
       {activeView === 'accounts' && (
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
+      <section className="glass-panel p-6 rounded-[2rem]">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-400">
-          <Wallet className="w-5 h-5" /> الحسابات
+          <Wallet className="w-5 h-5" /> {t('settings.accountsTitle', 'الحسابات')}
         </h3>
         
         <ul className="divide-y divide-white/5 mb-5">
@@ -476,19 +533,19 @@ const Settings = () => {
                 <AccIcon size={20} />
               </div>
               <div className="flex flex-col flex-1">
-                <span className="text-white font-medium text-lg">{acc.name}</span>
-                <span className="text-xs text-gray-400 capitalize">{acc.type === 'cash' ? 'كاش' : acc.type === 'bank' ? 'بنك' : 'محفظة'}</span>
+                <span className="text-[var(--color-text-main)] font-medium text-lg">{acc.name}</span>
+                <span className="text-xs text-[var(--color-text-muted)] capitalize">{acc.type === 'cash' ? t('settings.cash', 'كاش') : acc.type === 'bank' ? t('settings.bank', 'بنك') : t('settings.wallet', 'محفظة')}</span>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <button onClick={() => handleEditBalance(acc)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition group">
-                  <span className="font-bold text-blue-400 text-lg">{getAccountBalance(acc).toLocaleString('ar-EG')}</span>
-                  <span className="text-xs text-blue-400/70">ج.م</span>
+                  <span className="font-bold text-blue-400 text-lg">{getAccountBalance(acc).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                  <span className="text-xs text-blue-400/70">{t('settings.egp', 'ج.م')}</span>
                   <Pencil size={14} className="text-blue-400 opacity-50 group-hover:opacity-100 transition" />
                 </button>
                 <div className="flex gap-2">
                   <button
                     onClick={() => openEditModal(acc, 'account')}
-                    className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 transition rounded-xl text-gray-400 hover:text-white"
+                    className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 transition rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                   >
                     <Pencil size={16} />
                   </button>
@@ -504,35 +561,35 @@ const Settings = () => {
           )})}
         </ul>
 
-        <form onSubmit={handleAddAccount} className="flex flex-col gap-4">
+        <form onSubmit={handleAddAccount} className="flex flex-col gap-4 mt-6 border-t border-white/10 pt-6">
           <input
             type="text"
             value={newAccountName}
             onChange={(e) => setNewAccountName(e.target.value)}
-            placeholder="اسم الحساب (مثال: كاش، بنك مصر)"
-            className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-blue-500/50"
+            placeholder={t('settings.accountNamePlaceholder', 'اسم الحساب (مثال: كاش، بنك مصر)')}
+            className="field"
           />
           <select
             value={newAccountType}
             onChange={(e) => setNewAccountType(e.target.value)}
-            className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-3 text-sm text-white focus:outline-none focus:border-blue-500/50"
+            className="field"
           >
-            <option value="cash" className="bg-[#1c1c1e]">كاش</option>
-            <option value="bank" className="bg-[#1c1c1e]">بنك</option>
-            <option value="wallet" className="bg-[#1c1c1e]">محفظة</option>
+            <option value="cash" className="bg-[var(--color-surface)]">{t('settings.cash', 'كاش')}</option>
+            <option value="bank" className="bg-[var(--color-surface)]">{t('settings.bank', 'بنك')}</option>
+            <option value="wallet" className="bg-[var(--color-surface)]">{t('settings.wallet', 'محفظة')}</option>
           </select>
           <IconPicker selectedIcon={newAccountIcon} onSelect={setNewAccountIcon} colorClass="text-blue-400" />
-          <button type="submit" className="bg-blue-500 w-full py-3 flex items-center justify-center rounded-xl text-white hover:bg-blue-600 transition-colors gap-2">
-            <Plus className="w-5 h-5" /> إضافة حساب
+          <button type="submit" className="bg-blue-500 w-full py-3 flex items-center justify-center rounded-xl text-[var(--color-text-main)] hover:bg-blue-600 transition-colors gap-2">
+            <Plus className="w-5 h-5" /> {t('settings.addAccountBtn', 'إضافة حساب')}
           </button>
         </form>
       </section>
       )}
 
       {activeView === 'categories' && (
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
+      <section className="glass-panel p-6 rounded-[2rem]">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-400">
-          <Tag className="w-5 h-5" /> الفئات
+          <Tag className="w-5 h-5" /> {t('settings.categoriesTitle', 'الفئات')}
         </h3>
         
         <ul className="divide-y divide-white/5 mb-5">
@@ -547,12 +604,12 @@ const Settings = () => {
               </div>
               <div className="flex flex-col flex-1">
                 <span className={`font-medium text-lg ${cat.type === 'expense' ? 'text-red-300' : 'text-emerald-300'}`}>{cat.name}</span>
-                <span className="text-xs text-gray-400 capitalize">{cat.type === 'expense' ? 'مصروف' : 'دخل'}</span>
+                <span className="text-xs text-[var(--color-text-muted)] capitalize">{cat.type === 'expense' ? t('settings.expense', 'مصروف') : t('settings.income', 'دخل')}</span>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => openEditModal(cat, 'category')}
-                  className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 transition rounded-xl text-gray-400 hover:text-white"
+                  className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 transition rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                 >
                   <Pencil size={16} />
                 </button>
@@ -567,29 +624,29 @@ const Settings = () => {
           )})}
         </ul>
 
-        <form onSubmit={handleAddCategory} className="flex flex-col gap-4">
+        <form onSubmit={handleAddCategory} className="flex flex-col gap-4 mt-6 border-t border-white/10 pt-6">
           <input
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="اسم الفئة (مثال: طعام، فواتير)"
-            className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+            placeholder={t('settings.categoryNamePlaceholder', 'اسم الفئة (مثال: طعام، فواتير)')}
+            className="field"
           />
           <select
             value={newCategoryType}
             onChange={(e) => setNewCategoryType(e.target.value)}
-            className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-3 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+            className="field"
           >
-            <option value="expense" className="bg-[#1c1c1e]">مصروف</option>
-            <option value="income" className="bg-[#1c1c1e]">دخل</option>
+            <option value="expense" className="bg-[var(--color-surface)]">{t('settings.expense', 'مصروف')}</option>
+            <option value="income" className="bg-[var(--color-surface)]">{t('settings.income', 'دخل')}</option>
           </select>
           <IconPicker 
             selectedIcon={newCategoryIcon} 
             onSelect={setNewCategoryIcon} 
             colorClass={newCategoryType === 'expense' ? 'text-red-400' : 'text-emerald-400'} 
           />
-          <button type="submit" className="bg-emerald-500 w-full py-3 flex items-center justify-center rounded-xl text-white hover:bg-emerald-600 transition-colors gap-2">
-            <Plus className="w-5 h-5" /> إضافة فئة
+          <button type="submit" className="bg-emerald-500 w-full py-3 flex items-center justify-center rounded-xl text-[var(--color-text-main)] hover:bg-emerald-600 transition-colors gap-2">
+            <Plus className="w-5 h-5" /> {t('settings.addCategoryBtn', 'إضافة فئة')}
           </button>
         </form>
       </section>
@@ -597,37 +654,37 @@ const Settings = () => {
 
       {activeView === 'data' && (
       <div className="space-y-6">
-        <section className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
-          <h3 className="text-lg font-semibold mb-1 text-gray-200">إدارة البيانات</h3>
-          <p className="text-sm text-gray-400 mb-4">الاستيراد ينشئ الحسابات والفئات الناقصة تلقائيًا ويحفظ كل معاملة في حسابها الصحيح.</p>
+        <section className="glass-panel p-6 rounded-[2rem]">
+          <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.dataManagement', 'إدارة البيانات')}</h3>
+          <p className="text-sm text-[var(--color-text-muted)] mb-4">{t('settings.dataDesc', 'الاستيراد ينشئ الحسابات والفئات الناقصة تلقائيًا ويحفظ كل معاملة في حسابها الصحيح.')}</p>
           
           <div className="flex gap-3">
             <button onClick={handleExport} className="flex-1 flex flex-col items-center justify-center gap-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-4 rounded-2xl hover:bg-blue-500/30 transition-colors">
               <Download className="w-6 h-6" /> 
-              <span className="text-sm">تصدير</span>
+              <span className="text-sm">{t('settings.exportBtn', 'تصدير')}</span>
             </button>
 
             <input type="file" accept=".json,.csv" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
             
             <button onClick={handleImportClick} disabled={isImporting} className="flex-1 flex flex-col items-center justify-center gap-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-4 rounded-2xl hover:bg-purple-500/30 transition-colors disabled:opacity-50">
               <Upload className="w-6 h-6" /> 
-              <span className="text-sm">استيراد</span>
+              <span className="text-sm">{t('settings.importBtn', 'استيراد')}</span>
             </button>
           </div>
-          {dataStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-gray-300">{dataStatus}</p>}
+          {dataStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-[var(--color-text-main)]">{dataStatus}</p>}
         </section>
 
-        <section className="bg-red-500/5 backdrop-blur-xl border border-red-500/20 p-5 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)]">
+        <section className="glass-panel border-brand-red/30 p-6 rounded-[2rem] bg-brand-red/5">
           <h3 className="text-lg font-semibold mb-1 text-red-400 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" /> منطقة الخطر
+            <AlertTriangle className="w-5 h-5" /> {t('settings.dangerZone', 'منطقة الخطر')}
           </h3>
-          <p className="text-sm text-gray-400 mb-4">حذف جميع البيانات نهائياً بما في ذلك المعاملات والحسابات والفئات والاستثمارات والمستحقات. لا يمكن التراجع عن هذا الإجراء.</p>
+          <p className="text-sm text-[var(--color-text-muted)] mb-4">{t('settings.wipeWarning', 'حذف جميع البيانات نهائياً بما في ذلك المعاملات والحسابات والفئات والاستثمارات والمستحقات. لا يمكن التراجع عن هذا الإجراء.')}</p>
           <button
             onClick={() => setWipeModalOpen(true)}
             className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-4 rounded-2xl hover:bg-red-500/30 transition-colors font-semibold"
           >
             <Trash2 className="w-5 h-5" />
-            مسح جميع البيانات
+            {t('settings.wipeBtn', 'مسح جميع البيانات')}
           </button>
         </section>
       </div>
@@ -638,22 +695,22 @@ const Settings = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-[#121214] border border-white/10 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl font-bold text-white">
-                تعديل {editType === 'account' ? 'الحساب' : 'الفئة'}
+              <h3 className="text-xl font-bold text-[var(--color-text-main)]">
+                {editType === 'account' ? t('settings.editAccount', 'تعديل الحساب') : t('settings.editCategory', 'تعديل الفئة')}
               </h3>
-              <button onClick={closeEditModal} className="text-gray-400 hover:text-white">
+              <button onClick={closeEditModal} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">
                 <X size={24} />
               </button>
             </div>
             
             <form onSubmit={submitEdit} className="flex flex-col gap-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">الاسم</label>
+                <label className="block text-sm text-[var(--color-text-muted)] mb-2">{t('settings.nameLabel', 'الاسم')}</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
                   required
                 />
               </div>
@@ -672,7 +729,7 @@ const Settings = () => {
                 disabled={isUpdating}
                 className="bg-blue-500 w-full py-3 flex items-center justify-center rounded-xl text-white hover:bg-blue-600 transition-colors mt-2"
               >
-                {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : "حفظ التعديلات"}
+                {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : t('settings.saveChanges', 'حفظ التعديلات')}
               </button>
             </form>
           </div>
@@ -681,10 +738,10 @@ const Settings = () => {
 
       <ConfirmModal
         open={wipeModalOpen}
-        title="مسح جميع البيانات"
-        message="هل أنت متأكد من حذف جميع بياناتك؟ سيتم حذف كل المعاملات والحسابات والفئات والاستثمارات والمستحقات نهائياً. لا يمكن التراجع عن هذا الإجراء!"
-        confirmText={isWiping ? <Loader2 className="w-4 h-4 animate-spin" /> : "مسح الكل"}
-        cancelText="إلغاء"
+        title={t('settings.wipeBtn', 'مسح جميع البيانات')}
+        message={t('settings.wipeConfirmMsg', 'هل أنت متأكد من حذف جميع بياناتك؟ سيتم حذف كل المعاملات والحسابات والفئات والاستثمارات والمستحقات نهائياً. لا يمكن التراجع عن هذا الإجراء!')}
+        confirmText={isWiping ? <Loader2 className="w-4 h-4 animate-spin" /> : t('settings.wipeAllBtn', 'مسح الكل')}
+        cancelText={t('settings.cancelBtn', 'إلغاء')}
         confirmColor="red"
         onConfirm={handleWipeData}
         onCancel={() => { if (!isWiping) setWipeModalOpen(false); }}
@@ -692,14 +749,14 @@ const Settings = () => {
 
       <ConfirmModal
         open={deleteModalOpen}
-        title={deleteType === "account" ? "حذف الحساب" : "حذف الفئة"}
+        title={deleteType === "account" ? t('settings.deleteAccountTitle', 'حذف الحساب') : t('settings.deleteCategoryTitle', 'حذف الفئة')}
         message={
           deleteType === "account"
-            ? `هل تريد حذف الحساب "${selectedAccount?.name}" ؟`
-            : `هل تريد حذف الفئة "${selectedCategory?.name}" ؟`
+            ? `${t('settings.deleteAccountConfirm', 'هل تريد حذف الحساب')} "${selectedAccount?.name}" ؟`
+            : `${t('settings.deleteCategoryConfirm', 'هل تريد حذف الفئة')} "${selectedCategory?.name}" ؟`
         }
-        confirmText={isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "حذف"}
-        cancelText="إلغاء"
+        confirmText={isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('settings.deleteBtn', 'حذف')}
+        cancelText={t('settings.cancelBtn', 'إلغاء')}
         confirmColor="red"
         onConfirm={confirmDelete}
         onCancel={() => {

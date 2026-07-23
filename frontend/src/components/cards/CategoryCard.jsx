@@ -6,7 +6,7 @@ const CategoryCard = ({
   onDelete,
 }) => {
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+    <div className="bg-[var(--color-surface)] backdrop-blur-md border border-[var(--color-border)] rounded-2xl p-4 flex items-center justify-between shadow-sm hover:bg-[var(--color-surface-hover)] transition-all duration-300">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center">
           <Wallet className="w-5 h-5 text-purple-400" />
@@ -17,7 +17,7 @@ const CategoryCard = ({
             {category.name}
           </h3>
 
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[var(--color-text-muted)]">
             {category.type === "expense" ? "مصروف" : "دخل"}
           </p>
         </div>
@@ -26,16 +26,16 @@ const CategoryCard = ({
       <div className="flex items-center gap-2">
         <button
           onClick={() => onEdit(category)}
-          className="w-9 h-9 rounded-full bg-white/10 border border-white/10 hover:bg-blue-500/20 transition flex items-center justify-center"
+          className="w-9 h-9 rounded-full bg-white/5 border border-[var(--color-border)] hover:bg-brand-blue/20 transition-colors flex items-center justify-center active:scale-95"
         >
-          <Pencil className="w-4 h-4 text-blue-400" />
+          <Pencil className="w-4 h-4 text-brand-blue" />
         </button>
 
         <button
           onClick={() => onDelete(category)}
-          className="w-9 h-9 rounded-full bg-white/10 border border-white/10 hover:bg-red-500/20 transition flex items-center justify-center"
+          className="w-9 h-9 rounded-full bg-white/5 border border-[var(--color-border)] hover:bg-brand-red/20 transition-colors flex items-center justify-center active:scale-95"
         >
-          <Trash2 className="w-4 h-4 text-red-400" />
+          <Trash2 className="w-4 h-4 text-brand-red" />
         </button>
       </div>
     </div>

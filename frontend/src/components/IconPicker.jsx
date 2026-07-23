@@ -13,7 +13,7 @@ const COMMON_ICONS = [
 const IconPicker = ({ selectedIcon, onSelect, colorClass = "text-white" }) => {
   return (
     <div className="w-full">
-      <label className="block text-sm text-gray-400 mb-2">اختر الأيقونة</label>
+      <label className="block text-sm text-[var(--color-text-muted)] mb-2">اختر الأيقونة</label>
       <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-2 bg-black/30 border border-white/10 rounded-xl custom-scrollbar">
         {COMMON_ICONS.map((iconName) => {
           const IconComponent = LucideIcons[iconName];
@@ -29,7 +29,7 @@ const IconPicker = ({ selectedIcon, onSelect, colorClass = "text-white" }) => {
               className={`p-2 rounded-xl flex items-center justify-center transition-all ${
                 isSelected 
                   ? `bg-white/20 border-white/30 shadow-lg ${colorClass}` 
-                  : 'text-gray-500 hover:bg-white/10 hover:text-gray-300 border border-transparent'
+                  : 'text-[var(--color-text-muted)] hover:bg-white/10 hover:text-[var(--color-text-main)] border border-transparent'
               }`}
             >
               <IconComponent size={24} />

@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { ArrowDown, ArrowUp, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
+import { useState, useEffect, useMemo } from 'react';
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft } from "lucide-react";
+import { GroupedVirtuoso } from 'react-virtuoso';
+import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
 import {
     getAccounts,
@@ -11,8 +13,13 @@ import {
 } from "../api/transactions";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
+import CustomSelect from "../components/ui/CustomSelect";
+import { useNotification } from "../contexts/NotificationContext";
+import ConfirmModal from '../components/modals/ConfirmModal';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Dashboard = () => {
+  const { t, lang } = useLanguage();
   const [allTransactions, setAllTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('all');
@@ -25,6 +32,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const { showToast } = useNotification();
 
   const fetchData = async () => {
     try {
@@ -103,6 +111,34 @@ const Dashboard = () => {
     });
   }, [allTransactions, selectedAccount, selectedMonth, accounts]);
 
+  const displayedTransactions = useMemo(() => {
+    return allTransactions.filter(t => {
+      if (selectedAccount !== 'all' && t.account?._id !== selectedAccount && t.from_account?._id !== selectedAccount && t.to_account?._id !== selectedAccount) {
+        return false;
+      }
+      const tDate = new Date(t.date);
+      if (tDate.getMonth() !== selectedMonth.getMonth() || tDate.getFullYear() !== selectedMonth.getFullYear()) {
+        return false;
+      }
+      return true;
+    });
+  }, [allTransactions, selectedAccount, selectedMonth]);
+
+  const { groupedTransactions, sortedDates, groupCounts } = useMemo(() => {
+    const grouped = displayedTransactions.reduce((acc, curr) => {
+      const d = new Date(curr.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(curr);
+      return acc;
+    }, {});
+    
+    const sorted = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+    const counts = sorted.map(date => grouped[date].length);
+    
+    return { groupedTransactions: grouped, sortedDates: sorted, groupCounts: counts };
+  }, [displayedTransactions]);
+
   const handleTransactionClick = (transaction) => {
     setSelectedTransaction(transaction);
     setEditModalOpen(true);
@@ -121,7 +157,7 @@ const Dashboard = () => {
       setEditModalOpen(false);
       setSelectedTransaction(null);
     } catch(error){
-      alert(error.response?.data?.message || "حدث خطأ أثناء الحذف");
+      showToast(error.response?.data?.message || t('common.deleteError', 'حدث خطأ أثناء الحذف'), 'error');
     }
   };
 
@@ -133,131 +169,123 @@ const Dashboard = () => {
     setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
-  // المعاملات اللي هتتعرض في القائمة تحت (بعد الفلترة بالحساب والشهر)
-  const displayedTransactions = allTransactions.filter(t => {
-    // 1. Account Filter
-    if (selectedAccount !== 'all' && t.account?._id !== selectedAccount && t.from_account?._id !== selectedAccount && t.to_account?._id !== selectedAccount) {
-      return false;
-    }
-    // 2. Month Filter
-    const tDate = new Date(t.date);
-    if (tDate.getMonth() !== selectedMonth.getMonth() || tDate.getFullYear() !== selectedMonth.getFullYear()) {
-      return false;
-    }
-    return true;
-  });
-
-  // تجميع المعاملات باليوم
-  const groupedTransactions = displayedTransactions.reduce((acc, curr) => {
-    const d = new Date(curr.date);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(curr);
-    return acc;
-  }, {});
-  
-  const sortedDates = Object.keys(groupedTransactions).sort((a, b) => new Date(b) - new Date(a));
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      <div className="animate-fade-in p-4 space-y-6">
+        <DashboardSummarySkeleton />
+        <ListSkeleton count={10} />
       </div>
     );
   }
-
   return (
-    <div className="p-4 pt-12 pb-24 min-h-screen text-white bg-[#0a0a0c]">
+    <div className="animate-fade-in">
       
       {/* فلتر الحسابات */}
-      <div className="mb-6">
-        <select
+      <div className="mb-8 relative z-50">
+        <CustomSelect
           value={selectedAccount}
-          onChange={(e) => setSelectedAccount(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white font-medium focus:outline-none focus:border-blue-500/50 appearance-none text-center"
-        >
-          <option value="all" className="bg-[#1c1c1e]">جميع الحسابات</option>
-          {accounts.map(acc => (
-            <option key={acc._id} value={acc._id} className="bg-[#1c1c1e]">{acc.name}</option>
-          ))}
-        </select>
+          onChange={setSelectedAccount}
+          options={[
+            { value: 'all', label: t('common.allAccounts', 'جميع الحسابات') },
+            ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
+          ]}
+        />
       </div>
 
       {/* قسم الإحصائيات العلوية */}
-      <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-[0_8px_32px_rgb(0,0,0,0.3)] mb-8">
+      <div className="relative overflow-hidden glass-panel p-7 rounded-[2rem] shadow-2xl mb-8">
+        {/* Glow Effects */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/20 rounded-full blur-[50px] -mr-10 -mt-10 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-[50px] -ml-10 -mb-10 pointer-events-none"></div>
         
-        {/* Month Selector */}
-        <div className="flex justify-between items-center mb-6 bg-white/5 p-2 rounded-2xl border border-white/5">
-          <button onClick={handlePrevMonth} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition">
-            <ChevronRight className="w-5 h-5 text-gray-300" />
-          </button>
-          <span className="text-sm font-bold text-gray-100 tracking-wider">
-            {selectedMonth.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
-          </span>
-          <button onClick={handleNextMonth} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition">
-            <ChevronLeft className="w-5 h-5 text-gray-300" />
-          </button>
-        </div>
-
-        <p className="text-gray-400 text-sm mb-1 text-center">الرصيد المتاح</p>
-        <h1 className="text-4xl font-bold text-center text-white mb-6 tracking-wider">
-          {totals.balance.toLocaleString('ar-EG')} <span className="text-lg text-gray-400">ج.م</span>
-        </h1>
-
-        <div className="flex justify-between gap-4">
-          <div className="flex-1 bg-white/5 rounded-2xl p-4 flex flex-col items-center border border-green-500/10">
-            <div className="bg-green-500/20 p-2 rounded-full mb-2">
-              <ArrowDown className="w-5 h-5 text-green-400" />
-            </div>
-            <p className="text-xs text-gray-400 mb-1">الدخل</p>
-            <p className="font-semibold text-green-400">{totals.income.toLocaleString('ar-EG')}</p>
+        <div className="relative z-10">
+          {/* Month Selector */}
+          <div className="flex justify-between items-center mb-8">
+            <button onClick={handlePrevMonth} className="p-2.5 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-2xl transition-colors backdrop-blur-md">
+              <ChevronRight className={`w-5 h-5 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
+            </button>
+            <span className="text-sm font-bold text-[var(--color-text-main)] tracking-wider">
+              {selectedMonth.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
+            </span>
+            <button onClick={handleNextMonth} className="p-2.5 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-2xl transition-colors backdrop-blur-md">
+              <ChevronLeft className={`w-5 h-5 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
+            </button>
           </div>
 
-          <div className="flex-1 bg-white/5 rounded-2xl p-4 flex flex-col items-center border border-red-500/10">
-            <div className="bg-red-500/20 p-2 rounded-full mb-2">
-              <ArrowUp className="w-5 h-5 text-red-400" />
+          <p className="text-[var(--color-text-muted)] text-sm mb-2 text-center font-medium">{t('nav.totalBalance', 'إجمالي الرصيد')}</p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-center text-[var(--color-text-main)] mb-8 tracking-tight">
+            {totals.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} <span className="text-xl sm:text-2xl text-[var(--color-text-muted)] font-medium tracking-normal">{t('nav.currency', 'ج.م')}</span>
+          </h1>
+
+          <div className="flex justify-between gap-4">
+            <div className="flex-1 bg-[var(--color-surface)] rounded-2xl p-4 flex flex-col items-center border border-[var(--color-border)] backdrop-blur-md">
+              <div className="bg-brand-green/20 p-2 rounded-xl mb-2">
+                <ArrowDown className="w-5 h-5 text-brand-green" />
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] mb-1 font-medium">{t('nav.income', 'الدخل')}</p>
+              <p className="font-bold text-[var(--color-text-main)] text-sm">{totals.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
             </div>
-            <p className="text-xs text-gray-400 mb-1">المصروفات</p>
-            <p className="font-semibold text-red-400">{totals.expense.toLocaleString('ar-EG')}</p>
+
+            <div className="flex-1 bg-[var(--color-surface)] rounded-2xl p-4 flex flex-col items-center border border-[var(--color-border)] backdrop-blur-md">
+              <div className="bg-brand-red/20 p-2 rounded-xl mb-2">
+                <ArrowUp className="w-5 h-5 text-brand-red" />
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] mb-1 font-medium">{t('nav.expense', 'المصروفات')}</p>
+              <p className="font-bold text-[var(--color-text-main)] text-sm">{totals.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* قسم المعاملات بناءً على الفلتر */}
       <div className="mb-4 flex justify-between items-end">
-        <h2 className="text-xl font-bold text-gray-100">
-          {selectedAccount === 'all' ? 'المعاملات' : `معاملات: ${accounts.find(a => a._id === selectedAccount)?.name}`}
+        <h2 className="text-xl font-bold text-[var(--color-text-main)]">
+          {selectedAccount === 'all' ? t('dashboard.transactions', 'المعاملات') : `${t('dashboard.transactionsFor', 'معاملات:')} ${accounts.find(a => a._id === selectedAccount)?.name}`}
         </h2>
       </div>
 
-      <div className="space-y-6">
+      <div className="h-[600px] w-full">
         {displayedTransactions.length === 0 ? (
-          <p className="text-center text-gray-500 py-8 bg-white/5 rounded-3xl border border-white/5">لا توجد معاملات في هذا الشهر</p>
+          <div className="text-center text-[var(--color-text-muted)] py-12 glass-panel rounded-[2rem] font-medium flex flex-col items-center gap-3">
+            <p>{t('dashboard.noTransactions', 'لا توجد معاملات في هذا الشهر')}</p>
+          </div>
         ) : (
-          sortedDates.map(dateKey => {
-            const dateObj = new Date(dateKey);
-            return (
-              <div key={dateKey}>
-                <h3 className="text-gray-400 text-sm font-semibold mb-3 px-2 flex justify-between items-center border-b border-white/10 pb-2">
-                  <span>
-                    {dateObj.toLocaleDateString('ar-EG', { weekday: 'long' })}
-                  </span>
-                  <span>
-                    {dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' })}
-                  </span>
-                </h3>
-                <div className="space-y-3">
-                  {groupedTransactions[dateKey].map(transaction => (
-                    <TransactionCard
-                      key={transaction._id}
-                      transaction={transaction}
-                      onClick={handleTransactionClick}
-                    />
-                  ))}
+          <GroupedVirtuoso
+            groupCounts={groupCounts}
+            className="w-full h-full hide-scrollbar"
+            groupContent={(index) => {
+              const dateKey = sortedDates[index];
+              const dateObj = new Date(dateKey);
+              return (
+                <div className="bg-[var(--color-bg-main)]/90 backdrop-blur-md py-2 z-10 sticky top-0">
+                  <h3 className="text-[var(--color-text-muted)] text-sm font-semibold px-2 flex justify-between items-center border-b border-[var(--color-border)] pb-2">
+                    <span>{dateObj.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long' })}</span>
+                    <span>{dateObj.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'numeric', day: 'numeric' })}</span>
+                  </h3>
                 </div>
-              </div>
-            );
-          })
+              );
+            }}
+            itemContent={(index, groupIndex) => {
+              const dateKey = sortedDates[groupIndex];
+              const transactionsForGroup = groupedTransactions[dateKey];
+              // Calculate the item's index within its group to find it
+              let offset = 0;
+              for(let i=0; i<groupIndex; i++) offset += groupCounts[i];
+              const itemIndexInGroup = index - offset;
+              const transaction = transactionsForGroup[itemIndexInGroup];
+              
+              if (!transaction) return null;
+              
+              return (
+                <div className="pb-3">
+                  <TransactionCard
+                    transaction={transaction}
+                    onClick={handleTransactionClick}
+                  />
+                </div>
+              );
+            }}
+          />
         )}
       </div>
 

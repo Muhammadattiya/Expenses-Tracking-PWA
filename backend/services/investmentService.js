@@ -16,7 +16,7 @@ const getGoldPrice = async () => {
   return { currency: 'EGP', usdToEgp, perGram24, perGram21: perGram24 * (21 / 24), updatedAt: new Date() };
 };
 
-const list = (userId) => Investment.find({ user: userId }).sort({ purchasedAt: -1 });
+const list = (userId) => Investment.find({ user: userId }).sort({ purchasedAt: -1 }).lean();
 const create = (userId, input) => Investment.create({ ...input, user: userId });
 const remove = async (userId, id) => {
   const investment = await Investment.findOneAndDelete({ _id: id, user: userId });

@@ -2,7 +2,7 @@ const Category = require("../models/Category");
 const Transaction = require("../models/Transaction");
 
 const getCategories = async (userId) => {
-  return Category.find({ user: userId }).sort({ type: 1, name: 1 });
+  return Category.find({ user: userId }).sort({ type: 1, name: 1 }).lean();
 };
 
 const createCategory = async (userId, data) => {

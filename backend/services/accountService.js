@@ -2,7 +2,7 @@ const Account = require("../models/Account");
 const Transaction = require("../models/Transaction");
 
 const getAccounts = async (userId) => {
-  return Account.find({ user: userId }).sort({ createdAt: -1 });
+  return Account.find({ user: userId }).sort({ createdAt: -1 }).lean();
 };
 
 const createAccount = async (userId, data) => {
