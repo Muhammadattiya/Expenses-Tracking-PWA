@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const User = require('../models/User');
 const Account = require('../models/Account');
+const Category = require('../models/Category');
 const Transaction = require('../models/Transaction');
 const { parseSms } = require('../services/smsParser');
 const Subscription = require('../models/Subscription');
@@ -42,20 +43,29 @@ exports.handleSmsWebhook = async (req, res) => {
     }
 
     let accountId = null;
-    let status = parsedData.confidence === 'high' ? 'pending_review' : 'needs_manual_review';
 
     // Account matching logic
     if (parsedData.cardLast4) {
       const matchedAccount = await Account.findOne({ user: user._id, cardLast4: parsedData.cardLast4 });
       if (matchedAccount) {
         accountId = matchedAccount._id;
-      } else {
-        // Card number present but no match -> needs manual review
-        status = 'needs_manual_review';
       }
-    } else {
-      // No card number in SMS (e.g. transfer) -> cannot auto-match -> needs manual review
-      status = 'needs_manual_review';
+    }
+    
+    // Fallback Account
+    if (!accountId) {
+      const defaultAccount = await Account.findOne({ user: user._id, isDefault: true }) 
+                             || await Account.findOne({ user: user._id });
+      if (defaultAccount) {
+        accountId = defaultAccount._id;
+      }
+    }
+
+    // Category matching logic (Fallback to first available category of the same type)
+    let categoryId = null;
+    const fallbackCategory = await Category.findOne({ user: user._id, type: parsedData.type });
+    if (fallbackCategory) {
+      categoryId = fallbackCategory._id;
     }
 
     const newTx = await Transaction.create({
@@ -64,7 +74,8 @@ exports.handleSmsWebhook = async (req, res) => {
       amount: parsedData.amount,
       type: parsedData.type,
       account: accountId,
-      status: status,
+      category: categoryId,
+      status: 'completed',
       source: 'sms_shortcut',
       referenceNumber: parsedData.referenceNumber,
       rawSms: smsText,
@@ -94,7 +105,7 @@ exports.handleSmsWebhook = async (req, res) => {
       console.error('Error sending push for SMS webhook', pushErr);
     }
 
-    res.status(200).json({ message: 'Transaction saved', id: newTx._id, status });
+    res.status(200).json({ message: 'Transaction saved', id: newTx._id, status: 'completed' });
 
   } catch (error) {
     console.error('SMS Webhook Error:', error);
