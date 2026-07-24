@@ -14,6 +14,9 @@ const app = express();
 
 app.use(cors());
 
+// Mount SMS Webhook route BEFORE global JSON middleware
+app.use('/api/sms/webhook', require('./routes/smsWebhook'));
+
 app.use(
   express.json({
     limit: "50mb",

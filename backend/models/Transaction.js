@@ -28,6 +28,26 @@ const transactionSchema = new mongoose.Schema({
     required: true,
     default: Date.now
   },
+  status: {
+    type: String,
+    enum: ['completed', 'pending_review', 'needs_manual_review'],
+    default: 'completed'
+  },
+  source: {
+    type: String,
+    enum: ['manual', 'sms_shortcut'],
+    default: 'manual'
+  },
+  referenceNumber: {
+    type: String
+  },
+  rawSms: {
+    type: String
+  },
+  smsHash: {
+    type: String,
+    index: true
+  },
   // --- حقول الدخل والمصروف ---
 account: {
   type: mongoose.Schema.Types.ObjectId,

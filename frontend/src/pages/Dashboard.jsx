@@ -21,6 +21,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 const Dashboard = () => {
   const { t, lang } = useLanguage();
   const [allTransactions, setAllTransactions] = useState([]);
+  const [pendingTransactions, setPendingTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -55,8 +56,13 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    // فلترة المعاملات بناءً على الحساب المختار (لكي نحسب الرصيد الإجمالي)
-    const filtered = allTransactions.filter(t => {
+    // Separate completed from pending
+    const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');
+    const pending = allTransactions.filter(t => t.status === 'pending_review' || t.status === 'needs_manual_review');
+    setPendingTransactions(pending);
+
+    // فلترة المعاملات المكتملة بناءً على الحساب المختار (لكي نحسب الرصيد الإجمالي)
+    const filtered = completedTransactions.filter(t => {
       if (selectedAccount === 'all') return true;
       return t.account?._id === selectedAccount || t.from_account?._id === selectedAccount || t.to_account?._id === selectedAccount;
     });
@@ -112,7 +118,8 @@ const Dashboard = () => {
   }, [allTransactions, selectedAccount, selectedMonth, accounts]);
 
   const displayedTransactions = useMemo(() => {
-    return allTransactions.filter(t => {
+    const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');
+    return completedTransactions.filter(t => {
       if (selectedAccount !== 'all' && t.account?._id !== selectedAccount && t.from_account?._id !== selectedAccount && t.to_account?._id !== selectedAccount) {
         return false;
       }
@@ -238,6 +245,33 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {pendingTransactions.length > 0 && (
+        <div className="mb-6 p-4 rounded-[2rem] border border-orange-500/30 bg-orange-500/10">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-orange-400 font-bold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+              {t('dashboard.pendingReview', 'معاملات قيد المراجعة')} ({pendingTransactions.length})
+            </h3>
+          </div>
+          <div className="flex flex-col gap-2">
+            {pendingTransactions.map(pt => (
+              <div key={pt._id} className="flex justify-between items-center p-3 rounded-xl bg-black/20 border border-white/5">
+                <div>
+                  <p className="font-semibold text-[var(--color-text-main)] text-sm">{pt.title}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{new Date(pt.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')} • {pt.amount} {t('nav.currency', 'ج.م')}</p>
+                </div>
+                <button 
+                  onClick={() => handleTransactionClick(pt)}
+                  className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 text-xs font-semibold hover:bg-orange-500/30 transition-colors"
+                >
+                  {t('dashboard.reviewBtn', 'مراجعة')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* قسم المعاملات بناءً على الفلتر */}
       <div className="mb-4 flex justify-between items-end">
