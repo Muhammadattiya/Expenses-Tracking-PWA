@@ -24,6 +24,11 @@ const accountSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  cardLast4: {
+    type: String,
+    trim: true,
+    match: [/^\d{4}$/, 'Card must be exactly 4 digits']
+  },
   createdAt: {
     type: Date,
     default: Date.now

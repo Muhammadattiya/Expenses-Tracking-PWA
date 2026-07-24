@@ -58,7 +58,8 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
         amount: Number(amount),
         title,
         date: new Date(date).toISOString(),
-        type: transaction.type
+        type: transaction.type,
+        status: 'completed'
       };
 
       if (transaction.type === "transfer") {

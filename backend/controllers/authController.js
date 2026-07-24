@@ -1,5 +1,6 @@
 const authService = require('../services/authService');
 const User = require('../models/User');
+const crypto = require('crypto');
 
 exports.googleSignIn = async (req, res, next) => {
   try { res.json(await authService.googleSignIn(req.body.credential)); } catch (error) { next(error); }
@@ -12,4 +13,14 @@ exports.updateProfile = async (req, res, next) => {
 };
 exports.deleteAllData = async (req, res, next) => {
   try { await authService.deleteAllUserData(req.user.id); res.status(204).end(); } catch (error) { next(error); }
+};
+
+exports.regenerateSmsToken = async (req, res, next) => {
+  try {
+    const token = crypto.randomBytes(32).toString('hex');
+    const user = await User.findByIdAndUpdate(req.user.id, { smsWebhookToken: token }, { new: true });
+    res.json({ token: user.smsWebhookToken });
+  } catch (error) {
+    next(error);
+  }
 };

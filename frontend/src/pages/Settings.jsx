@@ -15,6 +15,9 @@ import {
   Bell,
   Database,
   Star,
+  MessageSquare,
+  Copy,
+  CheckCircle2,
 } from "lucide-react";
 
 import {
@@ -40,6 +43,7 @@ import {
 import { subscribeToNotifications, sendNotification } from "../api/notifications";
 
 import { deleteAllUserData } from "../api/auth";
+import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
 import IconPicker, { getIconComponent } from "../components/IconPicker";
@@ -83,10 +87,16 @@ const Settings = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('');
+  const [editCardLast4, setEditCardLast4] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Push Notifications State
   const [pushStatus, setPushStatus] = useState('');
+
+  // SMS Webhook State
+  const [smsToken, setSmsToken] = useState(null);
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
 
   const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -223,6 +233,7 @@ const Settings = () => {
     setEditingItem(item);
     setEditName(item.name);
     setEditIcon(item.icon || (type === 'account' ? 'Wallet' : 'Tag'));
+    if (type === 'account') setEditCardLast4(item.cardLast4 || '');
     setEditModalOpen(true);
   };
 
@@ -231,6 +242,7 @@ const Settings = () => {
     setEditingItem(null);
     setEditName('');
     setEditIcon('');
+    setEditCardLast4('');
   };
 
   const submitEdit = async (e) => {
@@ -239,7 +251,7 @@ const Settings = () => {
     setIsUpdating(true);
     try {
       if (editType === 'account') {
-        await updateAccount(editingItem._id, { name: editName, icon: editIcon, type: editingItem.type });
+        await updateAccount(editingItem._id, { name: editName, icon: editIcon, type: editingItem.type, cardLast4: editCardLast4 });
       } else {
         await updateCategory(editingItem._id, { name: editName, icon: editIcon, type: editingItem.type });
       }
@@ -435,6 +447,14 @@ const Settings = () => {
             <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
           </button>
           
+          <button onClick={() => setActiveView('sms')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><MessageSquare size={20} /></div>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.smsIntegration', 'ربط الرسائل (SMS)')}</span>
+            </div>
+            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          </button>
+          
           <button onClick={() => setActiveView('accounts')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
             <div className="flex items-center gap-3">
               <div className="bg-brand-blue/20 p-2 rounded-xl text-brand-blue"><Wallet size={20} /></div>
@@ -516,6 +536,60 @@ const Settings = () => {
         </div>
 
         {pushStatus && <p className="mt-4 rounded-xl bg-white/5 p-3 text-sm text-[var(--color-text-main)] text-center">{pushStatus}</p>}
+      </section>
+      )}
+
+      {activeView === 'sms' && (
+      <section className="glass-panel p-6 rounded-[2rem]">
+        <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.smsIntegration', 'ربط الرسائل (SMS)')}</h3>
+        <p className="text-sm text-[var(--color-text-muted)] mb-6">{t('settings.smsDesc', 'استخدم iOS Shortcuts لإرسال الرسائل البنكية تلقائياً إلى التطبيق.')}</p>
+        
+        <div className="mb-6">
+          <button 
+            onClick={async () => {
+              setIsGeneratingToken(true);
+              try {
+                const res = await api.post('/auth/sms-token');
+                setSmsToken(res.data.token);
+              } catch (err) {
+                showToast('حدث خطأ', 'error');
+              } finally {
+                setIsGeneratingToken(false);
+              }
+            }}
+            disabled={isGeneratingToken}
+            className="w-full flex items-center justify-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 rounded-2xl hover:bg-emerald-500/30 transition-colors"
+          >
+            {isGeneratingToken ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageSquare className="w-5 h-5" />}
+            <span className="text-sm font-semibold">{t('settings.generateSmsToken', 'إنشاء / تجديد رابط الربط')}</span>
+          </button>
+        </div>
+
+        {smsToken && (
+          <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
+            <p className="text-sm text-[var(--color-text-muted)] mb-2">الرابط الخاص بك (Webhook URL):</p>
+            <div className="flex gap-2 items-center">
+              <input 
+                type="text" 
+                readOnly 
+                value={`${window.location.origin}/api/sms/webhook/${smsToken}`} 
+                className="field flex-1 text-xs font-mono" 
+                style={{ direction: 'ltr' }}
+              />
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/api/sms/webhook/${smsToken}`);
+                  setCopiedToken(true);
+                  setTimeout(() => setCopiedToken(false), 2000);
+                }}
+                className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+              >
+                {copiedToken ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-xs text-red-400 mt-2 mt-4 text-center">⚠️ لا تشارك هذا الرابط مع أحد، لأنه يمنح صلاحية إضافة معاملات لحسابك.</p>
+          </div>
+        )}
       </section>
       )}
 
@@ -730,6 +804,22 @@ const Settings = () => {
                   required
                 />
               </div>
+
+              {editType === 'account' && (
+                <div>
+                  <label className="block text-sm text-[var(--color-text-muted)] mb-2">{t('settings.cardLast4', 'أخر 4 أرقام من البطاقة (اختياري)')}</label>
+                  <input
+                    type="text"
+                    maxLength="4"
+                    pattern="\d{4}"
+                    value={editCardLast4}
+                    onChange={(e) => setEditCardLast4(e.target.value)}
+                    placeholder="1234"
+                    className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
+                  />
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('settings.cardLast4Desc', 'تستخدم لربط المعاملات الواردة من الرسائل النصية بهذا الحساب تلقائياً.')}</p>
+                </div>
+              )}
 
               <IconPicker 
                 selectedIcon={editIcon} 

@@ -6,8 +6,16 @@ db.version(1).stores({
   transactions: '_id, date, type, account, from_account, to_account',
   accounts: '_id, name, type',
   categories: '_id, name, type',
-  dashboardSummary: 'id', // just store the summary payload under id: 'main'
-  syncQueue: '++id, method, url, data, timestamp' // queue for offline mutations
+  dashboardSummary: 'id',
+  syncQueue: '++id, method, url, data, timestamp'
+});
+
+db.version(2).stores({
+  transactions: '_id, date, type, account, from_account, to_account, status',
+}).upgrade(tx => {
+  return tx.transactions.toCollection().modify(transaction => {
+    transaction.status = transaction.status || 'completed';
+  });
 });
 
 export async function clearOfflineData() {
