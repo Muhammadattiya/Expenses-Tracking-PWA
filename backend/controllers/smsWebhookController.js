@@ -9,10 +9,16 @@ const webpush = require('web-push');
 exports.handleSmsWebhook = async (req, res) => {
   try {
     const { userToken } = req.params;
-    // req.body should be the raw SMS text from the shortcut
-    const smsText = typeof req.body === 'string' ? req.body : req.body.sms || JSON.stringify(req.body);
+    
+    // Extract SMS text. It might be in req.body.text if sent as JSON, or directly in req.body if sent as raw text.
+    let smsText = '';
+    if (typeof req.body === 'object' && req.body !== null) {
+      smsText = req.body.text || req.body.sms || JSON.stringify(req.body);
+    } else if (typeof req.body === 'string') {
+      smsText = req.body;
+    }
 
-    if (!smsText || smsText.trim() === '') {
+    if (!smsText || smsText.trim() === '' || smsText === '{}') {
       return res.status(400).json({ message: 'Empty SMS body' });
     }
 
