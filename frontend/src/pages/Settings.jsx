@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Bell,
   Database,
+  Star,
 } from "lucide-react";
 
 import {
@@ -543,6 +544,21 @@ const Settings = () => {
                   <Pencil size={14} className="text-blue-400 opacity-50 group-hover:opacity-100 transition" />
                 </button>
                 <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (acc.isDefault) return;
+                      try {
+                        await updateAccount(acc._id, { isDefault: true });
+                        fetchData();
+                      } catch (e) {
+                        showToast(t('settings.updateError', 'حدث خطأ'), 'error');
+                      }
+                    }}
+                    className={`p-2 transition rounded-xl border ${acc.isDefault ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10 text-[var(--color-text-muted)] hover:text-yellow-500'}`}
+                    title={t('settings.setAsDefault', 'تعيين كافتراضي')}
+                  >
+                    <Star size={16} fill={acc.isDefault ? "currentColor" : "none"} />
+                  </button>
                   <button
                     onClick={() => openEditModal(acc, 'account')}
                     className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 transition rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"

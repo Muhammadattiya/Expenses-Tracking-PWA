@@ -6,11 +6,18 @@ const getAccounts = async (userId) => {
 };
 
 const createAccount = async (userId, data) => {
+  if (data.isDefault === true) {
+    await Account.updateMany({ user: userId }, { $set: { isDefault: false } });
+  }
   const account = new Account({ ...data, user: userId });
   return await account.save();
 };
 
 const updateAccount = async (userId, id, data) => {
+  if (data.isDefault === true) {
+    await Account.updateMany({ user: userId, _id: { $ne: id } }, { $set: { isDefault: false } });
+  }
+
   const account = await Account.findOneAndUpdate({ _id: id, user: userId }, data, {
     new: true,
     runValidators: true,

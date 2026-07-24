@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
@@ -180,57 +180,59 @@ const Dashboard = () => {
   return (
     <div className="animate-fade-in">
       
-      {/* فلتر الحسابات */}
-      <div className="mb-8 relative z-50">
-        <CustomSelect
-          value={selectedAccount}
-          onChange={setSelectedAccount}
-          options={[
-            { value: 'all', label: t('common.allAccounts', 'جميع الحسابات') },
-            ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
-          ]}
-        />
-      </div>
-
-      {/* قسم الإحصائيات العلوية */}
-      <div className="relative overflow-hidden glass-panel p-7 rounded-[2rem] shadow-2xl mb-8">
+      {/* قسم الإحصائيات العلوية مدمج فيه فلتر الحسابات */}
+      <div className="relative overflow-hidden glass-panel p-5 rounded-[2rem] shadow-xl mb-6">
         {/* Glow Effects */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/20 rounded-full blur-[50px] -mr-10 -mt-10 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-[50px] -ml-10 -mb-10 pointer-events-none"></div>
         
+        {/* Account Selector inside card */}
+        <div className="relative z-50 flex justify-center mb-4">
+          <div className="w-48">
+            <CustomSelect
+              value={selectedAccount}
+              onChange={setSelectedAccount}
+              options={[
+                { value: 'all', label: t('common.allAccounts', 'جميع الحسابات') },
+                ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
+              ]}
+            />
+          </div>
+        </div>
+
         <div className="relative z-10">
           {/* Month Selector */}
-          <div className="flex justify-between items-center mb-8">
-            <button onClick={handlePrevMonth} className="p-2.5 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-2xl transition-colors backdrop-blur-md">
-              <ChevronRight className={`w-5 h-5 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          <div className="flex justify-between items-center mb-4">
+            <button onClick={handlePrevMonth} className="p-2 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-colors backdrop-blur-md">
+              <ChevronRight className={`w-4 h-4 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
             </button>
-            <span className="text-sm font-bold text-[var(--color-text-main)] tracking-wider">
+            <span className="text-xs font-bold text-[var(--color-text-main)] tracking-wider">
               {selectedMonth.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
             </span>
-            <button onClick={handleNextMonth} className="p-2.5 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-2xl transition-colors backdrop-blur-md">
-              <ChevronLeft className={`w-5 h-5 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
+            <button onClick={handleNextMonth} className="p-2 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-colors backdrop-blur-md">
+              <ChevronLeft className={`w-4 h-4 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
             </button>
           </div>
 
-          <p className="text-[var(--color-text-muted)] text-sm mb-2 text-center font-medium">{t('nav.totalBalance', 'إجمالي الرصيد')}</p>
-          <h1 className="text-4xl sm:text-5xl font-bold text-center text-[var(--color-text-main)] mb-8 tracking-tight">
-            {totals.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} <span className="text-xl sm:text-2xl text-[var(--color-text-muted)] font-medium tracking-normal">{t('nav.currency', 'ج.م')}</span>
+          <p className="text-[var(--color-text-muted)] text-xs mb-1 text-center font-medium">{t('nav.totalBalance', 'إجمالي الرصيد')}</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-center text-[var(--color-text-main)] mb-6 tracking-tight">
+            {totals.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} <span className="text-lg sm:text-xl text-[var(--color-text-muted)] font-medium tracking-normal">{t('nav.currency', 'ج.م')}</span>
           </h1>
 
-          <div className="flex justify-between gap-4">
-            <div className="flex-1 bg-[var(--color-surface)] rounded-2xl p-4 flex flex-col items-center border border-[var(--color-border)] backdrop-blur-md">
-              <div className="bg-brand-green/20 p-2 rounded-xl mb-2">
-                <ArrowDown className="w-5 h-5 text-brand-green" />
+          <div className="flex justify-between gap-3">
+            <div className="flex-1 bg-[var(--color-surface)] rounded-xl p-3 flex flex-col items-center border border-[var(--color-border)] backdrop-blur-md">
+              <div className="bg-brand-green/20 p-1.5 rounded-lg mb-1">
+                <ArrowDown className="w-4 h-4 text-brand-green" />
               </div>
-              <p className="text-xs text-[var(--color-text-muted)] mb-1 font-medium">{t('nav.income', 'الدخل')}</p>
+              <p className="text-[10px] text-[var(--color-text-muted)] mb-1 font-medium">{t('nav.income', 'الدخل')}</p>
               <p className="font-bold text-[var(--color-text-main)] text-sm">{totals.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
             </div>
 
-            <div className="flex-1 bg-[var(--color-surface)] rounded-2xl p-4 flex flex-col items-center border border-[var(--color-border)] backdrop-blur-md">
-              <div className="bg-brand-red/20 p-2 rounded-xl mb-2">
-                <ArrowUp className="w-5 h-5 text-brand-red" />
+            <div className="flex-1 bg-[var(--color-surface)] rounded-xl p-3 flex flex-col items-center border border-[var(--color-border)] backdrop-blur-md">
+              <div className="bg-brand-red/20 p-1.5 rounded-lg mb-1">
+                <ArrowUp className="w-4 h-4 text-brand-red" />
               </div>
-              <p className="text-xs text-[var(--color-text-muted)] mb-1 font-medium">{t('nav.expense', 'المصروفات')}</p>
+              <p className="text-[10px] text-[var(--color-text-muted)] mb-1 font-medium">{t('nav.expense', 'المصروفات')}</p>
               <p className="font-bold text-[var(--color-text-main)] text-sm">{totals.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
             </div>
           </div>

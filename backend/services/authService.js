@@ -8,6 +8,33 @@ const Receivable = require('../models/Receivable');
 const AppError = require('../utils/AppError');
 const { adoptLegacyData } = require('./legacyDataService');
 
+const seedDefaultData = async (userId) => {
+  const hasAccounts = await Account.exists({ user: userId });
+  if (!hasAccounts) {
+    await Account.insertMany([
+      { user: userId, name: 'Cash', type: 'cash', icon: 'Wallet', isDefault: true },
+      { user: userId, name: 'Visa', type: 'bank', icon: 'CreditCard' }
+    ]);
+  }
+
+  const hasCategories = await Category.exists({ user: userId });
+  if (!hasCategories) {
+    await Category.insertMany([
+      { user: userId, name: 'Salary', type: 'income', icon: 'Briefcase' },
+      { user: userId, name: 'Bonus', type: 'income', icon: 'Gift' },
+      { user: userId, name: 'Investment', type: 'income', icon: 'TrendingUp' },
+      { user: userId, name: 'Food', type: 'expense', icon: 'Utensils' },
+      { user: userId, name: 'Transport', type: 'expense', icon: 'Bus' },
+      { user: userId, name: 'Bills', type: 'expense', icon: 'FileText' },
+      { user: userId, name: 'Entertainment', type: 'expense', icon: 'Film' },
+      { user: userId, name: 'Health', type: 'expense', icon: 'HeartPulse' },
+      { user: userId, name: 'Shopping', type: 'expense', icon: 'ShoppingBag' },
+      { user: userId, name: 'Education', type: 'expense', icon: 'GraduationCap' },
+      { user: userId, name: 'Other', type: 'expense', icon: 'MoreHorizontal' }
+    ]);
+  }
+};
+
 const signToken = (user) => jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
 const googleSignIn = async (credential) => {
@@ -24,6 +51,7 @@ const googleSignIn = async (credential) => {
     { upsert: true, new: true, runValidators: true },
   );
   await adoptLegacyData(user._id);
+  await seedDefaultData(user._id);
   return { token: signToken(user), user };
 };
 

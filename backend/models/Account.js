@@ -20,6 +20,10 @@ const accountSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  isDefault: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
