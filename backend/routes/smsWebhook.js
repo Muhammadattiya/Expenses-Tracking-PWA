@@ -10,12 +10,12 @@ const smsLimiter = rateLimit({
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 
-// We accept plain text or JSON. Shortcuts usually sends JSON or text depending on how the user sets it up.
-// Using text parser to be safe and flexible.
+// We accept plain text or JSON. 
 router.post(
   '/:userToken',
   smsLimiter,
-  express.text({ type: '*/*', limit: '1kb' }), 
+  express.json({ limit: '5kb' }),
+  express.text({ type: '*/*', limit: '5kb' }), 
   smsWebhookController.handleSmsWebhook
 );
 

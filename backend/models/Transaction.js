@@ -53,6 +53,7 @@ account: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "Account",
   required: function () {
+    if (this.source === 'sms_shortcut') return false;
     return this.type !== "transfer";
   },
 },
@@ -61,6 +62,7 @@ category: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "Category",
   required: function () {
+    if (this.source === 'sms_shortcut') return false;
     return ['income', 'expense'].includes(this.type);
   },
 },
