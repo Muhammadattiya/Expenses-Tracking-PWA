@@ -58,9 +58,11 @@ const AddTransaction = () => {
 
         // تعيين قيم افتراضية للحقول لو في حسابات موجودة
         if (accountsData.length > 0) {
-          setAccount(accountsData[0]._id);
-          setFromAccount(accountsData[0]._id);
-          setToAccount(accountsData.length > 1 ? accountsData[1]._id : accountsData[0]._id);
+          const defaultAcc = accountsData.find(a => a.isDefault) || accountsData[0];
+          setAccount(defaultAcc._id);
+          setFromAccount(defaultAcc._id);
+          const otherAcc = accountsData.find(a => a._id !== defaultAcc._id) || defaultAcc;
+          setToAccount(otherAcc._id);
         }
       } catch (error) {
         console.error('❌ خطأ في جلب البيانات:', error);
