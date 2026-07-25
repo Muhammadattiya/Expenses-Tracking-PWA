@@ -42,9 +42,8 @@ exports.handleSmsWebhook = async (req, res) => {
       return res.status(200).json({ message: 'Ignored: not a recognized financial transaction' });
     }
 
+    // Account matching by cardLast4
     let accountId = null;
-
-    // Account matching logic
     if (parsedData.cardLast4) {
       const matchedAccount = await Account.findOne({ user: user._id, cardLast4: parsedData.cardLast4 });
       if (matchedAccount) {
@@ -52,30 +51,17 @@ exports.handleSmsWebhook = async (req, res) => {
       }
     }
     
-    // Fallback Account
-    if (!accountId) {
-      const defaultAccount = await Account.findOne({ user: user._id, isDefault: true }) 
-                             || await Account.findOne({ user: user._id });
-      if (defaultAccount) {
-        accountId = defaultAccount._id;
-      }
-    }
-
-    // Category matching logic (Fallback to first available category of the same type)
-    let categoryId = null;
-    const fallbackCategory = await Category.findOne({ user: user._id, type: parsedData.type });
-    if (fallbackCategory) {
-      categoryId = fallbackCategory._id;
-    }
+    // Category is always null, requiring manual review
+    const categoryId = null;
 
     const newTx = await Transaction.create({
       user: user._id,
-      title: parsedData.merchant || 'SMS Transaction',
+      title: parsedData.merchant || 'معاملة SMS (تحتاج مراجعة)',
       amount: parsedData.amount,
       type: parsedData.type,
       account: accountId,
       category: categoryId,
-      status: 'completed',
+      status: 'needs_manual_review',
       source: 'sms_shortcut',
       referenceNumber: parsedData.referenceNumber,
       rawSms: smsText,
@@ -105,7 +91,7 @@ exports.handleSmsWebhook = async (req, res) => {
       console.error('Error sending push for SMS webhook', pushErr);
     }
 
-    res.status(200).json({ message: 'Transaction saved', id: newTx._id, status: 'completed' });
+    res.status(200).json({ message: 'Transaction saved', id: newTx._id, status: 'needs_manual_review' });
 
   } catch (error) {
     console.error('SMS Webhook Error:', error);
