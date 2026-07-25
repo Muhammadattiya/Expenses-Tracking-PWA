@@ -206,7 +206,12 @@ export default {
     deleteBtn: 'Delete',
     cancelBtn: 'Cancel',
     wipeConfirmMsg: 'Are you sure you want to wipe all your data? All transactions, accounts, categories, investments, and receivables will be permanently deleted. This cannot be undone!',
-    wipeAllBtn: 'Wipe All'
+    wipeAllBtn: 'Wipe All',
+    smsIntegration: 'Setup auto-logging',
+    smsDesc: 'Use iOS Shortcuts to automatically forward bank SMS messages to the app.',
+    webhookUrlLabel: 'Your Webhook URL',
+    webhookWarning: 'WARNING: Never share this URL with anyone. Having this URL grants permission to add financial transactions directly to your account.',
+    shortcutsGuideTitle: 'iOS Shortcuts Setup Guide'
   },
   profile: {
     imageSizeError: 'Choose an image smaller than 3MB.',

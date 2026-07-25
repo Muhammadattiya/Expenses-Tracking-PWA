@@ -15,6 +15,7 @@
     "axios-retry": "^4.5.0",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^1.25.0",
     "papaparse": "^5.5.4",
     "react": "^19.2.7",
