@@ -82,9 +82,9 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
   const filteredCategories = categories.filter(c => c.type === transaction.type);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-[var(--color-surface)] border border-white/10 rounded-3xl p-6 w-full max-w-sm flex flex-col max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-24 bg-black/60 backdrop-blur-sm">
+      <div className="bg-[var(--color-surface)] border border-white/10 rounded-3xl p-5 w-full max-w-sm flex flex-col max-h-[80vh] overflow-y-auto scrollbar-hide">
+        <div className="flex justify-between items-center mb-3">
           <h3 className="text-xl font-bold text-[var(--color-text-main)]">
             {t('modals.editTransactionTitle', 'تعديل المعاملة')}
           </h3>
@@ -102,7 +102,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 required
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-3 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-2.5 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
               />
               <span className="absolute left-4 top-3 text-[var(--color-text-muted)] font-medium">ج.م</span>
             </div>
@@ -114,7 +114,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-3 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
+              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-2.5 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
             />
           </div>
 
@@ -124,7 +124,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-3 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
+              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-2.5 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
               style={{ colorScheme: 'dark' }}
             />
           </div>
@@ -177,7 +177,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
             <button
               type="submit"
               disabled={isUpdating}
-              className="bg-blue-500 w-full py-3.5 flex items-center justify-center rounded-xl text-white font-bold hover:bg-blue-600 transition-colors gap-2"
+              className="bg-blue-500 w-full py-3 flex items-center justify-center rounded-xl text-white font-bold hover:bg-blue-600 transition-colors gap-2"
             >
               {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5"/> {t('modals.saveChanges', 'حفظ التعديلات')}</>}
             </button>

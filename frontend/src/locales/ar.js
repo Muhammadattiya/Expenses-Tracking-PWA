@@ -206,7 +206,12 @@ export default {
     deleteBtn: 'حذف',
     cancelBtn: 'إلغاء',
     wipeConfirmMsg: 'هل أنت متأكد من حذف جميع بياناتك؟ سيتم حذف كل المعاملات والحسابات والفئات والاستثمارات والمستحقات نهائياً. لا يمكن التراجع عن هذا الإجراء!',
-    wipeAllBtn: 'مسح الكل'
+    wipeAllBtn: 'مسح الكل',
+    smsIntegration: 'إعداد التسجيل التلقائي (Auto-logging)',
+    smsDesc: 'استخدم iOS Shortcuts لإرسال الرسائل البنكية تلقائياً إلى التطبيق.',
+    webhookUrlLabel: 'الرابط الخاص بك (Webhook URL)',
+    webhookWarning: 'تحذير: لا تشارك هذا الرابط مع أي شخص أبداً. امتلاك هذا الرابط يمنح صلاحية إضافة معاملات مالية مباشرة إلى حسابك.',
+    shortcutsGuideTitle: 'خطوات إعداد iOS Shortcuts'
   },
   profile: {
     imageSizeError: 'اختر صورة بحجم أقل من 3MB.',

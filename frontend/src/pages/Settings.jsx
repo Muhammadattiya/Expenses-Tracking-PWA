@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Copy,
   CheckCircle2,
+  Link2,
 } from "lucide-react";
 
 import {
@@ -455,7 +456,7 @@ const Settings = () => {
           <button onClick={() => setActiveView('sms')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><MessageSquare size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.smsIntegration', 'ربط الرسائل (SMS)')}</span>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.smsIntegration')}</span>
             </div>
             <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
           </button>
@@ -546,35 +547,88 @@ const Settings = () => {
 
       {activeView === 'sms' && (
       <section className="glass-panel p-6 rounded-[2rem]">
-        <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.smsIntegration', 'ربط الرسائل (SMS)')}</h3>
-        <p className="text-sm text-[var(--color-text-muted)] mb-6">{t('settings.smsDesc', 'استخدم iOS Shortcuts لإرسال الرسائل البنكية تلقائياً إلى التطبيق.')}</p>
+        <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.smsIntegration')}</h3>
+        <p className="text-sm text-[var(--color-text-muted)] mb-6">{t('settings.smsDesc')}</p>
         
         {smsToken ? (
-          <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
-            <p className="text-sm text-[var(--color-text-muted)] mb-2">الرابط الخاص بك (Webhook URL):</p>
-            <div className="flex gap-2 items-center">
-              <input 
-                type="text" 
-                readOnly 
-                value={`${window.location.origin}/api/sms/webhook/${smsToken}`} 
-                className="field flex-1 text-xs font-mono" 
-                style={{ direction: 'ltr' }}
-              />
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/api/sms/webhook/${smsToken}`);
-                  setCopiedToken(true);
-                  setTimeout(() => setCopiedToken(false), 2000);
-                }}
-                className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
-              >
-                {copiedToken ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-              </button>
+          <div className="mt-4 flex flex-col gap-4">
+            <div className="glass-panel p-5 rounded-2xl border border-white/5 bg-white/5 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10 flex flex-col gap-3">
+                <label className="text-xs font-medium text-[var(--color-text-muted)] flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-emerald-400" /> 
+                  {t('settings.webhookUrlLabel')}
+                </label>
+                
+                <div className="flex gap-2 items-center bg-black/40 p-1.5 rounded-xl border border-white/5">
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={`https://finova-zzr7.onrender.com/api/sms/webhook/${smsToken}`} 
+                    className="flex-1 bg-transparent text-xs font-mono text-[var(--color-text-main)] outline-none px-3 py-2 w-full" 
+                    style={{ direction: 'ltr' }}
+                  />
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://finova-zzr7.onrender.com/api/sms/webhook/${smsToken}`);
+                      setCopiedToken(true);
+                      setTimeout(() => setCopiedToken(false), 2000);
+                    }}
+                    className={`p-2.5 rounded-lg transition-all duration-300 ${copiedToken ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-white/5 text-[var(--color-text-muted)] hover:bg-white/10 hover:text-emerald-400'}`}
+                  >
+                    {copiedToken ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-red-400 mt-2 mt-4 text-center">⚠️ لا تشارك هذا الرابط مع أحد، لأنه يمنح صلاحية إضافة معاملات لحسابك.</p>
+            
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <p className="text-xs leading-relaxed text-red-400/90 font-medium">
+                {t('settings.webhookWarning')}
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+              <h4 className="text-sm font-semibold text-emerald-400 border-b border-white/10 pb-3 flex items-center gap-2">
+                <SettingsIcon className="w-4 h-4" />
+                {t('settings.shortcutsGuideTitle')}
+              </h4>
+              
+              {lang === 'ar' ? (
+                <ol className="list-decimal list-inside text-[13px] text-[var(--color-text-muted)] flex flex-col gap-4 font-medium leading-relaxed">
+                  <li>افتح تطبيق <strong>Shortcuts</strong> في الآيفون واختر تبويب <strong>Automation</strong> من الأسفل.</li>
+                  <li>اضغط على <strong>+</strong> ثم اختر <strong>Create Personal Automation</strong> (أو New Automation).</li>
+                  <li>ابحث واختر <strong>Message</strong>.</li>
+                  <li>في حقل <strong>Sender</strong>، أدخل اسم البنك الخاص بك (مثلاً: NBE أو CIB). واجعل خيار التنفيذ <strong>Run Immediately</strong> ثم اضغط <strong>Next</strong>.</li>
+                  <li>اختر <strong>New Blank Automation</strong> ثم <strong>Add Action</strong>.</li>
+                  <li>ابحث عن <strong>Get Contents of URL</strong> واختاره.</li>
+                  <li>في حقل الرابط، الصق الرابط (Webhook URL) المنسوخ بالكامل من الأعلى.</li>
+                  <li>اضغط على السهم بجانب الرابط لفتح التفاصيل (Show More)، وغيّر الـ <strong>Method</strong> إلى <strong>POST</strong>.</li>
+                  <li>في قسم الـ <strong>Headers</strong>، أضف Header جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">Content-Type</span> والـ Text هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">application/json</span>.</li>
+                  <li>في قسم الـ <strong>Request Body</strong>، اختر <strong>JSON</strong>، وأضف حقل جديد نوعه <strong>Text</strong>: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">text</span> والـ Text اضغط عليه واختر المتغير <strong>Shortcut Input</strong>.</li>
+                  <li>اضغط <strong>Done</strong>. الآن أي رسالة بنكية ستُسجل تلقائياً في حسابك!</li>
+                </ol>
+              ) : (
+                <ol className="list-decimal list-inside text-[13px] text-[var(--color-text-muted)] flex flex-col gap-4 font-medium leading-relaxed">
+                  <li>Open the <strong>Shortcuts</strong> app on your iPhone and select the <strong>Automation</strong> tab at the bottom.</li>
+                  <li>Tap <strong>+</strong> then choose <strong>Create Personal Automation</strong> (or New Automation).</li>
+                  <li>Search for and select <strong>Message</strong>.</li>
+                  <li>In the <strong>Sender</strong> field, enter your bank's name (e.g., NBE or CIB). Set execution to <strong>Run Immediately</strong> and tap <strong>Next</strong>.</li>
+                  <li>Select <strong>New Blank Automation</strong> then <strong>Add Action</strong>.</li>
+                  <li>Search for <strong>Get Contents of URL</strong> and select it.</li>
+                  <li>In the URL field, paste your copied Webhook URL completely.</li>
+                  <li>Tap the arrow next to the URL (Show More) and change the <strong>Method</strong> to <strong>POST</strong>.</li>
+                  <li>In the <strong>Headers</strong> section, add a new Header: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">Content-Type</span> and Text is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">application/json</span>.</li>
+                  <li>In the <strong>Request Body</strong> section, choose <strong>JSON</strong>, and add a new <strong>Text</strong> field: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">text</span> and for Text tap it and select the <strong>Shortcut Input</strong> variable.</li>
+                  <li>Tap <strong>Done</strong>. Now any bank SMS will be logged automatically to your account!</li>
+                </ol>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="flex justify-center p-4">
+          <div className="flex justify-center p-6 bg-white/5 rounded-2xl border border-white/5">
             <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
           </div>
         )}
