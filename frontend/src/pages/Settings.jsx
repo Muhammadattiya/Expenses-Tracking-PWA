@@ -42,7 +42,7 @@ import {
 
 import { subscribeToNotifications, sendNotification } from "../api/notifications";
 
-import { deleteAllUserData } from "../api/auth";
+import { getCurrentUser, deleteAllUserData } from "../api/auth";
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
@@ -83,6 +83,8 @@ const Settings = () => {
 
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editWebhookUrl, setEditWebhookUrl] = useState('');
+  const [isGeneratingWebhook, setIsGeneratingWebhook] = useState(false);
   const [editType, setEditType] = useState(null); // 'account' or 'category'
   const [editingItem, setEditingItem] = useState(null);
   const [editName, setEditName] = useState('');
@@ -95,7 +97,6 @@ const Settings = () => {
 
   // SMS Webhook State
   const [smsToken, setSmsToken] = useState(null);
-  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
 
   const urlBase64ToUint8Array = (base64String) => {
@@ -139,15 +140,17 @@ const Settings = () => {
 
   const fetchData = async () => {
     try {
-      const [accountsData, categoriesData, transactionsData] = await Promise.all([
+      const [accountsData, categoriesData, transactionsData, user] = await Promise.all([
         getAccounts(),
         getCategories(),
         getTransactions(),
+        getCurrentUser()
       ]);
 
       setAccounts(accountsData);
       setCategories(categoriesData);
       setTransactions(transactionsData);
+      setSmsToken(user.smsWebhookToken || null);
     } catch (error) {
       console.error("❌ Error:", error);
     } finally {
@@ -228,12 +231,14 @@ const Settings = () => {
     }
   };
 
-  const openEditModal = (item, type) => {
+  const openEditModal = async (item, type) => {
     setEditType(type);
     setEditingItem(item);
     setEditName(item.name);
     setEditIcon(item.icon || (type === 'account' ? 'Wallet' : 'Tag'));
-    if (type === 'account') setEditCardLast4(item.cardLast4 || '');
+    if (type === 'account') {
+      setEditCardLast4(item.cardLast4 || '');
+    }
     setEditModalOpen(true);
   };
 
@@ -544,28 +549,7 @@ const Settings = () => {
         <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.smsIntegration', 'ربط الرسائل (SMS)')}</h3>
         <p className="text-sm text-[var(--color-text-muted)] mb-6">{t('settings.smsDesc', 'استخدم iOS Shortcuts لإرسال الرسائل البنكية تلقائياً إلى التطبيق.')}</p>
         
-        <div className="mb-6">
-          <button 
-            onClick={async () => {
-              setIsGeneratingToken(true);
-              try {
-                const res = await api.post('/auth/sms-token');
-                setSmsToken(res.data.token);
-              } catch (err) {
-                showToast('حدث خطأ', 'error');
-              } finally {
-                setIsGeneratingToken(false);
-              }
-            }}
-            disabled={isGeneratingToken}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 rounded-2xl hover:bg-emerald-500/30 transition-colors"
-          >
-            {isGeneratingToken ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageSquare className="w-5 h-5" />}
-            <span className="text-sm font-semibold">{t('settings.generateSmsToken', 'إنشاء / تجديد رابط الربط')}</span>
-          </button>
-        </div>
-
-        {smsToken && (
+        {smsToken ? (
           <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
             <p className="text-sm text-[var(--color-text-muted)] mb-2">الرابط الخاص بك (Webhook URL):</p>
             <div className="flex gap-2 items-center">
@@ -588,6 +572,10 @@ const Settings = () => {
               </button>
             </div>
             <p className="text-xs text-red-400 mt-2 mt-4 text-center">⚠️ لا تشارك هذا الرابط مع أحد، لأنه يمنح صلاحية إضافة معاملات لحسابك.</p>
+          </div>
+        ) : (
+          <div className="flex justify-center p-4">
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
           </div>
         )}
       </section>

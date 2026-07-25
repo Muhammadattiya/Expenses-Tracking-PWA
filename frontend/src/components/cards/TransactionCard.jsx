@@ -48,10 +48,15 @@ const TransactionCard = ({ transaction, onClick }) => {
               </span>
             ) : (
               <>
-                <span>{transaction.category?.name || 'بدون فئة'}</span>
+                <span>{transaction.category?.name || 'بدون تصنيف'}</span>
                 <span className="w-1 h-1 rounded-full bg-gray-500 inline-block"></span>
-                <span className="text-[var(--color-text-muted)]">{transaction.account?.name || 'حساب محذوف'}</span>
+                <span className="text-[var(--color-text-muted)]">{transaction.account?.name || 'بدون حساب'}</span>
               </>
+            )}
+            {transaction.status === 'needs_manual_review' && (
+              <span className="mr-2 bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded text-[10px] font-bold">
+                تحتاج مراجعة
+              </span>
             )}
           </p>
         </div>
