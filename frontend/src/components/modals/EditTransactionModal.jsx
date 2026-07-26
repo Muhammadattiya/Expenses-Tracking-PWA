@@ -7,6 +7,7 @@ import ConfirmModal from "./ConfirmModal";
 import { useNotification } from "../../contexts/NotificationContext";
 import CustomSelect from "../ui/CustomSelect";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { createPortal } from "react-dom";
 
 const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess }) => {
   const { t } = useLanguage();
@@ -81,8 +82,8 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
 
   const filteredCategories = categories.filter(c => c.type === transaction.type);
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-24 bg-black/60 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-[var(--color-surface)] border border-white/10 rounded-3xl p-5 w-full max-w-sm flex flex-col max-h-[80vh] overflow-y-auto scrollbar-hide">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-xl font-bold text-[var(--color-text-main)]">
@@ -136,7 +137,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 <CustomSelect
                   value={fromAccount}
                   onChange={setFromAccount}
-                  options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
                   placeholder={t('modals.selectAccount', 'اختر الحساب')}
                 />
               </div>
@@ -145,7 +146,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 <CustomSelect
                   value={toAccount}
                   onChange={setToAccount}
-                  options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
                   placeholder={t('modals.selectAccount', 'اختر الحساب')}
                 />
               </div>
@@ -157,7 +158,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 <CustomSelect
                   value={account}
                   onChange={setAccount}
-                  options={accounts.map(acc => ({ value: acc._id, label: acc.name }))}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
                   placeholder={t('modals.selectAccount', 'اختر الحساب')}
                 />
               </div>
@@ -205,7 +206,8 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
           onCancel={() => setDeleteConfirmOpen(false)}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

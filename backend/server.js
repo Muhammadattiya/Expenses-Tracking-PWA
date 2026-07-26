@@ -3,8 +3,10 @@ const compression = require("compression");
 
 const app = require("./app");
 const connectDB = require("./config/db");
+const { initCronJobs } = require('./services/cronJobs');
 
 connectDB();
+initCronJobs();
 
 app.use(compression());
 

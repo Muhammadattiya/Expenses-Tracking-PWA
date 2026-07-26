@@ -9,7 +9,7 @@ const getTransactions = async (userId) => {
     .populate("category")
     .populate("from_account")
     .populate("to_account")
-    .sort({ date: -1 })
+    .sort({ date: -1, createdAt: -1 })
     .lean();
 };
 
@@ -39,7 +39,10 @@ const validateReferences = async (userId, data) => {
 };
 
 const createTransaction = async (userId, data) => {
-  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
+  const normalizedData = { ...data };
+  if (normalizedData.title !== undefined) {
+    normalizedData.title = String(normalizedData.title).trim();
+  }
   await validateReferences(userId, normalizedData);
   const transaction = await Transaction.create({ ...normalizedData, user: userId });
 
@@ -51,7 +54,10 @@ const createTransaction = async (userId, data) => {
 };
 
 const updateTransaction = async (userId, id, data) => {
-  const normalizedData = { ...data, title: String(data.title || 'معاملة').trim() || 'معاملة' };
+  const normalizedData = { ...data };
+  if (normalizedData.title !== undefined) {
+    normalizedData.title = String(normalizedData.title).trim();
+  }
   await validateReferences(userId, normalizedData);
   const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, normalizedData, {
     new: true,

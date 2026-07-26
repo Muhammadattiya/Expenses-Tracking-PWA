@@ -17,6 +17,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const AnalyticsPage = lazy(() => import('./pages/Analytics'));
 const Receivables = lazy(() => import('./pages/Receivables'));
+const Bills = lazy(() => import('./pages/Bills'));
 
 function App() {
   return (
@@ -24,24 +25,25 @@ function App() {
       <LanguageProvider>
         <ThemeProvider>
           <NotificationProvider>
-        <BrowserRouter>
-          <PWABadge />
-          <Analytics />
-          <Suspense fallback={<div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /></div>}>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/add" element={<AddTransaction />} />
-                <Route path="/investments" element={<Investments />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/receivables" element={<Receivables />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </NotificationProvider>
+            <BrowserRouter>
+              <PWABadge />
+              <Analytics />
+              <Suspense fallback={<div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /></div>}>
+                <Routes>
+                  <Route element={<Layout />}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/add" element={<AddTransaction />} />
+                    <Route path="/investments" element={<Investments />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/analytics" element={<AnalyticsPage />} />
+                    <Route path="/receivables" element={<Receivables />} />
+                    <Route path="/bills" element={<Bills />} />
+                  </Route>
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </NotificationProvider>
         </ThemeProvider>
       </LanguageProvider>
     </AuthGate>

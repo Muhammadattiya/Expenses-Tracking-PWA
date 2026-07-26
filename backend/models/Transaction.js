@@ -4,7 +4,6 @@ const transactionSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   title: {
     type: String,
-    required: true,
     trim: true
   },
   amount: {
@@ -82,7 +81,7 @@ to_account: {
     return this.type === "transfer";
   },
 },
-});
+}, { timestamps: true });
 
 transactionSchema.index({ user: 1, date: -1 });
 // Add composite indexes for common dashboard filters and aggregation

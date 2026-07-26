@@ -49,12 +49,8 @@ const hasTransactions = await Transaction.exists({
 });
 
   if (hasTransactions) {
-    const err = new Error(
-      "Cannot delete account because it has transactions."
-    );
-
-    err.statusCode = 409;
-    throw err;
+    await Account.updateOne({ _id: id, user: userId }, { $set: { isArchived: true } });
+    return;
   }
 
   await Account.deleteOne({ _id: id, user: userId });
