@@ -38,7 +38,9 @@ const TransactionCard = ({ transaction, onClick }) => {
           <LeftIconToRender className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="font-semibold text-[var(--color-text-main)]">{transaction.title}</h3>
+          <h3 className="font-semibold text-[var(--color-text-main)]">
+            {transaction.title || (transaction.type === "transfer" ? 'تحويل' : transaction.category?.name || 'بدون تصنيف')}
+          </h3>
           <p className="text-xs text-[var(--color-text-muted)] mt-1 flex items-center gap-1.5">
             {transaction.type === "transfer" ? (
               <span className="flex items-center gap-1">

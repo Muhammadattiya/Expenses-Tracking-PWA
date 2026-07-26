@@ -10,16 +10,8 @@ export default {
     totalBalance: 'Total Balance',
     currency: 'EGP',
     income: 'Income',
-    expense: 'Expenses'
-  },
-  settings: {
-    appSettings: 'App Settings',
-    language: 'Language',
-    theme: 'Appearance',
-    pushNotifications: 'Push Notifications',
-    accountManagement: 'Manage Accounts',
-    categoryManagement: 'Manage Categories',
-    dataManagement: 'Data Management'
+    expense: 'Expenses',
+    bills: 'Bills'
   },
   common: {
     allAccounts: 'All Accounts',
@@ -151,6 +143,7 @@ export default {
     accountManagement: 'Account Management',
     categoryManagement: 'Category Management',
     dataManagement: 'Data Management',
+    recurringTransactions: 'Recurring Transactions',
     language: 'Language',
     arabic: 'العربية',
     english: 'English',
@@ -211,7 +204,14 @@ export default {
     smsDesc: 'Use iOS Shortcuts to automatically forward bank SMS messages to the app.',
     webhookUrlLabel: 'Your Webhook URL',
     webhookWarning: 'WARNING: Never share this URL with anyone. Having this URL grants permission to add financial transactions directly to your account.',
-    shortcutsGuideTitle: 'iOS Shortcuts Setup Guide'
+    shortcutsGuideTitle: 'iOS Shortcuts Setup Guide',
+    accountType: 'Account Type',
+    balanceLabel: 'Current Balance',
+    cardLast4: 'Last 4 digits of card (optional)',
+    cardLast4Desc: 'Helps us auto-link bank SMS messages to this account.',
+    categoryType: 'Category Type',
+    excludeFromTotal: 'Exclude from total balance',
+    excludeFromTotalDesc: 'This account\'s balance will not be included in the total balance on the dashboard.'
   },
   profile: {
     imageSizeError: 'Choose an image smaller than 3MB.',
@@ -246,6 +246,54 @@ export default {
     yesDelete: 'Yes, delete it',
     cancelBtn: 'Cancel',
     confirm: 'Confirm',
-    save: 'Save'
+    save: 'Save',
+    shareReport: 'Share Report'
+  },
+
+  bills: {
+    title: 'Bills & Fixed Expenses',
+    addBill: 'Add Bill',
+    editBill: 'Edit Bill',
+    name: 'Bill Name',
+    amount: 'Expected Amount',
+    dueDate: 'Due Date',
+    repeat: 'Repeat',
+    reminder: 'Enable Reminder',
+    reminderDays: 'Reminder Time',
+    sameDay: 'Same Day',
+    oneDayBefore: '1 Day Before',
+    threeDaysBefore: '3 Days Before',
+    sevenDaysBefore: '1 Week Before',
+    status: {
+      upcoming: 'Upcoming',
+      due_today: 'Due Today',
+      overdue: 'Overdue',
+      paid: 'Paid'
+    },
+    payNow: 'Pay Now',
+    markPaid: 'Mark as Paid',
+    noBills: 'No bills added',
+    confirmDelete: 'Are you sure you want to delete this bill?'
+  },
+  recurring: {
+    title: 'Recurring Transactions',
+    repeatType: 'Repeat',
+    never: 'Never',
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    yearly: 'Yearly',
+    custom: 'Custom',
+    interval: 'Repeat every (Days)',
+    executionTime: 'Execution Time',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    neverEnds: 'Never Ends',
+    maxOccurrences: 'Max Occurrences',
+    reminderEnabled: 'Enable Reminder',
+    reminderDaysBefore: 'Reminder before (days)',
+    nextExecution: 'Next Execution',
+    noRecurring: 'No Recurring Transactions',
+    confirmDelete: 'Are you sure you want to delete this recurring transaction?'
   }
 };

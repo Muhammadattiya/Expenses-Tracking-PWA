@@ -24,6 +24,14 @@ const accountSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isArchived: {
+    type: Boolean,
+    default: false
+  },
+  excludeFromTotal: {
+    type: Boolean,
+    default: false
+  },
   cardLast4: {
     type: String,
     trim: true,

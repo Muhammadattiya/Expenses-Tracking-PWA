@@ -54,7 +54,8 @@ const Dashboard = () => {
     const isRightSwipe = distance < -50;
     
     if (isLeftSwipe || isRightSwipe) {
-      const accountIds = ['all', ...accounts.map(a => a._id)];
+      const activeAccounts = accounts.filter(a => !a.isArchived);
+      const accountIds = ['all', ...activeAccounts.map(a => a._id)];
       const currentIndex = accountIds.indexOf(selectedAccount);
       let newIndex = currentIndex;
       
@@ -145,10 +146,32 @@ const Dashboard = () => {
       }
     });
 
+    let calculatedBalance = 0;
+    if (selectedAccount === 'all') {
+      const getAccountBalance = (account) => {
+        let bal = account.balance_adjustment || 0;
+        completedTransactions.forEach(t => {
+          if (t.type === 'income' && t.account?._id === account._id) bal += t.amount;
+          else if (t.type === 'expense' && t.account?._id === account._id) bal -= t.amount;
+          else if (t.type === 'transfer') {
+            if (t.to_account?._id === account._id) bal += t.amount;
+            if (t.from_account?._id === account._id) bal -= t.amount;
+          } else if (t.type === 'settlement' && t.account?._id === account._id) bal += t.amount;
+        });
+        return bal;
+      };
+
+      calculatedBalance = accounts
+        .filter(acc => !acc.excludeFromTotal && !acc.isArchived)
+        .reduce((sum, acc) => sum + getAccountBalance(acc), 0);
+    } else {
+      calculatedBalance = totalIncome - totalExpense + totalSettlements + totalAdjustments;
+    }
+
     setTotals({
       income: currentMonthIncome,
       expense: currentMonthExpense,
-      balance: totalIncome - totalExpense + totalSettlements + totalAdjustments
+      balance: calculatedBalance
     });
   }, [allTransactions, selectedAccount, selectedMonth, accounts]);
 
@@ -167,7 +190,23 @@ const Dashboard = () => {
   }, [allTransactions, selectedAccount, selectedMonth]);
 
   const { groupedTransactions, sortedDates, groupCounts } = useMemo(() => {
-    const grouped = displayedTransactions.reduce((acc, curr) => {
+    const getCreationTime = (t) => {
+      if (t.createdAt) return new Date(t.createdAt).getTime();
+      if (t._id && typeof t._id === 'string' && t._id.length === 24) {
+        return parseInt(t._id.substring(0, 8), 16) * 1000;
+      }
+      return 0;
+    };
+
+    // Sort transactions first by date descending, then by creation time descending
+    const sortedTransactions = [...displayedTransactions].sort((a, b) => {
+      const dateDiff = new Date(b.date) - new Date(a.date);
+      if (dateDiff !== 0) return dateDiff;
+      
+      return getCreationTime(b) - getCreationTime(a);
+    });
+
+    const grouped = sortedTransactions.reduce((acc, curr) => {
       const d = new Date(curr.date);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!acc[key]) acc[key] = [];
@@ -241,7 +280,7 @@ const Dashboard = () => {
                 onChange={setSelectedAccount}
                 options={[
                   { value: 'all', label: t('common.allAccounts', 'جميع الحسابات') },
-                  ...accounts.map(a => ({ value: a._id, label: a.name }))
+                  ...accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))
                 ]}
               />
             </div>
@@ -321,15 +360,16 @@ const Dashboard = () => {
         </h2>
       </div>
 
-      <div className="h-[600px] w-full">
+      <div className="w-full pb-4">
         {displayedTransactions.length === 0 ? (
           <div className="text-center text-[var(--color-text-muted)] py-12 glass-panel rounded-[2rem] font-medium flex flex-col items-center gap-3">
             <p>{t('dashboard.noTransactions', 'لا توجد معاملات في هذا الشهر')}</p>
           </div>
         ) : (
           <GroupedVirtuoso
+            useWindowScroll
             groupCounts={groupCounts}
-            className="w-full h-full hide-scrollbar"
+            className="w-full hide-scrollbar"
             groupContent={(index) => {
               const dateKey = sortedDates[index];
               const dateObj = new Date(dateKey);

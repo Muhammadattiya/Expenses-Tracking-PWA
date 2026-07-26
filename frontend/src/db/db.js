@@ -18,10 +18,17 @@ db.version(2).stores({
   });
 });
 
+db.version(3).stores({
+  bills: '_id, dueDate, status, repeat, isActive',
+  recurringTransactions: '_id, nextExecutionDate, isActive'
+});
+
 export async function clearOfflineData() {
   await db.transactions.clear();
   await db.accounts.clear();
   await db.categories.clear();
   await db.dashboardSummary.clear();
   await db.syncQueue.clear();
+  await db.bills.clear();
+  await db.recurringTransactions.clear();
 }

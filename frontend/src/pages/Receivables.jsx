@@ -122,13 +122,13 @@ export default function Receivables() {
         <label className="text-sm font-medium text-[var(--color-text-main)] block">{t('receivables.totalPaid', 'ما دفعته الإجمالي')}</label>
         <div className="grid grid-cols-2 gap-3">
           <input required className="field" type="number" min="1" placeholder={t('receivables.paidAmount', 'المبلغ اللي دفعته')} value={form.paidAmount} onChange={(e) => setForm({ ...form, paidAmount: e.target.value })} />
-          <CustomSelect value={form.paidFrom} onChange={(v) => setForm({ ...form, paidFrom: v })} options={accounts.map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.selectAccount', 'اختر الحساب')} />
+          <CustomSelect value={form.paidFrom} onChange={(v) => setForm({ ...form, paidFrom: v })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.selectAccount', 'اختر الحساب')} />
         </div>
 
         <label className="text-sm font-medium text-[var(--color-text-main)] block pt-2">{t('receivables.receivedImmediately', 'ما استلمته فورا (اختياري)')}</label>
         <div className="grid grid-cols-2 gap-3">
           <input className="field" type="number" min="0" max={form.paidAmount || undefined} placeholder={t('receivables.amountReceived', 'المبلغ اللي وصلك')} value={form.receivedAmount} onChange={(e) => setForm({ ...form, receivedAmount: e.target.value })} />
-          <CustomSelect value={form.receivedTo} onChange={(v) => setForm({ ...form, receivedTo: v })} options={accounts.map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
+          <CustomSelect value={form.receivedTo} onChange={(v) => setForm({ ...form, receivedTo: v })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
         </div>
 
         <div className="space-y-3 pt-4 border-t border-white/10">
@@ -224,7 +224,7 @@ export default function Receivables() {
                         <div className="mt-3 flex gap-2">
                           <input className="field w-1/3" type="number" max={left} placeholder={t('receivables.amount', 'المبلغ')} value={values.amount || ''} onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, amount: e.target.value } })} />
                           <div className="flex-1">
-                            <CustomSelect value={values.account || ''} onChange={(v) => setPayment({ ...payment, [participant._id]: { ...values, account: v } })} options={accounts.map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
+                            <CustomSelect value={values.account || ''} onChange={(v) => setPayment({ ...payment, [participant._id]: { ...values, account: v } })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
                           </div>
                           <button onClick={() => pay(item, participant)} className="rounded-xl bg-brand-green/20 text-brand-green font-medium px-4 hover:bg-brand-green/30 transition-colors">{t('receivables.collect', 'تحصيل')}</button>
                         </div>

@@ -5,21 +5,14 @@ export default {
     investments: 'استثمار',
     analytics: 'التقارير',
     receivables: 'المستحقات',
+    bills: 'الفواتير',
+    recurring: 'المعاملات المتكررة',
     settings: 'الإعدادات',
     profile: 'حسابي',
     totalBalance: 'إجمالي الرصيد',
     currency: 'ج.م',
     income: 'الدخل',
     expense: 'المصروفات'
-  },
-  settings: {
-    appSettings: 'إعدادات التطبيق',
-    language: 'لغة التطبيق',
-    theme: 'المظهر',
-    pushNotifications: 'الإشعارات الفورية',
-    accountManagement: 'إدارة الحسابات',
-    categoryManagement: 'إدارة الفئات',
-    dataManagement: 'إدارة البيانات'
   },
   common: {
     allAccounts: 'جميع الحسابات',
@@ -151,6 +144,7 @@ export default {
     accountManagement: 'إدارة الحسابات',
     categoryManagement: 'إدارة الفئات',
     dataManagement: 'إدارة البيانات',
+    recurringTransactions: 'المعاملات المتكررة',
     language: 'اللغة',
     arabic: 'العربية',
     english: 'English',
@@ -211,7 +205,14 @@ export default {
     smsDesc: 'استخدم iOS Shortcuts لإرسال الرسائل البنكية تلقائياً إلى التطبيق.',
     webhookUrlLabel: 'الرابط الخاص بك (Webhook URL)',
     webhookWarning: 'تحذير: لا تشارك هذا الرابط مع أي شخص أبداً. امتلاك هذا الرابط يمنح صلاحية إضافة معاملات مالية مباشرة إلى حسابك.',
-    shortcutsGuideTitle: 'خطوات إعداد iOS Shortcuts'
+    shortcutsGuideTitle: 'خطوات إعداد iOS Shortcuts',
+    accountType: 'نوع الحساب',
+    balanceLabel: 'الرصيد الحالي في الحساب',
+    cardLast4: 'أخر 4 أرقام من البطاقة (فيزا / ماستركارد) (اختياري)',
+    cardLast4Desc: 'هتساعدنا نربط رسائل البنك بالحساب ده تلقائياً عشان منسألش كل مرة.',
+    categoryType: 'نوع الفئة',
+    excludeFromTotal: 'استبعاد من إجمالي الرصيد',
+    excludeFromTotalDesc: 'رصيد هذا الحساب لن يظهر في إجمالي رصيدك بالصفحة الرئيسية.'
   },
   profile: {
     imageSizeError: 'اختر صورة بحجم أقل من 3MB.',
@@ -247,5 +248,51 @@ export default {
     cancelBtn: 'إلغاء',
     confirm: 'تأكيد',
     save: 'حفظ'
+  },
+
+  bills: {
+    title: 'الفواتير والمصروفات الثابتة',
+    addBill: 'إضافة فاتورة',
+    editBill: 'تعديل فاتورة',
+    name: 'اسم الفاتورة',
+    amount: 'المبلغ المتوقع',
+    dueDate: 'تاريخ الاستحقاق',
+    repeat: 'التكرار',
+    reminder: 'تفعيل التذكير',
+    reminderDays: 'وقت التذكير',
+    sameDay: 'نفس اليوم',
+    oneDayBefore: 'قبل يوم',
+    threeDaysBefore: 'قبل 3 أيام',
+    sevenDaysBefore: 'قبل أسبوع',
+    status: {
+      upcoming: 'قادمة',
+      due_today: 'مستحقة اليوم',
+      overdue: 'متأخرة',
+      paid: 'مدفوعة'
+    },
+    payNow: 'دفع الآن',
+    markPaid: 'تعليم كمدفوعة',
+    noBills: 'لا توجد فواتير مضافة',
+    confirmDelete: 'هل أنت متأكد من حذف هذه الفاتورة؟'
+  },
+  recurring: {
+    title: 'المعاملات المتكررة',
+    repeatType: 'نوع التكرار',
+    never: 'بدون تكرار',
+    daily: 'يومياً',
+    weekly: 'أسبوعياً',
+    monthly: 'شهرياً',
+    yearly: 'سنوياً',
+    custom: 'مخصص',
+    interval: 'تكرار كل (أيام)',
+    executionTime: 'وقت التنفيذ',
+    startDate: 'تاريخ البدء',
+    endDate: 'تاريخ الانتهاء',
+    neverEnds: 'تتكرر دائماً',
+    maxOccurrences: 'عدد مرات التكرار القصوى',
+    reminderEnabled: 'تفعيل التذكير',
+    reminderDaysBefore: 'التذكير قبل (أيام)',
+    noRecurring: 'لا توجد معاملات متكررة',
+    confirmDelete: 'هل أنت متأكد من حذف هذه المعاملة المتكررة؟'
   }
 };
