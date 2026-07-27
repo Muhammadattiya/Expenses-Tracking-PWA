@@ -305,11 +305,11 @@ export default function Bills() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('addTransaction.category', 'الفئة')}</label>
-                    <CustomSelect value={form.category} onChange={v => setForm({...form, category: v})} options={categories.map(c => ({value: c._id, label: c.name}))} />
+                    <CustomSelect value={form.category} onChange={v => setForm({...form, category: v})} options={categories.map(c => ({value: c._id, label: c.name, icon: c.icon}))} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('addTransaction.account', 'الحساب')}</label>
-                    <CustomSelect value={form.account} onChange={v => setForm({...form, account: v})} options={accounts.filter(a => !a.isArchived).map(a => ({value: a._id, label: a.name}))} />
+                    <CustomSelect value={form.account} onChange={v => setForm({...form, account: v})} options={accounts.filter(a => !a.isArchived).map(a => ({value: a._id, label: a.name, icon: a.icon, color: a.color}))} />
                   </div>
                 </div>
 

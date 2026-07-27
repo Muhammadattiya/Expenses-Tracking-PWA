@@ -16,6 +16,10 @@ const accountSchema = new mongoose.Schema({
     type: String,
     default: 'Wallet'
   },
+  color: {
+    type: String,
+    default: '#3b82f6'
+  },
   balance_adjustment: {
     type: Number,
     default: 0

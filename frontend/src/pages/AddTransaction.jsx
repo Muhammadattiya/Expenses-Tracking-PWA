@@ -8,6 +8,7 @@ import { createTransaction } from "../api/transactions";
 import { createRecurringTransaction } from "../api/recurringTransactions";
 import CustomDatePicker from "../components/ui/CustomDatePicker";
 import CustomSelect from "../components/ui/CustomSelect";
+import RecurringSettingsModal from "../components/modals/RecurringSettingsModal";
 import { payBill } from "../api/bills";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -45,15 +46,17 @@ const AddTransaction = () => {
   const billId = location.state?.billId || null;
 
   // إعدادات التكرار (Recurring)
-  const [repeatType, setRepeatType] = useState('never');
-  const [interval, setInterval] = useState(1);
-  const [neverEnds, setNeverEnds] = useState(true);
-  const [endDate, setEndDate] = useState('');
-  const [maxOccurrences, setMaxOccurrences] = useState('');
-  const [executionTime, setExecutionTime] = useState('09:00');
-  const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
-  const [reminderEnabled, setReminderEnabled] = useState(false);
-  const [reminderDaysBefore, setReminderDaysBefore] = useState(1);
+  const [recurringSettings, setRecurringSettings] = useState({
+    repeatType: 'never',
+    interval: 1,
+    neverEnds: true,
+    endDate: '',
+    maxOccurrences: '',
+    executionTime: '09:00',
+    reminderEnabled: false,
+    reminderDaysBefore: 1
+  });
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
 
   // جلب البيانات من الباك إند أول ما الصفحة تفتح
   useEffect(() => {
@@ -124,19 +127,19 @@ const AddTransaction = () => {
     }
 
     try {
-      if (repeatType !== 'never') {
+      if (recurringSettings.repeatType !== 'never') {
         const recurringPayload = {
           ...payload,
-          repeatType,
-          interval: Number(interval),
+          repeatType: recurringSettings.repeatType,
+          interval: Number(recurringSettings.interval),
           startDate: payload.date,
-          executionTime,
-          neverEnds,
-          reminderEnabled,
-          reminderDaysBefore: Number(reminderDaysBefore)
+          executionTime: recurringSettings.executionTime,
+          neverEnds: recurringSettings.neverEnds,
+          reminderEnabled: recurringSettings.reminderEnabled,
+          reminderDaysBefore: Number(recurringSettings.reminderDaysBefore)
         };
-        if (!neverEnds && endDate) recurringPayload.endDate = new Date(endDate).toISOString();
-        if (!neverEnds && maxOccurrences) recurringPayload.maxOccurrences = Number(maxOccurrences);
+        if (!recurringSettings.neverEnds && recurringSettings.endDate) recurringPayload.endDate = new Date(recurringSettings.endDate).toISOString();
+        if (!recurringSettings.neverEnds && recurringSettings.maxOccurrences) recurringPayload.maxOccurrences = Number(recurringSettings.maxOccurrences);
 
         await createRecurringTransaction(recurringPayload);
       } else {
@@ -280,7 +283,7 @@ const AddTransaction = () => {
               <CustomSelect
                 value={fromAccount}
                 onChange={setFromAccount}
-                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
+                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                 placeholder={t('addTransaction.fromAccountPlaceholder', 'اختر حساب التحويل')}
               />
             </div>
@@ -290,7 +293,7 @@ const AddTransaction = () => {
               <CustomSelect
                 value={toAccount}
                 onChange={setToAccount}
-                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
+                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                 placeholder={t('addTransaction.toAccountPlaceholder', 'اختر حساب الاستلام')}
               />
             </div>
@@ -302,7 +305,7 @@ const AddTransaction = () => {
               <CustomSelect
                 value={account}
                 onChange={setAccount}
-                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
+                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                 placeholder={t('addTransaction.accountPlaceholder', 'اختر الحساب...')}
               />
             </div>
@@ -312,94 +315,33 @@ const AddTransaction = () => {
               <CustomSelect
                 value={category}
                 onChange={setCategory}
-                options={categories[type].map(cat => ({ value: cat._id, label: cat.name }))}
+                options={categories[type].map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon }))}
                 placeholder={t('addTransaction.categoryPlaceholder', 'اختر الفئة...')}
               />
             </div>
           </>
         )}
 
-        {/* Recurring Settings */}
-        <div className="pt-4 border-t border-[var(--color-border)]">
-          <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('recurring.repeatType', 'نوع التكرار')}</label>
-          <CustomSelect
-            value={repeatType}
-            onChange={setRepeatType}
-            options={[
-              { value: 'never', label: t('recurring.never', 'بدون تكرار') },
-              { value: 'daily', label: t('recurring.daily', 'يومياً') },
-              { value: 'weekly', label: t('recurring.weekly', 'أسبوعياً') },
-              { value: 'monthly', label: t('recurring.monthly', 'شهرياً') },
-              { value: 'yearly', label: t('recurring.yearly', 'سنوياً') },
-              { value: 'custom', label: t('recurring.custom', 'مخصص') }
-            ]}
-          />
-
-          {repeatType !== 'never' && (
-            <div className="mt-4 p-4 rounded-2xl bg-black/10 dark:bg-black/30 border border-white/5 space-y-4 animate-fade-in">
-              {repeatType === 'custom' && (
-                <div>
-                  <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2">{t('recurring.interval', 'تكرار كل (أيام)')}</label>
-                  <input type="number" min="1" value={interval} onChange={(e) => setInterval(e.target.value)} className="field" />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('recurring.executionTime', 'وقت التنفيذ')}</label>
-                <input 
-                  type="time" 
-                  value={executionTime} 
-                  onChange={(e) => setExecutionTime(e.target.value)} 
-                  className="field w-full text-left"
-                  style={{ colorScheme: 'dark' }}
-                />
+        {/* إعدادات التكرار (iOS Style Row) */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => setIsRecurringModalOpen(true)}
+            className="w-full flex items-center justify-between bg-black/10 dark:bg-black/30 p-4 rounded-xl border border-[var(--color-border)] shadow-inner transition-colors hover:bg-black/20"
+          >
+            <div className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-lg ${recurringSettings.repeatType !== 'never' ? 'bg-brand-blue/20 text-brand-blue' : 'bg-gray-500/20 text-gray-400'}`}>
+                <Repeat className="w-4 h-4" />
               </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.neverEnds', 'تتكرر دائماً')}</label>
-                <button
-                  type="button"
-                  onClick={() => setNeverEnds(!neverEnds)}
-                  className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${neverEnds ? 'bg-brand-blue' : 'bg-gray-600'}`}
-                >
-                  <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${neverEnds ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-              </div>
-
-              {!neverEnds && (
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2">{t('recurring.endDate', 'تاريخ الانتهاء')}</label>
-                    <button type="button" onClick={() => setIsEndDatePickerOpen(true)} className="field text-right block w-full bg-black/20">
-                      {endDate || t('addTransaction.customDate', 'اختر التاريخ')}
-                    </button>
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2">{t('recurring.maxOccurrences', 'عدد المرات (اختياري)')}</label>
-                    <input type="number" min="1" value={maxOccurrences} onChange={(e) => setMaxOccurrences(e.target.value)} placeholder="مثال: 12" className="field" />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between border-t border-white/5 pt-4">
-                <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.reminderEnabled', 'تفعيل التذكير')}</label>
-                <button
-                  type="button"
-                  onClick={() => setReminderEnabled(!reminderEnabled)}
-                  className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-brand-blue' : 'bg-gray-600'}`}
-                >
-                  <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${reminderEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-              </div>
-
-              {reminderEnabled && (
-                <div className="animate-fade-in">
-                  <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('recurring.reminderDaysBefore', 'التذكير قبل (أيام)')}</label>
-                  <input type="number" min="0" value={reminderDaysBefore} onChange={(e) => setReminderDaysBefore(e.target.value)} className="field" />
-                </div>
-              )}
+              <span className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.settings', 'إعدادات التكرار')}</span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+                {recurringSettings.repeatType === 'never' ? t('recurring.never', 'بدون تكرار') : t(`recurring.${recurringSettings.repeatType}`, recurringSettings.repeatType)}
+              </span>
+              <span className="text-[var(--color-text-muted)] opacity-50">&gt;</span>
+            </div>
+          </button>
         </div>
 
         <button
@@ -422,13 +364,12 @@ const AddTransaction = () => {
         />
       )}
 
-      {isEndDatePickerOpen && (
-        <CustomDatePicker
-          value={endDate || new Date().toISOString().split('T')[0]}
-          onChange={setEndDate}
-          onClose={() => setIsEndDatePickerOpen(false)}
-        />
-      )}
+      <RecurringSettingsModal 
+        isOpen={isRecurringModalOpen}
+        onClose={() => setIsRecurringModalOpen(false)}
+        initialSettings={recurringSettings}
+        onSave={setRecurringSettings}
+      />
     </div>
   );
 };

@@ -81,6 +81,7 @@ const Settings = () => {
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountType, setNewAccountType] = useState('cash');
   const [newAccountIcon, setNewAccountIcon] = useState('Wallet');
+  const [newAccountColor, setNewAccountColor] = useState('#3b82f6');
 
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryType, setNewCategoryType] = useState('expense');
@@ -111,6 +112,7 @@ const Settings = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('');
+  const [editColor, setEditColor] = useState('#3b82f6');
   const [editCardLast4, setEditCardLast4] = useState('');
   const [editBalance, setEditBalance] = useState('');
   const [editExcludeFromTotal, setEditExcludeFromTotal] = useState(false);
@@ -212,6 +214,7 @@ const Settings = () => {
         name: newAccountName,
         type: newAccountType,
         icon: newAccountIcon,
+        color: newAccountColor,
         balance_adjustment: Number(newAccountBalance) || 0,
         cardLast4: newAccountCardLast4,
         excludeFromTotal: newAccountExcludeFromTotal
@@ -219,6 +222,7 @@ const Settings = () => {
       setNewAccountName("");
       setNewAccountBalance("");
       setNewAccountIcon("Wallet");
+      setNewAccountColor("#3b82f6");
       setNewAccountCardLast4("");
       setNewAccountExcludeFromTotal(false);
       setAddAccountModalOpen(false);
@@ -251,6 +255,7 @@ const Settings = () => {
     setEditingItem(item);
     setEditName(item.name);
     setEditIcon(item.icon || (type === 'account' ? 'Wallet' : 'Tag'));
+    setEditColor(item.color || '#3b82f6');
     if (type === 'account') {
       setEditCardLast4(item.cardLast4 || '');
       setEditBalance(getAccountBalance(item));
@@ -264,6 +269,7 @@ const Settings = () => {
     setEditingItem(null);
     setEditName('');
     setEditIcon('');
+    setEditColor('#3b82f6');
     setEditCardLast4('');
   };
 
@@ -279,7 +285,7 @@ const Settings = () => {
         if (!isNaN(newBalance) && newBalance !== currentBalance) {
           newAdjustment += (newBalance - currentBalance);
         }
-        await updateAccount(editingItem._id, { name: editName, icon: editIcon, type: editingItem.type, cardLast4: editCardLast4, balance_adjustment: newAdjustment, excludeFromTotal: editExcludeFromTotal });
+        await updateAccount(editingItem._id, { name: editName, icon: editIcon, color: editColor, type: editingItem.type, cardLast4: editCardLast4, balance_adjustment: newAdjustment, excludeFromTotal: editExcludeFromTotal });
       } else {
         await updateCategory(editingItem._id, { name: editName, icon: editIcon, type: editingItem.type });
       }
@@ -694,7 +700,7 @@ const Settings = () => {
               const AccIcon = getIconComponent(acc.icon, 'Wallet');
               return (
                 <li key={acc._id} className="py-4 flex items-center justify-between gap-3">
-                  <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400">
+                  <div className="p-2 rounded-xl" style={{ backgroundColor: `${acc.color || '#3b82f6'}33`, color: acc.color || '#3b82f6' }}>
                     <AccIcon size={20} />
                   </div>
                   <div className="flex flex-col flex-1">
@@ -975,8 +981,11 @@ const Settings = () => {
 
 
               <IconPicker
+                type={editType === 'account' ? 'account' : 'category'}
                 selectedIcon={editIcon}
                 onSelect={setEditIcon}
+                selectedColor={editColor}
+                onColorSelect={setEditColor}
                 colorClass={
                   editType === 'account' ? 'text-blue-400'
                     : (editingItem?.type === 'expense' ? 'text-red-400' : 'text-emerald-400')
@@ -1072,7 +1081,7 @@ const Settings = () => {
                 <input type="checkbox" checked={newAccountExcludeFromTotal} onChange={(e) => setNewAccountExcludeFromTotal(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
               </label>
 
-              <IconPicker selectedIcon={newAccountIcon} onSelect={setNewAccountIcon} colorClass="text-blue-400" />
+              <IconPicker type="account" selectedIcon={newAccountIcon} onSelect={setNewAccountIcon} selectedColor={newAccountColor} onColorSelect={setNewAccountColor} colorClass="text-blue-400" />
 
               <button type="submit" className="bg-blue-500 w-full py-3 flex items-center justify-center rounded-xl text-white font-bold hover:bg-blue-600 transition-colors gap-2 mt-2">
                 <Plus className="w-5 h-5" /> {t('settings.addAccountBtn', 'إضافة حساب جديد')}
@@ -1121,6 +1130,7 @@ const Settings = () => {
               </div>
 
               <IconPicker
+                type="category"
                 selectedIcon={newCategoryIcon}
                 onSelect={setNewCategoryIcon}
                 colorClass={newCategoryType === 'expense' ? 'text-red-400' : 'text-emerald-400'}

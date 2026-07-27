@@ -3,8 +3,10 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, AreaChart,
 import { getAnalytics } from '../api/analytics';
 import { getAccounts } from '../api/accounts';
 import { getCategories } from '../api/categories';
+import { getIconComponent } from '../components/IconPicker';
 import { Loader2, Download, Filter, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import CustomSelect from '../components/ui/CustomSelect';
 
 const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#f43f5e', '#10b981', '#ec4899', '#06b6d4', '#84cc16'];
 
@@ -116,32 +118,31 @@ export default function Analytics() {
           <input type="date" className="field" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })}/>
         </div>
         
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 z-20">
           <label className="text-xs font-medium text-[var(--color-text-muted)] px-1">{t('analytics.account', 'الحساب')}</label>
-          <select 
-            className="field"
-            value={filters.account} 
-            onChange={(e) => setFilters({ ...filters, account: e.target.value })}
-          >
-            <option value="" className="bg-[var(--color-surface)]">{t('analytics.allAccounts', 'كل الحسابات')}</option>
-            {accounts.map(acc => (
-              <option key={acc._id} value={acc._id} className="bg-[var(--color-surface)]">{acc.name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            options={[
+              { value: '', label: t('analytics.allAccounts', 'كل الحسابات'), icon: 'Globe', color: '#ffffff' },
+              ...accounts.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
+            ]}
+            value={filters.account}
+            onChange={(val) => setFilters({ ...filters, account: val })}
+            placeholder={t('analytics.allAccounts', 'كل الحسابات')}
+            type="account"
+          />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 z-10">
           <label className="text-xs font-medium text-[var(--color-text-muted)] px-1">{t('analytics.category', 'الفئة')}</label>
-          <select 
-            className="field"
-            value={filters.category} 
-            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-          >
-            <option value="" className="bg-[var(--color-surface)]">{t('analytics.allCategories', 'كل الفئات')}</option>
-            {categories.map(cat => (
-              <option key={cat._id} value={cat._id} className="bg-[var(--color-surface)]">{cat.name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            options={[
+              { value: '', label: t('analytics.allCategories', 'كل الفئات'), icon: 'Layers', color: '#ffffff' },
+              ...categories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon, color: cat.color }))
+            ]}
+            value={filters.category}
+            onChange={(val) => setFilters({ ...filters, category: val })}
+            placeholder={t('analytics.allCategories', 'كل الفئات')}
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -262,12 +263,25 @@ function ListCard({ title, rows, color, money, noDataText }) {
     <section className="glass-panel p-6 rounded-[2rem] shadow-lg">
       <h2 className="mb-5 text-lg font-semibold text-[var(--color-text-main)]">{title}</h2>
       <div className="space-y-3">
-        {rows.length ? rows.map((row) => (
+        {rows.length ? rows.map((row) => {
+          const IconComp = row.icon ? getIconComponent(row.icon) : null;
+          return (
           <div className="flex justify-between items-center bg-black/20 p-3.5 rounded-xl border border-white/5 hover:bg-black/30 transition-colors" key={row.name}>
-            <span className="text-sm text-[var(--color-text-main)] font-medium">{row.name}</span>
+            <div className="flex items-center gap-3">
+              {IconComp && (
+                <div 
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5"
+                  style={row.color ? { backgroundColor: `${row.color}20`, color: row.color } : {}}
+                >
+                  <IconComp className="w-4 h-4" />
+                </div>
+              )}
+              <span className="text-sm text-[var(--color-text-main)] font-medium">{row.name}</span>
+            </div>
             <span className={`text-sm font-bold tracking-wide ${color}`}>{money(row.amount)}</span>
           </div>
-        )) : <p className="text-sm text-[var(--color-text-muted)] text-center py-4">{noDataText}</p>}
+          );
+        }) : <p className="text-sm text-[var(--color-text-muted)] text-center py-4">{noDataText}</p>}
       </div>
     </section>
   ); 

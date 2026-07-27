@@ -209,13 +209,24 @@ const Dashboard = () => {
     const grouped = sortedTransactions.reduce((acc, curr) => {
       const d = new Date(curr.date);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(curr);
+      if (!acc[key]) acc[key] = { items: [], income: 0, expense: 0 };
+      
+      acc[key].items.push(curr);
+
+      if (curr.type === 'income') acc[key].income += curr.amount;
+      else if (curr.type === 'expense') acc[key].expense += curr.amount;
+      else if (curr.type === 'transfer' && selectedAccount !== 'all') {
+        if (curr.to_account?._id === selectedAccount) acc[key].income += curr.amount;
+        if (curr.from_account?._id === selectedAccount) acc[key].expense += curr.amount;
+      } else if (curr.type === 'settlement' && selectedAccount !== 'all') {
+        if (curr.account?._id === selectedAccount) acc[key].income += curr.amount;
+      }
+      
       return acc;
     }, {});
     
     const sorted = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
-    const counts = sorted.map(date => grouped[date].length);
+    const counts = sorted.map(date => grouped[date].items.length);
     
     return { groupedTransactions: grouped, sortedDates: sorted, groupCounts: counts };
   }, [displayedTransactions]);
@@ -279,8 +290,8 @@ const Dashboard = () => {
                 value={selectedAccount}
                 onChange={setSelectedAccount}
                 options={[
-                  { value: 'all', label: t('common.allAccounts', 'جميع الحسابات') },
-                  ...accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))
+                  { value: 'all', label: t('common.allAccounts', 'جميع الحسابات'), icon: 'Globe', color: '#ffffff' },
+                  ...accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))
                 ]}
               />
             </div>
@@ -373,18 +384,37 @@ const Dashboard = () => {
             groupContent={(index) => {
               const dateKey = sortedDates[index];
               const dateObj = new Date(dateKey);
+              const { income, expense } = groupedTransactions[dateKey];
               return (
                 <div className="bg-[var(--color-bg-main)]/90 backdrop-blur-md py-2 z-10 sticky top-0">
-                  <h3 className="text-[var(--color-text-muted)] text-sm font-semibold px-2 flex justify-between items-center border-b border-[var(--color-border)] pb-2">
-                    <span>{dateObj.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long' })}</span>
-                    <span>{dateObj.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'numeric', day: 'numeric' })}</span>
-                  </h3>
+                  <div className="flex flex-col gap-1.5 border-b border-[var(--color-border)] pb-2 px-2">
+                    <h3 className="text-[var(--color-text-muted)] text-sm font-semibold flex justify-between items-center">
+                      <span>{dateObj.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long' })}</span>
+                      <span>{dateObj.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'numeric', day: 'numeric' })}</span>
+                    </h3>
+                    {(income > 0 || expense > 0) && (
+                      <div className="flex gap-2 justify-start items-center">
+                        {income > 0 && (
+                          <div className="flex items-center gap-1 bg-brand-green/10 px-2 py-0.5 rounded-lg border border-brand-green/20">
+                            <ArrowDown className="w-3 h-3 text-brand-green" />
+                            <span className="text-xs font-bold text-brand-green">{income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                          </div>
+                        )}
+                        {expense > 0 && (
+                          <div className="flex items-center gap-1 bg-brand-red/10 px-2 py-0.5 rounded-lg border border-brand-red/20">
+                            <ArrowUp className="w-3 h-3 text-brand-red" />
+                            <span className="text-xs font-bold text-brand-red">{expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             }}
             itemContent={(index, groupIndex) => {
               const dateKey = sortedDates[groupIndex];
-              const transactionsForGroup = groupedTransactions[dateKey];
+              const transactionsForGroup = groupedTransactions[dateKey].items;
               // Calculate the item's index within its group to find it
               let offset = 0;
               for(let i=0; i<groupIndex; i++) offset += groupCounts[i];
