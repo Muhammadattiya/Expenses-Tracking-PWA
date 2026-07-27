@@ -2,26 +2,35 @@ import { useEffect, useState, useMemo } from 'react';
 import { HandCoins, Plus, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 import { ListSkeleton } from '../components/ui/Skeletons';
 import { getAccounts } from '../api/accounts';
+import { getCategories } from '../api/categories';
 import { createReceivable, getReceivables, recordPayment, updateReceivable, deleteReceivable } from '../api/receivables';
 import CustomSelect from '../components/ui/CustomSelect';
 import { useLanguage } from '../contexts/LanguageContext';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 export default function Receivables() {
   const { t, lang } = useLanguage();
   const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP' }).format(value || 0);
   const [items, setItems] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
   const [payment, setPayment] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [form, setForm] = useState({ _id: null, title: '', paidAmount: '', paidFrom: '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] });
+  const [form, setForm] = useState({ _id: null, title: '', paidAmount: '', paidFrom: '', receivedAmount: '', receivedTo: '', expenseCategory: '', participants: [{ name: '', owedAmount: '' }] });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const load = async () => {
     try {
-      const [receivables, accountList] = await Promise.all([getReceivables(), getAccounts()]);
+      const [receivables, accountList, categoryList] = await Promise.all([getReceivables(), getAccounts(), getCategories()]);
       setItems(receivables);
       setAccounts(accountList);
-      setForm((value) => ({ ...value, paidFrom: value.paidFrom || accountList[0]?._id || '', receivedTo: value.receivedTo || '' }));
+      
+      const expenseCats = categoryList.filter(c => c.type === 'expense');
+      setCategories(expenseCats);
+      
+      setForm((value) => ({ ...value, paidFrom: value.paidFrom || accountList[0]?._id || '', receivedTo: value.receivedTo || '', expenseCategory: value.expenseCategory || expenseCats[0]?._id || '' }));
     } catch {
       setError(t('receivables.loadError', 'تعذر تحميل المبالغ المستحقة.'));
     } finally {
@@ -52,7 +61,7 @@ export default function Receivables() {
         await createReceivable(data);
       }
       
-      setForm({ _id: null, title: '', paidAmount: '', paidFrom: accounts[0]?._id || '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] });
+      setForm({ _id: null, title: '', paidAmount: '', paidFrom: accounts[0]?._id || '', receivedAmount: '', receivedTo: '', expenseCategory: categories[0]?._id || '', participants: [{ name: '', owedAmount: '' }] });
       setError('');
       await load();
     } catch (err) {
@@ -80,19 +89,28 @@ export default function Receivables() {
       paidFrom: item.paidFrom?._id || '',
       receivedAmount: item.receivedAmount || '',
       receivedTo: item.receivedTo?._id || '',
+      expenseCategory: item.expenseCategory?._id || categories[0]?._id || '',
       participants: item.participants.map(p => ({ _id: p._id, name: p.name, owedAmount: p.owedAmount }))
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const deleteItem = async (id) => {
-    if (!window.confirm(t('receivables.confirmDelete', 'هل أنت متأكد من حذف هذا المبلغ المستحق؟ سيتم التراجع عن المعاملات المرتبطة به.'))) return;
+  const deleteItem = (item) => {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await deleteReceivable(id);
+      await deleteReceivable(itemToDelete._id);
       setError('');
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || t('receivables.deleteError', 'تعذر حذف المبلغ.'));
+      setError(err.response?.data?.message || t('receivables.deleteError', 'تعذر حذف المبلغ المستحق.'));
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   };
 
@@ -122,13 +140,13 @@ export default function Receivables() {
         <label className="text-sm font-medium text-[var(--color-text-main)] block">{t('receivables.totalPaid', 'ما دفعته الإجمالي')}</label>
         <div className="grid grid-cols-2 gap-3">
           <input required className="field" type="number" min="1" placeholder={t('receivables.paidAmount', 'المبلغ اللي دفعته')} value={form.paidAmount} onChange={(e) => setForm({ ...form, paidAmount: e.target.value })} />
-          <CustomSelect value={form.paidFrom} onChange={(v) => setForm({ ...form, paidFrom: v })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.selectAccount', 'اختر الحساب')} />
+          <CustomSelect value={form.paidFrom} onChange={(v) => setForm({ ...form, paidFrom: v })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} placeholder={t('receivables.selectAccount', 'اختر الحساب')} />
         </div>
 
         <label className="text-sm font-medium text-[var(--color-text-main)] block pt-2">{t('receivables.receivedImmediately', 'ما استلمته فورا (اختياري)')}</label>
         <div className="grid grid-cols-2 gap-3">
           <input className="field" type="number" min="0" max={form.paidAmount || undefined} placeholder={t('receivables.amountReceived', 'المبلغ اللي وصلك')} value={form.receivedAmount} onChange={(e) => setForm({ ...form, receivedAmount: e.target.value })} />
-          <CustomSelect value={form.receivedTo} onChange={(v) => setForm({ ...form, receivedTo: v })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
+          <CustomSelect value={form.receivedTo} onChange={(v) => setForm({ ...form, receivedTo: v })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
         </div>
 
         <div className="space-y-3 pt-4 border-t border-white/10">
@@ -150,19 +168,29 @@ export default function Receivables() {
         
         <button type="button" onClick={addParticipant} className="text-sm font-medium text-brand-blue hover:text-brand-blue/80 transition-colors">{t('receivables.addPerson', '+ إضافة شخص آخر')}</button>
         
-        {Number(form.paidAmount) > 0 && (
-          <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex justify-between items-center mt-2">
-            <span className="text-sm text-[var(--color-text-muted)]">{t('receivables.yourShare', 'نصيبك من المصروف (سيُسجل في التقارير):')}</span>
-            <span className="font-bold text-brand-blue tracking-wide">{money(netExpense)}</span>
+        <div className="bg-white/5 border border-white/5 rounded-xl p-4 mt-2 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-[var(--color-text-muted)]">{t('receivables.yourShare', 'نصيبك من المصروف (سيُسجل في التقارير):')}</span>
+              <span className="font-bold text-brand-blue tracking-wide">{money(netExpense)}</span>
+            </div>
+            
+            <div className="border-t border-white/10 pt-3">
+              <label className="text-sm font-medium text-[var(--color-text-main)] block mb-2">{t('receivables.expenseCategory', 'فئة المصروف (لنصيبك)')}</label>
+              <CustomSelect 
+                value={form.expenseCategory} 
+                onChange={(v) => setForm({ ...form, expenseCategory: v })} 
+                options={categories.map(c => ({ value: c._id, label: c.name, icon: c.icon, color: c.color }))} 
+                placeholder={t('receivables.selectCategory', 'اختر الفئة')} 
+              />
+            </div>
           </div>
-        )}
 
         <div className="flex gap-3 pt-2">
           <button type="submit" className="flex-1 flex justify-center items-center gap-2 rounded-xl bg-brand-blue py-3.5 font-bold text-[var(--color-text-main)] hover:bg-brand-blue/90 transition">
             <Plus size={20} /> {form._id ? t('receivables.saveChanges', 'حفظ التعديلات') : t('receivables.recordPaymentBtn', 'تسجيل الدفعة')}
           </button>
           {form._id && (
-            <button type="button" onClick={() => setForm({ _id: null, title: '', paidAmount: '', paidFrom: accounts[0]?._id || '', receivedAmount: '', receivedTo: '', participants: [{ name: '', owedAmount: '' }] })} className="px-5 rounded-xl bg-white/10 font-bold text-[var(--color-text-main)] hover:bg-white/20 transition">
+            <button type="button" onClick={() => setForm({ _id: null, title: '', paidAmount: '', paidFrom: accounts[0]?._id || '', receivedAmount: '', receivedTo: '', expenseCategory: categories[0]?._id || '', participants: [{ name: '', owedAmount: '' }] })} className="px-5 rounded-xl bg-white/10 font-bold text-[var(--color-text-main)] hover:bg-white/20 transition">
               {t('receivables.cancel', 'إلغاء')}
             </button>
           )}
@@ -183,7 +211,7 @@ export default function Receivables() {
                 </h2>
                 <div className="flex gap-2">
                   <button onClick={() => editItem(item)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-blue transition bg-white/5 rounded-lg"><Pencil size={16}/></button>
-                  <button onClick={() => deleteItem(item._id)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-red transition bg-white/5 rounded-lg"><Trash2 size={16}/></button>
+                  <button onClick={() => deleteItem(item)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-red transition bg-white/5 rounded-lg"><Trash2 size={16}/></button>
                 </div>
               </div>
               
@@ -197,8 +225,14 @@ export default function Receivables() {
                   </span>
                 )}
                 {actualShare > 0 && (
-                  <span className="bg-brand-red/10 border border-brand-red/20 px-2.5 py-1 rounded-lg text-brand-red">
-                    {t('receivables.myShare', 'نصيبك:')} {money(actualShare)}
+                  <span className="flex items-center gap-1.5 bg-brand-red/10 border border-brand-red/20 px-2.5 py-1 rounded-lg text-brand-red">
+                    <span>{t('receivables.myShare', 'نصيبك:')} {money(actualShare)}</span>
+                    {item.expenseCategory && (
+                      <>
+                        <span className="w-1 h-1 rounded-full bg-brand-red/50 mx-0.5"></span>
+                        <span className="text-[10px] bg-brand-red/20 px-1.5 py-0.5 rounded">{item.expenseCategory.name}</span>
+                      </>
+                    )}
                   </span>
                 )}
               </div>
@@ -221,12 +255,16 @@ export default function Receivables() {
                       </div>
 
                       {left > 0 && (
-                        <div className="mt-3 flex gap-2">
-                          <input className="field w-1/3" type="number" max={left} placeholder={t('receivables.amount', 'المبلغ')} value={values.amount || ''} onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, amount: e.target.value } })} />
-                          <div className="flex-1">
-                            <CustomSelect value={values.account || ''} onChange={(v) => setPayment({ ...payment, [participant._id]: { ...values, account: v } })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
+                        <div className="mt-3 flex flex-col gap-3">
+                          <div className="flex gap-2">
+                            <input className="field w-1/3" type="number" max={left} placeholder={t('receivables.amount', 'المبلغ')} value={values.amount || ''} onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, amount: e.target.value } })} />
+                            <div className="flex-1">
+                              <CustomSelect value={values.account || ''} onChange={(v) => setPayment({ ...payment, [participant._id]: { ...values, account: v } })} options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} />
+                            </div>
                           </div>
-                          <button onClick={() => pay(item, participant)} className="rounded-xl bg-brand-green/20 text-brand-green font-medium px-4 hover:bg-brand-green/30 transition-colors">{t('receivables.collect', 'تحصيل')}</button>
+                          <button onClick={() => pay(item, participant)} className="w-full rounded-xl bg-brand-green/10 text-brand-green border border-brand-green/20 font-bold py-3 hover:bg-brand-green/20 transition-colors">
+                            {t('receivables.collect', 'تحصيل المبلغ')}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -237,6 +275,20 @@ export default function Receivables() {
           );
         })}
       </div>
+
+      <ConfirmModal
+        open={deleteModalOpen}
+        title={t('receivables.deleteDebtTitle', 'حذف المبلغ المستحق')}
+        message={t('receivables.confirmDelete', 'هل أنت متأكد من حذف هذا المبلغ المستحق؟ سيتم التراجع عن المعاملات المرتبطة به.')}
+        confirmText={t('receivables.deleteBtn', 'حذف')}
+        cancelText={t('receivables.cancelBtn', 'إلغاء')}
+        confirmColor="red"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+      />
     </div>
   );
 }

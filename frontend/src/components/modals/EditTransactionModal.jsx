@@ -137,7 +137,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 <CustomSelect
                   value={fromAccount}
                   onChange={setFromAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('modals.selectAccount', 'اختر الحساب')}
                 />
               </div>
@@ -146,7 +146,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 <CustomSelect
                   value={toAccount}
                   onChange={setToAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('modals.selectAccount', 'اختر الحساب')}
                 />
               </div>
@@ -158,7 +158,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 <CustomSelect
                   value={account}
                   onChange={setAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name }))}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('modals.selectAccount', 'اختر الحساب')}
                 />
               </div>
@@ -167,7 +167,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 <CustomSelect
                   value={category}
                   onChange={setCategory}
-                  options={filteredCategories.map(cat => ({ value: cat._id, label: cat.name }))}
+                  options={filteredCategories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon }))}
                   placeholder={t('modals.selectCategory', 'اختر الفئة...')}
                 />
               </div>

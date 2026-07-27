@@ -1,17 +1,19 @@
-import { Pencil, Trash2, Wallet } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { getIconComponent } from "../IconPicker";
 
 const AccountCard = ({
   account,
   onEdit,
   onDelete,
 }) => {
+  const AccIcon = getIconComponent(account.icon, 'Wallet');
   return (
     <div className="bg-[var(--color-surface)] backdrop-blur-md border border-[var(--color-border)] rounded-2xl p-4 flex items-center justify-between shadow-sm hover:bg-[var(--color-surface-hover)] transition-all duration-300">
 
       <div className="flex items-center gap-3">
 
-        <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-          <Wallet className="w-5 h-5 text-blue-400" />
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${account.color || '#3b82f6'}33`, color: account.color || '#3b82f6' }}>
+          <AccIcon className="w-5 h-5" />
         </div>
 
         <div>

@@ -4,7 +4,7 @@ const Account = require('../models/Account');
 const AppError = require('../utils/AppError');
 const Category = require('../models/Category');
 
-const list = (userId) => Receivable.find({ user: userId }).populate('paidFrom').populate('receivedTo').populate('participants.payments.account').sort({ createdAt: -1 }).lean();
+const list = (userId) => Receivable.find({ user: userId }).populate('paidFrom').populate('receivedTo').populate('expenseCategory').populate('participants.payments.account').sort({ createdAt: -1 }).lean();
 
 const create = async (userId, data) => {
   const paidAmount = Number(data.paidAmount);
@@ -36,10 +36,16 @@ const create = async (userId, data) => {
   let paidTx = null;
   let receivedTx = null;
 
+  let expenseCategory = null;
   if (userShare > 0) {
-    let category = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
-    if (!category) category = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
-    expense = await Transaction.create({ user: userId, title: data.title, amount: userShare, type: 'expense', account: account._id, category: category._id });
+    if (data.expenseCategory) {
+      expenseCategory = await Category.findOne({ _id: data.expenseCategory, user: userId });
+    }
+    if (!expenseCategory) {
+      expenseCategory = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
+      if (!expenseCategory) expenseCategory = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
+    }
+    expense = await Transaction.create({ user: userId, title: data.title, amount: userShare, type: 'expense', account: account._id, category: expenseCategory._id });
   }
 
   const settlementAmount = paidAmount - userShare;
@@ -58,6 +64,7 @@ const create = async (userId, data) => {
     paidFrom: account._id, 
     receivedAmount, 
     receivedTo: receivedToAccount?._id || null, 
+    expenseCategory: expenseCategory?._id || null,
     expenseTransaction: expense?._id || null, 
     paidSettlementTransaction: paidTx?._id || null,
     receivedSettlementTransaction: receivedTx?._id || null,
@@ -118,10 +125,16 @@ const update = async (userId, id, data) => {
 
   let expenseTx = null, paidTx = null, receivedTx = null;
 
+  let expenseCategory = null;
   if (userShare > 0) {
-    let category = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
-    if (!category) category = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
-    expenseTx = await Transaction.create({ user: userId, title: data.title, amount: userShare, type: 'expense', account: account._id, category: category._id });
+    if (data.expenseCategory) {
+      expenseCategory = await Category.findOne({ _id: data.expenseCategory, user: userId });
+    }
+    if (!expenseCategory) {
+      expenseCategory = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
+      if (!expenseCategory) expenseCategory = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
+    }
+    expenseTx = await Transaction.create({ user: userId, title: data.title, amount: userShare, type: 'expense', account: account._id, category: expenseCategory._id });
   }
 
   const settlementAmount = paidAmount - userShare;
@@ -139,6 +152,7 @@ const update = async (userId, id, data) => {
   receivable.receivedAmount = receivedAmount;
   receivable.receivedTo = receivedToAccount?._id || null;
   receivable.participants = newParticipants;
+  receivable.expenseCategory = expenseCategory?._id || null;
   receivable.expenseTransaction = expenseTx?._id || null;
   receivable.paidSettlementTransaction = paidTx?._id || null;
   receivable.receivedSettlementTransaction = receivedTx?._id || null;

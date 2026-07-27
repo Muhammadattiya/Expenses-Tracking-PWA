@@ -14,6 +14,7 @@ const receivableSchema = new mongoose.Schema({
   paidFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true },
   receivedAmount: { type: Number, default: 0, min: 0 },
   receivedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null },
+  expenseCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
   expenseTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
   paidSettlementTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
   receivedSettlementTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
