@@ -85,7 +85,7 @@ const sendDailyReminder = async () => {
 const processRecurringTransactions = async (stats) => {
   try {
     const now = new Date();
-    
+
     const recurrings = await RecurringTransaction.find({
       isActive: true,
       nextExecutionDate: { $lte: now }
@@ -114,7 +114,7 @@ const processRecurringTransactions = async (stats) => {
 
       if (shouldNotify) {
         const subscriptions = await Subscription.find({ user: r.user });
-        
+
         if (subscriptions.length > 0) {
           const payload = JSON.stringify({
             title: `تذكير بمعاملة متكررة: ${r.title}`,
@@ -153,7 +153,7 @@ const processRecurringTransactions = async (stats) => {
 
         if (!r.neverEnds) {
           if ((r.maxOccurrences && r.currentOccurrences >= r.maxOccurrences) ||
-              (r.endDate && r.nextExecutionDate >= r.endDate)) {
+            (r.endDate && r.nextExecutionDate >= r.endDate)) {
             r.isActive = false;
           }
         }
@@ -196,13 +196,13 @@ const processBills = async (stats) => {
     now.setHours(0, 0, 0, 0);
 
     const activeBills = await Bill.find({ isActive: true, status: { $ne: 'paid' } });
-    
+
     for (let bill of activeBills) {
       stats.billsProcessed++;
       try {
         const due = new Date(bill.dueDate);
         due.setHours(0, 0, 0, 0);
-        
+
         let newStatus = 'upcoming';
         if (due.getTime() === now.getTime()) {
           newStatus = 'due_today';
@@ -233,7 +233,7 @@ const processBills = async (stats) => {
 
           if (shouldNotify) {
             const subscriptions = await Subscription.find({ user: bill.user });
-            
+
             if (subscriptions.length > 0) {
               const payload = JSON.stringify({
                 title: `تذكير بالفاتورة: ${bill.name}`,
