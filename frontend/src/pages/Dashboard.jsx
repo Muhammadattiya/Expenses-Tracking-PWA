@@ -100,7 +100,7 @@ const Dashboard = () => {
     // فلترة المعاملات المكتملة بناءً على الحساب المختار (لكي نحسب الرصيد الإجمالي)
     const filtered = completedTransactions.filter(t => {
       if (selectedAccount === 'all') return true;
-      return t.account?._id === selectedAccount || t.from_account?._id === selectedAccount || t.to_account?._id === selectedAccount;
+      return (t.account?._id || t.account) === selectedAccount || (t.from_account?._id || t.from_account) === selectedAccount || (t.to_account?._id || t.to_account) === selectedAccount;
     });
 
     let totalIncome = 0;
@@ -132,11 +132,11 @@ const Dashboard = () => {
         if (isCurrentMonth) currentMonthExpense += t.amount;
       } else if (t.type === 'transfer') {
         if (selectedAccount !== 'all') {
-          if (t.to_account?._id === selectedAccount) {
+          if ((t.to_account?._id || t.to_account) === selectedAccount) {
             totalIncome += t.amount;
             if (isCurrentMonth) currentMonthIncome += t.amount;
           }
-          if (t.from_account?._id === selectedAccount) {
+          if ((t.from_account?._id || t.from_account) === selectedAccount) {
             totalExpense += t.amount;
             if (isCurrentMonth) currentMonthExpense += t.amount;
           }
@@ -151,12 +151,12 @@ const Dashboard = () => {
       const getAccountBalance = (account) => {
         let bal = account.balance_adjustment || 0;
         completedTransactions.forEach(t => {
-          if (t.type === 'income' && t.account?._id === account._id) bal += t.amount;
-          else if (t.type === 'expense' && t.account?._id === account._id) bal -= t.amount;
+          if (t.type === 'income' && (t.account?._id || t.account) === account._id) bal += t.amount;
+          else if (t.type === 'expense' && (t.account?._id || t.account) === account._id) bal -= t.amount;
           else if (t.type === 'transfer') {
-            if (t.to_account?._id === account._id) bal += t.amount;
-            if (t.from_account?._id === account._id) bal -= t.amount;
-          } else if (t.type === 'settlement' && t.account?._id === account._id) bal += t.amount;
+            if ((t.to_account?._id || t.to_account) === account._id) bal += t.amount;
+            if ((t.from_account?._id || t.from_account) === account._id) bal -= t.amount;
+          } else if (t.type === 'settlement' && (t.account?._id || t.account) === account._id) bal += t.amount;
         });
         return bal;
       };
@@ -178,7 +178,7 @@ const Dashboard = () => {
   const displayedTransactions = useMemo(() => {
     const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');
     return completedTransactions.filter(t => {
-      if (selectedAccount !== 'all' && t.account?._id !== selectedAccount && t.from_account?._id !== selectedAccount && t.to_account?._id !== selectedAccount) {
+      if (selectedAccount !== 'all' && (t.account?._id || t.account) !== selectedAccount && (t.from_account?._id || t.from_account) !== selectedAccount && (t.to_account?._id || t.to_account) !== selectedAccount) {
         return false;
       }
       const tDate = new Date(t.date);
@@ -216,10 +216,10 @@ const Dashboard = () => {
       if (curr.type === 'income') acc[key].income += curr.amount;
       else if (curr.type === 'expense') acc[key].expense += curr.amount;
       else if (curr.type === 'transfer' && selectedAccount !== 'all') {
-        if (curr.to_account?._id === selectedAccount) acc[key].income += curr.amount;
-        if (curr.from_account?._id === selectedAccount) acc[key].expense += curr.amount;
+        if ((curr.to_account?._id || curr.to_account) === selectedAccount) acc[key].income += curr.amount;
+        if ((curr.from_account?._id || curr.from_account) === selectedAccount) acc[key].expense += curr.amount;
       } else if (curr.type === 'settlement' && selectedAccount !== 'all') {
-        if (curr.account?._id === selectedAccount) acc[key].income += curr.amount;
+        if ((curr.account?._id || curr.account) === selectedAccount) acc[key].income += curr.amount;
       }
       
       return acc;

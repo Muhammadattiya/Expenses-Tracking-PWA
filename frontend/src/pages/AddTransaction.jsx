@@ -153,13 +153,16 @@ const AddTransaction = () => {
       setAmount('');
       setTitle('');
       setDate(new Date().toISOString().split('T')[0]);
-      setRepeatType('never');
-      setNeverEnds(true);
-      setEndDate('');
-      setMaxOccurrences('');
-      setExecutionTime('09:00');
-      setReminderEnabled(false);
-      setReminderDaysBefore(1);
+      setRecurringSettings({
+        repeatType: 'never',
+        interval: 1,
+        neverEnds: true,
+        endDate: '',
+        maxOccurrences: '',
+        executionTime: '09:00',
+        reminderEnabled: false,
+        reminderDaysBefore: 1
+      });
 
       showToast(t('addTransaction.successMsg', 'تم تسجيل المعاملة بنجاح!'), 'success');
       
