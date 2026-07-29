@@ -12,6 +12,11 @@ const userSchema = new mongoose.Schema({
     index: true,
     default: () => require('crypto').randomBytes(16).toString('hex')
   },
+  preferences: {
+    budgetPeriod: { type: String, enum: ['weekly', 'monthly'], default: 'monthly' },
+    budgetStartDayWeekly: { type: Number, min: 0, max: 6, default: 6 },
+    budgetStartDayMonthly: { type: Number, min: 1, max: 31, default: 1 }
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

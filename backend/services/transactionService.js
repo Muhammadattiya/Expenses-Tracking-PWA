@@ -1,6 +1,7 @@
 const Transaction = require("../models/Transaction");
 const Account = require("../models/Account");
 const Category = require("../models/Category");
+const { checkBudgetThresholds } = require("./budgetEngine");
 const { adoptLegacyData } = require('./legacyDataService');
 
 const getTransactions = async (userId) => {
@@ -46,11 +47,17 @@ const createTransaction = async (userId, data) => {
   await validateReferences(userId, normalizedData);
   const transaction = await Transaction.create({ ...normalizedData, user: userId });
 
-  return await Transaction.findById(transaction._id)
+  const populated = await Transaction.findById(transaction._id)
     .populate("account")
     .populate("category")
     .populate("from_account")
     .populate("to_account");
+
+  if (populated.type === 'expense') {
+    checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+  }
+  
+  return populated;
 };
 
 const updateTransaction = async (userId, id, data) => {
@@ -69,6 +76,11 @@ const updateTransaction = async (userId, id, data) => {
     .populate("to_account");
 
   if (!transaction) throw new Error("Transaction not found.");
+  
+  if (transaction.type === 'expense') {
+    checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+  }
+
   return transaction;
 };
 
@@ -80,6 +92,10 @@ const deleteTransaction = async (userId, id) => {
     throw err;
   }
   await Transaction.deleteOne({ _id: id, user: userId });
+  
+  if (transaction.type === 'expense') {
+    checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+  }
 };
 
 // ─── Import ────────────────────────────────────────────────────────────────────

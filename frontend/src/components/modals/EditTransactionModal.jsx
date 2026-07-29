@@ -103,9 +103,9 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
                 required
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-2.5 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-2.5 px-4 pe-14 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
               />
-              <span className="absolute left-4 top-3 text-[var(--color-text-muted)] font-medium">ج.م</span>
+              <span className="absolute end-4 top-3 text-[var(--color-text-muted)] font-medium pointer-events-none">{t('nav.currency', 'EGP')}</span>
             </div>
           </div>
 
@@ -125,7 +125,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-2.5 px-4 text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
+              className="w-full bg-[var(--color-surface-active)] border border-white/10 rounded-xl py-1.5 px-3 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50"
               style={{ colorScheme: 'dark' }}
             />
           </div>

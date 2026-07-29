@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, TrendingUp, Settings, User, ChartNoAxesCombined, HandCoins, CalendarClock } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, TrendingUp, Settings, User, ChartNoAxesCombined, HandCoins, CalendarClock, Target } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function BottomNav() {
@@ -13,6 +13,7 @@ export default function BottomNav() {
     { path: '/analytics', icon: ChartNoAxesCombined, label: t('nav.analytics') },
     { path: '/receivables', icon: HandCoins, label: t('nav.receivables') },
     { path: '/bills', icon: CalendarClock, label: t('nav.bills') },
+    { path: '/budgets', icon: Target, label: t('nav.budgets') },
     { path: '/settings', icon: Settings, label: t('nav.settings') },
     { path: '/profile', icon: User, label: t('nav.profile') }
   ];

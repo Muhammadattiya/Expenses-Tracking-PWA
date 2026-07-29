@@ -18,6 +18,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const AnalyticsPage = lazy(() => import('./pages/Analytics'));
 const Receivables = lazy(() => import('./pages/Receivables'));
 const Bills = lazy(() => import('./pages/Bills'));
+const Budgets = lazy(() => import('./pages/Budgets'));
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
                     <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/receivables" element={<Receivables />} />
                     <Route path="/bills" element={<Bills />} />
+                    <Route path="/budgets" element={<Budgets />} />
                   </Route>
                 </Routes>
               </Suspense>

@@ -11,7 +11,8 @@ export default {
     currency: 'EGP',
     income: 'Income',
     expense: 'Expenses',
-    bills: 'Bills'
+    bills: 'Bills',
+    budgets: 'Budgets'
   },
   common: {
     allAccounts: 'All Accounts',
@@ -211,7 +212,13 @@ export default {
     cardLast4Desc: 'Helps us auto-link bank SMS messages to this account.',
     categoryType: 'Category Type',
     excludeFromTotal: 'Exclude from total balance',
-    excludeFromTotalDesc: 'This account\'s balance will not be included in the total balance on the dashboard.'
+    excludeFromTotalDesc: 'This account\'s balance will not be included in the total balance on the dashboard.',
+    budgetPreferences: 'Budget Settings',
+    defaultBudgetPeriod: 'Default Budget Period',
+    weekStartDay: 'Week Start Day',
+    monthStartDate: 'Month Start Date',
+    monthStartNotice: 'If the month does not have this day, the last day of the month will be used.',
+    savePreferences: 'Save Preferences'
   },
   profile: {
     imageSizeError: 'Choose an image smaller than 3MB.',
@@ -226,6 +233,15 @@ export default {
     saveChanges: 'Save Changes',
     contactDev: 'Contact Developer on Telegram',
     logout: 'Logout'
+  },
+  days: {
+    saturday: 'Saturday',
+    sunday: 'Sunday',
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday'
   },
   modals: {
     editTransactionError: 'Error editing transaction',
@@ -295,5 +311,55 @@ export default {
     nextExecution: 'Next Execution',
     noRecurring: 'No Recurring Transactions',
     confirmDelete: 'Are you sure you want to delete this recurring transaction?'
+  },
+  budgets: {
+    title: 'Budgets',
+    subtitle: 'Track limits per category',
+    addBudget: 'Add Budget',
+    editBudget: 'Edit Budget',
+    amount: 'Budget Amount',
+    category: 'Category',
+    selectCategory: 'Select Category...',
+    period: 'Period',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    save: 'Save Budget',
+    saveSuccess: 'Budget saved successfully.',
+    deleteSuccess: 'Budget deleted successfully.',
+    spent: 'Spent:',
+    remaining: 'Remaining:',
+    overbudget: 'Overbudget:',
+    recommend: 'Recommend budget based on past expenses',
+    noBudgets: 'No budgets added. Add a budget to start tracking.',
+    confirmDelete: 'Are you sure you want to delete this budget?',
+    recommendLoading: 'Calculating...',
+    recommendSuccess: 'Recommendation calculated!',
+    recommendError: 'Could not calculate or not enough past data.',
+    emptyDesc: 'Create your first budget to control your expenses and achieve your financial goals smartly.',
+    noDataInPeriod: 'Not enough expenses for this category in this period to calculate average.',
+    summary: 'Summary',
+    totalBudget: 'Total Budgets',
+    totalSpent: 'Total Spent',
+    totalRemaining: 'Total Remaining',
+    budgetHealth: 'Budget Health',
+    healthy: 'Healthy',
+    warning: 'Warning',
+    critical: 'Critical',
+    exceeded: 'Exceeded',
+    account: 'Account (Optional)',
+    accountPlaceholder: 'Select an account to restrict budget to',
+    carryOver: 'Carry Over Remaining',
+    carryOverDesc: 'Any remaining amount will be automatically added to next month\'s budget',
+    budgetUtilization: 'Budget Utilization',
+    categoryComparison: 'Category Comparison',
+    forecast: 'Forecast',
+    activeBudgets: 'Active Budgets',
+    archivedBudgets: 'Archived Budgets',
+    filterByPeriod: 'Filter by Period',
+    allPeriods: 'All Periods',
+    allCategories: 'All Categories',
+    filterByCategory: 'Filter by Category',
+    recommendationTitle: 'Smart Recommendation',
+    recommendationDesc: 'Based on our analysis of your past expenses in this category, this is the most suitable amount for you.'
   }
 };
