@@ -14,3 +14,12 @@ exports.updateProfile = async (req, res, next) => {
 exports.deleteAllData = async (req, res, next) => {
   try { await authService.deleteAllUserData(req.user.id); res.status(204).end(); } catch (error) { next(error); }
 };
+exports.updatePreferences = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    user.preferences = { ...user.preferences, ...req.body };
+    await user.save();
+    res.json(user);
+  } catch (error) { next(error); }
+};

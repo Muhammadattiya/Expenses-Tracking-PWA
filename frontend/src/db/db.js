@@ -23,6 +23,14 @@ db.version(3).stores({
   recurringTransactions: '_id, nextExecutionDate, isActive'
 });
 
+db.version(4).stores({
+  budgets: '_id, category, period, isActive'
+});
+
+db.version(5).stores({
+  budgets: '_id, category, period, account, isActive, carryOver'
+});
+
 export async function clearOfflineData() {
   await db.transactions.clear();
   await db.accounts.clear();
@@ -31,4 +39,5 @@ export async function clearOfflineData() {
   await db.syncQueue.clear();
   await db.bills.clear();
   await db.recurringTransactions.clear();
+  await db.budgets.clear();
 }

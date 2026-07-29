@@ -54,7 +54,7 @@ import {
 
 import { subscribeToNotifications, sendNotification } from "../api/notifications";
 
-import { getCurrentUser, deleteAllUserData } from "../api/auth";
+import { getCurrentUser, deleteAllUserData, updatePreferences } from "../api/auth";
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
@@ -125,6 +125,12 @@ const Settings = () => {
   const [smsToken, setSmsToken] = useState(null);
   const [copiedToken, setCopiedToken] = useState(false);
 
+  // Budget Preferences State
+  const [budgetPeriod, setBudgetPeriod] = useState('monthly');
+  const [budgetStartDayWeekly, setBudgetStartDayWeekly] = useState(6);
+  const [budgetStartDayMonthly, setBudgetStartDayMonthly] = useState(1);
+  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+
   const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
@@ -177,9 +183,14 @@ const Settings = () => {
       setTransactions(trans);
       setRecurringTransactions(recurringData);
 
-      // Fetch SMS Token
+      // Fetch user data
       const user = await getCurrentUser();
       setSmsToken(user.smsWebhookToken || null);
+      if (user.preferences) {
+        setBudgetPeriod(user.preferences.budgetPeriod || 'monthly');
+        setBudgetStartDayWeekly(user.preferences.budgetStartDayWeekly ?? 6);
+        setBudgetStartDayMonthly(user.preferences.budgetStartDayMonthly ?? 1);
+      }
     } catch (error) {
       console.error("❌ Error:", error);
     } finally {
@@ -190,6 +201,19 @@ const Settings = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleSavePreferences = async (updates) => {
+    try {
+      setIsUpdatingPreferences(true);
+      await updatePreferences(updates);
+      showToast(t('settings.preferencesSaved', 'Preferences saved successfully!'), 'success');
+    } catch (error) {
+      console.error("❌ Error updating preferences:", error);
+      showToast(t('settings.preferencesError', 'Error saving preferences'), 'error');
+    } finally {
+      setIsUpdatingPreferences(false);
+    }
+  };
 
   const getAccountBalance = (account) => {
     let balance = account.balance_adjustment || 0;
@@ -580,6 +604,69 @@ const Settings = () => {
               </div>
             </div>
           </div>
+
+            <div className="flex flex-col gap-3 pt-4 border-t border-white/5">
+              <span className="text-[var(--color-text-main)] font-medium text-lg">{t('settings.budgetPreferences', 'إعدادات الميزانية')}</span>
+              
+              <label className="text-sm text-[var(--color-text-muted)]">{t('settings.defaultBudgetPeriod', 'الفترة الافتراضية للميزانية')}</label>
+              <div className="flex bg-black/10 dark:bg-black/30 rounded-xl p-1 border border-[var(--color-border)] w-full mb-4">
+                <button
+                  onClick={() => setBudgetPeriod('monthly')}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${budgetPeriod === 'monthly' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                >
+                  {t('budgets.monthly', 'Monthly')}
+                </button>
+                <button
+                  onClick={() => setBudgetPeriod('weekly')}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${budgetPeriod === 'weekly' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                >
+                  {t('budgets.weekly', 'Weekly')}
+                </button>
+              </div>
+
+              {budgetPeriod === 'weekly' ? (
+                <>
+                  <label className="text-sm text-[var(--color-text-muted)]">{t('settings.weekStartDay', 'بداية الأسبوع')}</label>
+                  <select
+                    value={budgetStartDayWeekly}
+                    onChange={(e) => setBudgetStartDayWeekly(Number(e.target.value))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-blue/50"
+                  >
+                    <option value={6} className="bg-[#12121a]">{t('days.saturday', 'السبت')}</option>
+                    <option value={0} className="bg-[#12121a]">{t('days.sunday', 'الأحد')}</option>
+                    <option value={1} className="bg-[#12121a]">{t('days.monday', 'الإثنين')}</option>
+                    <option value={2} className="bg-[#12121a]">{t('days.tuesday', 'الثلاثاء')}</option>
+                    <option value={3} className="bg-[#12121a]">{t('days.wednesday', 'الأربعاء')}</option>
+                    <option value={4} className="bg-[#12121a]">{t('days.thursday', 'الخميس')}</option>
+                    <option value={5} className="bg-[#12121a]">{t('days.friday', 'الجمعة')}</option>
+                  </select>
+                </>
+              ) : (
+                <>
+                  <label className="text-sm text-[var(--color-text-muted)]">{t('settings.monthStartDate', 'تاريخ بداية الشهر')}</label>
+                  <select
+                    value={budgetStartDayMonthly}
+                    onChange={(e) => setBudgetStartDayMonthly(Number(e.target.value))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-blue/50"
+                  >
+                    {[...Array(31)].map((_, i) => (
+                      <option key={i + 1} value={i + 1} className="bg-[#12121a]">
+                        {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-white/40 mt-1">{t('settings.monthStartNotice', 'إذا كان الشهر لا يحتوي على هذا اليوم، سيتم استخدام اليوم الأخير من الشهر.')}</p>
+                </>
+              )}
+
+              <button
+                onClick={() => handleSavePreferences({ budgetPeriod, budgetStartDayWeekly, budgetStartDayMonthly })}
+                disabled={isUpdatingPreferences}
+                className="mt-6 w-full bg-brand-blue/20 text-brand-blue border border-brand-blue/30 py-3 rounded-2xl font-bold hover:bg-brand-blue/30 transition-colors disabled:opacity-50"
+              >
+                {isUpdatingPreferences ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('settings.savePreferences', 'حفظ الإعدادات')}
+              </button>
+            </div>
         </section>
       )}
 

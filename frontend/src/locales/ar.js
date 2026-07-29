@@ -12,7 +12,8 @@ export default {
     totalBalance: 'إجمالي الرصيد',
     currency: 'ج.م',
     income: 'الدخل',
-    expense: 'المصروفات'
+    expense: 'المصروفات',
+    budgets: 'الميزانيات'
   },
   common: {
     allAccounts: 'جميع الحسابات',
@@ -212,7 +213,13 @@ export default {
     cardLast4Desc: 'هتساعدنا نربط رسائل البنك بالحساب ده تلقائياً عشان منسألش كل مرة.',
     categoryType: 'نوع الفئة',
     excludeFromTotal: 'استبعاد من إجمالي الرصيد',
-    excludeFromTotalDesc: 'رصيد هذا الحساب لن يظهر في إجمالي رصيدك بالصفحة الرئيسية.'
+    excludeFromTotalDesc: 'رصيد هذا الحساب لن يظهر في إجمالي رصيدك بالصفحة الرئيسية.',
+    budgetPreferences: 'إعدادات الميزانية',
+    defaultBudgetPeriod: 'الفترة الافتراضية للميزانية',
+    weekStartDay: 'بداية الأسبوع',
+    monthStartDate: 'تاريخ بداية الشهر',
+    monthStartNotice: 'إذا كان الشهر لا يحتوي على هذا اليوم، سيتم استخدام اليوم الأخير من الشهر.',
+    savePreferences: 'حفظ الإعدادات'
   },
   profile: {
     imageSizeError: 'اختر صورة بحجم أقل من 3MB.',
@@ -227,6 +234,15 @@ export default {
     saveChanges: 'حفظ التغييرات',
     contactDev: 'راسل المطوّر على Telegram',
     logout: 'تسجيل الخروج'
+  },
+  days: {
+    saturday: 'السبت',
+    sunday: 'الأحد',
+    monday: 'الإثنين',
+    tuesday: 'الثلاثاء',
+    wednesday: 'الأربعاء',
+    thursday: 'الخميس',
+    friday: 'الجمعة'
   },
   modals: {
     editTransactionError: 'حدث خطأ أثناء تعديل المعاملة',
@@ -294,5 +310,55 @@ export default {
     reminderDaysBefore: 'التذكير قبل (أيام)',
     noRecurring: 'لا توجد معاملات متكررة',
     confirmDelete: 'هل أنت متأكد من حذف هذه المعاملة المتكررة؟'
+  },
+  budgets: {
+    title: 'الميزانيات',
+    subtitle: 'تتبع حدود الصرف لكل فئة',
+    addBudget: 'إضافة ميزانية',
+    editBudget: 'تعديل الميزانية',
+    amount: 'المبلغ المحدد',
+    category: 'الفئة',
+    selectCategory: 'اختر الفئة...',
+    period: 'الفترة',
+    weekly: 'أسبوعياً',
+    monthly: 'شهرياً',
+    save: 'حفظ الميزانية',
+    saveSuccess: 'تم حفظ الميزانية بنجاح.',
+    deleteSuccess: 'تم حذف الميزانية بنجاح.',
+    spent: 'المستهلك:',
+    remaining: 'المتبقي:',
+    overbudget: 'تجاوزت الميزانية:',
+    recommend: 'اقتراح ميزانية بناءً على مصاريفي السابقة',
+    noBudgets: 'لا توجد ميزانيات. أضف ميزانية للبدء في التتبع.',
+    emptyDesc: 'قم بإنشاء ميزانيتك الأولى للتحكم في مصاريفك وتحقيق أهدافك المالية بذكاء.',
+    confirmDelete: 'هل أنت متأكد من حذف هذه الميزانية؟',
+    recommendLoading: 'جارٍ الحساب...',
+    recommendSuccess: 'تم حساب الاقتراح!',
+    recommendError: 'تعذر الحساب أو لا توجد مصاريف سابقة كافية.',
+    noDataInPeriod: 'لا توجد مصاريف كافية لهذه الفئة في هذه الفترة لحساب المتوسط.',
+    summary: 'الملخص',
+    totalBudget: 'إجمالي الميزانيات',
+    totalSpent: 'إجمالي المستهلك',
+    totalRemaining: 'إجمالي المتبقي',
+    budgetHealth: 'حالة الميزانية',
+    healthy: 'جيدة',
+    warning: 'تحذير',
+    critical: 'مخاطرة عالية',
+    exceeded: 'تجاوزت الحد',
+    account: 'الحساب (اختياري)',
+    accountPlaceholder: 'اختر حساباً لتقييد الميزانية به',
+    carryOver: 'ترحيل المتبقي',
+    carryOverDesc: 'سيتم إضافة أي مبلغ متبقي إلى ميزانية الشهر القادم تلقائياً',
+    budgetUtilization: 'استهلاك الميزانيات',
+    categoryComparison: 'مقارنة الفئات',
+    forecast: 'التوقعات',
+    activeBudgets: 'الميزانيات النشطة',
+    archivedBudgets: 'الميزانيات المؤرشفة',
+    filterByPeriod: 'تصفية حسب الفترة',
+    allPeriods: 'كل الفترات',
+    allCategories: 'كل الفئات',
+    filterByCategory: 'تصفية حسب الفئة',
+    recommendationTitle: 'اقتراح مخصص لك',
+    recommendationDesc: 'بناءً على تحليلاتنا لمصاريفك السابقة في هذه الفئة، هذا هو المبلغ الأنسب لك.'
   }
 };

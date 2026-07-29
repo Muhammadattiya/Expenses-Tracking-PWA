@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { getIconComponent } from '../IconPicker';
 
-const CustomSelect = ({ options, value, onChange, placeholder = 'اختر...' }) => {
+const CustomSelect = ({ options, value, onChange, placeholder = 'اختر...', buttonClassName }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -24,7 +24,7 @@ const CustomSelect = ({ options, value, onChange, placeholder = 'اختر...' })
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="field font-semibold shadow-lg backdrop-blur-md flex items-center justify-between hover:bg-[var(--color-surface-hover)]"
+        className={buttonClassName || "field font-semibold shadow-lg backdrop-blur-md flex items-center justify-between hover:bg-[var(--color-surface-hover)]"}
       >
         <div className="flex items-center gap-2 truncate">
           {SelectedIcon && <SelectedIcon className={`w-5 h-5 ${!selectedOption?.color ? 'text-[var(--color-text-muted)]' : ''}`} style={selectedOption?.color ? { color: selectedOption.color } : {}} />}

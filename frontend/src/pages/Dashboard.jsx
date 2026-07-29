@@ -270,7 +270,7 @@ const Dashboard = () => {
     );
   }
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in overflow-x-hidden w-full">
       
       {/* قسم الإحصائيات العلوية مدمج فيه فلتر الحسابات */}
       <div 

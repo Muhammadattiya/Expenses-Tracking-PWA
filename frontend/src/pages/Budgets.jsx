@@ -1,0 +1,347 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { budgetService } from '../services/budgetService';
+import { getCategories } from '../api/categories';
+import { getTransactions } from '../api/transactions';
+import { getCurrentUser } from '../api/auth';
+import { db } from '../db/db';
+import BudgetCard from '../components/Budget/BudgetCard';
+import BudgetModal from '../components/Budget/BudgetModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
+import CustomSelect from '../components/ui/CustomSelect';
+import { Plus, Target, Filter, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const SkeletonCard = () => (
+  <div className="bg-white/5 rounded-3xl p-5 border border-white/5 animate-pulse">
+    <div className="flex justify-between items-start mb-4">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-white/10" />
+        <div className="space-y-2">
+          <div className="w-24 h-4 bg-white/10 rounded" />
+          <div className="w-16 h-3 bg-white/5 rounded" />
+        </div>
+      </div>
+    </div>
+    <div className="space-y-3 pt-2">
+      <div className="flex justify-between">
+        <div className="w-20 h-4 bg-white/10 rounded" />
+        <div className="w-16 h-6 bg-white/10 rounded" />
+      </div>
+      <div className="h-4 w-full bg-white/5 rounded-full" />
+    </div>
+  </div>
+);
+
+export default function Budgets() {
+  const { t } = useLanguage();
+  const { showToast } = useNotification();
+  
+  const [budgets, setBudgets] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [spentData, setSpentData] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [userPreferences, setUserPreferences] = useState({});
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [budgetToEdit, setBudgetToEdit] = useState(null);
+  const [budgetToDelete, setBudgetToDelete] = useState(null);
+
+  // Filters
+  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [budgetsData, catsData, user] = await Promise.all([
+        budgetService.getBudgets(),
+        getCategories(),
+        getCurrentUser()
+      ]);
+      
+      setBudgets(budgetsData);
+      setCategories(catsData);
+      setUserPreferences(user?.preferences || {});
+      
+      await calculateSpent(budgetsData, user?.preferences || {});
+    } catch (err) {
+      console.error('Failed to load budgets', err);
+      showToast(t('common.deleteError') || 'Failed to load budgets', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateSpent = async (budgetsList, preferences = {}) => {
+    const now = new Date();
+    
+    // Preferences
+    const prefMonthStart = preferences.budgetStartDayMonthly ?? 1;
+    const prefWeekStart = preferences.budgetStartDayWeekly ?? 6;
+    
+    // Month bounds
+    let monthStart = new Date(now.getFullYear(), now.getMonth(), prefMonthStart);
+    // If the prefMonthStart is 31 but the current month has 30 days, Date automatically rolls over to the 1st of next month.
+    // To prevent this, we cap the start day to the last day of the current month.
+    const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
+    
+    if (now.getDate() < actualMonthStartDay) {
+      // We are in the previous budget month cycle
+      const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+      monthStart = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(prefMonthStart, lastDayOfPrevMonth));
+    } else {
+      monthStart = new Date(now.getFullYear(), now.getMonth(), actualMonthStartDay);
+    }
+    monthStart.setHours(0, 0, 0, 0);
+
+    const monthEnd = new Date(monthStart);
+    monthEnd.setMonth(monthEnd.getMonth() + 1);
+    monthEnd.setDate(monthEnd.getDate() - 1);
+    monthEnd.setHours(23, 59, 59, 999);
+    
+    // Week bounds
+    const day = now.getDay();
+    // Calculate difference to the preferred week start day (e.g. 6 for Saturday)
+    // Formula: (day - prefWeekStart + 7) % 7 gives days since prefWeekStart
+    const diffToWeekStart = (day - prefWeekStart + 7) % 7; 
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - diffToWeekStart);
+    weekStart.setHours(0, 0, 0, 0);
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    const recentTx = await getTransactions();
+
+    const spentMap = {};
+
+    for (const b of budgetsList) {
+      const catId = typeof b.category === 'object' ? String(b.category?._id || '') : String(b.category || '');
+      
+      let categoryTx = recentTx.filter(tx => {
+        const txCatId = typeof tx.category === 'object' ? String(tx.category?._id || '') : String(tx.category || '');
+        return tx.type === 'expense' && txCatId === catId;
+      });
+
+      if (b.account) {
+        const bAccId = typeof b.account === 'object' ? String(b.account?._id || '') : String(b.account);
+        categoryTx = categoryTx.filter(tx => {
+          const txAccId = typeof tx.account === 'object' ? String(tx.account?._id || '') : String(tx.account || '');
+          const txFromAccId = typeof tx.from_account === 'object' ? String(tx.from_account?._id || '') : String(tx.from_account || '');
+          return txAccId === bAccId || txFromAccId === bAccId;
+        });
+      }
+
+      let total = 0;
+      const budgetPeriod = b.period || 'monthly';
+      if (budgetPeriod === 'monthly') {
+        const monthlyTx = categoryTx.filter(tx => {
+          const d = new Date(tx.date);
+          return d >= monthStart && d <= monthEnd;
+        });
+        total = monthlyTx.reduce((sum, tx) => sum + tx.amount, 0);
+      } else if (budgetPeriod === 'weekly') {
+        const weeklyTx = categoryTx.filter(tx => {
+          const d = new Date(tx.date);
+          return d >= weekStart && d <= weekEnd;
+        });
+        total = weeklyTx.reduce((sum, tx) => sum + tx.amount, 0);
+      }
+
+      spentMap[b._id] = total;
+    }
+
+    setSpentData(spentMap);
+  };
+
+  const handleSaveBudget = async (budgetData) => {
+    try {
+      if (budgetToEdit) {
+        await budgetService.updateBudget(budgetToEdit._id, budgetData);
+        showToast(t('budgets.saveSuccess') || 'Budget saved', 'success');
+      } else {
+        await budgetService.createBudget(budgetData);
+        showToast(t('budgets.saveSuccess') || 'Budget saved', 'success');
+      }
+      setIsModalOpen(false);
+      loadData();
+    } catch (err) {
+      console.error('Failed to save budget', err);
+      const msg = err.response?.data?.message || t('common.deleteError') || 'Error saving budget';
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleDeleteBudget = async () => {
+    if (!budgetToDelete) return;
+    try {
+      await budgetService.deleteBudget(budgetToDelete._id);
+      showToast(t('budgets.deleteSuccess') || 'Budget deleted', 'success');
+      loadData();
+    } catch (err) {
+      console.error('Failed to delete budget', err);
+      showToast(t('common.deleteError') || 'Error deleting budget', 'error');
+    } finally {
+      setBudgetToDelete(null);
+    }
+  };
+
+  const filteredBudgets = useMemo(() => {
+    return budgets.filter(b => {
+      if (filterPeriod !== 'all' && b.period !== filterPeriod) return false;
+      const catId = typeof b.category === 'object' ? b.category._id : b.category;
+      if (filterCategory !== 'all' && catId !== filterCategory) return false;
+      return true;
+    });
+  }, [budgets, filterPeriod, filterCategory]);
+
+  return (
+    <div className="pb-24 pt-6 px-4 max-w-lg mx-auto min-h-screen">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-2">
+            <Target className="text-brand-blue" />
+            {t('budgets.title')}
+          </h1>
+          <p className="text-white/50 text-sm">{t('budgets.subtitle')}</p>
+        </div>
+        <button
+          onClick={() => {
+            setBudgetToEdit(null);
+            setIsModalOpen(true);
+          }}
+          className="bg-brand-blue hover:bg-blue-500 text-white p-3.5 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all hover:scale-105 active:scale-95"
+        >
+          <Plus size={24} />
+        </button>
+      </div>
+
+      {!isLoading && budgets.length > 0 && (
+        <>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-6 pb-2">
+            <div className="relative min-w-[140px] z-50">
+              <CustomSelect 
+                value={filterPeriod}
+                onChange={setFilterPeriod}
+                options={[
+                  { value: 'all', label: t('budgets.allPeriods') },
+                  { value: 'monthly', label: t('budgets.monthly') },
+                  { value: 'weekly', label: t('budgets.weekly') }
+                ]}
+                buttonClassName="w-full flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm hover:bg-white/10 transition-colors shadow-lg backdrop-blur-md"
+              />
+            </div>
+            
+            <div className="relative min-w-[160px] z-40">
+              <CustomSelect 
+                value={filterCategory}
+                onChange={setFilterCategory}
+                options={[
+                  { value: 'all', label: t('budgets.allCategories') },
+                  ...categories.filter(c => c.type === 'expense').map(c => ({
+                    value: c._id, 
+                    label: c.name,
+                    icon: c.icon,
+                    color: c.color
+                  }))
+                ]}
+                buttonClassName="w-full flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm hover:bg-white/10 transition-colors shadow-lg backdrop-blur-md"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {isLoading ? (
+        <div className="space-y-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      ) : filteredBudgets.length === 0 ? (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-16 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-xl mt-8"
+        >
+          <div className="w-20 h-20 bg-brand-blue/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Target className="w-10 h-10 text-brand-blue/80" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">{t('budgets.noBudgets')}</h3>
+          <p className="text-white/50 mb-8 max-w-[80%] mx-auto text-sm leading-relaxed">
+            {t('budgets.emptyDesc')}
+          </p>
+          <button
+            onClick={() => {
+              setBudgetToEdit(null);
+              setIsModalOpen(true);
+            }}
+            className="px-8 py-4 bg-white hover:bg-gray-100 text-black rounded-2xl transition-all font-bold inline-flex items-center gap-2 shadow-[0_10px_40px_rgba(255,255,255,0.1)] active:scale-95"
+          >
+            <Plus size={20} />
+            {t('budgets.addBudget')}
+          </button>
+        </motion.div>
+      ) : (
+        <div className="space-y-4">
+          <AnimatePresence>
+            {filteredBudgets.map((budget, index) => {
+              // Ensure category is an object even if fetched from offline DB (where it's just an ID)
+              const mappedCategory = typeof budget.category === 'object' 
+                ? budget.category 
+                : categories.find(c => c._id === budget.category) || { name: t('nav.category', 'الفئة') };
+                
+              const mappedBudget = { ...budget, category: mappedCategory };
+              
+              return (
+                <BudgetCard
+                  key={budget._id}
+                  budget={mappedBudget}
+                  spent={spentData[budget._id] || 0}
+                  index={index}
+                  onEdit={(b) => {
+                    setBudgetToEdit(b);
+                    setIsModalOpen(true);
+                  }}
+                  onDelete={(b) => setBudgetToDelete(b)}
+                />
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
+
+        <BudgetModal 
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setBudgetToEdit(null);
+          }}
+          onSave={handleSaveBudget}
+          budgetToEdit={budgetToEdit}
+          categories={categories}
+          defaultPeriod={userPreferences?.budgetPeriod || 'monthly'}
+        />
+
+        <ConfirmModal
+          open={!!budgetToDelete}
+          title={t('budgets.confirmDelete', 'Delete Budget')}
+          message={t('budgets.deleteConfirmMessage', 'Are you sure you want to delete this budget?')}
+          confirmText={t('settings.deleteBtn', 'Delete')}
+          cancelText={t('settings.cancelBtn', 'Cancel')}
+          confirmColor="red"
+          onConfirm={handleDeleteBudget}
+          onCancel={() => setBudgetToDelete(null)}
+        />
+    </div>
+  );
+}

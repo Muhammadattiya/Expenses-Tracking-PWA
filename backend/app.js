@@ -11,6 +11,7 @@ const receivableRoutes = require('./routes/receivables');
 const analyticsRoutes = require('./routes/analytics');
 const recurringTransactionsRoutes = require('./routes/recurringTransactions');
 const billsRoutes = require('./routes/bills');
+const budgetsRoutes = require('./routes/budgets');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/recurring-transactions', recurringTransactionsRoutes);
 app.use('/api/bills', billsRoutes);
+app.use('/api/budgets', budgetsRoutes);
 
 app.use(errorHandler);
 module.exports = app;

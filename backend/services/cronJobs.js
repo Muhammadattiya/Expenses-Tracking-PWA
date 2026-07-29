@@ -39,14 +39,17 @@ const initCronJobs = () => {
       recurringExecuted: 0,
       pushSuccess: 0,
       pushFailed: 0,
+      budgetsChecked: 0
     };
 
     await processRecurringTransactions(stats);
     await processBills(stats);
+    await processBudgetThresholds(stats);
 
     const executionTime = Date.now() - cronStartTime;
     console.log(`[CRON] Bills Processed: ${stats.billsProcessed}`);
     console.log(`[CRON] Recurring Transactions Executed: ${stats.recurringExecuted}`);
+    console.log(`[CRON] Budgets Checked: ${stats.budgetsChecked}`);
     console.log(`[CRON] Notifications Sent: ${stats.pushSuccess}`);
     console.log(`[CRON] Finished`);
     console.log(`Execution Time: ${executionTime} ms`);
@@ -59,6 +62,21 @@ const initCronJobs = () => {
   }, {
     timezone: "Africa/Cairo"
   });
+
+};
+
+const processBudgetThresholds = async (stats) => {
+  try {
+    const { checkBudgetThresholds } = require('./budgetEngine');
+    const uniqueUsers = await Subscription.distinct('user');
+    for (let userId of uniqueUsers) {
+      await checkBudgetThresholds(userId, stats);
+    }
+  } catch (error) {
+    console.error('[ERROR] Operation Name: processBudgetThresholds');
+    console.error(`[ERROR] message:`, error.message);
+    console.error(`[ERROR] stack trace:`, error.stack);
+  }
 };
 
 const sendDailyReminder = async () => {
@@ -265,4 +283,4 @@ const processBills = async (stats) => {
   }
 };
 
-module.exports = { initCronJobs, processRecurringTransactions, processBills };
+module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification };
