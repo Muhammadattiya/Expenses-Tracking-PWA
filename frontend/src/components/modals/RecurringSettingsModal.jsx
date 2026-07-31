@@ -55,84 +55,113 @@ const RecurringSettingsModal = ({
 
           <div className="p-6 overflow-y-auto hide-scrollbar space-y-6">
             <div>
-              <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('recurring.repeatType', 'نوع التكرار')}</label>
-              <CustomSelect
-                value={repeatType}
-                onChange={setRepeatType}
-                options={[
+              <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-3 ml-1 tracking-wide">{t('recurring.repeatType', 'نوع التكرار')}</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[
                   { value: 'never', label: t('recurring.never', 'بدون تكرار') },
                   { value: 'daily', label: t('recurring.daily', 'يومياً') },
                   { value: 'weekly', label: t('recurring.weekly', 'أسبوعياً') },
                   { value: 'monthly', label: t('recurring.monthly', 'شهرياً') },
                   { value: 'yearly', label: t('recurring.yearly', 'سنوياً') },
                   { value: 'custom', label: t('recurring.custom', 'مخصص') }
-                ]}
-              />
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setRepeatType(option.value)}
+                    className={`py-3 px-2 rounded-2xl text-sm font-bold transition-all duration-300 border ${
+                      repeatType === option.value
+                        ? 'bg-brand-blue/20 border-brand-blue text-brand-blue'
+                        : 'bg-black/20 border-white/5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-main)]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {repeatType !== 'never' && (
-              <div className="space-y-6 animate-fade-in">
-                {repeatType === 'custom' && (
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2">{t('recurring.interval', 'تكرار كل (أيام)')}</label>
-                    <input type="number" min="1" value={interval} onChange={(e) => setInterval(e.target.value)} className="field" />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('recurring.executionTime', 'وقت التنفيذ')}</label>
-                  <input 
-                    type="time" 
-                    value={executionTime} 
-                    onChange={(e) => setExecutionTime(e.target.value)} 
-                    className="field w-full text-left"
-                    style={{ colorScheme: 'dark' }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-xl bg-black/20 border border-white/5">
-                  <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.neverEnds', 'تتكرر دائماً')}</label>
-                  <button
-                    type="button"
-                    onClick={() => setNeverEnds(!neverEnds)}
-                    className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${neverEnds ? 'bg-brand-blue' : 'bg-gray-600'}`}
-                  >
-                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${neverEnds ? 'translate-x-6' : 'translate-x-0'}`} />
-                  </button>
-                </div>
-
-                {!neverEnds && (
-                  <div className="flex gap-4 p-4 rounded-xl bg-black/20 border border-white/5">
-                    <div className="flex-1">
-                      <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2">{t('recurring.endDate', 'تاريخ الانتهاء')}</label>
-                      <button type="button" onClick={() => setIsEndDatePickerOpen(true)} className="field text-right block w-full bg-black/40">
-                        {endDate || t('addTransaction.customDate', 'اختر التاريخ')}
-                      </button>
+              <div className="animate-fade-in mt-6">
+                <div className="bg-black/20 border border-white/5 rounded-2xl overflow-hidden divide-y divide-white/5">
+                  
+                  {repeatType === 'custom' && (
+                    <div className="flex items-center justify-between p-4 transition-colors hover:bg-black/10">
+                      <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.interval', 'تكرار كل (أيام)')}</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={interval} 
+                        onChange={(e) => setInterval(e.target.value)} 
+                        className="w-20 text-center bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-sm font-bold text-white focus:outline-none focus:border-brand-blue transition-colors" 
+                      />
                     </div>
-                    <div className="flex-1">
-                      <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2">{t('recurring.maxOccurrences', 'عدد المرات (اختياري)')}</label>
-                      <input type="number" min="1" value={maxOccurrences} onChange={(e) => setMaxOccurrences(e.target.value)} placeholder="مثال: 12" className="field bg-black/40" />
+                  )}
+
+                  <div className="flex items-center justify-between p-4 transition-colors hover:bg-black/10">
+                    <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.executionTime', 'وقت التنفيذ')}</label>
+                    <input 
+                      type="time" 
+                      value={executionTime} 
+                      onChange={(e) => setExecutionTime(e.target.value)} 
+                      className="w-[120px] text-center bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-sm font-bold text-white focus:outline-none focus:border-brand-blue transition-colors"
+                      style={{ colorScheme: 'dark' }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 transition-colors hover:bg-black/10">
+                    <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.neverEnds', 'تتكرر دائماً')}</label>
+                    <button
+                      type="button"
+                      onClick={() => setNeverEnds(!neverEnds)}
+                      className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${neverEnds ? 'bg-brand-blue' : 'bg-white/10'}`}
+                    >
+                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${neverEnds ? 'translate-x-6' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {!neverEnds && (
+                    <div className="p-4 bg-black/10 shadow-inner">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-bold text-[var(--color-text-muted)] mb-1.5 uppercase tracking-wider">{t('recurring.endDate', 'تاريخ الانتهاء')}</label>
+                          <button type="button" onClick={() => setIsEndDatePickerOpen(true)} className="w-full text-right bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none focus:border-brand-blue transition-colors">
+                            {endDate || t('addTransaction.customDate', 'اختر التاريخ')}
+                          </button>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-[var(--color-text-muted)] mb-1.5 uppercase tracking-wider">{t('recurring.maxOccurrences', 'عدد المرات (اختياري)')}</label>
+                          <input type="number" min="1" value={maxOccurrences} onChange={(e) => setMaxOccurrences(e.target.value)} placeholder="مثال: 12" className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-sm font-bold text-white focus:outline-none focus:border-brand-blue transition-colors" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div className="flex items-center justify-between p-4 rounded-xl bg-black/20 border border-white/5">
-                  <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.reminderEnabled', 'تفعيل التذكير')}</label>
-                  <button
-                    type="button"
-                    onClick={() => setReminderEnabled(!reminderEnabled)}
-                    className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-brand-blue' : 'bg-gray-600'}`}
-                  >
-                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${reminderEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                  </button>
+                  <div className="flex items-center justify-between p-4 transition-colors hover:bg-black/10">
+                    <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.reminderEnabled', 'تفعيل التذكير')}</label>
+                    <button
+                      type="button"
+                      onClick={() => setReminderEnabled(!reminderEnabled)}
+                      className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-brand-blue' : 'bg-white/10'}`}
+                    >
+                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${reminderEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {reminderEnabled && (
+                    <div className="flex items-center justify-between p-4 bg-black/10 shadow-inner">
+                      <label className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.reminderDaysBefore', 'التذكير قبل (أيام)')}</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={reminderDaysBefore} 
+                        onChange={(e) => setReminderDaysBefore(e.target.value)} 
+                        className="w-20 text-center bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-sm font-bold text-white focus:outline-none focus:border-brand-blue transition-colors" 
+                      />
+                    </div>
+                  )}
+
                 </div>
-
-                {reminderEnabled && (
-                  <div className="animate-fade-in p-4 rounded-xl bg-black/20 border border-white/5">
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('recurring.reminderDaysBefore', 'التذكير قبل (أيام)')}</label>
-                    <input type="number" min="0" value={reminderDaysBefore} onChange={(e) => setReminderDaysBefore(e.target.value)} className="field bg-black/40" />
-                  </div>
-                )}
               </div>
             )}
           </div>

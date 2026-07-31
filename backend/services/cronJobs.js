@@ -5,6 +5,7 @@ const Bill = require('../models/Bill');
 const Subscription = require('../models/Subscription');
 const SmartBudgetPlan = require('../models/SmartBudgetPlan');
 const webpush = require('web-push');
+const { createTransaction } = require('./transactionService');
 
 // Helper for sending push notifications
 const sendPushNotification = async (sub, payload, stats) => {
@@ -124,10 +125,13 @@ const processRecurringTransactions = async (stats) => {
       const lastNotifiedDay = r.lastNotified ? new Date(r.lastNotified) : null;
       if (lastNotifiedDay) lastNotifiedDay.setHours(0, 0, 0, 0);
 
+      const currentDay = new Date(now);
+      currentDay.setHours(0, 0, 0, 0);
+
       let shouldNotify = false;
 
       if (reminderDate.getTime() <= now.getTime()) {
-        if (!lastNotifiedDay || lastNotifiedDay.getTime() < now.getTime()) {
+        if (!lastNotifiedDay || lastNotifiedDay.getTime() < currentDay.getTime()) {
           shouldNotify = true;
         }
       }
@@ -153,8 +157,7 @@ const processRecurringTransactions = async (stats) => {
 
     for (let r of recurrings) {
       try {
-        await Transaction.create({
-          user: r.user,
+        await createTransaction(r.user, {
           title: r.title,
           amount: r.amount,
           type: r.type,
@@ -243,10 +246,13 @@ const processBills = async (stats) => {
           const lastNotifiedDay = bill.lastNotified ? new Date(bill.lastNotified) : null;
           if (lastNotifiedDay) lastNotifiedDay.setHours(0, 0, 0, 0);
 
+          const currentDay = new Date(now);
+          currentDay.setHours(0, 0, 0, 0);
+
           let shouldNotify = false;
 
           if (reminderDate.getTime() <= now.getTime()) {
-            if (!lastNotifiedDay || lastNotifiedDay.getTime() < now.getTime()) {
+            if (!lastNotifiedDay || lastNotifiedDay.getTime() < currentDay.getTime()) {
               shouldNotify = true;
             }
           }

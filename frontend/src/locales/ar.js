@@ -437,6 +437,7 @@ export default {
     maxOccurrences: 'عدد المرات (اختياري)',
     reminderEnabled: 'تفعيل التذكير',
     reminderDaysBefore: 'التذكير قبل (أيام)',
-    saveSettings: 'حفظ الإعدادات'
+    saveSettings: 'حفظ الإعدادات',
+    untitled: 'معاملة بدون عنوان'
   }
 };
