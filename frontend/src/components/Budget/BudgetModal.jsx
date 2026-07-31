@@ -19,10 +19,11 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
   const [period, setPeriod] = useState('monthly');
   const [account, setAccount] = useState('');
   const [carryOver, setCarryOver] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(true);
   
   const [isRecommending, setIsRecommending] = useState(false);
   const [recommendError, setRecommendError] = useState('');
-  const [recommendedAmount, setRecommendedAmount] = useState(null);
+  const [recommendedData, setRecommendedData] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -33,15 +34,17 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
         setPeriod(budgetToEdit.period);
         setAccount(budgetToEdit.account || '');
         setCarryOver(budgetToEdit.carryOver || false);
+        setIsRecurring(budgetToEdit.isRecurring !== undefined ? budgetToEdit.isRecurring : true);
       } else {
         setCategory('');
         setAmount('');
         setPeriod(defaultPeriod);
         setAccount('');
         setCarryOver(false);
+        setIsRecurring(true);
       }
       setRecommendError('');
-      setRecommendedAmount(null);
+      setRecommendedData(null);
     }
   }, [isOpen, budgetToEdit]);
 
@@ -64,13 +67,13 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
     try {
       const data = await budgetService.getRecommendation(cat, per);
       if (data && data.amount > 0) {
-        setRecommendedAmount(data.amount);
+        setRecommendedData(data);
         // Auto-fill amount if it's a new budget and amount is empty
         if (!budgetToEdit && !amount) {
           setAmount(data.amount.toString());
         }
       } else {
-        setRecommendedAmount(null);
+        setRecommendedData(null);
       }
     } catch (err) {
       console.error('Recommendation API error:', err);
@@ -83,7 +86,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
     if (category) {
       fetchRecommendation(category, period);
     } else {
-      setRecommendedAmount(null);
+      setRecommendedData(null);
     }
   }, [category, period]);
 
@@ -97,7 +100,8 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
       amount: Number(amount),
       period,
       account: account || null,
-      carryOver
+      carryOver,
+      isRecurring
     });
   };
 
@@ -210,6 +214,23 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
               </label>
             </div>
 
+            {/* Recurring Toggle */}
+            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl">
+              <div>
+                <p className="text-sm font-medium text-white">{t('budgets.recurring') || 'Recurring Budget'}</p>
+                <p className="text-xs text-white/50 mt-1 pr-4">{t('budgets.recurringDesc') || 'Automatically repeats when period ends'}</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                />
+                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+              </label>
+            </div>
+
             {/* Amount Input */}
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-white/70">{t('budgets.amount')}</label>
@@ -241,13 +262,13 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                 >
                   <Loader2 size={24} className="animate-spin" />
                 </motion.div>
-              ) : recommendedAmount ? (
+              ) : recommendedData ? (
                 <motion.div 
                   initial={{ opacity: 0, height: 0, scale: 0.95 }}
                   animate={{ opacity: 1, height: 'auto', scale: 1 }}
                   exit={{ opacity: 0, height: 0, scale: 0.95 }}
-                  onClick={() => setAmount(recommendedAmount.toString())}
-                  className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-2xl p-4 overflow-hidden relative cursor-pointer hover:border-blue-500/50 transition-all group"
+                  onClick={() => setAmount(recommendedData.amount.toString())}
+                  className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-2xl p-4 overflow-hidden relative cursor-pointer hover:border-blue-500/50 transition-all group mt-4"
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Sparkles size={48} className="animate-pulse" />
@@ -258,11 +279,25 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                       {t('budgets.recommendationTitle')}
                     </h4>
                     <p className="text-white/70 text-xs mb-3">{t('budgets.recommendationDesc')}</p>
+                    
+                    {recommendedData.basedOn && (
+                      <div className="bg-black/20 rounded-lg p-2.5 mb-3 border border-white/5 inline-block">
+                        <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold mb-1">
+                          {t('budgets.confidenceLabel', 'This recommendation is based on:')}
+                        </p>
+                        <p className="text-xs font-medium text-blue-200">
+                          {t('budgets.confidenceStats', '{{months}} months • {{transactions}} transactions')
+                            .replace('{{months}}', recommendedData.basedOn.months)
+                            .replace('{{transactions}}', recommendedData.basedOn.transactions)}
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <div className="text-2xl font-bold text-white">
-                        {recommendedAmount.toLocaleString()} <span className="text-sm font-normal text-white/50">{t('nav.currency')}</span>
+                        {recommendedData.amount.toLocaleString()} <span className="text-sm font-normal text-white/50">{t('nav.currency')}</span>
                       </div>
-                      {Number(amount) !== recommendedAmount && (
+                      {Number(amount) !== recommendedData.amount && (
                         <div className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1.5 rounded-lg font-medium">
                           {t('budgets.save') || 'Apply'}
                         </div>

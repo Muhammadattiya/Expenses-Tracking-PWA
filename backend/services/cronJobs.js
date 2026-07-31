@@ -3,6 +3,7 @@ const RecurringTransaction = require('../models/RecurringTransaction');
 const Transaction = require('../models/Transaction');
 const Bill = require('../models/Bill');
 const Subscription = require('../models/Subscription');
+const SmartBudgetPlan = require('../models/SmartBudgetPlan');
 const webpush = require('web-push');
 
 // Helper for sending push notifications
@@ -58,6 +59,7 @@ const initCronJobs = () => {
   cron.schedule('0 20 * * *', async () => {
     console.log('[CRON] Daily job started (sendDailyReminder)');
     await sendDailyReminder();
+    await processSmartBudgetReminders();
     console.log('[CRON] Daily job finished');
   }, {
     timezone: "Africa/Cairo"
@@ -283,4 +285,104 @@ const processBills = async (stats) => {
   }
 };
 
-module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification };
+const processSmartBudgetReminders = async () => {
+  try {
+    const now = new Date();
+    const User = require('../models/User');
+    const { getBudgetPeriodDates } = require('./budgetEngine');
+    const users = await User.find({});
+
+    for (const user of users) {
+      const prefs = user.preferences || {};
+      const subs = await Subscription.find({ user: user._id });
+      if (!subs.length) continue;
+
+      // 1. Planning Reminder
+      // Check if user has a confirmed plan for current month
+      const dummyMonthly = { period: 'monthly' };
+      const { startDate: mStart, endDate: mEnd } = getBudgetPeriodDates(dummyMonthly, prefs, now);
+      
+      const currentPlan = await SmartBudgetPlan.findOne({
+        user: user._id,
+        status: 'confirmed',
+        period: 'monthly',
+        startDate: { $lte: now },
+        endDate: { $gte: now }
+      });
+
+      // If no plan, and we are in the first 3 days of the period
+      const msInDay = 24 * 60 * 60 * 1000;
+      if (!currentPlan && (now - mStart) < (3 * msInDay) && (now - mStart) >= 0) {
+        const payload = JSON.stringify({
+          title: 'Planning Reminder',
+          body: 'Your new budget period has started. Create your Smart Budget Plan.',
+          url: '/budgets/smart-planner'
+        });
+        for (let sub of subs) await sendPushNotification(sub, payload, null);
+      }
+
+      // 2. Allocation Reminder (Draft > 24h)
+      const draftPlans = await SmartBudgetPlan.find({
+        user: user._id,
+        status: 'draft',
+        updatedAt: { $lt: new Date(now.getTime() - 24 * 60 * 60 * 1000) }
+      });
+      if (draftPlans.length > 0) {
+        const payload = JSON.stringify({
+          title: 'Allocation Reminder',
+          body: 'You have a draft Smart Budget Plan. Don\'t forget to confirm it.',
+          url: '/budgets/smart-planner'
+        });
+        for (let sub of subs) await sendPushNotification(sub, payload, null);
+      }
+
+      // 4. Plan Expiring (Confirmed, ends in ~3 days)
+      if (currentPlan) {
+        const daysLeft = (currentPlan.endDate - now) / msInDay;
+        if (daysLeft > 2 && daysLeft <= 3) {
+          const payload = JSON.stringify({
+            title: 'Plan Expiring',
+            body: 'Your current Smart Budget period is ending soon.',
+            url: '/budgets/smart-planner'
+          });
+          for (let sub of subs) await sendPushNotification(sub, payload, null);
+        }
+      }
+      
+      // 5. Custom Plan Reminders
+      const customPlans = await SmartBudgetPlan.find({
+        user: user._id,
+        status: 'confirmed',
+        period: 'custom',
+        endDate: { $gte: now }
+      });
+
+      for (const cp of customPlans) {
+        const daysSinceStart = (now - cp.startDate) / msInDay;
+        if (daysSinceStart >= 0 && daysSinceStart < 1) {
+          const payload = JSON.stringify({
+            title: 'Custom Budget Started',
+            body: `Your custom budget "${cp.name || 'Untitled'}" has officially started today!`,
+            url: '/budgets'
+          });
+          for (let sub of subs) await sendPushNotification(sub, payload, null);
+        }
+
+        const daysLeft = (cp.endDate - now) / msInDay;
+        if (daysLeft > 2 && daysLeft <= 3) {
+          const payload = JSON.stringify({
+            title: 'Custom Budget Expiring',
+            body: `Your custom budget "${cp.name || 'Untitled'}" is ending in a few days.`,
+            url: '/budgets'
+          });
+          for (let sub of subs) await sendPushNotification(sub, payload, null);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[ERROR] Operation Name: processSmartBudgetReminders');
+    console.error(`[ERROR] message:`, error.message);
+  }
+};
+
+module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification, processSmartBudgetReminders };

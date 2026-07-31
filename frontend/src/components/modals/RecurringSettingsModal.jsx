@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
@@ -39,10 +40,10 @@ const RecurringSettingsModal = ({
     onClose();
   };
 
-  return (
+  return createPortal(
     <>
       <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-        <div className="bg-[var(--color-bg-main)] w-full max-w-lg sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl border border-white/10 flex flex-col max-h-[90vh] animate-slide-up">
+        <div className="bg-[var(--color-bg-main)] w-full max-w-lg sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl border border-white/10 flex flex-col max-h-[85dvh] animate-slide-up">
           <div className="flex justify-between items-center p-6 border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-bg-main)] z-10 sm:rounded-t-[2rem] rounded-t-[2rem]">
             <h2 className="text-xl font-bold text-[var(--color-text-main)]">
               {t('recurring.settings', 'إعدادات التكرار')}
@@ -142,7 +143,7 @@ const RecurringSettingsModal = ({
               className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-brand-blue hover:bg-blue-600 text-white font-bold text-lg shadow-xl transition-all duration-300 active:scale-95"
             >
               <CheckCircle2 className="h-6 w-6" />
-              {t('common.save', 'حفظ الإعدادات')}
+              {t('recurring.saveSettings', 'حفظ الإعدادات')}
             </button>
           </div>
         </div>
@@ -155,7 +156,8 @@ const RecurringSettingsModal = ({
           onClose={() => setIsEndDatePickerOpen(false)}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 };
 

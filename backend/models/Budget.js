@@ -19,18 +19,35 @@ const budgetSchema = new mongoose.Schema({
   },
   period: {
     type: String,
-    enum: ['weekly', 'monthly'],
+    enum: ['weekly', 'monthly', 'custom'],
     required: true,
     default: 'monthly'
+  },
+  startDate: {
+    type: Date,
+    required: false
+  },
+  endDate: {
+    type: Date,
+    required: false
   },
   account: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
     required: false
   },
+  smartBudgetPlan: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SmartBudgetPlan',
+    required: false
+  },
   carryOver: {
     type: Boolean,
     default: false
+  },
+  isRecurring: {
+    type: Boolean,
+    default: true
   },
   isActive: {
     type: Boolean,

@@ -5,7 +5,8 @@ const { calculateRecommendation } = require('../services/budgetEngine');
 exports.getBudgets = async (req, res, next) => {
   try {
     const budgets = await Budget.find({ user: req.user.id })
-      .populate('category', 'name icon type');
+      .populate('category', 'name icon type')
+      .populate('smartBudgetPlan', 'name groupAsMaster');
     res.json(budgets);
   } catch (err) {
     next(err);
@@ -15,7 +16,7 @@ exports.getBudgets = async (req, res, next) => {
 // Create a new budget
 exports.createBudget = async (req, res, next) => {
   try {
-    const { category, amount, period, account, carryOver } = req.body;
+    const { category, amount, period, account, carryOver, isRecurring } = req.body;
 
     // Check if a budget already exists for this category
     const existing = await Budget.findOne({ user: req.user.id, category, period });
@@ -29,7 +30,8 @@ exports.createBudget = async (req, res, next) => {
       amount,
       period,
       account: account || null,
-      carryOver: carryOver || false
+      carryOver: carryOver || false,
+      isRecurring: isRecurring !== undefined ? isRecurring : true
     });
     await budget.save();
     
@@ -44,11 +46,11 @@ exports.createBudget = async (req, res, next) => {
 // Update an existing budget
 exports.updateBudget = async (req, res, next) => {
   try {
-    const { amount, period, isActive, account, carryOver } = req.body;
+    const { amount, period, isActive, account, carryOver, isRecurring } = req.body;
     
     const budget = await Budget.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },
-      { amount, period, isActive, account: account || null, carryOver: carryOver || false },
+      { amount, period, isActive, account: account || null, carryOver: carryOver || false, isRecurring: isRecurring !== undefined ? isRecurring : true },
       { new: true, runValidators: true }
     ).populate('category', 'name icon type');
 
@@ -84,7 +86,7 @@ exports.getRecommendation = async (req, res, next) => {
     }
 
     const recommendation = await calculateRecommendation(req.user.id, categoryId, period);
-    res.json({ amount: recommendation });
+    res.json(recommendation);
   } catch (err) {
     next(err);
   }

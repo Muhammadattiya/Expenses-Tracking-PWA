@@ -73,7 +73,7 @@ export const budgetService = {
           
         const catTxs = txs.filter(tx => tx.category === categoryId && tx.type === 'expense');
         
-        if (catTxs.length === 0) return { amount: 0 };
+        if (catTxs.length === 0) return { amount: 0, basedOn: { months: 0, transactions: 0 } };
         
         // Sort by date ascending
         catTxs.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -98,7 +98,13 @@ export const budgetService = {
           if (recommended === 0 && totalSpent > 0) recommended = 10;
         }
         
-        return { amount: recommended };
+        return { 
+          amount: recommended,
+          basedOn: {
+            months: Math.max(1, Math.round(daysSpan / 30.44)),
+            transactions: catTxs.length
+          }
+        };
       }
       throw error;
     }
