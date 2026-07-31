@@ -121,7 +121,11 @@ export default function SmartBudgetPlanner() {
         isRecurring
       };
       const result = await smartBudgetService.generateDistribution(payload);
-      setDistribution(result);
+      setDistribution(result.map(d => ({
+        ...d,
+        initialSuggestedAmount: d.suggestedAmount,
+        isManuallyAdjusted: false
+      })));
     } catch (err) {
       showToast(t('addTransaction.errorMsg'), 'error');
     } finally {
@@ -131,42 +135,18 @@ export default function SmartBudgetPlanner() {
 
   const handleAmountChange = (catId, newAmount) => {
     const amount = Number(newAmount) || 0;
-    const oldAmount = distribution.find(d => d.category === catId)?.suggestedAmount || 0;
-    const diff = amount - oldAmount;
-
-    // Distribute the negative difference among others to maintain sum
-    setDistribution(prev => {
-      const updated = prev.map(d => {
-        if (d.category === catId) return { ...d, suggestedAmount: amount };
-        return d;
-      });
-
-      // Simple proportional redistribution for remaining categories
-      const others = updated.filter(d => d.category !== catId);
-      if (others.length > 0 && diff !== 0) {
-        const totalOtherAmounts = others.reduce((sum, d) => sum + d.suggestedAmount, 0);
-        
-        let remainingDiff = -diff;
-        
-        for (let i = 0; i < others.length; i++) {
-          if (i === others.length - 1) {
-            others[i].suggestedAmount += remainingDiff;
-          } else {
-            const share = totalOtherAmounts > 0 
-              ? Math.round((others[i].suggestedAmount / totalOtherAmounts) * -diff)
-              : Math.round(-diff / others.length);
-            others[i].suggestedAmount += share;
-            remainingDiff -= share;
-          }
-          // prevent negative
-          if (others[i].suggestedAmount < 0) {
-             remainingDiff += Math.abs(others[i].suggestedAmount);
-             others[i].suggestedAmount = 0;
-          }
-        }
+    setDistribution(prev => prev.map(d => {
+      if (d.category === catId) {
+        return { ...d, suggestedAmount: amount, isManuallyAdjusted: true };
       }
-      return updated;
-    });
+      return d;
+    }));
+  };
+
+  const handlePercentageChange = (catId, newPercentage) => {
+    const percentage = Number(newPercentage) || 0;
+    const amount = Math.round((percentage / 100) * Number(availableBudget));
+    handleAmountChange(catId, amount);
   };
 
   const handleSaveDraft = async () => {
@@ -227,6 +207,40 @@ export default function SmartBudgetPlanner() {
       setIsLoading(false);
     }
   };
+
+  const recommendations = useMemo(() => {
+    const adjustedTotal = distribution.filter(d => d.isManuallyAdjusted).reduce((s, d) => s + d.suggestedAmount, 0);
+    const remainingForOthers = Math.max(0, Number(availableBudget) - adjustedTotal);
+    
+    const others = distribution.filter(d => !d.isManuallyAdjusted);
+    const othersInitialTotal = others.reduce((s, d) => s + d.initialSuggestedAmount, 0);
+
+    const recs = {};
+    let remainingDiff = remainingForOthers;
+    
+    for (let i = 0; i < others.length; i++) {
+      const d = others[i];
+      if (i === others.length - 1) {
+         recs[d.category] = remainingDiff;
+      } else {
+         const share = othersInitialTotal > 0 
+            ? Math.round((d.initialSuggestedAmount / othersInitialTotal) * remainingForOthers)
+            : Math.round(remainingForOthers / others.length);
+         recs[d.category] = share;
+         remainingDiff -= share;
+      }
+    }
+    return recs;
+  }, [distribution, availableBudget]);
+
+  const applyRecommendation = (catId) => {
+    if (recommendations[catId] !== undefined) {
+      handleAmountChange(catId, recommendations[catId]);
+    }
+  };
+
+  const allocatedTotal = distribution.reduce((s, d) => s + d.suggestedAmount, 0);
+  const remainingTotal = Number(availableBudget) - allocatedTotal;
 
   // Rendering Helpers
   const renderStepIcon = (num) => {
@@ -463,56 +477,88 @@ export default function SmartBudgetPlanner() {
               <p className="text-white/50 text-sm mb-4">{t('smartBudget.step4Desc')}</p>
             </div>
 
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex justify-between items-center">
-              <div>
-                <p className="text-white/50 text-xs mb-1">{t('smartBudget.availableBudget')}</p>
-                <p className="text-white font-bold text-lg">{Number(availableBudget).toLocaleString()} {t('nav.currency')}</p>
+            <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden flex flex-col shadow-lg">
+              <div className="p-5 border-b border-white/5 bg-white/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                <p className="text-white/50 text-xs mb-1 uppercase tracking-wider font-bold">{t('smartBudget.availableBudget')}</p>
+                <p className="text-white font-black text-3xl tracking-tight">{Number(availableBudget).toLocaleString()} <span className="text-sm font-medium text-white/40">{t('nav.currency')}</span></p>
               </div>
-              <div className="text-right">
-                <p className="text-white/50 text-xs mb-1">{t('smartBudget.allocatedAmount')}</p>
-                <p className="text-brand-blue font-bold text-lg">
-                  {distribution.reduce((s, d) => s + d.suggestedAmount, 0).toLocaleString()} {t('nav.currency')}
-                </p>
+              <div className="grid grid-cols-2 divide-x divide-white/5 rtl:divide-x-reverse">
+                <div className="p-4">
+                  <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1 font-bold">{t('smartBudget.allocatedAmount')}</p>
+                  <p className="text-brand-blue font-bold text-xl">{allocatedTotal.toLocaleString()}</p>
+                </div>
+                <div className="p-4">
+                  <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1 font-bold">{t('smartBudget.remainingAmount', 'المبلغ المتبقي')}</p>
+                  <p className={`font-bold text-xl ${remainingTotal < 0 ? 'text-red-400' : remainingTotal > 0 ? 'text-green-400' : 'text-white'}`}>{remainingTotal.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="h-1.5 w-full bg-black/40">
+                <div className={`h-full transition-all duration-500 rounded-r-full ${remainingTotal < 0 ? 'bg-red-500' : 'bg-brand-blue'}`} style={{ width: `${Math.min(100, (allocatedTotal / Number(availableBudget)) * 100)}%` }} />
               </div>
             </div>
 
             {isLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="animate-spin text-brand-blue w-8 h-8" /></div>
             ) : (
-              <div className="space-y-4 max-h-[45vh] overflow-y-auto pr-2">
+              <div className="space-y-4 pb-6">
                 {distribution.map(d => {
                   const cat = categories.find(c => c._id === d.category);
                   const isLow = d.suggestedAmount < (d.historicalAverage * 0.8) && d.historicalAverage > 0;
+                  const percentage = ((d.suggestedAmount / Number(availableBudget)) * 100).toFixed(1);
+                  const recommendation = recommendations[d.category];
+                  const hasRecommendation = recommendation !== undefined && recommendation !== d.suggestedAmount;
                   
                   return (
-                    <div key={d.category} className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4">
+                    <div key={d.category} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 transition-all hover:bg-white/10">
+                      
                       <div className="flex items-center justify-between">
                          <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: `${cat?.color}20`, color: cat?.color }}>
-                            {cat && React.createElement(getIconComponent(cat.icon), { size: 20 })}
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner" style={{ backgroundColor: `${cat?.color}15`, color: cat?.color }}>
+                            {cat && React.createElement(getIconComponent(cat.icon), { size: 24 })}
                           </div>
                           <div>
-                            <span className="text-white font-medium block">{cat?.name}</span>
-                            <span className="text-white/40 text-xs block">{t('smartBudget.priority')}: {t(`smartBudget.priority${d.priority}`)}</span>
+                            <span className="text-white font-bold text-base block">{cat?.name}</span>
+                            <span className="text-white/40 text-[11px] uppercase tracking-wider font-semibold block mt-0.5">{t('smartBudget.priority')}: {t(`smartBudget.priority${d.priority}`)}</span>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <input 
-                            type="number"
-                            value={d.suggestedAmount}
-                            onChange={(e) => handleAmountChange(d.category, e.target.value)}
-                            className="bg-white/10 text-white rounded-lg px-3 py-1.5 w-24 text-right outline-none font-bold focus:ring-1 focus:ring-brand-blue"
-                          />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-black/20 rounded-xl p-3 border border-white/5 relative group">
+                          <label className="text-[10px] text-white/50 uppercase tracking-wider font-bold block mb-1.5">{t('smartBudget.suggestedAmount', 'المبلغ')}</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number"
+                              value={d.suggestedAmount}
+                              onChange={(e) => handleAmountChange(d.category, e.target.value)}
+                              className="bg-transparent text-white w-full text-lg font-black outline-none focus:text-brand-blue transition-colors"
+                            />
+                            <span className="text-white/30 text-xs font-bold">{t('nav.currency')}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-black/20 rounded-xl p-3 border border-white/5 relative group">
+                          <label className="text-[10px] text-white/50 uppercase tracking-wider font-bold block mb-1.5">{t('smartBudget.percentage', 'النسبة المئوية')}</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number"
+                              value={percentage}
+                              onChange={(e) => handlePercentageChange(d.category, e.target.value)}
+                              className="bg-transparent text-white w-full text-lg font-black outline-none focus:text-brand-blue transition-colors"
+                            />
+                            <span className="text-white/30 text-xs font-bold">%</span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-white/50">{t('smartBudget.historicalAverage')}: <strong className="text-white">{d.historicalAverage.toLocaleString()}</strong></span>
+                          <span className="text-white/50 font-medium">{t('smartBudget.historicalAverage')}: <strong className="text-white">{d.historicalAverage.toLocaleString()}</strong></span>
                         </div>
                         
                         {d.basedOn && (
-                          <div className="bg-black/20 rounded-lg p-2.5 border border-white/5 w-max max-w-full">
+                          <div className="bg-black/20 rounded-lg p-2.5 border border-white/5 w-max max-w-full mt-1">
                             <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold mb-1">
                               {t('budgets.confidenceLabel', 'This recommendation is based on:')}
                             </p>
@@ -523,12 +569,27 @@ export default function SmartBudgetPlanner() {
                             </p>
                           </div>
                         )}
+                        
+                        {hasRecommendation && (
+                          <div className="bg-brand-blue/10 border border-brand-blue/20 rounded-xl p-3 flex items-center justify-between mt-1">
+                             <div>
+                               <p className="text-[10px] text-brand-blue/70 uppercase tracking-wider font-bold mb-0.5">{t('smartBudget.recommendationTitle', 'توصية مقترحة')}</p>
+                               <p className="text-brand-blue font-bold text-sm">{recommendation.toLocaleString()} {t('nav.currency')}</p>
+                             </div>
+                             <button 
+                               onClick={() => applyRecommendation(d.category)}
+                               className="px-4 py-1.5 bg-brand-blue text-white text-xs font-bold rounded-lg shadow hover:bg-blue-500 transition-colors"
+                             >
+                               {t('smartBudget.apply', 'تطبيق')}
+                             </button>
+                          </div>
+                        )}
                       </div>
 
                       {isLow && (
-                        <div className="bg-yellow-500/10 text-yellow-500 text-xs p-2 rounded flex gap-2 items-start">
-                          <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                          <span>{t('smartBudget.warningLow')}</span>
+                        <div className="bg-yellow-500/10 text-yellow-500 text-xs p-3 rounded-xl flex gap-2 items-start border border-yellow-500/20">
+                          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                          <span className="font-medium leading-relaxed">{t('smartBudget.warningLow')}</span>
                         </div>
                       )}
                     </div>
