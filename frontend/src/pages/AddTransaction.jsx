@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell } from "lucide-react";
 
 import { getAccounts } from "../api/accounts";
 import { getCategories } from "../api/categories";
@@ -99,6 +99,14 @@ const AddTransaction = () => {
 
     fetchFormData();
   }, []);
+
+  useEffect(() => {
+    if (location.state?.openRecurring) {
+      setIsRecurringModalOpen(true);
+      // Clean up state so it doesn't reopen on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -325,26 +333,58 @@ const AddTransaction = () => {
           </>
         )}
 
-        {/* إعدادات التكرار (iOS Style Row) */}
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={() => setIsRecurringModalOpen(true)}
-            className="w-full flex items-center justify-between bg-black/10 dark:bg-black/30 p-4 rounded-xl border border-[var(--color-border)] shadow-inner transition-colors hover:bg-black/20"
-          >
-            <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg ${recurringSettings.repeatType !== 'never' ? 'bg-brand-blue/20 text-brand-blue' : 'bg-gray-500/20 text-gray-400'}`}>
-                <Repeat className="w-4 h-4" />
+        {/* Recurring Settings (Modern UI) */}
+        <div className="pt-4">
+          {recurringSettings.repeatType === 'never' ? (
+            <button
+              type="button"
+              onClick={() => setIsRecurringModalOpen(true)}
+              className="w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-brand-blue/30 rounded-2xl bg-brand-blue/5 hover:bg-brand-blue/10 hover:border-brand-blue/50 transition-all duration-300 group"
+            >
+              <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue mb-2 group-hover:scale-110 transition-transform">
+                <Repeat className="w-5 h-5" />
               </div>
-              <span className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.settings', 'إعدادات التكرار')}</span>
+              <span className="text-sm font-bold text-brand-blue">{t('recurring.addBtn', 'إضافة كمعاملة متكررة')}</span>
+              <span className="text-xs text-[var(--color-text-muted)] mt-1 text-center">{t('recurring.automate', 'أتمتة هذه المعاملة لتتكرر تلقائياً')}</span>
+            </button>
+          ) : (
+            <div className="w-full rounded-2xl bg-gradient-to-br from-brand-blue/20 to-blue-600/10 border border-brand-blue/30 p-4 shadow-[0_0_15px_rgba(0,122,255,0.1)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 rounded-full blur-3xl -z-10" />
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand-blue text-white flex items-center justify-center shadow-lg shadow-brand-blue/30">
+                    <Repeat className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.settings', 'إعدادات التكرار')}</h4>
+                    <p className="text-xs text-brand-blue font-semibold mt-0.5">
+                      {t(`recurring.${recurringSettings.repeatType}`, recurringSettings.repeatType)} 
+                      {recurringSettings.interval > 1 && ` (x${recurringSettings.interval})`}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRecurringModalOpen(true)}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold text-[var(--color-text-main)] transition-colors"
+                >
+                  {t('recurring.edit', 'تعديل')}
+                </button>
+              </div>
+              <div className="flex gap-2 mt-3">
+                {recurringSettings.reminderEnabled && (
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-500 rounded-lg text-[10px] font-bold">
+                    <Bell className="w-3 h-3" /> {t('recurring.reminderOn', 'تذكير مُفعل')}
+                  </span>
+                )}
+                {!recurringSettings.neverEnds && (
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/20 text-brand-red rounded-lg text-[10px] font-bold">
+                    {t('recurring.endsLater', 'ينتهي لاحقاً')}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-                {recurringSettings.repeatType === 'never' ? t('recurring.never', 'بدون تكرار') : t(`recurring.${recurringSettings.repeatType}`, recurringSettings.repeatType)}
-              </span>
-              <span className="text-[var(--color-text-muted)] opacity-50">&gt;</span>
-            </div>
-          </button>
+          )}
         </div>
 
         <button

@@ -173,6 +173,13 @@ export default function Bills() {
     );
   }
 
+  const totalBills = items.length;
+  const totalAmount = items.reduce((sum, item) => sum + (item.expectedAmount || 0), 0);
+  const activeItems = items.filter(i => i.status !== 'paid');
+  const closestBill = activeItems.length > 0 
+    ? activeItems.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0]
+    : null;
+
   return (
     <div className="p-4 pt-8 animate-fade-in pb-24">
       <header className="flex justify-center items-center mb-8 mt-2">
@@ -183,6 +190,44 @@ export default function Bills() {
       </header>
 
       {error && <p className="text-sm text-brand-red bg-brand-red/10 p-3 rounded-xl border border-brand-red/20 mb-4">{error}</p>}
+
+      {items.length > 0 && (
+        <div className="mb-6 p-5 rounded-[2rem] bg-gradient-to-br from-brand-blue/20 to-blue-600/10 border border-brand-blue/30 shadow-[0_8px_30px_rgba(0,122,255,0.15)] relative overflow-hidden flex flex-col gap-4 animate-slide-up">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 rounded-full blur-3xl -z-10" />
+          
+          <div className="flex justify-between items-center">
+            <div className="flex flex-col">
+              <span className="text-xs text-[var(--color-text-muted)] font-bold mb-1">{t('bills.totalBills', 'إجمالي الفواتير')}</span>
+              <div className="text-3xl font-black text-[var(--color-text-main)]">{totalBills}</div>
+            </div>
+            <div className="w-[1px] h-10 bg-white/10" />
+            <div className="flex flex-col text-left rtl:text-right">
+              <span className="text-xs text-[var(--color-text-muted)] font-bold mb-1">{t('bills.totalValue', 'إجمالي القيمة')}</span>
+              <div className="text-2xl font-black text-brand-blue tracking-tight">{money(totalAmount)}</div>
+            </div>
+          </div>
+
+          <div className="p-3 bg-black/20 rounded-2xl border border-white/5 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-400/20 text-orange-400 flex items-center justify-center">
+                <CalendarClock className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="block text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-wider">{t('bills.closestBill', 'أقرب فاتورة')}</span>
+                <span className="block text-sm font-bold text-[var(--color-text-main)] truncate max-w-[120px]">
+                  {closestBill ? closestBill.name : t('bills.noUpcoming', 'لا يوجد قريباً')}
+                </span>
+              </div>
+            </div>
+            {closestBill && (
+              <div className="text-left rtl:text-right">
+                <span className="block text-[10px] text-[var(--color-text-muted)] font-bold mb-0.5">{new Date(closestBill.dueDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                <span className="block text-sm font-black text-orange-400">{money(closestBill.expectedAmount)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-[var(--color-text-muted)] space-y-5 flex-1">

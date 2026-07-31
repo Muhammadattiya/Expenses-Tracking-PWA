@@ -4,14 +4,18 @@ import { useNotification } from '../contexts/NotificationContext';
 import { budgetService } from '../services/budgetService';
 import { getCategories } from '../api/categories';
 import { getTransactions } from '../api/transactions';
+import { smartBudgetService } from '../api/smartBudgets';
 import { getCurrentUser } from '../api/auth';
 import { db } from '../db/db';
+import MasterBudgetCard from '../components/Budget/MasterBudgetCard';
 import BudgetCard from '../components/Budget/BudgetCard';
 import BudgetModal from '../components/Budget/BudgetModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import FormModal from '../components/modals/FormModal';
 import CustomSelect from '../components/ui/CustomSelect';
-import { Plus, Target, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Target, Filter, ChevronDown, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const SkeletonCard = () => (
   <div className="bg-white/5 rounded-3xl p-5 border border-white/5 animate-pulse">
@@ -35,18 +39,26 @@ const SkeletonCard = () => (
 );
 
 export default function Budgets() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast } = useNotification();
+  const navigate = useNavigate();
   
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [spentData, setSpentData] = useState({});
+  const [draftPlans, setDraftPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userPreferences, setUserPreferences] = useState({});
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [budgetToEdit, setBudgetToEdit] = useState(null);
   const [budgetToDelete, setBudgetToDelete] = useState(null);
+
+  const [planToEdit, setPlanToEdit] = useState(null);
+  const [planToDelete, setPlanToDelete] = useState(null);
+  const [isPlanEditModalOpen, setIsPlanEditModalOpen] = useState(false);
+  const [isPlanConfirmModalOpen, setIsPlanConfirmModalOpen] = useState(false);
+  const [planNameInput, setPlanNameInput] = useState('');
 
   // Filters
   const [filterPeriod, setFilterPeriod] = useState('all');
@@ -59,15 +71,17 @@ export default function Budgets() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [budgetsData, catsData, user] = await Promise.all([
+      const [budgetsData, catsData, user, draftsData] = await Promise.all([
         budgetService.getBudgets(),
         getCategories(),
-        getCurrentUser()
+        getCurrentUser(),
+        smartBudgetService.getPlans().catch(() => []) // gracefully handle if it fails
       ]);
       
       setBudgets(budgetsData);
       setCategories(catsData);
       setUserPreferences(user?.preferences || {});
+      setDraftPlans(draftsData.filter(d => d.status === 'draft'));
       
       await calculateSpent(budgetsData, user?.preferences || {});
     } catch (err) {
@@ -194,6 +208,34 @@ export default function Budgets() {
     }
   };
 
+  const handleEditPlan = async () => {
+    if (!planToEdit || !planNameInput.trim()) return;
+    try {
+      await smartBudgetService.updateDraftPlan(planToEdit._id, { name: planNameInput.trim() });
+      showToast(t('smartBudget.renameSuccess', 'Plan renamed successfully'), 'success');
+      setIsPlanEditModalOpen(false);
+      setPlanToEdit(null);
+      loadData();
+    } catch (err) {
+      console.error('Failed to rename plan', err);
+      showToast(t('common.error', 'An error occurred'), 'error');
+    }
+  };
+
+  const handleDeletePlan = async () => {
+    if (!planToDelete) return;
+    try {
+      await smartBudgetService.deletePlan(planToDelete._id);
+      showToast(t('smartBudget.deleteSuccess', 'Master Budget deleted'), 'success');
+      setIsPlanConfirmModalOpen(false);
+      setPlanToDelete(null);
+      loadData();
+    } catch (err) {
+      console.error('Failed to delete plan', err);
+      showToast(t('common.deleteError') || 'Error deleting plan', 'error');
+    }
+  };
+
   const filteredBudgets = useMemo(() => {
     return budgets.filter(b => {
       if (filterPeriod !== 'all' && b.period !== filterPeriod) return false;
@@ -202,6 +244,34 @@ export default function Budgets() {
       return true;
     });
   }, [budgets, filterPeriod, filterCategory]);
+
+  const groupedDisplayItems = useMemo(() => {
+    const items = [];
+    const masterGroups = {}; 
+
+    filteredBudgets.forEach(budget => {
+      if (budget.smartBudgetPlan && budget.smartBudgetPlan.groupAsMaster) {
+        const planId = budget.smartBudgetPlan._id;
+        if (!masterGroups[planId]) {
+          masterGroups[planId] = {
+            type: 'master',
+            plan: budget.smartBudgetPlan,
+            budgets: [],
+            totalAmount: 0,
+            totalSpent: 0
+          };
+          items.push(masterGroups[planId]);
+        }
+        masterGroups[planId].budgets.push(budget);
+        masterGroups[planId].totalAmount += (budget.amount || 0);
+        masterGroups[planId].totalSpent += (spentData[budget._id] || 0);
+      } else {
+        items.push({ type: 'single', budget });
+      }
+    });
+
+    return items;
+  }, [filteredBudgets, spentData]);
 
   return (
     <div className="pb-24 pt-6 px-4 max-w-lg mx-auto min-h-screen">
@@ -223,6 +293,50 @@ export default function Budgets() {
           <Plus size={24} />
         </button>
       </div>
+
+      {/* Smart Budget Planner Entry */}
+      <div 
+        onClick={() => navigate('/budgets/smart-planner')}
+        className="bg-gradient-to-r from-brand-blue/20 to-purple-500/20 border border-brand-blue/30 rounded-2xl p-5 mb-8 cursor-pointer hover:border-brand-blue/60 transition-all flex items-center justify-between group"
+      >
+        <div>
+          <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-2">
+            <Target className="text-brand-blue" size={20} />
+            {t('smartBudget.entryButton', 'Smart Planner')}
+          </h3>
+          <p className="text-white/60 text-sm">{t('smartBudget.entryDesc', 'Let us distribute your budget for you')}</p>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-brand-blue/20 flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
+          <ArrowRight size={20} className={language === 'ar' ? 'rotate-180' : ''} />
+        </div>
+      </div>
+
+      {!isLoading && draftPlans.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-white font-bold mb-4">{t('smartBudget.drafts', 'Recent Drafts')}</h2>
+          <div className="space-y-3">
+            {draftPlans.map(draft => (
+              <div 
+                key={draft._id} 
+                className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between"
+              >
+                <div>
+                  <h3 className="text-white font-medium">{draft.name || t('smartBudget.untitledDraft', 'Untitled Draft')}</h3>
+                  <p className="text-white/50 text-sm">
+                    {draft.availableBudget?.toLocaleString()} {t('nav.currency')} • {draft.categories?.length || 0} {t('smartBudget.categories', 'categories')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/budgets/smart-planner', { state: { draftPlan: draft } })}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  {t('smartBudget.resume', 'Resume')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!isLoading && budgets.length > 0 && (
         <>
@@ -267,7 +381,7 @@ export default function Budgets() {
           <SkeletonCard />
           <SkeletonCard />
         </div>
-      ) : filteredBudgets.length === 0 ? (
+      ) : groupedDisplayItems.length === 0 ? (
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -294,27 +408,41 @@ export default function Budgets() {
       ) : (
         <div className="space-y-4">
           <AnimatePresence>
-            {filteredBudgets.map((budget, index) => {
-              // Ensure category is an object even if fetched from offline DB (where it's just an ID)
-              const mappedCategory = typeof budget.category === 'object' 
-                ? budget.category 
-                : categories.find(c => c._id === budget.category) || { name: t('nav.category', 'الفئة') };
+            {groupedDisplayItems.map((item, index) => {
+              if (item.type === 'master') {
+                return (
+                  <MasterBudgetCard 
+                    key={item.plan._id}
+                    plan={item.plan}
+                    budgets={item.budgets}
+                    spentData={spentData}
+                    onEdit={budget => { setBudgetToEdit(budget); setIsModalOpen(true); }}
+                    onDelete={budget => setBudgetToDelete(budget)}
+                    onEditPlan={plan => { setPlanToEdit(plan); setPlanNameInput(plan.name || ''); setIsPlanEditModalOpen(true); }}
+                    onDeletePlan={plan => { setPlanToDelete(plan); setIsPlanConfirmModalOpen(true); }}
+                    index={index}
+                    categories={categories}
+                  />
+                );
+              } else {
+                const budget = item.budget;
+                const mappedCategory = typeof budget.category === 'object' 
+                  ? budget.category 
+                  : categories.find(c => c._id === budget.category) || { name: t('nav.category', 'Category') };
+                  
+                const fullBudget = { ...budget, category: mappedCategory };
                 
-              const mappedBudget = { ...budget, category: mappedCategory };
-              
-              return (
-                <BudgetCard
-                  key={budget._id}
-                  budget={mappedBudget}
-                  spent={spentData[budget._id] || 0}
-                  index={index}
-                  onEdit={(b) => {
-                    setBudgetToEdit(b);
-                    setIsModalOpen(true);
-                  }}
-                  onDelete={(b) => setBudgetToDelete(b)}
-                />
-              );
+                return (
+                  <BudgetCard
+                    key={budget._id}
+                    budget={fullBudget}
+                    spent={spentData[budget._id] || 0}
+                    index={index}
+                    onEdit={b => { setBudgetToEdit(b); setIsModalOpen(true); }}
+                    onDelete={b => setBudgetToDelete(b)}
+                  />
+                );
+              }
             })}
           </AnimatePresence>
         </div>
@@ -341,6 +469,41 @@ export default function Budgets() {
           confirmColor="red"
           onConfirm={handleDeleteBudget}
           onCancel={() => setBudgetToDelete(null)}
+        />
+
+        <FormModal
+          open={isPlanEditModalOpen}
+          title={t('smartBudget.renamePlan', 'Rename Master Budget')}
+          onSave={handleEditPlan}
+          onCancel={() => {
+            setIsPlanEditModalOpen(false);
+            setPlanToEdit(null);
+          }}
+          saveText={t('common.save', 'Save')}
+        >
+          <div className="space-y-4">
+            <input 
+              type="text" 
+              value={planNameInput}
+              onChange={(e) => setPlanNameInput(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-blue"
+              placeholder={t('smartBudget.planNamePlaceholder', 'Enter master budget name')}
+            />
+          </div>
+        </FormModal>
+
+        <ConfirmModal
+          open={isPlanConfirmModalOpen}
+          title={t('smartBudget.deletePlanConfirm', 'Delete Master Budget?')}
+          message={t('smartBudget.deletePlanWarning', 'Are you sure you want to delete this Master Budget? All sub-budgets grouped within it will also be permanently deleted. This action cannot be undone.')}
+          confirmText={t('settings.deleteBtn', 'Delete')}
+          cancelText={t('settings.cancelBtn', 'Cancel')}
+          confirmColor="red"
+          onConfirm={handleDeletePlan}
+          onCancel={() => {
+            setIsPlanConfirmModalOpen(false);
+            setPlanToDelete(null);
+          }}
         />
     </div>
   );

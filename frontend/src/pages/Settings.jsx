@@ -21,8 +21,11 @@ import {
   Link2,
   TrendingUp,
   TrendingDown,
-  Smartphone
+  Smartphone,
+  Repeat
 } from "lucide-react";
+
+import { useNavigate } from "react-router-dom";
 
 import { createPortal } from "react-dom";
 
@@ -73,6 +76,7 @@ const Settings = () => {
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [recurringTransactions, setRecurringTransactions] = useState([]);
+  const navigate = useNavigate();
   const [editingRecurring, setEditingRecurring] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeView, setActiveView] = useState('main'); // main, notifications, accounts, categories, data, recurring
@@ -549,7 +553,7 @@ const Settings = () => {
 
           <button onClick={() => setActiveView('recurring')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
             <div className="flex items-center gap-3">
-              <div className="bg-orange-500/20 p-2 rounded-xl text-orange-400"><Star size={20} /></div>
+              <div className="bg-orange-500/20 p-2 rounded-xl text-orange-400"><Repeat size={20} /></div>
               <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.recurringTransactions', 'المعاملات المتكررة')}</span>
             </div>
             <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
@@ -960,7 +964,7 @@ const Settings = () => {
 
               <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs">
                 <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-                  <Star size={14} className="text-orange-400" />
+                  <Repeat size={14} className="text-orange-400" />
                   <span>{t(`recurring.${rt.repeatType}`, rt.repeatType)}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
@@ -973,11 +977,18 @@ const Settings = () => {
           {recurringTransactions.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 text-[var(--color-text-muted)] space-y-5 flex-1">
               <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center mb-2 shadow-inner border border-white/5">
-                <Star size={40} className="text-[var(--color-text-muted)]" />
+                <Repeat size={40} className="text-[var(--color-text-muted)]" />
               </div>
               <p className="text-xl font-bold text-[var(--color-text-main)] text-center">{t('recurring.noRecurring', 'لا توجد معاملات متكررة')}</p>
             </div>
           )}
+          
+          <button
+            onClick={() => navigate('/add', { state: { openRecurring: true } })}
+            className="bg-brand-blue/10 border border-brand-blue/20 w-full py-4 flex items-center justify-center rounded-2xl text-brand-blue hover:bg-brand-blue/20 transition-colors gap-2 mt-6 font-bold"
+          >
+            <Plus className="w-5 h-5" /> {t('recurring.addBtn', 'إضافة معاملة متكررة')}
+          </button>
         </div>
       )}
 
