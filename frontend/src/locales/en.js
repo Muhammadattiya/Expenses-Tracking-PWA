@@ -440,6 +440,7 @@ export default {
     maxOccurrences: 'Max Occurrences (Optional)',
     reminderEnabled: 'Enable Reminder',
     reminderDaysBefore: 'Remind Before (Days)',
-    saveSettings: 'Save Settings'
+    saveSettings: 'Save Settings',
+    untitled: 'Untitled Transaction'
   }
 };

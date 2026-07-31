@@ -24,7 +24,7 @@ exports.createRecurringTransaction = async (userId, data) => {
   await recurring.save();
 
   // Process immediately to register the first transaction if it's due today
-  processRecurringTransactions().catch(console.error);
+  processRecurringTransactions({ recurringExecuted: 0 }).catch(console.error);
 
   return recurring;
 };
@@ -41,7 +41,7 @@ exports.updateRecurringTransaction = async (userId, id, data) => {
   }
 
   // Process immediately in case the update made it due
-  processRecurringTransactions().catch(console.error);
+  processRecurringTransactions({ recurringExecuted: 0 }).catch(console.error);
 
   return recurring;
 };

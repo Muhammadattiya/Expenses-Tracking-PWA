@@ -930,7 +930,7 @@ const Settings = () => {
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-[var(--color-text-main)] mb-1 flex items-center gap-2">
-                    {rt.title || 'معاملة بدون عنوان'}
+                    {rt.title || t('recurring.untitled', 'معاملة بدون عنوان')}
                     {rt.reminderEnabled && <Bell size={14} className="text-yellow-400" />}
                   </h3>
                   <div className="text-2xl font-black text-brand-blue tracking-tight">
