@@ -22,7 +22,11 @@ export default {
   dashboard: {
     transactions: 'المعاملات',
     transactionsFor: 'معاملات:',
-    noTransactions: 'لا توجد معاملات في هذا الشهر'
+    noTransactions: 'لا توجد معاملات في هذه الفترة',
+    thisWeek: 'هذا الأسبوع',
+    thisMonth: 'هذا الشهر',
+    weekOf: 'أسبوع',
+    changeSettingsInfo: 'يمكنك تغيير هذا النظام من الإعدادات'
   },
   addTransaction: {
     title: 'إضافة معاملة',
@@ -73,7 +77,11 @@ export default {
     weightGrams: 'الوزن بالجرام',
     quantity: 'الكمية',
     purchasePrice: 'سعر الشراء للوحدة (ج.م)',
-    saveInvestment: 'حفظ الاستثمار'
+    saveInvestment: 'حفظ الاستثمار',
+    liveGoldPrices: 'أسعار الذهب مباشر',
+    currentValue: 'القيمة الحالية',
+    noInvestments: 'لا توجد استثمارات مضافة حالياً',
+    deleteError: 'حدث خطأ أثناء الحذف'
   },
   receivables: {
     loadError: 'تعذر تحميل المبالغ المستحقة.',
@@ -108,7 +116,33 @@ export default {
     paidPart: 'المدفوع:',
     remainingPart: 'المتبقي:',
     amount: 'المبلغ',
-    collect: 'تحصيل'
+    collect: 'تحصيل',
+    expenseCategory: 'فئة المصروف'
+  },
+  debts: {
+    title: 'الديون والمستحقات',
+    tabGroupExpenses: 'مصروفات مشتركة',
+    tabPersonalDebts: 'ديون شخصية',
+    iOwe: 'ديون عليّ',
+    owedToMe: 'ديون لي',
+    addDebt: 'إضافة دين',
+    personName: 'اسم الشخص',
+    amount: 'المبلغ',
+    debtType: 'النوع',
+    account: 'الحساب',
+    saveDebt: 'حفظ الدين',
+    settle: 'سداد',
+    loan: 'إضافة دفعة',
+    remaining: 'المتبقي',
+    settled: 'مسدد',
+    active: 'نشط',
+    noDebts: 'لا توجد ديون شخصية',
+    addTransactionTitle: 'تسجيل سداد أو دفعة',
+    transactionType: 'نوع المعاملة',
+    repayment: 'سداد',
+    saveTransaction: 'حفظ المعاملة',
+    cancel: 'إلغاء',
+    deleteConfirm: 'هل أنت متأكد من حذف هذا الدين وسجله بالكامل؟'
   },
   analytics: {
     income: 'الدخل',
@@ -137,7 +171,41 @@ export default {
     balance: 'الرصيد',
     topCategories: 'أعلى فئات الصرف',
     topAccounts: 'أعلى الحسابات (التدفق الصافي)',
-    noData: 'لا توجد بيانات في هذه الفترة.'
+    noData: 'لا توجد بيانات في هذه الفترة.',
+    tabs: {
+      overview: 'ملخص',
+      spending: 'المصروفات',
+      planning: 'تخطيط',
+      assets: 'أصول',
+      liabilities: 'خصوم',
+      insights: 'رؤى'
+    },
+    filters: {
+      thisWeek: 'هذا الأسبوع',
+      lastWeek: 'الأسبوع الماضي',
+      thisMonth: 'هذا الشهر',
+      lastMonth: 'الشهر الماضي',
+      thisYear: 'هذا العام',
+      allTime: 'كل الأوقات',
+      custom: 'مخصص'
+    },
+    overview: {
+      netWorth: 'صافي الثروة',
+      cashFlow: 'التدفق النقدي',
+      savings: 'المدخرات',
+      savingsRate: 'معدل الإدخار',
+      topExpenses: 'أعلى المصروفات',
+      fixedIncome: 'الدخل الثابت (المرتب)',
+      netAfterLiabilities: 'الصافي بعد الالتزامات',
+      allLiabilities: 'جميع الالتزامات'
+    },
+    insights: {
+      forecast: 'التوقعات',
+      health: 'الصحة المالية',
+      good: 'ممتاز',
+      warning: 'تحذير',
+      danger: 'خطر'
+    }
   },
   settings: {
     appSettings: 'إعدادات التطبيق',
@@ -215,6 +283,8 @@ export default {
     categoryType: 'نوع الفئة',
     excludeFromTotal: 'استبعاد من إجمالي الرصيد',
     excludeFromTotalDesc: 'رصيد هذا الحساب لن يظهر في إجمالي رصيدك بالصفحة الرئيسية.',
+    isSavingsAccount: 'حساب توفير',
+    isSavingsAccountDesc: 'رصيد هذا الحساب سيتم اعتباره كمدخرات في صفحة التقارير.',
     budgetPreferences: 'إعدادات الميزانية',
     defaultBudgetPeriod: 'الفترة الافتراضية للميزانية',
     weekStartDay: 'بداية الأسبوع',

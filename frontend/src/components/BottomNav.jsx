@@ -19,7 +19,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 z-50 flex justify-center pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div className="fixed bottom-0 left-0 right-0 p-4 z-40 flex justify-center pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div dir="rtl" className="bg-black/15 dark:bg-black/40 backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-[2rem] w-full max-w-md mx-auto shadow-[0_8px_32px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-x-auto scrollbar-hide">
         <div className="flex justify-between items-center gap-1 px-2 py-2.5 min-w-max">
           {navItems.map((item) => (

@@ -21,7 +21,11 @@ export default {
   dashboard: {
     transactions: 'Transactions',
     transactionsFor: 'Transactions:',
-    noTransactions: 'No transactions this month'
+    noTransactions: 'No transactions this period',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    weekOf: 'Week',
+    changeSettingsInfo: 'You can change this from App Settings'
   },
   addTransaction: {
     title: 'Add Transaction',
@@ -72,7 +76,11 @@ export default {
     weightGrams: 'Weight (grams)',
     quantity: 'Quantity',
     purchasePrice: 'Unit Purchase Price (EGP)',
-    saveInvestment: 'Save Investment'
+    saveInvestment: 'Save Investment',
+    liveGoldPrices: 'Live Gold Prices',
+    currentValue: 'Current Value',
+    noInvestments: 'No investments added yet',
+    deleteError: 'An error occurred while deleting'
   },
   receivables: {
     loadError: 'Could not load receivables.',
@@ -107,7 +115,33 @@ export default {
     paidPart: 'Paid:',
     remainingPart: 'Remaining:',
     amount: 'Amount',
-    collect: 'Collect'
+    collect: 'Collect',
+    expenseCategory: 'Expense Category'
+  },
+  debts: {
+    title: 'Debts & Receivables',
+    tabGroupExpenses: 'Split Bills',
+    tabPersonalDebts: 'Personal Debts',
+    iOwe: 'I Owe',
+    owedToMe: 'Owed To Me',
+    addDebt: 'Add Debt',
+    personName: 'Person Name',
+    amount: 'Amount',
+    debtType: 'Type',
+    account: 'Account',
+    saveDebt: 'Save Debt',
+    settle: 'Settle',
+    loan: 'Add Loan',
+    remaining: 'Remaining',
+    settled: 'Settled',
+    active: 'Active',
+    noDebts: 'No personal debts found',
+    addTransactionTitle: 'Record Payment or Loan',
+    transactionType: 'Transaction Type',
+    repayment: 'Repayment',
+    saveTransaction: 'Save Transaction',
+    cancel: 'Cancel',
+    deleteConfirm: 'Are you sure you want to delete this debt and all its history?'
   },
   analytics: {
     income: 'Income',
@@ -136,7 +170,41 @@ export default {
     balance: 'Balance',
     topCategories: 'Top Expense Categories',
     topAccounts: 'Top Accounts (Net Flow)',
-    noData: 'No data available in this period.'
+    noData: 'No data available in this period.',
+    tabs: {
+      overview: 'Overview',
+      spending: 'Spending',
+      planning: 'Planning',
+      assets: 'Assets',
+      liabilities: 'Liabilities',
+      insights: 'Insights'
+    },
+    filters: {
+      thisWeek: 'This Week',
+      lastWeek: 'Last Week',
+      thisMonth: 'This Month',
+      lastMonth: 'Last Month',
+      thisYear: 'This Year',
+      allTime: 'All Time',
+      custom: 'Custom'
+    },
+    overview: {
+      netWorth: 'Net Worth',
+      cashFlow: 'Cash Flow',
+      savings: 'Savings',
+      savingsRate: 'Savings Rate',
+      topExpenses: 'Top Expenses',
+      fixedIncome: 'Fixed Income',
+      netAfterLiabilities: 'Net After Liabilities',
+      allLiabilities: 'All Liabilities'
+    },
+    insights: {
+      forecast: 'Forecast',
+      health: 'Financial Health',
+      good: 'Good',
+      warning: 'Warning',
+      danger: 'Danger'
+    }
   },
   settings: {
     appSettings: 'App Settings',
@@ -214,6 +282,8 @@ export default {
     categoryType: 'Category Type',
     excludeFromTotal: 'Exclude from total balance',
     excludeFromTotalDesc: 'This account\'s balance will not be included in the total balance on the dashboard.',
+    isSavingsAccount: 'Savings Account',
+    isSavingsAccountDesc: 'This account\'s balance will be counted as savings in the Reports page.',
     budgetPreferences: 'Budget Settings',
     defaultBudgetPeriod: 'Default Budget Period',
     weekStartDay: 'Week Start Day',

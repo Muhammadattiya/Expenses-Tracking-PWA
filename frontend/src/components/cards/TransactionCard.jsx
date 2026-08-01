@@ -85,7 +85,7 @@ const TransactionCard = ({ transaction, onClick }) => {
 
       <div className="flex items-center gap-3">
         <div className={`font-bold ${amountStyle}`}>
-          {sign}{transaction.amount} ج.م
+          {sign}{transaction.amount} {t('nav.currency', 'EGP')}
         </div>
         <div style={transaction.type === 'transfer' ? { backgroundColor: `${rightColor}33`, color: rightColor } : {}} className={`p-3 rounded-xl ${
           transaction.type === 'expense' ? 'bg-brand-red/10 text-brand-red' :

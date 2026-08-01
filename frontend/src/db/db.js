@@ -31,6 +31,11 @@ db.version(5).stores({
   budgets: '_id, category, period, account, isActive, carryOver'
 });
 
+db.version(6).stores({
+  debts: '_id, user, personName, type, status',
+  debtTransactions: '_id, debtId, user, account, type'
+});
+
 export async function clearOfflineData() {
   await db.transactions.clear();
   await db.accounts.clear();
@@ -40,4 +45,6 @@ export async function clearOfflineData() {
   await db.bills.clear();
   await db.recurringTransactions.clear();
   await db.budgets.clear();
+  await db.debts.clear();
+  await db.debtTransactions.clear();
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
@@ -11,6 +11,8 @@ import {
   getTransactions,
   deleteTransaction,
 } from "../api/transactions";
+import { getDebts } from "../api/debts";
+import { getCurrentUser } from "../api/auth";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -21,13 +23,54 @@ import { useLanguage } from '../contexts/LanguageContext';
 const Dashboard = () => {
   const { t, lang } = useLanguage();
   const [allTransactions, setAllTransactions] = useState([]);
+  const [allDebtTransactions, setAllDebtTransactions] = useState([]);
   const [pendingTransactions, setPendingTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState(() => {
+  const [referenceDate, setReferenceDate] = useState(() => {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
   });
+  const [userPrefs, setUserPrefs] = useState({ budgetPeriod: 'monthly', budgetStartDayMonthly: 1, budgetStartDayWeekly: 6 });
+  
+  const { periodStart, periodEnd } = useMemo(() => {
+    let start = new Date(referenceDate);
+    let end = new Date(referenceDate);
+    
+    if (userPrefs.budgetPeriod === 'weekly') {
+      const prefWeekStart = userPrefs.budgetStartDayWeekly !== undefined ? userPrefs.budgetStartDayWeekly : 6;
+      let day = start.getDay();
+      let diff = day >= prefWeekStart ? day - prefWeekStart : 7 - (prefWeekStart - day);
+      
+      start.setDate(start.getDate() - diff);
+      start.setHours(0, 0, 0, 0);
+      
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      const prefMonthStart = userPrefs.budgetStartDayMonthly || 1;
+      const lastDayOfCurrentMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+      const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
+
+      if (start.getDate() < actualMonthStartDay) {
+        const lastDayOfPrevMonth = new Date(start.getFullYear(), start.getMonth(), 0).getDate();
+        start = new Date(start.getFullYear(), start.getMonth() - 1, Math.min(prefMonthStart, lastDayOfPrevMonth));
+      } else {
+        start = new Date(start.getFullYear(), start.getMonth(), actualMonthStartDay);
+      }
+      
+      start.setHours(0, 0, 0, 0);
+
+      end = new Date(start);
+      end.setMonth(end.getMonth() + 1);
+      end.setDate(end.getDate() - 1);
+      end.setHours(23, 59, 59, 999);
+    }
+    
+    return { periodStart: start, periodEnd: end };
+  }, [referenceDate, userPrefs]);
   
   const [totals, setTotals] = useState({ balance: 0, income: 0, expense: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -73,13 +116,23 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [transactionsData, accountsData] = await Promise.all([
+      const [transactionsData, accountsData, userData, debtsData] = await Promise.all([
         getTransactions(),
         getAccounts(),
+        getCurrentUser().catch(() => null),
+        getDebts().catch(() => ({ debts: [], transactions: [] }))
       ]);
 
       setAllTransactions(transactionsData);
       setAccounts(accountsData);
+      setAllDebtTransactions(debtsData.transactions || []);
+      if (userData && userData.preferences) {
+        setUserPrefs({
+          budgetPeriod: userData.preferences.budgetPeriod || 'monthly',
+          budgetStartDayMonthly: userData.preferences.budgetStartDayMonthly || 1,
+          budgetStartDayWeekly: userData.preferences.budgetStartDayWeekly ?? 6
+        });
+      }
     } catch (error) {
       console.error("❌ Error:", error);
     } finally {
@@ -117,28 +170,25 @@ const Dashboard = () => {
       totalAdjustments = acc?.balance_adjustment || 0;
     }
 
-    const currentMonth = selectedMonth.getMonth();
-    const currentYear = selectedMonth.getFullYear();
-
     filtered.forEach(t => {
       const tDate = new Date(t.date);
-      const isCurrentMonth = tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+      const isCurrentPeriod = tDate >= periodStart && tDate <= periodEnd;
 
       if (t.type === 'income') {
         totalIncome += t.amount;
-        if (isCurrentMonth) currentMonthIncome += t.amount;
+        if (isCurrentPeriod) currentMonthIncome += t.amount;
       } else if (t.type === 'expense') {
         totalExpense += t.amount;
-        if (isCurrentMonth) currentMonthExpense += t.amount;
+        if (isCurrentPeriod) currentMonthExpense += t.amount;
       } else if (t.type === 'transfer') {
         if (selectedAccount !== 'all') {
           if ((t.to_account?._id || t.to_account) === selectedAccount) {
             totalIncome += t.amount;
-            if (isCurrentMonth) currentMonthIncome += t.amount;
+            if (isCurrentPeriod) currentMonthIncome += t.amount;
           }
           if ((t.from_account?._id || t.from_account) === selectedAccount) {
             totalExpense += t.amount;
-            if (isCurrentMonth) currentMonthExpense += t.amount;
+            if (isCurrentPeriod) currentMonthExpense += t.amount;
           }
         }
       } else if (t.type === 'settlement') {
@@ -146,26 +196,42 @@ const Dashboard = () => {
       }
     });
 
+    const getAccountBalance = (account) => {
+      let bal = account.balance_adjustment || 0;
+      completedTransactions.forEach(t => {
+        if (t.type === 'income' && (t.account?._id || t.account) === account._id) bal += t.amount;
+        else if (t.type === 'expense' && (t.account?._id || t.account) === account._id) bal -= t.amount;
+        else if (t.type === 'transfer') {
+          if ((t.to_account?._id || t.to_account) === account._id) bal += t.amount;
+          if ((t.from_account?._id || t.from_account) === account._id) bal -= t.amount;
+        } else if (t.type === 'settlement' && (t.account?._id || t.account) === account._id) bal += t.amount;
+      });
+
+      allDebtTransactions.forEach(dt => {
+        if ((dt.account?._id || dt.account) === account._id) {
+          if (dt.type === 'loan') {
+            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal += dt.amount; // Borrowed money -> got money
+            else bal -= dt.amount; // Lent money -> lost money
+          } else if (dt.type === 'repayment') {
+            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal -= dt.amount; // Repaid money -> lost money
+            else bal += dt.amount; // Got paid back -> got money
+          }
+        }
+      });
+      
+      return bal;
+    };
+
     let calculatedBalance = 0;
     if (selectedAccount === 'all') {
-      const getAccountBalance = (account) => {
-        let bal = account.balance_adjustment || 0;
-        completedTransactions.forEach(t => {
-          if (t.type === 'income' && (t.account?._id || t.account) === account._id) bal += t.amount;
-          else if (t.type === 'expense' && (t.account?._id || t.account) === account._id) bal -= t.amount;
-          else if (t.type === 'transfer') {
-            if ((t.to_account?._id || t.to_account) === account._id) bal += t.amount;
-            if ((t.from_account?._id || t.from_account) === account._id) bal -= t.amount;
-          } else if (t.type === 'settlement' && (t.account?._id || t.account) === account._id) bal += t.amount;
-        });
-        return bal;
-      };
-
       calculatedBalance = accounts
         .filter(acc => !acc.excludeFromTotal && !acc.isArchived)
         .reduce((sum, acc) => sum + getAccountBalance(acc), 0);
     } else {
-      calculatedBalance = totalIncome - totalExpense + totalSettlements + totalAdjustments;
+      const acc = accounts.find(a => a._id === selectedAccount);
+      if (acc) {
+        calculatedBalance = getAccountBalance(acc);
+      }
     }
 
     setTotals({
@@ -173,7 +239,7 @@ const Dashboard = () => {
       expense: currentMonthExpense,
       balance: calculatedBalance
     });
-  }, [allTransactions, selectedAccount, selectedMonth, accounts]);
+  }, [allTransactions, selectedAccount, periodStart, periodEnd, accounts]);
 
   const displayedTransactions = useMemo(() => {
     const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');
@@ -182,12 +248,12 @@ const Dashboard = () => {
         return false;
       }
       const tDate = new Date(t.date);
-      if (tDate.getMonth() !== selectedMonth.getMonth() || tDate.getFullYear() !== selectedMonth.getFullYear()) {
+      if (tDate < periodStart || tDate > periodEnd) {
         return false;
       }
       return true;
     });
-  }, [allTransactions, selectedAccount, selectedMonth]);
+  }, [allTransactions, selectedAccount, periodStart, periodEnd]);
 
   const { groupedTransactions, sortedDates, groupCounts } = useMemo(() => {
     const getCreationTime = (t) => {
@@ -253,12 +319,22 @@ const Dashboard = () => {
     }
   };
 
-  const handlePrevMonth = () => {
-    setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  const handlePrevPeriod = () => {
+    setReferenceDate(prev => {
+      const d = new Date(prev);
+      if (userPrefs.budgetPeriod === 'weekly') d.setDate(d.getDate() - 7);
+      else d.setMonth(d.getMonth() - 1);
+      return d;
+    });
   };
 
-  const handleNextMonth = () => {
-    setSelectedMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  const handleNextPeriod = () => {
+    setReferenceDate(prev => {
+      const d = new Date(prev);
+      if (userPrefs.budgetPeriod === 'weekly') d.setDate(d.getDate() + 7);
+      else d.setMonth(d.getMonth() + 1);
+      return d;
+    });
   };
 
   if (isLoading) {
@@ -269,6 +345,20 @@ const Dashboard = () => {
       </div>
     );
   }
+  
+  const getPeriodLabel = () => {
+    const now = new Date();
+    const isCurrentPeriod = now >= periodStart && now <= periodEnd;
+    
+    if (userPrefs.budgetPeriod === 'weekly') {
+      if (isCurrentPeriod) return t('dashboard.thisWeek', 'هذا الأسبوع');
+      return `${t('dashboard.weekOf', 'أسبوع')} ${periodStart.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' })}`;
+    } else {
+      if (isCurrentPeriod) return t('dashboard.thisMonth', 'هذا الشهر');
+      return periodStart.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' });
+    }
+  };
+
   return (
     <div className="animate-fade-in overflow-x-hidden w-full">
       
@@ -298,22 +388,33 @@ const Dashboard = () => {
           </div>
 
             <div className="w-full">
-          {/* Month Selector */}
-          <div className="flex justify-between items-center mb-2">
-            <button onClick={handlePrevMonth} className="p-2 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-colors backdrop-blur-md">
-              <ChevronRight className={`w-4 h-4 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          {/* Period Selector */}
+          <div className="flex justify-between items-center mb-2 w-full">
+            <button onClick={handlePrevPeriod} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 shadow-sm backdrop-blur-md active:scale-95">
+              <ChevronLeft className={`w-5 h-5 text-[var(--color-text-main)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
             </button>
-            <span className="text-sm font-bold text-[var(--color-text-main)] tracking-wider">
-              {selectedMonth.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
-            </span>
-            <button onClick={handleNextMonth} className="p-2 bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-colors backdrop-blur-md">
-              <ChevronLeft className={`w-4 h-4 text-[var(--color-text-muted)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
+            <div className="flex flex-col items-center">
+              <div 
+                className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity bg-black/5 dark:bg-white/5 px-3 py-1 rounded-full" 
+                onClick={() => {
+                  const dateStr = `${periodStart.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' })} - ${periodEnd.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                  showToast(`${dateStr} — ${t('dashboard.changeSettingsInfo', 'يمكنك تغيير هذا النظام من الإعدادات')}`, 'info');
+                }}
+              >
+                <span className="text-sm font-bold text-[var(--color-text-main)] tracking-wider">
+                  {getPeriodLabel()}
+                </span>
+                <Info className="w-3.5 h-3.5 text-brand-blue" />
+              </div>
+            </div>
+            <button onClick={handleNextPeriod} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 shadow-sm backdrop-blur-md active:scale-95">
+              <ChevronRight className={`w-5 h-5 text-[var(--color-text-main)] ${lang === 'ar' ? 'rotate-180' : ''}`} />
             </button>
           </div>
 
           <p className="text-[var(--color-text-muted)] text-xs mb-0 text-center font-medium">{t('nav.totalBalance', 'إجمالي الرصيد')}</p>
           <h1 className="text-3xl sm:text-4xl font-bold text-center text-[var(--color-text-main)] mb-2 tracking-tight">
-            {totals.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} <span className="text-lg text-[var(--color-text-muted)] font-medium tracking-normal">{t('nav.currency', 'ج.م')}</span>
+            {totals.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} <span className="text-lg text-[var(--color-text-muted)] font-medium tracking-normal">{t('nav.currency', 'EGP')}</span>
           </h1>
 
           <div className="flex justify-between gap-2">
@@ -350,7 +451,7 @@ const Dashboard = () => {
               <div key={pt._id} className="flex justify-between items-center p-3 rounded-xl bg-black/20 border border-white/5">
                 <div>
                   <p className="font-semibold text-[var(--color-text-main)] text-sm">{pt.title}</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">{new Date(pt.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')} • {pt.amount} {t('nav.currency', 'ج.م')}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{new Date(pt.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')} • {pt.amount} {t('nav.currency', 'EGP')}</p>
                 </div>
                 <button 
                   onClick={() => handleTransactionClick(pt)}
@@ -374,7 +475,7 @@ const Dashboard = () => {
       <div className="w-full pb-4">
         {displayedTransactions.length === 0 ? (
           <div className="text-center text-[var(--color-text-muted)] py-12 glass-panel rounded-[2rem] font-medium flex flex-col items-center gap-3">
-            <p>{t('dashboard.noTransactions', 'لا توجد معاملات في هذا الشهر')}</p>
+            <p>{t('dashboard.noTransactions', 'لا توجد معاملات في هذه الفترة')}</p>
           </div>
         ) : (
           <GroupedVirtuoso

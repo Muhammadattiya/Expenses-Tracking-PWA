@@ -45,13 +45,14 @@ export default function BudgetCard({ budget, spent, onEdit, onDelete, index = 0 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
-      className={`bg-white/5 dark:bg-white/5 rounded-3xl p-5 border border-white/10 relative overflow-hidden backdrop-blur-xl group transition-colors duration-300 ${isExpanded ? stateBorder : 'hover:shadow-2xl hover:' + stateBorder} cursor-pointer`}
+      className={`bg-black/30 rounded-[2rem] p-6 border border-white/5 relative overflow-hidden backdrop-blur-xl group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/10 hover:shadow-2xl hover:scale-[1.01]'} cursor-pointer`}
       onClick={() => setIsExpanded(!isExpanded)}
     >
       {/* Background glow based on progress */}
       <div 
         className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-500 ${stateColor.split(' ')[0]}`}
       />
+      <div className="flex-1">
 
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex items-center gap-3">
@@ -165,6 +166,7 @@ export default function BudgetCard({ budget, spent, onEdit, onDelete, index = 0 
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

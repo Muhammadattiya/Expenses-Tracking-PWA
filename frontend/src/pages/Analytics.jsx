@@ -1,288 +1,286 @@
-import { useEffect, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, AreaChart, Area, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import React, { useEffect, useState } from 'react';
 import { getAnalytics } from '../api/analytics';
+import { getTransactions } from '../api/transactions';
 import { getAccounts } from '../api/accounts';
 import { getCategories } from '../api/categories';
-import { getIconComponent } from '../components/IconPicker';
-import { Loader2, Download, Filter, X } from 'lucide-react';
+import { getDebts } from '../api/debts';
+import { getInvestments, getGoldPrice } from '../api/investments';
+import { budgetService } from '../services/budgetService';
+import { getBills } from '../api/bills';
+import { getRecurringTransactions } from '../api/recurringTransactions';
+import { getCurrentUser } from '../api/auth';
+import { Loader2, Download, Filter, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import CustomSelect from '../components/ui/CustomSelect';
 
-const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#f43f5e', '#10b981', '#ec4899', '#06b6d4', '#84cc16'];
+import AnalyticsTabs from '../components/analytics/AnalyticsTabs';
+import DateFilterChips, { getFilterBounds } from '../components/analytics/DateFilterChips';
+import OverviewTab from '../components/analytics/OverviewTab';
+import SpendingTab from '../components/analytics/SpendingTab';
+import PlanningTab from '../components/analytics/PlanningTab';
+import AssetsTab from '../components/analytics/AssetsTab';
+import LiabilitiesTab from '../components/analytics/LiabilitiesTab';
+import InsightsTab from '../components/analytics/InsightsTab';
+import { AnalyticsSkeleton } from '../components/ui/Skeletons';
 
 export default function Analytics() {
   const { t, lang } = useLanguage();
   const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(value || 0);
+  
+  const [activeTab, setActiveTab] = useState('overview');
+  
   const [data, setData] = useState(null);
-  const [filters, setFilters] = useState({ from: '', to: '', search: '', account: '', category: '' });
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [debts, setDebts] = useState([]);
+  const [investments, setInvestments] = useState([]);
+  const [budgets, setBudgets] = useState([]);
+  const [bills, setBills] = useState([]);
+  const [recurring, setRecurring] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
+  const [allDebtTransactions, setAllDebtTransactions] = useState([]);
+  const [userPrefs, setUserPrefs] = useState(null);
 
+  const [filters, setFilters] = useState({ from: '', to: '', search: '', account: '', category: '', filterType: '', initialized: false });
+  const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load everything
   const loadData = async () => {
+    setIsLoading(true);
     try {
-      const result = await getAnalytics(filters);
-      if (result.monthly) {
-        result.monthly = result.monthly.map(m => ({
+      // 1. Get user preferences first to determine default filter
+      let currentFilters = { ...filters };
+      let prefs = userPrefs;
+      
+      if (!prefs) {
+        const userRes = await getCurrentUser().catch(() => ({}));
+        prefs = userRes?.preferences || {};
+        setUserPrefs(prefs);
+      }
+
+      if (!currentFilters.initialized) {
+        const type = prefs.budgetPeriod === 'weekly' ? 'this_week' : 'this_month';
+        const bounds = getFilterBounds(type, prefs);
+        if (bounds) {
+          currentFilters = { ...currentFilters, from: bounds.from, to: bounds.to, filterType: type, initialized: true };
+          setFilters(currentFilters);
+        }
+      }
+
+      // Parallel loading for better performance
+      const [
+        analyticsResult, 
+        accs, 
+        cats, 
+        debtsRes, 
+        invsRes, 
+        budgetsRes, 
+        billsRes, 
+        recurringRes,
+        allTx
+      ] = await Promise.all([
+        getAnalytics(currentFilters),
+        getAccounts(),
+        getCategories(),
+        getDebts().catch(() => ({})), // Catch if endpoint fails offline
+        getInvestments().catch(() => []),
+        budgetService.getBudgets().catch(() => []),
+        getBills().catch(() => []),
+        getRecurringTransactions().catch(() => []),
+        getTransactions().catch(() => [])
+      ]);
+
+      let goldPriceRes = null;
+      try {
+        const cached = localStorage.getItem('cachedGoldPrice');
+        if (cached) {
+          goldPriceRes = JSON.parse(cached);
+        }
+      } catch (e) {
+        console.error("Failed to parse cached gold price", e);
+      }
+
+      if (analyticsResult.monthly) {
+        analyticsResult.monthly = analyticsResult.monthly.map(m => ({
           ...m,
           balance: m.income - m.expense
         }));
       }
-      setData(result);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      
+      const investmentsWithCurrentValue = (invsRes || []).map(inv => {
+        let unitValue = inv.purchasePrice;
+        if (inv.type === 'gold' && goldPriceRes) {
+          unitValue = inv.karat === 24 ? goldPriceRes.perGram24 : goldPriceRes.perGram21;
+        }
+        return {
+          ...inv,
+          currentValue: inv.quantity * unitValue
+        };
+      });
 
-  const loadOptions = async () => {
-    try {
-      const accs = await getAccounts();
-      const cats = await getCategories();
+      setData(analyticsResult);
       setAccounts(accs);
       setCategories(cats);
+      setDebts(debtsRes?.debts || []);
+      setAllDebtTransactions(debtsRes?.transactions || []);
+      setInvestments(investmentsWithCurrentValue);
+      setBudgets(budgetsRes);
+      setBills(billsRes);
+      setRecurring(recurringRes || []);
+      setAllTransactions(allTx);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, [filters.from, filters.to, filters.account, filters.category]); 
-
-  useEffect(() => {
-    loadOptions();
-  }, []);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    loadData();
-  };
+    if (!filters.initialized && !userPrefs) {
+      loadData();
+    } else if (filters.initialized) {
+      loadData();
+    }
+  }, [filters.from, filters.to, filters.account, filters.category, filters.search, filters.initialized]);
 
   const exportReport = () => { 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); 
+    const exportPayload = {
+      analytics: data,
+      accounts,
+      debts,
+      investments,
+      budgets,
+      bills
+    };
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' }); 
     const url = URL.createObjectURL(blob); 
     const link = document.createElement('a'); 
-    link.href = url; link.download = `analytics-${new Date().toISOString().slice(0,10)}.json`; 
+    link.href = url; link.download = `financial-report-${new Date().toISOString().slice(0,10)}.json`; 
     link.click(); 
     URL.revokeObjectURL(url); 
   };
 
-  if (!data) return (
-    <div className="min-h-[60vh] grid place-items-center p-4">
-      <Loader2 className="w-8 h-8 text-brand-blue animate-spin" />
-    </div>
-  );
+  if (isLoading && !data) return <AnalyticsSkeleton />;
 
-  const cards = [
-    [t('analytics.income', 'الدخل'), data.summary.income, 'text-brand-green', 'bg-brand-green/10 border-brand-green/20'], 
-    [t('analytics.expenses', 'المصروفات'), data.summary.expense, 'text-brand-red', 'bg-brand-red/10 border-brand-red/20'], 
-    [t('analytics.cashFlow', 'التدفق النقدي'), data.summary.balance, 'text-brand-blue', 'bg-brand-blue/10 border-brand-blue/20']
-  ];
+  const isAssetsTab = activeTab === 'assets';
 
   return (
-    <div className="p-4 pt-8 animate-fade-in space-y-6">
+    <div className="p-4 pt-8 animate-fade-in space-y-8 pb-24 max-w-7xl mx-auto">
       
-      {/* Header */}
-      <header className="flex items-center justify-between">
+      {/* Header & Global Actions */}
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <p className="text-brand-blue text-sm font-medium mb-1 tracking-wide">{t('analytics.overview', 'نظرة عامة')}</p>
-          <h1 className="text-2xl font-bold text-[var(--color-text-main)] tracking-wide">{t('analytics.title', 'التقارير والإحصائيات')}</h1>
+          <p className="text-brand-blue text-xs font-bold tracking-widest uppercase mb-1">{t('analytics.tabs.overview', 'Overview')}</p>
+          <h1 className="text-3xl md:text-4xl font-black text-[var(--color-text-main)] tracking-tight">{t('analytics.title', 'Reports & Analytics')}</h1>
         </div>
-        <button onClick={exportReport} className="flex items-center gap-2 bg-brand-blue/20 text-brand-blue border border-brand-blue/30 px-3 py-2 rounded-xl text-sm hover:bg-brand-blue/30 transition shadow-lg">
-          <Download className="w-4 h-4" />
-          <span className="hidden sm:inline font-medium">{t('analytics.export', 'تصدير')}</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {!isAssetsTab && (
+            <button 
+              onClick={() => setShowFilters(!showFilters)} 
+              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5 ${showFilters ? 'bg-brand-blue text-white shadow-brand-blue/20' : 'bg-white/5 border border-white/10 text-[var(--color-text-main)] hover:bg-white/10'}`}
+            >
+              <Filter className="w-4 h-4" />
+              <span>{showFilters ? t('analytics.hideFilters', 'Hide Filters') : t('analytics.filterResults', 'Filter Results')}</span>
+            </button>
+          )}
+          
+          <button onClick={exportReport} className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg hover:shadow-brand-blue/20 hover:-translate-y-0.5">
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('analytics.export', 'Export JSON')}</span>
+          </button>
+        </div>
       </header>
 
-      {/* Filters Toggle Button for Mobile */}
-      <button 
-        onClick={() => setShowFilters(!showFilters)}
-        className="w-full flex items-center justify-center gap-2 glass-panel p-3 text-[var(--color-text-main)] md:hidden font-medium"
-      >
-        {showFilters ? <X className="w-5 h-5" /> : <Filter className="w-5 h-5" />}
-        {showFilters ? t('analytics.hideFilters', 'إخفاء الفلاتر') : t('analytics.filterResults', 'تصفية النتائج')}
-      </button>
+      {/* Control Panel (Filters) */}
+      {!isAssetsTab && (
+        <div className={`transition-all duration-500 overflow-hidden ${showFilters ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="glass-panel p-4 md:p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 backdrop-blur-2xl">
+          <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
+           <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
+             <DateFilterChips filters={filters} setFilters={setFilters} userPrefs={userPrefs} />
+           </div>
+           
+           <div className="w-full lg:w-auto flex flex-col md:flex-row gap-4">
+              <div className="w-full md:w-48 z-20">
+                <CustomSelect
+                  options={[
+                    { value: '', label: t('analytics.allAccounts', 'All Accounts'), icon: 'Globe', color: '#ffffff' },
+                    ...accounts.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
+                  ]}
+                  value={filters.account}
+                  onChange={(val) => setFilters({ ...filters, account: val })}
+                  placeholder={t('analytics.allAccounts', 'All Accounts')}
+                  type="account"
+                />
+              </div>
 
-      {/* Filters Section */}
-      <form 
-        className={`${showFilters ? 'block' : 'hidden'} md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 glass-panel p-5 rounded-[2rem]`}
-        onSubmit={handleSearchSubmit}
-      >
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-[var(--color-text-muted)] px-1">{t('analytics.fromDate', 'من تاريخ')}</label>
-          <input type="date" className="field" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })}/>
-        </div>
-        
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-[var(--color-text-muted)] px-1">{t('analytics.toDate', 'إلى تاريخ')}</label>
-          <input type="date" className="field" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })}/>
-        </div>
-        
-        <div className="space-y-1.5 z-20">
-          <label className="text-xs font-medium text-[var(--color-text-muted)] px-1">{t('analytics.account', 'الحساب')}</label>
-          <CustomSelect
-            options={[
-              { value: '', label: t('analytics.allAccounts', 'كل الحسابات'), icon: 'Globe', color: '#ffffff' },
-              ...accounts.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
-            ]}
-            value={filters.account}
-            onChange={(val) => setFilters({ ...filters, account: val })}
-            placeholder={t('analytics.allAccounts', 'كل الحسابات')}
-            type="account"
-          />
-        </div>
+              <div className="w-full md:w-48 z-10">
+                <CustomSelect
+                  options={[
+                    { value: '', label: t('analytics.allCategories', 'All Categories'), icon: 'Layers', color: '#ffffff' },
+                    ...categories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon, color: cat.color }))
+                  ]}
+                  value={filters.category}
+                  onChange={(val) => setFilters({ ...filters, category: val })}
+                  placeholder={t('analytics.allCategories', 'All Categories')}
+                />
+              </div>
 
-        <div className="space-y-1.5 z-10">
-          <label className="text-xs font-medium text-[var(--color-text-muted)] px-1">{t('analytics.category', 'الفئة')}</label>
-          <CustomSelect
-            options={[
-              { value: '', label: t('analytics.allCategories', 'كل الفئات'), icon: 'Layers', color: '#ffffff' },
-              ...categories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon, color: cat.color }))
-            ]}
-            value={filters.category}
-            onChange={(val) => setFilters({ ...filters, category: val })}
-            placeholder={t('analytics.allCategories', 'كل الفئات')}
-          />
-        </div>
-
-        <div className="space-y-1.5">
-           <label className="text-xs font-medium text-[var(--color-text-muted)] px-1">{t('analytics.searchLabel', 'بحث')}</label>
-           <div className="flex gap-2">
-             <input 
-               type="text" 
-               placeholder={t('analytics.searchPlaceholder', 'بحث بالاسم...')}
-               className="field"
-               value={filters.search} 
-               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-             />
-             <button type="submit" className="bg-brand-blue text-[var(--color-text-main)] rounded-xl px-4 font-medium hover:bg-brand-blue/90 transition shadow-lg">
-               {t('analytics.searchBtn', 'بحث')}
-             </button>
+              <div className="w-full md:w-48">
+                <div className="relative">
+                  <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                  <input 
+                    type="text" 
+                    placeholder={t('analytics.searchPlaceholder', 'Search...')}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 px-4 pr-10 text-sm text-[var(--color-text-main)] outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/50 transition-all"
+                    value={filters.search} 
+                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  />
+                </div>
+              </div>
            </div>
         </div>
-      </form>
+       </div>
+       </div>
+      )}
 
-      {/* Summary Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {cards.map(([title, value, color, bgClass]) => (
-          <div className={`glass-panel border-white/10 p-6 flex flex-col justify-center items-center text-center ${bgClass} rounded-[2rem] shadow-lg`} key={title}>
-            <p className="text-sm font-medium text-[var(--color-text-muted)] mb-2">{title}</p>
-            <p className={`text-2xl font-bold tracking-wider ${color}`}>{money(value)}</p>
-          </div>
-        ))}
-      </section>
+      {/* Tabs Navigation */}
+      <AnalyticsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Main Charts Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* 1. Monthly Trend (Line) */}
-        <ChartCard title={t('analytics.monthlyTrend', 'الاتجاه الشهري (دخل ومصروف)')}>
-          <LineChart data={data.monthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid stroke="#ffffff12" strokeDasharray="3 3"/>
-            <XAxis dataKey="month" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
-            <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }} />
-            <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}/>
-            <Line type="monotone" dataKey="income" name={t('analytics.income', 'الدخل')} stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }} />
-            <Line type="monotone" dataKey="expense" name={t('analytics.expense', 'المصروف')} stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, fill: '#f43f5e', strokeWidth: 0 }} />
-          </LineChart>
-        </ChartCard>
-
-        {/* 2. New: Net Balance Trend (Area) */}
-        <ChartCard title={t('analytics.netCashFlow', 'صافي التدفق النقدي (شهرياً)')}>
-          <AreaChart data={data.monthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="#ffffff12" strokeDasharray="3 3"/>
-            <XAxis dataKey="month" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
-            <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }} />
-            <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}/>
-            <Area type="monotone" dataKey="balance" name={t('analytics.net', 'الصافي')} stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
-          </AreaChart>
-        </ChartCard>
-
-        {/* 3. Category Distribution (Pie) */}
-        <ChartCard title={t('analytics.categoryDistribution', 'توزيع المصروفات حسب الفئة')}>
-          <PieChart>
-            <Pie data={data.categories} dataKey="amount" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
-              {data.categories.map((entry, index) => <Cell key={entry.name} fill={colors[index % colors.length]} stroke="rgba(0,0,0,0)"/>)}
-            </Pie>
-            <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }} itemStyle={{ color: '#fff' }} />
-            <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px', marginTop: '10px' }} />
-          </PieChart>
-        </ChartCard>
-
-        {/* 4. New: Top Accounts Distribution (Bar) */}
-        <ChartCard title={t('analytics.accountDistribution', 'توزيع الرصيد على الحسابات')}>
-          <BarChart data={data.accounts} layout="vertical" margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
-            <CartesianGrid stroke="#ffffff12" strokeDasharray="3 3"/>
-            <XAxis type="number" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
-            <YAxis type="category" dataKey="name" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }} cursor={{fill: '#ffffff10'}} />
-            <Bar dataKey="amount" name={t('analytics.balance', 'الرصيد')} radius={[0, 4, 4, 0]}>
-              {data.accounts.map((entry, index) => (
-                <Cell key={entry.name} fill={entry.amount >= 0 ? '#10b981' : '#f43f5e'} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ChartCard>
-
+      {/* Main Content Area */}
+      <div className="relative">
+        {activeTab === 'overview' && (
+            <OverviewTab 
+              money={money} 
+              data={data} 
+              accounts={accounts} 
+              investments={investments} 
+              debts={debts} 
+              bills={bills}
+              recurring={recurring}
+              filters={filters}
+              allTransactions={allTransactions}
+              allDebtTransactions={allDebtTransactions}
+            />
+        )}
+        {activeTab === 'spending' && (
+            <SpendingTab data={data} categories={categories} money={money} />
+        )}
+        {activeTab === 'planning' && (
+            <PlanningTab budgets={budgets} money={money} />
+        )}
+        {activeTab === 'assets' && (
+            <AssetsTab investments={investments} money={money} />
+        )}
+        {activeTab === 'liabilities' && (
+            <LiabilitiesTab debts={debts} bills={bills} filters={filters} money={money} />
+        )}
+        {activeTab === 'insights' && (
+            <InsightsTab data={data} money={money} filters={filters} />
+        )}
       </div>
-
-      {/* Lists / Tables Area */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ListCard title={t('analytics.topCategories', 'أعلى فئات الصرف')} rows={data.categories} color="text-red-400" money={money} noDataText={t('analytics.noData', 'لا توجد بيانات في هذه الفترة.')} />
-        <ListCard title={t('analytics.topAccounts', 'أعلى الحسابات (التدفق الصافي)')} rows={data.accounts} color="text-blue-400" money={money} noDataText={t('analytics.noData', 'لا توجد بيانات في هذه الفترة.')} />
-      </div>
-
 
     </div>
   );
-}
-
-function ChartCard({ title, children }) { 
-  return (
-    <section className="glass-panel p-5 rounded-[2rem] flex flex-col shadow-lg">
-      <h2 className="mb-4 text-lg font-semibold text-[var(--color-text-main)]">{title}</h2>
-      <div className="h-64 w-full min-h-[250px]">
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-    </section>
-  ); 
-}
-
-function ListCard({ title, rows, color, money, noDataText }) { 
-  return (
-    <section className="glass-panel p-6 rounded-[2rem] shadow-lg">
-      <h2 className="mb-5 text-lg font-semibold text-[var(--color-text-main)]">{title}</h2>
-      <div className="space-y-3">
-        {rows.length ? rows.map((row) => {
-          const IconComp = row.icon ? getIconComponent(row.icon) : null;
-          return (
-          <div className="flex justify-between items-center bg-black/20 p-3.5 rounded-xl border border-white/5 hover:bg-black/30 transition-colors" key={row.name}>
-            <div className="flex items-center gap-3">
-              {IconComp && (
-                <div 
-                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5"
-                  style={row.color ? { backgroundColor: `${row.color}20`, color: row.color } : {}}
-                >
-                  <IconComp className="w-4 h-4" />
-                </div>
-              )}
-              <span className="text-sm text-[var(--color-text-main)] font-medium">{row.name}</span>
-            </div>
-            <span className={`text-sm font-bold tracking-wide ${color}`}>{money(row.amount)}</span>
-          </div>
-          );
-        }) : <p className="text-sm text-[var(--color-text-muted)] text-center py-4">{noDataText}</p>}
-      </div>
-    </section>
-  ); 
 }
