@@ -13,6 +13,7 @@ const recurringTransactionsRoutes = require('./routes/recurringTransactions');
 const billsRoutes = require('./routes/bills');
 const budgetsRoutes = require('./routes/budgets');
 const smartBudgetsRoutes = require('./routes/smartBudgets');
+const debtsRoutes = require('./routes/debts');
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/recurring-transactions', recurringTransactionsRoutes);
 app.use('/api/bills', billsRoutes);
 app.use('/api/budgets', budgetsRoutes);
 app.use('/api/smart-budgets', smartBudgetsRoutes);
+app.use('/api/debts', debtsRoutes);
 
 app.use(errorHandler);
 module.exports = app;

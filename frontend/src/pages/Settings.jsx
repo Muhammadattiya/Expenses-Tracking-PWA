@@ -58,6 +58,7 @@ import {
 import { subscribeToNotifications, sendNotification } from "../api/notifications";
 
 import { getCurrentUser, deleteAllUserData, updatePreferences } from "../api/auth";
+import { getDebts } from "../api/debts";
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
@@ -76,6 +77,7 @@ const Settings = () => {
   const [categories, setCategories] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [recurringTransactions, setRecurringTransactions] = useState([]);
+  const [allDebtTransactions, setAllDebtTransactions] = useState([]);
   const navigate = useNavigate();
   const [editingRecurring, setEditingRecurring] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +99,7 @@ const Settings = () => {
   const [newAccountBalance, setNewAccountBalance] = useState('');
   const [newAccountCardLast4, setNewAccountCardLast4] = useState('');
   const [newAccountExcludeFromTotal, setNewAccountExcludeFromTotal] = useState(false);
+  const [newAccountIsSavingsAccount, setNewAccountIsSavingsAccount] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -120,6 +123,7 @@ const Settings = () => {
   const [editCardLast4, setEditCardLast4] = useState('');
   const [editBalance, setEditBalance] = useState('');
   const [editExcludeFromTotal, setEditExcludeFromTotal] = useState(false);
+  const [editIsSavingsAccount, setEditIsSavingsAccount] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Push Notifications State
@@ -176,16 +180,18 @@ const Settings = () => {
 
   const fetchData = async () => {
     try {
-      const [accs, cats, trans, recurringData] = await Promise.all([
+      const [accs, cats, trans, recurringData, debtsData] = await Promise.all([
         getAccounts(),
         getCategories(),
         getTransactions(),
-        getRecurringTransactions()
+        getRecurringTransactions(),
+        getDebts().catch(() => ({ debts: [], transactions: [] }))
       ]);
       setAccounts(accs);
       setCategories(cats);
       setTransactions(trans);
       setRecurringTransactions(recurringData);
+      setAllDebtTransactions(debtsData.transactions || []);
 
       // Fetch user data
       const user = await getCurrentUser();
@@ -229,6 +235,19 @@ const Settings = () => {
         if (t.from_account?._id === account._id) balance -= t.amount;
       } else if (t.type === 'settlement' && t.account?._id === account._id) balance += t.amount;
     });
+
+    allDebtTransactions.forEach(dt => {
+      if ((dt.account?._id || dt.account) === account._id) {
+        if (dt.type === 'loan') {
+          if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') balance += dt.amount; // Borrowed money -> got money
+          else balance -= dt.amount; // Lent money -> lost money
+        } else if (dt.type === 'repayment') {
+          if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') balance -= dt.amount; // Repaid money -> lost money
+          else balance += dt.amount; // Got paid back -> got money
+        }
+      }
+    });
+    
     return balance;
   };
 
@@ -245,7 +264,8 @@ const Settings = () => {
         color: newAccountColor,
         balance_adjustment: Number(newAccountBalance) || 0,
         cardLast4: newAccountCardLast4,
-        excludeFromTotal: newAccountExcludeFromTotal
+        excludeFromTotal: newAccountExcludeFromTotal,
+        isSavingsAccount: newAccountIsSavingsAccount
       });
       setNewAccountName("");
       setNewAccountBalance("");
@@ -253,6 +273,7 @@ const Settings = () => {
       setNewAccountColor("#3b82f6");
       setNewAccountCardLast4("");
       setNewAccountExcludeFromTotal(false);
+      setNewAccountIsSavingsAccount(false);
       setAddAccountModalOpen(false);
       fetchData();
     } catch (error) {
@@ -288,6 +309,7 @@ const Settings = () => {
       setEditCardLast4(item.cardLast4 || '');
       setEditBalance(getAccountBalance(item));
       setEditExcludeFromTotal(item.excludeFromTotal || false);
+      setEditIsSavingsAccount(item.isSavingsAccount || false);
     }
     setEditModalOpen(true);
   };
@@ -313,7 +335,7 @@ const Settings = () => {
         if (!isNaN(newBalance) && newBalance !== currentBalance) {
           newAdjustment += (newBalance - currentBalance);
         }
-        await updateAccount(editingItem._id, { name: editName, icon: editIcon, color: editColor, type: editingItem.type, cardLast4: editCardLast4, balance_adjustment: newAdjustment, excludeFromTotal: editExcludeFromTotal });
+        await updateAccount(editingItem._id, { name: editName, icon: editIcon, color: editColor, type: editingItem.type, cardLast4: editCardLast4, balance_adjustment: newAdjustment, excludeFromTotal: editExcludeFromTotal, isSavingsAccount: editIsSavingsAccount });
       } else {
         await updateCategory(editingItem._id, { name: editName, icon: editIcon, type: editingItem.type });
       }
@@ -1068,6 +1090,10 @@ const Settings = () => {
                       </label>
                     </div>
                   </div>
+                  <label className="flex items-center justify-between p-2.5 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
+                    <span className="text-xs font-medium text-[var(--color-text-main)]">{t('settings.isSavingsAccount', 'حساب توفير')}</span>
+                    <input type="checkbox" checked={editIsSavingsAccount} onChange={(e) => setEditIsSavingsAccount(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
+                  </label>
                 </>
               ) : (
                 <div>
@@ -1177,6 +1203,11 @@ const Settings = () => {
               <label className="flex items-center justify-between p-2.5 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
                 <span className="text-xs font-medium text-[var(--color-text-main)]">{t('settings.excludeFromTotal', 'استبعاد من إجمالي الرصيد')}</span>
                 <input type="checkbox" checked={newAccountExcludeFromTotal} onChange={(e) => setNewAccountExcludeFromTotal(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
+              </label>
+
+              <label className="flex items-center justify-between p-2.5 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
+                <span className="text-xs font-medium text-[var(--color-text-main)]">{t('settings.isSavingsAccount', 'حساب توفير')}</span>
+                <input type="checkbox" checked={newAccountIsSavingsAccount} onChange={(e) => setNewAccountIsSavingsAccount(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
               </label>
 
               <IconPicker type="account" selectedIcon={newAccountIcon} onSelect={setNewAccountIcon} selectedColor={newAccountColor} onColorSelect={setNewAccountColor} colorClass="text-blue-400" />

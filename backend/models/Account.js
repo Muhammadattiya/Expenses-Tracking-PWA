@@ -28,6 +28,10 @@ const accountSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isSavingsAccount: {
+    type: Boolean,
+    default: false
+  },
   isArchived: {
     type: Boolean,
     default: false

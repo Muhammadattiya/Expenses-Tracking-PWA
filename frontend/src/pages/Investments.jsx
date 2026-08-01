@@ -1,47 +1,247 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus, TrendingDown, TrendingUp, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Loader2, Plus, TrendingDown, TrendingUp, Trash2, Coins, LineChart, Activity } from 'lucide-react';
 import { createInvestment, deleteInvestment, getGoldPrice, getInvestments } from '../api/investments';
-import CustomSelect from '../components/ui/CustomSelect';
 import { useLanguage } from '../contexts/LanguageContext';
+import InvestmentModal from '../components/modals/InvestmentModal';
+import { InvestmentsSkeleton } from '../components/ui/Skeletons';
 
 export default function Investments() {
   const { t, lang } = useLanguage();
-  const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP', maximumFractionDigits: 2 }).format(value || 0);
+  const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { 
+    style: 'currency', 
+    currency: 'EGP', 
+    maximumFractionDigits: 2 
+  }).format(value || 0);
+
   const goldUnitPrice = (gold, karat) => Number(karat || 24) === 21 ? gold?.perGram21 : gold?.perGram24;
 
   const [investments, setInvestments] = useState([]);
   const [gold, setGold] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ type: 'gold', karat: 21, name: t('investments.gold21Name', 'ذهب عيار 21'), symbol: '', quantity: '', purchasePrice: '', currency: 'EGP' });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const load = async () => {
-    setLoading(true); setError('');
+    setLoading(true); 
+    setError('');
+    
+    // Try to load cached gold price immediately for faster UX
+    const cachedGold = localStorage.getItem('cachedGoldPrice');
+    if (cachedGold) {
+      try { setGold(JSON.parse(cachedGold)); } catch (e) {}
+    }
+
     const [itemsResult, priceResult] = await Promise.allSettled([getInvestments(), getGoldPrice()]);
-    if (itemsResult.status === 'fulfilled') setInvestments(itemsResult.value);
-    else setError(itemsResult.reason.response?.data?.message || t('investments.loadError', 'تعذر تحميل الاستثمارات.'));
-    if (priceResult.status === 'fulfilled') setGold(priceResult.value);
-    else setError(priceResult.reason.response?.data?.message || t('investments.goldPriceError', 'تعذر جلب سعر الذهب الحالي.'));
+    
+    if (itemsResult.status === 'fulfilled') {
+      setInvestments(itemsResult.value);
+    } else {
+      setError(itemsResult.reason.response?.data?.message || t('investments.loadError', 'تعذر تحميل الاستثمارات.'));
+    }
+    
+    if (priceResult.status === 'fulfilled') {
+      setGold(priceResult.value);
+      localStorage.setItem('cachedGoldPrice', JSON.stringify(priceResult.value));
+    } else if (!cachedGold) {
+      // Only show error if we also don't have a cached version
+      setError(priceResult.reason.response?.data?.message || t('investments.goldPriceError', 'تعذر جلب سعر الذهب الحالي.'));
+    }
     setLoading(false);
   };
+
   useEffect(() => { load(); }, []);
+
   const unitValue = (item) => item.type === 'gold' ? goldUnitPrice(gold, item.karat) || 0 : item.purchasePrice;
+  
   const totals = useMemo(() => investments.reduce((acc, item) => {
-    acc.purchase += item.quantity * item.purchasePrice; acc.current += item.quantity * unitValue(item); return acc;
+    acc.purchase += item.quantity * item.purchasePrice; 
+    acc.current += item.quantity * unitValue(item); 
+    return acc;
   }, { purchase: 0, current: 0 }), [investments, gold]);
-  const submit = async (event) => {
-    event.preventDefault(); setError('');
-    try {
-      await createInvestment({ ...form, karat: Number(form.karat), quantity: Number(form.quantity), purchasePrice: Number(form.purchasePrice) });
-      setForm({ type: 'gold', karat: 21, name: t('investments.gold21Name', 'ذهب عيار 21'), symbol: '', quantity: '', purchasePrice: '', currency: 'EGP' }); await load();
-    } catch (err) { setError(err.response?.data?.message || t('investments.saveError', 'تعذر حفظ الاستثمار.')); }
-  };
-  if (loading) return <div className="min-h-[60vh] grid place-items-center"><Loader2 className="animate-spin text-blue-400" /></div>;
+
   const profit = totals.current - totals.purchase;
-  return <div className="p-4 pt-8 animate-fade-in space-y-6">
-    <header><p className="text-brand-blue text-sm">{t('investments.updatesOnOpen', 'يتحدث عند فتح الصفحة')}</p><h1 className="text-2xl font-bold">{t('investments.title', 'الاستثمارات')}</h1></header>
-    <section className="glass-panel border-amber-500/20 bg-amber-500/5 p-6 rounded-[2rem]"><p className="text-sm text-[var(--color-text-muted)]">{t('investments.totalCurrentValue', 'إجمالي القيمة الحالية')}</p><p className="text-3xl font-bold tracking-wide">{money(totals.current)}</p><p className={profit >= 0 ? 'text-brand-green mt-1 font-medium' : 'text-brand-red mt-1 font-medium'}>{money(profit)} {profit >= 0 ? t('investments.profit', 'ربح') : t('investments.loss', 'خسارة')}</p>{gold && <p className="mt-4 text-xs text-[var(--text-gold)]">{t('investments.karat21', 'عيار 21')}: {money(gold.perGram21)} {t('investments.perGram', 'للجرام')} · {t('investments.karat24', 'عيار 24')}: {money(gold.perGram24)} {t('investments.perGram', 'للجرام')}</p>}</section>
-    <form onSubmit={submit} className="glass-panel p-6 rounded-[2rem] space-y-4"><h2 className="font-bold flex gap-2 items-center text-lg"><Plus size={20} className="text-brand-blue"/> {t('investments.addInvestment', 'إضافة استثمار')}</h2><CustomSelect value={form.type} onChange={(val) => setForm({ ...form, type: val, name: val === 'gold' ? t('investments.gold21Name', 'ذهب عيار 21') : '', currency: 'EGP' })} options={[{value: 'gold', label: t('investments.gold', 'ذهب')}, {value: 'stock', label: t('investments.stock', 'سهم')}]} placeholder={t('investments.investmentType', 'نوع الاستثمار')} />{form.type === 'gold' && <CustomSelect value={form.karat} onChange={(val) => { const karat = Number(val); setForm({ ...form, karat, name: karat === 24 ? t('investments.gold24Name', 'ذهب عيار 24') : t('investments.gold21Name', 'ذهب عيار 21') }); }} options={[{value: 21, label: t('investments.gold21Name', 'ذهب عيار 21')}, {value: 24, label: t('investments.gold24Name', 'ذهب عيار 24')}]} placeholder={t('investments.selectKarat', 'اختر العيار')} />}<input className="field" required placeholder={form.type === 'gold' ? t('investments.investmentDesc', 'وصف الاستثمار') : t('investments.stockName', 'اسم السهم')} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })}/>{form.type === 'stock' && <input className="field" placeholder={t('investments.stockSymbol', 'رمز السهم (AAPL)')} value={form.symbol} onChange={(event) => setForm({ ...form, symbol: event.target.value })}/>}<div className="grid grid-cols-2 gap-3"><input className="field" required type="number" step="any" min="0" placeholder={form.type === 'gold' ? t('investments.weightGrams', 'الوزن بالجرام') : t('investments.quantity', 'الكمية')} value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })}/><input className="field" required type="number" step="any" min="0" placeholder={t('investments.purchasePrice', 'سعر الشراء للوحدة (ج.م)')} value={form.purchasePrice} onChange={(event) => setForm({ ...form, purchasePrice: event.target.value })}/></div><button className="w-full rounded-xl bg-brand-blue py-3.5 font-bold text-[var(--color-text-main)] hover:bg-brand-blue/90 transition-colors">{t('investments.saveInvestment', 'حفظ الاستثمار')}</button></form>
-    {error && <p className="rounded-xl bg-brand-red/10 p-3 text-sm text-brand-red">{error}</p>}
-    <div className="space-y-3">{investments.map((item) => { const current = item.quantity * unitValue(item); const itemProfit = current - item.quantity * item.purchasePrice; return <article key={item._id} className="glass-panel p-4 flex justify-between items-center group"><div><h3 className="font-bold text-lg">{item.name}</h3><p className="text-sm text-[var(--color-text-muted)] mt-1">{item.quantity} × {money(item.purchasePrice)}</p><p className={itemProfit >= 0 ? 'text-brand-green text-sm mt-2 font-medium' : 'text-brand-red text-sm mt-2 font-medium'}>{itemProfit >= 0 ? <TrendingUp size={16} className="inline mr-1"/> : <TrendingDown size={16} className="inline mr-1"/>} {money(itemProfit)}</p></div><button onClick={async () => { await deleteInvestment(item._id); setInvestments(investments.filter((entry) => entry._id !== item._id)); }} className="text-[var(--color-text-muted)] hover:text-brand-red bg-white/5 p-2 rounded-xl transition-colors"><Trash2 size={20}/></button></article>; })}</div>
-  </div>;
+  const isProfit = profit >= 0;
+
+  const handleSaveInvestment = async (formData) => {
+    await createInvestment(formData);
+    await load();
+  };
+
+  const handleDelete = async (id) => {
+    // Optimistic UI update
+    const previous = [...investments];
+    setInvestments(investments.filter(item => item._id !== id));
+    try {
+      await deleteInvestment(id);
+    } catch (err) {
+      // Revert if failed
+      setInvestments(previous);
+      alert(t('investments.deleteError', 'حدث خطأ أثناء الحذف'));
+    }
+  };
+
+  if (loading && !investments.length) {
+    return <InvestmentsSkeleton />;
+  }
+
+  return (
+    <div className="p-4 pt-8 animate-fade-in space-y-6 pb-24">
+      
+      {/* Header */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <p className="text-brand-blue text-sm font-medium uppercase tracking-widest mb-1">
+            {t('investments.updatesOnOpen', 'يتحدث عند فتح الصفحة')}
+          </p>
+          <h1 className="text-3xl font-black text-white tracking-tight">
+            {t('investments.title', 'الاستثمارات')}
+          </h1>
+        </div>
+        
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand-blue/20"
+        >
+          <Plus className="w-5 h-5" />
+          {t('investments.addInvestment', 'إضافة استثمار')}
+        </button>
+      </header>
+
+      {error && (
+        <div className="rounded-2xl bg-brand-red/10 p-4 border border-brand-red/20 text-sm text-brand-red font-medium flex items-center gap-2">
+          <Activity className="w-5 h-5 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* Hero Card (Total Wealth) */}
+      <section className="p-8 rounded-[2rem] shadow-2xl bg-gradient-to-br from-amber-500/20 to-amber-900/10 border border-amber-500/30 backdrop-blur-xl relative overflow-hidden group transition-all duration-500">
+        <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-700">
+          <TrendingUp className="w-32 h-32 text-amber-400" />
+        </div>
+        
+        <div className="relative z-10">
+          <p className="text-sm font-bold tracking-widest uppercase mb-2 text-amber-200/80">
+            {t('investments.totalCurrentValue', 'إجمالي القيمة الحالية')}
+          </p>
+          <h2 className="text-5xl font-black mb-4 tracking-tight text-amber-400 tabular-nums">
+            {money(totals.current)}
+          </h2>
+          
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md border ${isProfit ? 'bg-brand-green/10 border-brand-green/20 text-brand-green' : 'bg-brand-red/10 border-brand-red/20 text-brand-red'}`}>
+            {isProfit ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+            <span className="font-bold tracking-wide">
+              {money(profit)} {isProfit ? t('investments.profit', 'ربح') : t('investments.loss', 'خسارة')}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Gold Prices Ticker */}
+      {gold && (
+        <section className="flex flex-wrap items-center gap-4 p-4 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-amber-400 font-bold px-4 border-r border-white/10 last:border-0">
+            <Coins className="w-5 h-5" />
+            <span>{t('investments.liveGoldPrices', 'أسعار الذهب مباشر')}</span>
+          </div>
+          <div className="flex items-center gap-6 px-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">{t('investments.karat21', 'عيار 21')}</span>
+              <span className="font-mono font-medium text-white">{money(gold.perGram21)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">{t('investments.karat24', 'عيار 24')}</span>
+              <span className="font-mono font-medium text-white">{money(gold.perGram24)}</span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Investments Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {investments.map((item) => { 
+          const current = item.quantity * unitValue(item); 
+          const itemProfit = current - (item.quantity * item.purchasePrice); 
+          const isItemProfit = itemProfit >= 0;
+          
+          return (
+            <article 
+              key={item._id} 
+              className="bg-black/30 p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group hover:border-white/10 hover:bg-white/5 transition-all duration-300"
+            >
+              {/* Decorative background blob */}
+              <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl -z-10 opacity-20 transition-colors duration-500 ${isItemProfit ? 'bg-brand-green' : 'bg-brand-red'}`} />
+              
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/5 rounded-2xl text-amber-400 border border-white/5 group-hover:scale-110 transition-transform">
+                    {item.type === 'gold' ? <Coins className="w-6 h-6" /> : <LineChart className="w-6 h-6 text-brand-blue" />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-white leading-tight">{item.name}</h3>
+                    {item.type === 'stock' && item.symbol && (
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/10 text-[var(--color-text-muted)]">
+                        {item.symbol}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleDelete(item._id)} 
+                  className="text-[var(--color-text-muted)] hover:text-brand-red hover:bg-brand-red/10 p-2 rounded-xl transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  aria-label="Delete investment"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[var(--color-text-muted)]">
+                    {item.type === 'gold' ? t('investments.weightGrams', 'الكمية/الوزن') : t('investments.quantity', 'الكمية')}
+                  </span>
+                  <span className="font-mono font-medium text-white">{item.quantity}</span>
+                </div>
+                
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[var(--color-text-muted)]">
+                    {t('investments.purchasePrice', 'سعر الشراء')}
+                  </span>
+                  <span className="font-mono font-medium text-white">{money(item.purchasePrice)}</span>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 flex flex-col gap-1">
+                  <div className="flex justify-between items-end">
+                    <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
+                      {t('investments.currentValue', 'القيمة الحالية')}
+                    </span>
+                    <span className="text-xl font-bold font-mono text-white tracking-tight">
+                      {money(current)}
+                    </span>
+                  </div>
+                  <div className={`flex justify-end items-center gap-1 text-sm font-medium ${isItemProfit ? 'text-brand-green' : 'text-brand-red'}`}>
+                    {isItemProfit ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                    <span>{money(Math.abs(itemProfit))}</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ); 
+        })}
+        
+        {investments.length === 0 && !loading && (
+          <div className="col-span-full py-12 flex flex-col items-center justify-center text-[var(--color-text-muted)] bg-white/5 border border-white/5 rounded-[2rem] border-dashed">
+            <Coins className="w-16 h-16 mb-4 opacity-20" />
+            <p>{t('investments.noInvestments', 'لا توجد استثمارات مضافة حالياً')}</p>
+          </div>
+        )}
+      </section>
+
+      <InvestmentModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveInvestment}
+      />
+    </div>
+  );
 }

@@ -274,40 +274,79 @@ export default function Budgets() {
   }, [filteredBudgets, spentData]);
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-lg mx-auto min-h-screen">
-      <div className="flex items-center justify-between mb-8">
+    <div className="pb-24 pt-6 px-4 max-w-7xl mx-auto min-h-screen">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-2">
-            <Target className="text-brand-blue" />
+          <h1 className="text-3xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
+            <Target className="text-brand-blue" size={32} />
             {t('budgets.title')}
           </h1>
-          <p className="text-white/50 text-sm">{t('budgets.subtitle')}</p>
+          <p className="text-[var(--color-text-muted)] text-sm">{t('budgets.subtitle')}</p>
         </div>
         <button
           onClick={() => {
             setBudgetToEdit(null);
             setIsModalOpen(true);
           }}
-          className="bg-brand-blue hover:bg-blue-500 text-white p-3.5 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all hover:scale-105 active:scale-95"
+          className="bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3.5 rounded-2xl shadow-lg shadow-brand-blue/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-bold"
         >
-          <Plus size={24} />
+          <Plus size={20} />
+          {t('budgets.addBudget')}
         </button>
       </div>
+
+      {/* Hero Card */}
+      {!isLoading && (
+        <section className="relative overflow-hidden p-8 rounded-[2rem] bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl flex flex-col justify-center items-center text-center group mb-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/20 to-purple-900/10 opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-brand-blue/30 rounded-full blur-[100px] pointer-events-none" />
+          
+          <div className="relative z-10 w-full">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-brand-blue/20 rounded-2xl border border-brand-blue/30 text-brand-blue">
+                <Target size={28} />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-[var(--color-text-muted)] tracking-wider uppercase mb-2">
+              {t('budgets.totalRemaining', 'Total Remaining')}
+            </p>
+            <h2 className={`text-4xl md:text-5xl font-bold tabular-nums tracking-tight mb-8 drop-shadow-md ${
+              budgets.reduce((s, b) => s + (b.amount || 0), 0) < budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0) 
+                ? 'text-brand-red' 
+                : 'text-white'
+            }`}>
+              {(budgets.reduce((s, b) => s + (b.amount || 0), 0) - budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0)).toLocaleString()} {t('nav.currency')}
+            </h2>
+
+            <div className="flex flex-col md:flex-row justify-center gap-4 w-full max-w-xl mx-auto">
+              <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
+                <span className="text-xs text-[var(--color-text-muted)] mb-1 uppercase tracking-wider">{t('budgets.totalBudgeted', 'Total Budgeted')}</span>
+                <span className="font-bold text-lg text-white">{budgets.reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()} {t('nav.currency')}</span>
+              </div>
+              <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
+                <span className="text-xs text-[var(--color-text-muted)] mb-1 uppercase tracking-wider">{t('budgets.totalSpent', 'Total Spent')}</span>
+                <span className="font-bold text-lg text-brand-blue">{budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0).toLocaleString()} {t('nav.currency')}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Smart Budget Planner Entry */}
       <div 
         onClick={() => navigate('/budgets/smart-planner')}
-        className="bg-gradient-to-r from-brand-blue/20 to-purple-500/20 border border-brand-blue/30 rounded-2xl p-5 mb-8 cursor-pointer hover:border-brand-blue/60 transition-all flex items-center justify-between group"
+        className="relative overflow-hidden bg-gradient-to-r from-brand-blue/20 to-purple-500/20 border border-brand-blue/30 rounded-[2rem] p-6 mb-8 cursor-pointer hover:border-brand-blue/60 transition-all flex items-center justify-between group shadow-lg"
       >
-        <div>
+        <div className="absolute right-0 top-0 w-32 h-32 bg-brand-blue/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-brand-blue/40 transition-colors" />
+        <div className="relative z-10">
           <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-2">
             <Target className="text-brand-blue" size={20} />
             {t('smartBudget.entryButton', 'Smart Planner')}
           </h3>
           <p className="text-white/60 text-sm">{t('smartBudget.entryDesc', 'Let us distribute your budget for you')}</p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-brand-blue/20 flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
-          <ArrowRight size={20} className={language === 'ar' ? 'rotate-180' : ''} />
+        <div className="relative z-10 w-12 h-12 rounded-2xl bg-brand-blue/20 flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
+          <ArrowRight size={24} className={language === 'ar' ? 'rotate-180' : ''} />
         </div>
       </div>
 
@@ -376,7 +415,7 @@ export default function Budgets() {
       )}
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
@@ -406,7 +445,7 @@ export default function Budgets() {
           </button>
         </motion.div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <AnimatePresence>
             {groupedDisplayItems.map((item, index) => {
               if (item.type === 'master') {

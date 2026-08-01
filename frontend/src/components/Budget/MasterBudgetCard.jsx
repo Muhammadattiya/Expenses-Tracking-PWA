@@ -43,10 +43,10 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
-      className={`bg-white/5 dark:bg-white/5 rounded-3xl p-1 border border-white/10 relative overflow-hidden backdrop-blur-xl group transition-colors duration-300 ${isExpanded ? stateBorder : 'hover:shadow-2xl hover:' + stateBorder}`}
+      className={`bg-black/30 rounded-[2rem] p-6 border border-white/5 relative overflow-hidden backdrop-blur-xl group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/10 hover:shadow-2xl hover:scale-[1.01]'}`}
     >
       <div 
-        className="p-4 cursor-pointer relative z-10"
+        className="cursor-pointer relative z-10 flex-1 flex flex-col justify-between"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex justify-between items-start mb-4">
@@ -140,9 +140,9 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-black/20 rounded-b-[2rem]"
+            className="overflow-hidden mt-6"
           >
-            <div className="p-4 space-y-3 border-t border-white/5">
+            <div className="pt-6 space-y-4 border-t border-white/10">
               {budgets.map((budget, idx) => {
                 const mappedCategory = typeof budget.category === 'object' 
                   ? budget.category 
