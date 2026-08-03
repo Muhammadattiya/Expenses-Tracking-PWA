@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { TrendingUp, TrendingDown, Activity, AlertCircle, CheckCircle2, Zap, ArrowRight, BrainCircuit, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { TrendingUp, TrendingDown, Activity, AlertCircle, CheckCircle2, Zap, ArrowRight, BrainCircuit, Sparkles, FlaskConical } from 'lucide-react';
 
 export default function InsightsTab({ data, money, filters, userPrefs }) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const income = data?.summary?.income || 0;
   const expense = data?.summary?.expense || 0;
@@ -188,6 +190,35 @@ export default function InsightsTab({ data, money, filters, userPrefs }) {
               </div>
            </div>
 
+        </div>
+      </section>
+
+      {/* Sandbox Entry Point */}
+      <section className="p-6 rounded-[2rem] shadow-2xl bg-gradient-to-r from-purple-500/10 to-indigo-600/10 border border-purple-500/20 backdrop-blur-xl relative overflow-hidden group">
+        <div className="absolute -right-10 -top-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl group-hover:bg-purple-500/30 transition-colors duration-700" />
+        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors duration-700" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 bg-purple-500/20 rounded-xl text-purple-400">
+                <FlaskConical className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl font-bold text-[var(--color-text-main)] tracking-wide">Financial Sandbox</h2>
+            </div>
+            <p className="text-sm text-[var(--color-text-muted)] leading-relaxed max-w-2xl">
+              Want to see how a big purchase, a salary increase, or a new debt would affect your finances? 
+              Test "What-if" scenarios safely in our isolated sandbox without affecting your real data.
+            </p>
+          </div>
+          
+          <button 
+            onClick={() => navigate('/sandbox')}
+            className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-8 py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg hover:shadow-purple-500/25 hover:-translate-y-1"
+          >
+            Launch Sandbox
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </section>
 

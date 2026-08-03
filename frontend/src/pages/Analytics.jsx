@@ -9,8 +9,9 @@ import { budgetService } from '../services/budgetService';
 import { getBills } from '../api/bills';
 import { getRecurringTransactions } from '../api/recurringTransactions';
 import { getCurrentUser } from '../api/auth';
-import { Loader2, Download, Filter, Search } from 'lucide-react';
+import { Loader2, Download, Filter, Search, FlaskConical } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 import CustomSelect from '../components/ui/CustomSelect';
 
 import AnalyticsTabs from '../components/analytics/AnalyticsTabs';
@@ -25,6 +26,7 @@ import { AnalyticsSkeleton } from '../components/ui/Skeletons';
 
 export default function Analytics() {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(value || 0);
   
   const [activeTab, setActiveTab] = useState('overview');
