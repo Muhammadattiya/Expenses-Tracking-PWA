@@ -14,6 +14,7 @@ const billsRoutes = require('./routes/bills');
 const budgetsRoutes = require('./routes/budgets');
 const smartBudgetsRoutes = require('./routes/smartBudgets');
 const debtsRoutes = require('./routes/debts');
+const simulationRoutes = require('./routes/simulationRoutes');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/bills', billsRoutes);
 app.use('/api/budgets', budgetsRoutes);
 app.use('/api/smart-budgets', smartBudgetsRoutes);
 app.use('/api/debts', debtsRoutes);
+app.use('/api/sandbox', simulationRoutes);
 
 app.use(errorHandler);
 module.exports = app;

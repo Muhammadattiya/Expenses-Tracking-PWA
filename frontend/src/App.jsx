@@ -20,6 +20,7 @@ const Receivables = lazy(() => import('./pages/Receivables'));
 const Bills = lazy(() => import('./pages/Bills'));
 const Budgets = lazy(() => import('./pages/Budgets'));
 const SmartBudgetPlanner = lazy(() => import('./pages/SmartBudgetPlanner'));
+const Sandbox = lazy(() => import('./pages/Sandbox'));
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
                     <Route path="/bills" element={<Bills />} />
                     <Route path="/budgets" element={<Budgets />} />
                     <Route path="/budgets/smart-planner" element={<SmartBudgetPlanner />} />
+                    <Route path="/sandbox" element={<Sandbox />} />
                   </Route>
                 </Routes>
               </Suspense>
