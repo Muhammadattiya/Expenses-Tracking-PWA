@@ -59,9 +59,11 @@ import { subscribeToNotifications, sendNotification } from "../api/notifications
 
 import { getCurrentUser, deleteAllUserData, updatePreferences } from "../api/auth";
 import { getDebts } from "../api/debts";
+import { getIncomeProfiles, createIncomeProfile, updateIncomeProfile, deleteIncomeProfile } from "../api/incomeProfiles";
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
+import IncomeProfileModal from "../components/modals/IncomeProfileModal";
 import IconPicker, { getIconComponent } from "../components/IconPicker";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -78,6 +80,7 @@ const Settings = () => {
   const [transactions, setTransactions] = useState([]);
   const [recurringTransactions, setRecurringTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
+  const [incomeProfiles, setIncomeProfiles] = useState([]);
   const navigate = useNavigate();
   const [editingRecurring, setEditingRecurring] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,6 +131,20 @@ const Settings = () => {
 
   // Push Notifications State
   const [pushStatus, setPushStatus] = useState('');
+
+  // Income Profiles State
+  const [addIncomeProfileModalOpen, setAddIncomeProfileModalOpen] = useState(false);
+  const [editIncomeProfileModalOpen, setEditIncomeProfileModalOpen] = useState(false);
+  const [editingIncomeProfile, setEditingIncomeProfile] = useState(null);
+  const [newIncomeProfile, setNewIncomeProfile] = useState({
+    name: '',
+    amount: '',
+    frequency: 'monthly',
+    weekDay: 0,
+    monthDay: 1,
+    account: '',
+    isActive: true
+  });
 
   // SMS Webhook State
   const [smsToken, setSmsToken] = useState(null);
@@ -180,18 +197,20 @@ const Settings = () => {
 
   const fetchData = async () => {
     try {
-      const [accs, cats, trans, recurringData, debtsData] = await Promise.all([
+      const [accs, cats, trans, recurringData, debtsData, incomeProfilesData] = await Promise.all([
         getAccounts(),
         getCategories(),
         getTransactions(),
         getRecurringTransactions(),
-        getDebts().catch(() => ({ debts: [], transactions: [] }))
+        getDebts().catch(() => ({ debts: [], transactions: [] })),
+        getIncomeProfiles().catch(() => [])
       ]);
       setAccounts(accs);
       setCategories(cats);
       setTransactions(trans);
       setRecurringTransactions(recurringData);
       setAllDebtTransactions(debtsData.transactions || []);
+      setIncomeProfiles(incomeProfilesData);
 
       // Fetch user data
       const user = await getCurrentUser();
@@ -252,6 +271,64 @@ const Settings = () => {
   };
 
 
+
+  const handleDeleteIncomeProfile = (profile) => {
+    setSelectedCategory(profile); // Reuse selectedCategory state for generic items
+    setDeleteType("incomeProfile");
+    setDeleteModalOpen(true);
+  };
+
+  const handleAddIncomeProfile = async (data) => {
+    try {
+      if (!data.name || !data.amount || !data.account) {
+        showToast(t('common.error', 'Please fill all required fields'), 'error');
+        return;
+      }
+      await createIncomeProfile({
+        name: data.name,
+        amount: Number(data.amount),
+        frequency: data.frequency,
+        weekDay: Number(data.weekDay),
+        monthDay: Number(data.monthDay),
+        account: data.account,
+        category: data.category,
+        isActive: data.isActive
+      });
+      setAddIncomeProfileModalOpen(false);
+      setNewIncomeProfile({
+        name: '', amount: '', frequency: 'monthly', weekDay: 0, monthDay: 1, account: '', category: '', isActive: true
+      });
+      fetchData();
+      showToast(t('common.success', 'Saved successfully'), 'success');
+    } catch (error) {
+      showToast(error.response?.data?.message || t('common.error', 'Error saving'), 'error');
+    }
+  };
+
+  const handleUpdateIncomeProfile = async (data) => {
+    try {
+      if (!data.name || !data.amount || !data.account) {
+        showToast(t('common.error', 'Please fill all required fields'), 'error');
+        return;
+      }
+      await updateIncomeProfile(data._id, {
+        name: data.name,
+        amount: Number(data.amount),
+        frequency: data.frequency,
+        weekDay: Number(data.weekDay),
+        monthDay: Number(data.monthDay),
+        account: data.account,
+        category: data.category,
+        isActive: data.isActive
+      });
+      setEditIncomeProfileModalOpen(false);
+      setEditingIncomeProfile(null);
+      fetchData();
+      showToast(t('common.success', 'Saved successfully'), 'success');
+    } catch (error) {
+      showToast(error.response?.data?.message || t('common.error', 'Error saving'), 'error');
+    }
+  };
 
   const handleAddAccount = async (e) => {
     e.preventDefault();
@@ -369,6 +446,8 @@ const Settings = () => {
         await deleteCategory(selectedCategory._id);
       } else if (deleteType === "recurring") {
         await deleteRecurringTransaction(selectedCategory._id);
+      } else if (deleteType === "incomeProfile") {
+        await deleteIncomeProfile(selectedCategory._id);
       }
       await fetchData();
       setDeleteModalOpen(false);
@@ -581,6 +660,14 @@ const Settings = () => {
             <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
           </button>
 
+          <button onClick={() => setActiveView('incomeProfiles')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><Banknote size={20} /></div>
+              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('incomeProfiles.title', 'Income Profiles')}</span>
+            </div>
+            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          </button>
+
           <button onClick={() => setActiveView('data')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
             <div className="flex items-center gap-3">
               <div className="bg-purple-500/20 p-2 rounded-xl text-purple-400"><Database size={20} /></div>
@@ -686,13 +773,116 @@ const Settings = () => {
               )}
 
               <button
-                onClick={() => handleSavePreferences({ budgetPeriod, budgetStartDayWeekly, budgetStartDayMonthly })}
+                onClick={() => handleSavePreferences({
+                  budgetPeriod,
+                  budgetStartDayWeekly,
+                  budgetStartDayMonthly
+                })}
                 disabled={isUpdatingPreferences}
-                className="mt-6 w-full bg-brand-blue/20 text-brand-blue border border-brand-blue/30 py-3 rounded-2xl font-bold hover:bg-brand-blue/30 transition-colors disabled:opacity-50"
+                className="w-full mt-4 bg-brand-blue text-white rounded-xl py-3 font-semibold disabled:opacity-50"
               >
                 {isUpdatingPreferences ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('settings.savePreferences', 'حفظ الإعدادات')}
               </button>
             </div>
+        </section>
+      )}
+
+      {activeView === 'incomeProfiles' && (
+        <section className="glass-panel rounded-[2rem] p-5">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-[var(--color-text-main)]">{t('incomeProfiles.title', 'Income Profiles')}</h2>
+            <button 
+              onClick={() => setAddIncomeProfileModalOpen(true)}
+              className="bg-brand-blue hover:bg-brand-blue/90 text-white p-2 rounded-full transition-transform active:scale-95"
+            >
+              <Plus size={24} />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {incomeProfiles.length === 0 ? (
+              <div className="text-center py-10 text-[var(--color-text-muted)]">
+                <Banknote size={48} className="mx-auto mb-3 opacity-20" />
+                <p>{t('incomeProfiles.noProfiles', 'No active income profiles')}</p>
+              </div>
+            ) : (
+              incomeProfiles.map(profile => (
+                <div key={profile._id} className="group relative bg-black/40 backdrop-blur-xl p-5 md:p-6 rounded-3xl border border-white/5 hover:border-brand-blue/30 transition-all duration-300 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative z-10 flex w-full md:w-auto flex-col sm:flex-row items-start sm:items-center gap-5">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className={`p-4 rounded-2xl shrink-0 ${profile.isActive ? 'bg-brand-blue/20 text-brand-blue shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 'bg-white/5 text-white/40'}`}>
+                        <Banknote size={28} className={profile.isActive ? '' : 'grayscale'} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-[var(--color-text-main)] flex items-center gap-2">
+                          {profile.name}
+                          {!profile.isActive && (
+                            <span className="text-[10px] uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded-md text-white/50">
+                              {t('incomeProfiles.inactive', 'Inactive')}
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-2xl font-black tabular-nums text-brand-green mt-1 tracking-tight">
+                          {Number(profile.amount).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-white/5 sm:border-t-0">
+                      <div className="bg-black/30 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+                        <Repeat size={14} className="text-brand-blue opacity-70" />
+                        <span className="text-xs font-bold text-white/80">
+                          {profile.frequency === 'weekly' ? t('incomeProfiles.weekly', 'Weekly') : t('incomeProfiles.monthly', 'Monthly')}
+                        </span>
+                      </div>
+                      {profile.account && (
+                        <div className="bg-black/30 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+                          <Wallet size={14} className="text-emerald-400 opacity-70" />
+                          <span className="text-xs font-bold text-white/80 truncate max-w-[100px]">
+                            {profile.account.name || 'Account'}
+                          </span>
+                        </div>
+                      )}
+                      {profile.category && (
+                        <div className="bg-black/30 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5 col-span-2">
+                          <Tag size={14} className="text-amber-400 opacity-70" />
+                          <span className="text-xs font-bold text-white/80">
+                            {profile.category.name || 'Category'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex items-center gap-2 w-full md:w-auto justify-end border-t border-white/5 md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0">
+                    <button 
+                      onClick={() => {
+                        setEditingIncomeProfile({
+                          ...profile,
+                          account: profile.account?._id || profile.account,
+                          category: profile.category?._id || profile.category
+                        });
+                        setEditIncomeProfileModalOpen(true);
+                      }}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 p-3 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-xl transition-all duration-300 font-bold text-sm"
+                    >
+                      <Pencil size={18} />
+                      <span className="md:hidden">Edit</span>
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteIncomeProfile(profile)}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 p-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-300 font-bold text-sm"
+                    >
+                      <Trash2 size={18} />
+                      <span className="md:hidden">Delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </section>
       )}
 
@@ -1284,6 +1474,30 @@ const Settings = () => {
           showToast(t('settings.recurringUpdated', 'تم تحديث المعاملة بنجاح'), 'success');
         }}
       />
+      <IncomeProfileModal
+        isOpen={addIncomeProfileModalOpen}
+        onClose={() => setAddIncomeProfileModalOpen(false)}
+        isEdit={false}
+        profileData={newIncomeProfile}
+        setProfileData={setNewIncomeProfile}
+        onSubmit={handleAddIncomeProfile}
+        accounts={accounts}
+        categories={categories.filter(c => c.type === 'income')}
+      />
+
+      {editingIncomeProfile && (
+        <IncomeProfileModal
+          isOpen={editIncomeProfileModalOpen}
+          onClose={() => setEditIncomeProfileModalOpen(false)}
+          isEdit={true}
+          profileData={editingIncomeProfile}
+          setProfileData={setEditingIncomeProfile}
+          onSubmit={handleUpdateIncomeProfile}
+          accounts={accounts}
+          categories={categories.filter(c => c.type === 'income')}
+        />
+      )}
+
     </div>
   );
 };

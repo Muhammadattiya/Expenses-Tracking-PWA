@@ -49,11 +49,13 @@ export default {
     categoryPlaceholder: 'Select Category...',
     submit: 'Confirm & Save',
     successMsg: 'Transaction saved successfully!',
-    errorMsg: 'Error saving transaction.'
+    errorMsg: 'Error saving transaction.',
+    selectFile: 'Select File',
+    processing: 'Processing...',
+    selectAccount: 'Select Target Account'
   },
   investments: {
     loadError: 'Could not load investments.',
-    goldPriceError: 'Could not fetch current gold price.',
     saveError: 'Could not save investment.',
     updatesOnOpen: 'Updates on page load',
     title: 'Investments',
@@ -81,6 +83,34 @@ export default {
     currentValue: 'Current Value',
     noInvestments: 'No investments added yet',
     deleteError: 'An error occurred while deleting'
+  },
+  incomeProfiles: {
+    title: 'Income Profiles',
+    addProfile: 'Add Profile',
+    noProfiles: 'No active income profiles',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    name: 'Name',
+    amount: 'Amount',
+    frequency: 'Frequency',
+    selectAccount: 'Target Account',
+    active: 'Active',
+    inactive: 'Inactive',
+    weekDay: 'Day of Week',
+    monthDay: 'Day of Month',
+    editProfile: 'Edit Profile',
+    profileName: 'Profile Name',
+    saveProfile: 'Save Profile',
+    deleteConfirm: 'Are you sure you want to delete this profile?',
+    days: {
+      0: 'Sunday',
+      1: 'Monday',
+      2: 'Tuesday',
+      3: 'Wednesday',
+      4: 'Thursday',
+      5: 'Friday',
+      6: 'Saturday'
+    }
   },
   receivables: {
     loadError: 'Could not load receivables.',
@@ -203,7 +233,29 @@ export default {
       health: 'Financial Health',
       good: 'Good',
       warning: 'Warning',
-      danger: 'Danger'
+      danger: 'Danger',
+      futureBalance: 'Future Balance',
+      currentBalance: 'Current Balance',
+      expectedBalance: 'Expected Balance',
+      difference: 'Difference',
+      days: 'Days',
+      forecastStatistics: 'Forecast Statistics',
+      predictedBalance: 'Predicted Balance',
+      highestBalance: 'Highest Balance',
+      lowestBalance: 'Lowest Balance',
+      averageBalance: 'Average Balance',
+      upcomingEvents: 'Upcoming Financial Events',
+      forecastInsights: 'Forecast Insights',
+      insight_increasing: 'Your balance is expected to increase steadily over this period.',
+      insight_decreasing: 'Your balance is expected to decrease steadily.',
+      insight_stable: 'Your forecast remains stable throughout the selected period.',
+      insight_negative_balance: 'Warning: Your balance is projected to fall below zero during this period.',
+      insight_high_fixed: 'Fixed obligations (Bills & Subscriptions) represent a significant portion of your future expenses.',
+      insight_high_variable: 'Daily variable spending is the biggest factor reducing your balance.',
+      insight_empty: 'Not enough data to generate a forecast. Try adding more transactions and accounts.',
+      emptyStateTitle: 'No Forecast Available',
+      emptyStateDesc: 'We need more data to accurately predict your financial future.',
+      addTransactionsBtn: 'Add Transactions'
     }
   },
   settings: {

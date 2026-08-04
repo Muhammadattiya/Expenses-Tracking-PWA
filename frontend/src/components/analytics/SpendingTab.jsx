@@ -6,9 +6,15 @@ const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#f43f5e', '#10b981', '#ec4899'
 
 function ChartCard({ title, children, className = '' }) { 
   return (
-    <section className={`glass-panel p-6 rounded-[2rem] flex flex-col shadow-2xl border border-white/5 bg-black/20 hover:bg-black/30 transition-colors duration-500 ${className}`}>
-      <h2 className="mb-6 text-xl font-bold text-[var(--color-text-main)] tracking-wide">{title}</h2>
-      <div className="h-72 w-full min-h-[300px]">
+    <section className={`relative overflow-hidden p-6 rounded-[2.5rem] shadow-2xl border border-white/5 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-2xl group transition-all duration-500 ${className}`}>
+      {/* Background glow effects */}
+      <div className="absolute -right-20 -top-20 w-64 h-64 bg-brand-blue/10 rounded-full blur-3xl group-hover:bg-brand-blue/20 transition-colors duration-700 pointer-events-none" />
+      <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-brand-purple/10 rounded-full blur-3xl group-hover:bg-brand-purple/20 transition-colors duration-700 pointer-events-none" />
+      
+      <h2 className="mb-8 text-xl font-bold text-white tracking-wide relative z-10">
+         {title}
+      </h2>
+      <div className="h-72 w-full min-h-[300px] relative z-10">
         <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>
@@ -36,7 +42,7 @@ export default function SpendingTab({ data }) {
         <AreaChart data={data.monthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.6}/>
+              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
               <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
             </linearGradient>
           </defs>
@@ -44,27 +50,39 @@ export default function SpendingTab({ data }) {
           <XAxis dataKey="month" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} dy={10} />
           <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} dx={-10} />
           <Tooltip 
-            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }} 
-            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
+            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }} 
+            itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '15px' }}
             formatter={(value) => [money(value), t('analytics.net', 'Net')]}
           />
-          <Area type="monotone" dataKey="balance" name={t('analytics.net', 'Net')} stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorBalance)" activeDot={{ r: 8, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} />
+          <Area type="monotone" dataKey="balance" name={t('analytics.net', 'Net')} stroke="#3b82f6" strokeWidth={5} fillOpacity={1} fill="url(#colorBalance)" activeDot={{ r: 8, fill: '#3b82f6', stroke: '#fff', strokeWidth: 3 }} animationDuration={1500} />
         </AreaChart>
       </ChartCard>
 
       {/* Line Chart: Income vs Expense */}
       <ChartCard title={t('analytics.monthlyTrend', 'Monthly Trend (Income & Expenses)')}>
         <LineChart data={data.monthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+             <linearGradient id="colorIncome" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="100%" stopColor="#34d399" />
+             </linearGradient>
+             <linearGradient id="colorExpense" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#f43f5e" />
+                <stop offset="100%" stopColor="#fb7185" />
+             </linearGradient>
+          </defs>
           <CartesianGrid stroke="#ffffff10" strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="month" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} dy={10} />
           <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} dx={-10} />
           <Tooltip 
-            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
+            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2, strokeDasharray: '3 3' }}
+            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}
             formatter={(value) => [money(value)]}
           />
-          <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '20px', fontWeight: '500' }} iconType="circle" />
-          <Line type="monotone" dataKey="income" name={t('analytics.income', 'Income')} stroke="#10b981" strokeWidth={4} dot={{ r: 5, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 8, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} />
-          <Line type="monotone" dataKey="expense" name={t('analytics.expense', 'Expense')} stroke="#f43f5e" strokeWidth={4} dot={{ r: 5, fill: '#f43f5e', strokeWidth: 0 }} activeDot={{ r: 8, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} />
+          <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '20px', fontWeight: 'bold' }} iconType="circle" />
+          <Line type="monotone" dataKey="income" name={t('analytics.income', 'Income')} stroke="url(#colorIncome)" strokeWidth={4} dot={{ r: 0 }} activeDot={{ r: 8, fill: '#10b981', stroke: '#fff', strokeWidth: 3 }} animationDuration={1500} />
+          <Line type="monotone" dataKey="expense" name={t('analytics.expense', 'Expense')} stroke="url(#colorExpense)" strokeWidth={4} dot={{ r: 0 }} activeDot={{ r: 8, fill: '#f43f5e', stroke: '#fff', strokeWidth: 3 }} animationDuration={1500} />
         </LineChart>
       </ChartCard>
 
@@ -72,43 +90,86 @@ export default function SpendingTab({ data }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ChartCard title={t('analytics.categoryDistribution', 'Expense Distribution')} className="h-full">
           <PieChart>
-            <Pie data={data.categories} dataKey="amount" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5}>
-              {data.categories.map((entry, index) => <Cell key={entry.name} fill={colors[index % colors.length]} stroke="rgba(0,0,0,0)"/>)}
+            <defs>
+              {data.categories.map((entry, index) => {
+                const color = colors[index % colors.length];
+                return (
+                  <linearGradient key={`grad-${index}`} id={`pieGrad-${index}`} x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity={1}/>
+                    <stop offset="100%" stopColor={color} stopOpacity={0.6}/>
+                  </linearGradient>
+                )
+              })}
+            </defs>
+            <Pie data={data.categories} dataKey="amount" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={110} paddingAngle={8} cornerRadius={10} animationDuration={1500}>
+              {data.categories.map((entry, index) => <Cell key={entry.name} fill={`url(#pieGrad-${index})`} stroke="rgba(0,0,0,0)"/>)}
             </Pie>
             <Tooltip 
-              contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '16px' }} 
-              itemStyle={{ color: '#fff', fontWeight: 'bold' }} 
-              formatter={(value) => [money(value)]}
+              contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }} 
+              itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '15px' }} 
+              formatter={(value, name) => [money(value), name]}
             />
           </PieChart>
         </ChartCard>
 
-        <section className="glass-panel p-6 rounded-[2rem] shadow-2xl border border-white/5 bg-black/20 flex flex-col">
-          <h2 className="mb-6 text-xl font-bold text-[var(--color-text-main)] tracking-wide sticky top-0 bg-black/40 backdrop-blur-md p-2 rounded-xl z-10">{t('analytics.topCategories', 'Top Categories')}</h2>
-          <div className="space-y-5 px-2">
+        {/* Bar Chart: Expenses by Category */}
+        <ChartCard title={t('analytics.expensesByCategory', 'Expenses by Category')} className="h-full">
+          <BarChart data={data.categories} layout="vertical" margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+            <defs>
+              {data.categories.map((entry, index) => {
+                const color = colors[index % colors.length];
+                return (
+                  <linearGradient key={`barGrad-${index}`} id={`barGrad-${index}`} x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor={color} stopOpacity={0.6}/>
+                    <stop offset="100%" stopColor={color} stopOpacity={1}/>
+                  </linearGradient>
+                )
+              })}
+            </defs>
+            <CartesianGrid stroke="#ffffff10" strokeDasharray="3 3" horizontal={false} />
+            <XAxis type="number" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
+            <YAxis dataKey="name" type="category" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} width={80} />
+            <Tooltip 
+              cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+              contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}
+              formatter={(value, name) => [money(value), name]}
+            />
+            <Bar dataKey="amount" radius={[0, 10, 10, 0]} animationDuration={1500} barSize={20}>
+              {data.categories.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={`url(#barGrad-${index})`} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ChartCard>
+
+        <section className="relative overflow-hidden p-6 rounded-[2.5rem] shadow-2xl border border-white/5 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-2xl flex flex-col group lg:col-span-2">
+          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-brand-green/10 rounded-full blur-3xl group-hover:bg-brand-green/20 transition-colors duration-700 pointer-events-none" />
+          
+          <h2 className="mb-6 text-xl font-bold text-white tracking-wide sticky top-0 z-10">{t('analytics.topCategories', 'Top Categories')}</h2>
+          <div className="space-y-6 px-2 relative z-10">
             {data.categories.map((cat, index) => {
               const percentage = totalExpense > 0 ? ((cat.amount / totalExpense) * 100).toFixed(1) : 0;
               const color = colors[index % colors.length];
               return (
-                <div key={cat.name} className="group">
+                <div key={cat.name} className="group/item">
                   <div className="flex justify-between items-end mb-2">
-                    <span className="font-bold text-[var(--color-text-main)]">{cat.name}</span>
-                    <span className="text-sm font-bold tabular-nums" style={{ color }}>{money(cat.amount)}</span>
+                    <span className="font-bold text-white group-hover/item:text-[var(--color-text-main)] transition-colors">{cat.name}</span>
+                    <span className="text-sm font-black tabular-nums" style={{ color }}>{money(cat.amount)}</span>
                   </div>
-                  <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/5 shadow-inner">
+                  <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/5 shadow-inner">
                     <div 
-                      className="h-full rounded-full transition-all duration-1000 ease-out group-hover:brightness-125" 
-                      style={{ width: `${percentage}%`, backgroundColor: color, boxShadow: `0 0 10px ${color}80` }}
+                      className="h-full rounded-full transition-all duration-1000 ease-out group-hover/item:brightness-125" 
+                      style={{ width: `${percentage}%`, backgroundColor: color, boxShadow: `0 0 15px ${color}90` }}
                     />
                   </div>
                   <div className="text-right mt-1">
-                    <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{percentage}%</span>
+                    <span className="text-[10px] text-white/50 font-bold tracking-widest">{percentage}%</span>
                   </div>
                 </div>
               );
             })}
             {data.categories.length === 0 && (
-              <div className="text-center py-10 text-[var(--color-text-muted)]">{t('analytics.noData', 'No data')}</div>
+              <div className="text-center py-10 text-white/40 font-medium tracking-wide">{t('analytics.noData', 'No data')}</div>
             )}
           </div>
         </section>

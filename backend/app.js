@@ -15,6 +15,8 @@ const budgetsRoutes = require('./routes/budgets');
 const smartBudgetsRoutes = require('./routes/smartBudgets');
 const debtsRoutes = require('./routes/debts');
 const simulationRoutes = require('./routes/simulationRoutes');
+const forecastRoutes = require('./routes/forecastRoutes');
+const incomeProfileRoutes = require('./routes/incomeProfileRoutes');
 
 const app = express();
 
@@ -50,6 +52,8 @@ app.use('/api/budgets', budgetsRoutes);
 app.use('/api/smart-budgets', smartBudgetsRoutes);
 app.use('/api/debts', debtsRoutes);
 app.use('/api/sandbox', simulationRoutes);
+app.use('/api/forecast', forecastRoutes);
+app.use('/api/income-profiles', incomeProfileRoutes);
 
 app.use(errorHandler);
 module.exports = app;
