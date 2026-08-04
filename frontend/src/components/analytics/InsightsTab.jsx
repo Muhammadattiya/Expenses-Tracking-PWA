@@ -194,6 +194,131 @@ export default function InsightsTab({ money, filters }) {
         </div>
       </section>
 
+      {/* Forecast Chart */}
+      <section className="p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 backdrop-blur-xl relative overflow-hidden">
+        <div className="h-[400px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={forecast.dailyForecast} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={isTrendPositive ? '#10b981' : '#f43f5e'} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={isTrendPositive ? '#10b981' : '#f43f5e'} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" strokeOpacity={0.05} vertical={false} />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={(val) => new Date(val).getDate()} 
+                stroke="#ffffff" 
+                strokeOpacity={0.2} 
+                tick={{ fill: '#ffffff', opacity: 0.5, fontSize: 12 }} 
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis 
+                hide={true} 
+                domain={['dataMin - (dataMax - dataMin) * 0.1', 'dataMax + (dataMax - dataMin) * 0.1']} 
+              />
+              <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff', strokeOpacity: 0.1, strokeWidth: 2 }} />
+              
+              <Line 
+                type="monotone" 
+                dataKey="balance" 
+                stroke={isTrendPositive ? '#10b981' : '#f43f5e'} 
+                strokeWidth={4} 
+                dot={false}
+                activeDot={{ r: 6, fill: '#000000', stroke: isTrendPositive ? '#10b981' : '#f43f5e', strokeWidth: 3 }}
+                fill="url(#colorBalance)"
+              />
+
+              {/* Render Event Dots */}
+              {forecast.dailyForecast.map((entry, index) => {
+                 if (entry.events && entry.events.length > 0) {
+                   const hasPositive = entry.events.some(e => e.amount >= 0);
+                   const hasNegative = entry.events.some(e => e.amount < 0);
+                   let color = '#3b82f6'; // Mixed
+                   if (hasPositive && !hasNegative) color = '#10b981';
+                   if (!hasPositive && hasNegative) color = '#f43f5e';
+                   
+                   return (
+                     <ReferenceDot 
+                       key={`event-${index}`} 
+                       x={entry.date} 
+                       y={entry.balance} 
+                       r={4} 
+                       fill={color} 
+                       stroke="#000000" 
+                       strokeWidth={2} 
+                     />
+                   );
+                 }
+                 return null;
+              })}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Statistics Grid */}
+        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
+             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.highestBalance', 'Highest Balance')}</p>
+             <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.maxBalance)}</p>
+             <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.highestForecastDay).toLocaleDateString()}</p>
+          </div>
+          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
+             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.lowestBalance', 'Lowest Balance')}</p>
+             <p className={`text-2xl font-black tabular-nums tracking-tight ${forecast.minBalance < 0 ? 'text-brand-red' : 'text-white'}`}>{money(forecast.minBalance)}</p>
+             <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.lowestForecastDay).toLocaleDateString()}</p>
+          </div>
+          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
+             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.averageBalance', 'Average Balance')}</p>
+             <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.averageBalance)}</p>
+          </div>
+          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors relative overflow-hidden">
+             <div className="absolute right-0 bottom-0 opacity-10">
+               <Activity className="w-24 h-24" />
+             </div>
+             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Daily Spend (Avg)</p>
+             <p className="text-2xl font-black text-brand-red tabular-nums tracking-tight">-{money(forecast.expectedDailySpending)}</p>
+             <p className="text-[10px] text-white/40 mt-1">Weighted Model</p>
+          </div>
+        </div>
+
+        {/* AI Insights List */}
+        <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/20 p-6 rounded-[2rem] border border-indigo-500/30 flex flex-col gap-4">
+           <div className="flex items-center gap-2 mb-2">
+             <Lightbulb className="w-5 h-5 text-indigo-400" />
+             <h3 className="font-bold text-white tracking-wide">{t('analytics.insights.forecastInsights', 'Forecast Insights')}</h3>
+           </div>
+           
+           <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+             {forecast.insights.map((insight, idx) => {
+               let icon = <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />;
+               let bgClass = "bg-emerald-500/10 border-emerald-500/20";
+               
+               if (insight.type === 'negative' || insight.type === 'critical') {
+                 icon = <AlertCircle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />;
+                 bgClass = "bg-rose-500/10 border-rose-500/20";
+               } else if (insight.type === 'warning' || insight.type === 'neutral') {
+                 icon = <Activity className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />;
+                 bgClass = "bg-amber-500/10 border-amber-500/20";
+               }
+
+               return (
+                 <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border ${bgClass} transition-all hover:bg-opacity-50`}>
+                   {icon}
+                   <p className="text-sm text-white/90 leading-relaxed">{t(`analytics.insights.${insight.key}`, insight.fallback)}</p>
+                 </div>
+               );
+             })}
+           </div>
+        </div>
+
+      </div>
+
       {/* Payday Survival Card */}
       {survival && (
         survival.hasIncomeProfile === true ? (
@@ -374,131 +499,6 @@ export default function InsightsTab({ money, filters }) {
           </section>
         )
       )}
-
-      {/* Forecast Chart */}
-      <section className="p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 backdrop-blur-xl relative">
-        <div className="h-[400px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={forecast.dailyForecast} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={isTrendPositive ? '#10b981' : '#f43f5e'} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={isTrendPositive ? '#10b981' : '#f43f5e'} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" strokeOpacity={0.05} vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={(val) => new Date(val).getDate()} 
-                stroke="#ffffff" 
-                strokeOpacity={0.2} 
-                tick={{ fill: '#ffffff', opacity: 0.5, fontSize: 12 }} 
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis 
-                hide={true} 
-                domain={['dataMin - (dataMax - dataMin) * 0.1', 'dataMax + (dataMax - dataMin) * 0.1']} 
-              />
-              <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff', strokeOpacity: 0.1, strokeWidth: 2 }} />
-              
-              <Line 
-                type="monotone" 
-                dataKey="balance" 
-                stroke={isTrendPositive ? '#10b981' : '#f43f5e'} 
-                strokeWidth={4} 
-                dot={false}
-                activeDot={{ r: 6, fill: '#000000', stroke: isTrendPositive ? '#10b981' : '#f43f5e', strokeWidth: 3 }}
-                fill="url(#colorBalance)"
-              />
-
-              {/* Render Event Dots */}
-              {forecast.dailyForecast.map((entry, index) => {
-                 if (entry.events && entry.events.length > 0) {
-                   const hasPositive = entry.events.some(e => e.amount >= 0);
-                   const hasNegative = entry.events.some(e => e.amount < 0);
-                   let color = '#3b82f6'; // Mixed
-                   if (hasPositive && !hasNegative) color = '#10b981';
-                   if (!hasPositive && hasNegative) color = '#f43f5e';
-                   
-                   return (
-                     <ReferenceDot 
-                       key={`event-${index}`} 
-                       x={entry.date} 
-                       y={entry.balance} 
-                       r={4} 
-                       fill={color} 
-                       stroke="#000000" 
-                       strokeWidth={2} 
-                     />
-                   );
-                 }
-                 return null;
-              })}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Statistics Grid */}
-        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
-             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.highestBalance', 'Highest Balance')}</p>
-             <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.maxBalance)}</p>
-             <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.highestForecastDay).toLocaleDateString()}</p>
-          </div>
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
-             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.lowestBalance', 'Lowest Balance')}</p>
-             <p className={`text-2xl font-black tabular-nums tracking-tight ${forecast.minBalance < 0 ? 'text-brand-red' : 'text-white'}`}>{money(forecast.minBalance)}</p>
-             <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.lowestForecastDay).toLocaleDateString()}</p>
-          </div>
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
-             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.averageBalance', 'Average Balance')}</p>
-             <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.averageBalance)}</p>
-          </div>
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors relative overflow-hidden">
-             <div className="absolute right-0 bottom-0 opacity-10">
-               <Activity className="w-24 h-24" />
-             </div>
-             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">Daily Spend (Avg)</p>
-             <p className="text-2xl font-black text-brand-red tabular-nums tracking-tight">-{money(forecast.expectedDailySpending)}</p>
-             <p className="text-[10px] text-white/40 mt-1">Weighted Model</p>
-          </div>
-        </div>
-
-        {/* AI Insights List */}
-        <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/20 p-6 rounded-[2rem] border border-indigo-500/30 flex flex-col gap-4">
-           <div className="flex items-center gap-2 mb-2">
-             <Lightbulb className="w-5 h-5 text-indigo-400" />
-             <h3 className="font-bold text-white tracking-wide">{t('analytics.insights.forecastInsights', 'Forecast Insights')}</h3>
-           </div>
-           
-           <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-             {forecast.insights.map((insight, idx) => {
-               let icon = <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />;
-               let bgClass = "bg-emerald-500/10 border-emerald-500/20";
-               
-               if (insight.type === 'negative' || insight.type === 'critical') {
-                 icon = <AlertCircle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />;
-                 bgClass = "bg-rose-500/10 border-rose-500/20";
-               } else if (insight.type === 'warning' || insight.type === 'neutral') {
-                 icon = <Activity className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />;
-                 bgClass = "bg-amber-500/10 border-amber-500/20";
-               }
-
-               return (
-                 <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border ${bgClass} transition-all hover:bg-opacity-50`}>
-                   {icon}
-                   <p className="text-sm text-white/90 leading-relaxed">{t(`analytics.insights.${insight.key}`, insight.fallback)}</p>
-                 </div>
-               );
-             })}
-           </div>
-        </div>
-
-      </div>
 
       {/* Sandbox Entry Point */}
       <section className="p-6 rounded-[2rem] shadow-2xl bg-gradient-to-r from-purple-500/10 to-indigo-600/10 border border-purple-500/20 backdrop-blur-xl relative overflow-hidden group mt-6">
