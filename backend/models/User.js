@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
     budgetPeriod: { type: String, enum: ['weekly', 'monthly'], default: 'monthly' },
     budgetStartDayWeekly: { type: Number, min: 0, max: 6, default: 6 },
     budgetStartDayMonthly: { type: Number, min: 1, max: 31, default: 1 }
+  },
+  lastSurvivalRisk: {
+    type: String,
+    enum: ['Safe', 'Low Risk', 'Medium Risk', 'High Risk'],
+    default: 'Safe'
   }
 }, { timestamps: true });
 

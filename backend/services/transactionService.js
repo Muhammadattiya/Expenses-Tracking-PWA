@@ -57,6 +57,9 @@ const createTransaction = async (userId, data) => {
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
   
+  const { checkPaydaySurvivalRisk } = require('./cronJobs');
+  checkPaydaySurvivalRisk(userId).catch(err => console.error('[ERROR] checkPaydaySurvivalRisk:', err));
+
   return populated;
 };
 
@@ -81,6 +84,9 @@ const updateTransaction = async (userId, id, data) => {
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
 
+  const { checkPaydaySurvivalRisk } = require('./cronJobs');
+  checkPaydaySurvivalRisk(userId).catch(err => console.error('[ERROR] checkPaydaySurvivalRisk:', err));
+
   return transaction;
 };
 
@@ -96,6 +102,9 @@ const deleteTransaction = async (userId, id) => {
   if (transaction.type === 'expense') {
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
+
+  const { checkPaydaySurvivalRisk } = require('./cronJobs');
+  checkPaydaySurvivalRisk(userId).catch(err => console.error('[ERROR] checkPaydaySurvivalRisk:', err));
 };
 
 // ─── Import ────────────────────────────────────────────────────────────────────

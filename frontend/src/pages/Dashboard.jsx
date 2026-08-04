@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
@@ -12,6 +12,7 @@ import {
   deleteTransaction,
 } from "../api/transactions";
 import { getDebts } from "../api/debts";
+import { getSurvival } from "../api/forecast";
 import { getCurrentUser } from "../api/auth";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
@@ -19,9 +20,11 @@ import CustomSelect from "../components/ui/CustomSelect";
 import { useNotification } from "../contexts/NotificationContext";
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
   const [pendingTransactions, setPendingTransactions] = useState([]);
@@ -33,6 +36,7 @@ const Dashboard = () => {
     return d;
   });
   const [userPrefs, setUserPrefs] = useState({ budgetPeriod: 'monthly', budgetStartDayMonthly: 1, budgetStartDayWeekly: 6 });
+  const [survival, setSurvival] = useState(null);
   
   const { periodStart, periodEnd } = useMemo(() => {
     let start = new Date(referenceDate);
@@ -116,16 +120,18 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [transactionsData, accountsData, userData, debtsData] = await Promise.all([
+      const [transactionsData, accountsData, userData, debtsData, survivalData] = await Promise.all([
         getTransactions(),
         getAccounts(),
         getCurrentUser().catch(() => null),
-        getDebts().catch(() => ({ debts: [], transactions: [] }))
+        getDebts().catch(() => ({ debts: [], transactions: [] })),
+        getSurvival().catch(() => null)
       ]);
 
       setAllTransactions(transactionsData);
       setAccounts(accountsData);
       setAllDebtTransactions(debtsData.transactions || []);
+      setSurvival(survivalData);
       if (userData && userData.preferences) {
         setUserPrefs({
           budgetPeriod: userData.preferences.budgetPeriod || 'monthly',
@@ -437,6 +443,46 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {survival && (
+        survival.hasIncomeProfile === true ? (
+          <div className={`mb-6 p-4 rounded-[1.5rem] border backdrop-blur-md flex items-center justify-between gap-4 transition-transform active:scale-95 cursor-pointer 
+            ${survival.risk === 'Safe' ? 'bg-emerald-500/10 border-emerald-500/20' : 
+              survival.risk === 'Low Risk' ? 'bg-blue-500/10 border-blue-500/20' : 
+              survival.risk === 'Medium Risk' ? 'bg-amber-500/10 border-amber-500/20' : 
+              'bg-rose-500/10 border-rose-500/20'}`}
+            onClick={() => navigate('/analytics?tab=insights&focus=payday')}
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Payday Survival</p>
+              <p className="text-lg font-bold text-[var(--color-text-main)]">{survival.risk}</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Next income in {survival.daysUntilIncome !== undefined ? survival.daysUntilIncome : '?'} days</p>
+              {survival.runOutDate ? (
+                <p className="text-[10px] text-rose-300/90 mt-1 font-medium">Runs out approx. {new Date(survival.runOutDate).toLocaleDateString()}</p>
+              ) : (
+                <p className="text-[10px] text-emerald-300/90 mt-1 font-medium">Extra Safe Days: {survival.financialBuffer}</p>
+              )}
+            </div>
+            <div className="flex flex-col items-end">
+               <div className="p-2 rounded-xl bg-black/20">
+                 {survival.risk === 'High Risk' ? <ArrowDown className="text-rose-400 w-5 h-5" /> : 
+                  <ArrowUp className="text-emerald-400 w-5 h-5" />}
+               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 p-4 rounded-[1.5rem] border border-white/5 bg-white/5 backdrop-blur-md flex items-center justify-between gap-4 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => navigate('/settings?tab=income')}>
+             <div>
+               <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1 text-brand-blue">Payday Survival</p>
+               <p className="text-sm font-bold text-[var(--color-text-main)]">Unlock Predictions</p>
+               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Add an Income Profile to predict your survival until payday.</p>
+             </div>
+             <div className="p-2 rounded-xl bg-brand-blue/20 flex-shrink-0">
+                <ArrowRight className="text-brand-blue w-5 h-5" />
+             </div>
+          </div>
+        )
+      )}
 
       {pendingTransactions.length > 0 && (
         <div className="mb-6 p-4 rounded-[2rem] border border-orange-500/30 bg-orange-500/10">

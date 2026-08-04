@@ -4,6 +4,7 @@ const Transaction = require('../models/Transaction');
 const Bill = require('../models/Bill');
 const Subscription = require('../models/Subscription');
 const SmartBudgetPlan = require('../models/SmartBudgetPlan');
+const IncomeProfile = require('../models/IncomeProfile');
 const webpush = require('web-push');
 const { createTransaction } = require('./transactionService');
 
@@ -41,16 +42,20 @@ const initCronJobs = () => {
       recurringExecuted: 0,
       pushSuccess: 0,
       pushFailed: 0,
-      budgetsChecked: 0
+      pushFailed: 0,
+      budgetsChecked: 0,
+      incomeProfilesExecuted: 0
     };
 
     await processRecurringTransactions(stats);
     await processBills(stats);
+    await processIncomeProfiles(stats);
     await processBudgetThresholds(stats);
 
     const executionTime = Date.now() - cronStartTime;
     console.log(`[CRON] Bills Processed: ${stats.billsProcessed}`);
     console.log(`[CRON] Recurring Transactions Executed: ${stats.recurringExecuted}`);
+    console.log(`[CRON] Income Profiles Executed: ${stats.incomeProfilesExecuted}`);
     console.log(`[CRON] Budgets Checked: ${stats.budgetsChecked}`);
     console.log(`[CRON] Notifications Sent: ${stats.pushSuccess}`);
     console.log(`[CRON] Finished`);
@@ -61,6 +66,7 @@ const initCronJobs = () => {
     console.log('[CRON] Daily job started (sendDailyReminder)');
     await sendDailyReminder();
     await processSmartBudgetReminders();
+    await processPaydaySurvivalNotifications();
     console.log('[CRON] Daily job finished');
   }, {
     timezone: "Africa/Cairo"
@@ -77,6 +83,56 @@ const processBudgetThresholds = async (stats) => {
     }
   } catch (error) {
     console.error('[ERROR] Operation Name: processBudgetThresholds');
+    console.error(`[ERROR] message:`, error.message);
+    console.error(`[ERROR] stack trace:`, error.stack);
+  }
+};
+
+const checkPaydaySurvivalRisk = async (userId) => {
+  try {
+    const User = require('../models/User');
+    const PaydaySurvivalService = require('./paydaySurvivalService');
+    const user = await User.findById(userId);
+    if (!user) return;
+
+    const survival = await PaydaySurvivalService.calculateSurvival(userId, null);
+    if (!survival.hasIncomeProfile || survival.risk === 'Unknown') return;
+
+    const currentRisk = survival.risk;
+    const lastRisk = user.lastSurvivalRisk || 'Safe';
+
+    if (currentRisk !== lastRisk) {
+      user.lastSurvivalRisk = currentRisk;
+      await user.save();
+
+      if (currentRisk === 'High Risk' || currentRisk === 'Medium Risk') {
+        const subscriptions = await Subscription.find({ user: userId });
+        const payload = JSON.stringify({
+          title: `⚠️ Payday Survival Alert: ${currentRisk}`,
+          body: `Your balance might drop below zero before your next income on ${new Date(survival.nextIncomeDate).toLocaleDateString()}. Tap to review insights.`,
+          url: '/analytics?tab=insights&focus=payday'
+        });
+
+        for (let sub of subscriptions) {
+          await sendPushNotification(sub, payload, null);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[ERROR] Operation Name: checkPaydaySurvivalRisk');
+    console.error(`[ERROR] message:`, error.message);
+    console.error(`[ERROR] stack trace:`, error.stack);
+  }
+};
+
+const processPaydaySurvivalNotifications = async () => {
+  try {
+    const uniqueUsers = await Subscription.distinct('user');
+    for (let userId of uniqueUsers) {
+      await checkPaydaySurvivalRisk(userId);
+    }
+  } catch (error) {
+    console.error('[ERROR] Operation Name: processPaydaySurvivalNotifications');
     console.error(`[ERROR] message:`, error.message);
     console.error(`[ERROR] stack trace:`, error.stack);
   }
@@ -391,4 +447,62 @@ const processSmartBudgetReminders = async () => {
   }
 };
 
-module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification, processSmartBudgetReminders };
+const processIncomeProfiles = async (stats) => {
+  try {
+    const now = new Date();
+    const currentDayOfWeek = now.getDay();
+    const currentDayOfMonth = now.getDate();
+
+    const profiles = await IncomeProfile.find({ isActive: true });
+    
+    for (const profile of profiles) {
+      let shouldExecute = false;
+      if (profile.frequency === 'weekly' && profile.weekDay === currentDayOfWeek) {
+         shouldExecute = true;
+      } else if (profile.frequency === 'monthly') {
+         const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+         const targetDay = Math.min(profile.monthDay, lastDayOfMonth);
+         if (now.getDate() === targetDay) {
+            shouldExecute = true;
+         }
+      }
+      
+      if (shouldExecute) {
+         const lastExec = profile.lastExecutionDate ? new Date(profile.lastExecutionDate) : null;
+         if (!lastExec || lastExec.toDateString() !== now.toDateString()) {
+             // Generate automated transaction
+             await createTransaction(profile.user, {
+                title: profile.name,
+                amount: profile.amount,
+                type: 'income',
+                account: profile.account,
+                category: profile.category || undefined,
+                date: now,
+                status: 'completed',
+                source: 'system'
+             });
+             profile.lastExecutionDate = now;
+             await profile.save();
+             stats.incomeProfilesExecuted++;
+
+             // Send Push Notification
+             const subscriptions = await Subscription.find({ user: profile.user });
+             const payload = JSON.stringify({
+               title: '🎉 Payday Arrived!',
+               body: `Your automated income of ${profile.amount} EGP from ${profile.name} has been deposited.`,
+               url: '/'
+             });
+             for (let sub of subscriptions) {
+               await sendPushNotification(sub, payload, stats);
+             }
+         }
+      }
+    }
+  } catch (error) {
+    console.error('[ERROR] Operation Name: processIncomeProfiles');
+    console.error(`[ERROR] message:`, error.message);
+    console.error(`[ERROR] stack trace:`, error.stack);
+  }
+};
+
+module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification, processSmartBudgetReminders, processIncomeProfiles, checkPaydaySurvivalRisk };

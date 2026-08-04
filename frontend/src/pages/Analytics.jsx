@@ -11,7 +11,7 @@ import { getRecurringTransactions } from '../api/recurringTransactions';
 import { getCurrentUser } from '../api/auth';
 import { Loader2, Download, Filter, Search, FlaskConical } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import CustomSelect from '../components/ui/CustomSelect';
 
 import AnalyticsTabs from '../components/analytics/AnalyticsTabs';
@@ -29,7 +29,16 @@ export default function Analytics() {
   const navigate = useNavigate();
   const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(value || 0);
   
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
   
   const [data, setData] = useState(null);
   const [accounts, setAccounts] = useState([]);
