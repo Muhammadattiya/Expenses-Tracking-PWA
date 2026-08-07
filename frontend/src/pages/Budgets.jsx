@@ -168,6 +168,16 @@ export default function Budgets() {
           return d >= weekStart && d <= weekEnd;
         });
         total = weeklyTx.reduce((sum, tx) => sum + tx.amount, 0);
+      } else if (budgetPeriod === 'custom' && b.startDate && b.endDate) {
+        const customStart = new Date(b.startDate);
+        const customEnd = new Date(b.endDate);
+        customStart.setHours(0, 0, 0, 0);
+        customEnd.setHours(23, 59, 59, 999);
+        const customTx = categoryTx.filter(tx => {
+          const d = new Date(tx.date);
+          return d >= customStart && d <= customEnd;
+        });
+        total = customTx.reduce((sum, tx) => sum + tx.amount, 0);
       }
 
       spentMap[b._id] = total;

@@ -34,7 +34,7 @@ const transactionSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['manual', 'sms_shortcut'],
+    enum: ['manual', 'sms_shortcut', 'system'],
     default: 'manual'
   },
   referenceNumber: {

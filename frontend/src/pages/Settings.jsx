@@ -59,6 +59,7 @@ import { subscribeToNotifications, sendNotification } from "../api/notifications
 
 import { getCurrentUser, deleteAllUserData, updatePreferences } from "../api/auth";
 import { getDebts } from "../api/debts";
+import { getReceivables } from "../api/receivables";
 import { getIncomeProfiles, createIncomeProfile, updateIncomeProfile, deleteIncomeProfile } from "../api/incomeProfiles";
 import api from "../api/axios";
 
@@ -80,6 +81,7 @@ const Settings = () => {
   const [transactions, setTransactions] = useState([]);
   const [recurringTransactions, setRecurringTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
+  const [allReceivables, setAllReceivables] = useState([]);
   const [incomeProfiles, setIncomeProfiles] = useState([]);
   const navigate = useNavigate();
   const [editingRecurring, setEditingRecurring] = useState(null);
@@ -197,13 +199,14 @@ const Settings = () => {
 
   const fetchData = async () => {
     try {
-      const [accs, cats, trans, recurringData, debtsData, incomeProfilesData] = await Promise.all([
+      const [accs, cats, trans, recurringData, debtsData, incomeProfilesData, receivablesData] = await Promise.all([
         getAccounts(),
         getCategories(),
         getTransactions(),
         getRecurringTransactions(),
         getDebts().catch(() => ({ debts: [], transactions: [] })),
-        getIncomeProfiles().catch(() => [])
+        getIncomeProfiles().catch(() => []),
+        getReceivables().catch(() => [])
       ]);
       setAccounts(accs);
       setCategories(cats);
@@ -211,6 +214,7 @@ const Settings = () => {
       setRecurringTransactions(recurringData);
       setAllDebtTransactions(debtsData.transactions || []);
       setIncomeProfiles(incomeProfilesData);
+      setAllReceivables(receivablesData || []);
 
       // Fetch user data
       const user = await getCurrentUser();
@@ -264,6 +268,20 @@ const Settings = () => {
           if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') balance -= dt.amount; // Repaid money -> lost money
           else balance += dt.amount; // Got paid back -> got money
         }
+      }
+    });
+
+    allReceivables.forEach(r => {
+      if ((r.paidFrom?._id || r.paidFrom) === account._id) balance -= r.paidAmount;
+      if ((r.receivedTo?._id || r.receivedTo) === account._id) balance += r.receivedAmount;
+      if (r.participants) {
+        r.participants.forEach(p => {
+          if (p.payments) {
+            p.payments.forEach(pay => {
+              if ((pay.account?._id || pay.account) === account._id) balance += pay.amount;
+            });
+          }
+        });
       }
     });
     

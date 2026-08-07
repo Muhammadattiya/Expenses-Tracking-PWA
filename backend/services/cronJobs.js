@@ -450,8 +450,13 @@ const processSmartBudgetReminders = async () => {
 const processIncomeProfiles = async (stats) => {
   try {
     const now = new Date();
-    const currentDayOfWeek = now.getDay();
-    const currentDayOfMonth = now.getDate();
+    // Use Africa/Cairo time to determine current day accurately
+    const egyptNowStr = now.toLocaleString("en-US", { timeZone: "Africa/Cairo" });
+    const egyptNow = new Date(egyptNowStr);
+    
+    const currentDayOfWeek = egyptNow.getDay();
+    const currentDayOfMonth = egyptNow.getDate();
+    const todayEgyptStr = egyptNow.toDateString();
 
     const profiles = await IncomeProfile.find({ isActive: true });
     
@@ -460,16 +465,21 @@ const processIncomeProfiles = async (stats) => {
       if (profile.frequency === 'weekly' && profile.weekDay === currentDayOfWeek) {
          shouldExecute = true;
       } else if (profile.frequency === 'monthly') {
-         const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+         const lastDayOfMonth = new Date(egyptNow.getFullYear(), egyptNow.getMonth() + 1, 0).getDate();
          const targetDay = Math.min(profile.monthDay, lastDayOfMonth);
-         if (now.getDate() === targetDay) {
+         if (currentDayOfMonth === targetDay) {
             shouldExecute = true;
          }
       }
       
       if (shouldExecute) {
-         const lastExec = profile.lastExecutionDate ? new Date(profile.lastExecutionDate) : null;
-         if (!lastExec || lastExec.toDateString() !== now.toDateString()) {
+         let lastExecEgyptStr = null;
+         if (profile.lastExecutionDate) {
+             const lastExecLocal = new Date(profile.lastExecutionDate).toLocaleString("en-US", { timeZone: "Africa/Cairo" });
+             lastExecEgyptStr = new Date(lastExecLocal).toDateString();
+         }
+         
+         if (!lastExecEgyptStr || lastExecEgyptStr !== todayEgyptStr) {
              // Generate automated transaction
              await createTransaction(profile.user, {
                 title: profile.name,
