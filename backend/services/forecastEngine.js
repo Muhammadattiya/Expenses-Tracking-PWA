@@ -3,6 +3,7 @@ const Transaction = require('../models/Transaction');
 const Bill = require('../models/Bill');
 const RecurringTransaction = require('../models/RecurringTransaction');
 const IncomeProfile = require('../models/IncomeProfile');
+const Receivable = require('../models/Receivable');
 
 class ForecastEngine {
   /**
@@ -43,6 +44,17 @@ class ForecastEngine {
     }
     const transactions = await Transaction.find(transactionsFilter).lean();
 
+    // 2.5 Fetch Receivables
+    const receivableFilter = { user: userId };
+    if (accountId) {
+      receivableFilter.$or = [
+        { paidFrom: accountId },
+        { receivedTo: accountId },
+        { 'participants.payments.account': accountId }
+      ];
+    }
+    const receivables = await Receivable.find(receivableFilter).lean();
+
     // 3. Calculate Current Balance
     let currentBalance = 0;
     for (const acc of accounts) {
@@ -56,6 +68,20 @@ class ForecastEngine {
         else if (t.type === 'transfer') {
           if (t.from_account?.toString() === accIdStr) accBalance -= t.amount;
           if (t.to_account?.toString() === accIdStr) accBalance += t.amount;
+        }
+      }
+
+      for (const r of receivables) {
+        if (r.paidFrom?.toString() === accIdStr) accBalance -= r.paidAmount;
+        if (r.receivedTo?.toString() === accIdStr) accBalance += r.receivedAmount;
+        if (r.participants) {
+          for (const p of r.participants) {
+            if (p.payments) {
+              for (const pay of p.payments) {
+                if (pay.account?.toString() === accIdStr) accBalance += pay.amount;
+              }
+            }
+          }
         }
       }
       currentBalance += accBalance;

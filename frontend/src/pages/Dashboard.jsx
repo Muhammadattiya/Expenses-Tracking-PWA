@@ -13,6 +13,7 @@ import {
 } from "../api/transactions";
 import { getDebts } from "../api/debts";
 import { getSurvival } from "../api/forecast";
+import { getReceivables } from "../api/receivables";
 import { getCurrentUser } from "../api/auth";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
+  const [allReceivables, setAllReceivables] = useState([]);
   const [pendingTransactions, setPendingTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('all');
@@ -120,17 +122,19 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [transactionsData, accountsData, userData, debtsData, survivalData] = await Promise.all([
+      const [transactionsData, accountsData, userData, debtsData, survivalData, receivablesData] = await Promise.all([
         getTransactions(),
         getAccounts(),
         getCurrentUser().catch(() => null),
         getDebts().catch(() => ({ debts: [], transactions: [] })),
-        getSurvival().catch(() => null)
+        getSurvival().catch(() => null),
+        getReceivables().catch(() => [])
       ]);
 
       setAllTransactions(transactionsData);
       setAccounts(accountsData);
       setAllDebtTransactions(debtsData.transactions || []);
+      setAllReceivables(receivablesData || []);
       setSurvival(survivalData);
       if (userData && userData.preferences) {
         setUserPrefs({
@@ -224,6 +228,20 @@ const Dashboard = () => {
           }
         }
       });
+
+      allReceivables.forEach(r => {
+        if ((r.paidFrom?._id || r.paidFrom) === account._id) bal -= r.paidAmount;
+        if ((r.receivedTo?._id || r.receivedTo) === account._id) bal += r.receivedAmount;
+        if (r.participants) {
+          r.participants.forEach(p => {
+            if (p.payments) {
+              p.payments.forEach(pay => {
+                if ((pay.account?._id || pay.account) === account._id) bal += pay.amount;
+              });
+            }
+          });
+        }
+      });
       
       return bal;
     };
@@ -245,7 +263,7 @@ const Dashboard = () => {
       expense: currentMonthExpense,
       balance: calculatedBalance
     });
-  }, [allTransactions, selectedAccount, periodStart, periodEnd, accounts]);
+  }, [allTransactions, allDebtTransactions, allReceivables, selectedAccount, periodStart, periodEnd, accounts]);
 
   const displayedTransactions = useMemo(() => {
     const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');

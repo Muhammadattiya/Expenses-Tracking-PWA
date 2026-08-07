@@ -3,7 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { getIconComponent } from '../IconPicker';
 import { TrendingUp, TrendingDown, Landmark, Wallet, PiggyBank, CreditCard } from 'lucide-react';
 
-export default function OverviewTab({ money, data, accounts, investments, debts, bills, recurring, filters, allTransactions, allDebtTransactions }) {
+export default function OverviewTab({ money, data, accounts, investments, debts, bills, recurring, filters, allTransactions, allDebtTransactions, allReceivables }) {
   const { t } = useLanguage();
 
   const accountBalances = useMemo(() => {
@@ -36,9 +36,23 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
             balances[t.account] = (balances[t.account] || 0) + amount;
         }
     });
+    
+    (allReceivables || []).forEach(r => {
+      if (r.paidFrom) balances[r.paidFrom._id || r.paidFrom] = (balances[r.paidFrom._id || r.paidFrom] || 0) - r.paidAmount;
+      if (r.receivedTo) balances[r.receivedTo._id || r.receivedTo] = (balances[r.receivedTo._id || r.receivedTo] || 0) + r.receivedAmount;
+      if (r.participants) {
+        r.participants.forEach(p => {
+          if (p.payments) {
+            p.payments.forEach(pay => {
+              if (pay.account) balances[pay.account._id || pay.account] = (balances[pay.account._id || pay.account] || 0) + pay.amount;
+            });
+          }
+        });
+      }
+    });
 
     return balances;
-  }, [accounts, allTransactions, allDebtTransactions]);
+  }, [accounts, allTransactions, allDebtTransactions, allReceivables]);
 
   const totalAccountBalances = useMemo(() => {
     let total = 0;

@@ -6,6 +6,7 @@ const Bill = require('../../models/Bill');
 const RecurringTransaction = require('../../models/RecurringTransaction');
 const Investment = require('../../models/Investment');
 const User = require('../../models/User');
+const Receivable = require('../../models/Receivable');
 
 class StateBuilder {
   /**
@@ -21,7 +22,8 @@ class StateBuilder {
       bills,
       recurring,
       investments,
-      user
+      user,
+      receivables
     ] = await Promise.all([
       Transaction.find({ user: userId }).lean(),
       Account.find({ user: userId }).lean(),
@@ -30,7 +32,8 @@ class StateBuilder {
       Bill.find({ user: userId }).lean(),
       RecurringTransaction.find({ user: userId }).lean(),
       Investment.find({ user: userId }).lean(),
-      User.findById(userId).lean()
+      User.findById(userId).lean(),
+      Receivable.find({ user: userId }).lean()
     ]);
 
     return {
@@ -42,6 +45,7 @@ class StateBuilder {
       bills,
       recurring,
       investments,
+      receivables,
       userPrefs: user?.preferences || {}
     };
   }

@@ -8,6 +8,7 @@ import { getInvestments, getGoldPrice } from '../api/investments';
 import { budgetService } from '../services/budgetService';
 import { getBills } from '../api/bills';
 import { getRecurringTransactions } from '../api/recurringTransactions';
+import { getReceivables } from '../api/receivables';
 import { getCurrentUser } from '../api/auth';
 import { Loader2, Download, Filter, Search, FlaskConical } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -50,6 +51,7 @@ export default function Analytics() {
   const [recurring, setRecurring] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
+  const [allReceivables, setAllReceivables] = useState([]);
   const [userPrefs, setUserPrefs] = useState(null);
 
   const [filters, setFilters] = useState({ from: '', to: '', search: '', account: '', category: '', filterType: '', initialized: false });
@@ -89,7 +91,8 @@ export default function Analytics() {
         budgetsRes, 
         billsRes, 
         recurringRes,
-        allTx
+        allTx,
+        receivablesData
       ] = await Promise.all([
         getAnalytics(currentFilters),
         getAccounts(),
@@ -99,7 +102,8 @@ export default function Analytics() {
         budgetService.getBudgets().catch(() => []),
         getBills().catch(() => []),
         getRecurringTransactions().catch(() => []),
-        getTransactions().catch(() => [])
+        getTransactions().catch(() => []),
+        getReceivables().catch(() => [])
       ]);
 
       let goldPriceRes = null;
@@ -136,10 +140,69 @@ export default function Analytics() {
       setDebts(debtsRes?.debts || []);
       setAllDebtTransactions(debtsRes?.transactions || []);
       setInvestments(investmentsWithCurrentValue);
-      setBudgets(budgetsRes);
+
+      // Calculate budget spent
+      const now = new Date();
+      const prefMonthStart = userPrefs?.budgetStartDayMonthly ?? 1;
+      const prefWeekStart = userPrefs?.budgetStartDayWeekly ?? 6;
+      
+      const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
+      let monthStart = new Date(now.getFullYear(), now.getMonth(), actualMonthStartDay);
+      if (now.getDate() < actualMonthStartDay) {
+        const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+        monthStart = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(prefMonthStart, lastDayOfPrevMonth));
+      }
+      monthStart.setHours(0, 0, 0, 0);
+      const monthEnd = new Date(monthStart);
+      monthEnd.setMonth(monthEnd.getMonth() + 1);
+      monthEnd.setDate(monthEnd.getDate() - 1);
+      monthEnd.setHours(23, 59, 59, 999);
+      
+      const diffToWeekStart = (now.getDay() - prefWeekStart + 7) % 7; 
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - diffToWeekStart);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const enrichedBudgets = (budgetsRes || []).map(b => {
+        const catId = typeof b.category === 'object' ? String(b.category?._id || '') : String(b.category || '');
+        let categoryTx = (allTx || []).filter(tx => {
+          const txCatId = typeof tx.category === 'object' ? String(tx.category?._id || '') : String(tx.category || '');
+          return tx.type === 'expense' && txCatId === catId;
+        });
+        
+        if (b.account) {
+          const bAccId = typeof b.account === 'object' ? String(b.account?._id || '') : String(b.account);
+          categoryTx = categoryTx.filter(tx => {
+            const txAccId = typeof tx.account === 'object' ? String(tx.account?._id || '') : String(tx.account || '');
+            const txFromAccId = typeof tx.from_account === 'object' ? String(tx.from_account?._id || '') : String(tx.from_account || '');
+            return txAccId === bAccId || txFromAccId === bAccId;
+          });
+        }
+        
+        let spent = 0;
+        const budgetPeriod = b.period || 'monthly';
+        if (budgetPeriod === 'monthly') {
+          spent = categoryTx.filter(tx => new Date(tx.date) >= monthStart && new Date(tx.date) <= monthEnd).reduce((sum, tx) => sum + tx.amount, 0);
+        } else if (budgetPeriod === 'weekly') {
+          spent = categoryTx.filter(tx => new Date(tx.date) >= weekStart && new Date(tx.date) <= weekEnd).reduce((sum, tx) => sum + tx.amount, 0);
+        } else if (budgetPeriod === 'custom' && b.startDate && b.endDate) {
+          const customStart = new Date(b.startDate); customStart.setHours(0,0,0,0);
+          const customEnd = new Date(b.endDate); customEnd.setHours(23,59,59,999);
+          spent = categoryTx.filter(tx => new Date(tx.date) >= customStart && new Date(tx.date) <= customEnd).reduce((sum, tx) => sum + tx.amount, 0);
+        }
+        
+        return { ...b, spent };
+      });
+
+      setBudgets(enrichedBudgets);
       setBills(billsRes);
       setRecurring(recurringRes || []);
       setAllTransactions(allTx);
+      setAllReceivables(receivablesData || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -273,6 +336,7 @@ export default function Analytics() {
               filters={filters}
               allTransactions={allTransactions}
               allDebtTransactions={allDebtTransactions}
+              allReceivables={allReceivables}
             />
         )}
         {activeTab === 'spending' && (

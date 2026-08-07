@@ -4,7 +4,7 @@ const participantSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   owedAmount: { type: Number, required: true, min: 0 },
   paidAmount: { type: Number, default: 0, min: 0 },
-  payments: [{ amount: { type: Number, required: true }, account: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true }, paidAt: { type: Date, default: Date.now }, transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' } }],
+  payments: [{ amount: { type: Number, required: true }, account: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', required: true }, paidAt: { type: Date, default: Date.now } }],
 }, { _id: true });
 
 const receivableSchema = new mongoose.Schema({
@@ -15,9 +15,6 @@ const receivableSchema = new mongoose.Schema({
   receivedAmount: { type: Number, default: 0, min: 0 },
   receivedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Account', default: null },
   expenseCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
-  expenseTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
-  paidSettlementTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
-  receivedSettlementTransaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
   participants: { type: [participantSchema], default: [] },
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: true });

@@ -32,10 +32,6 @@ const create = async (userId, data) => {
 
   const userShare = paidAmount - receivedAmount - sumOwed;
 
-  let expense = null;
-  let paidTx = null;
-  let receivedTx = null;
-
   let expenseCategory = null;
   if (userShare > 0) {
     if (data.expenseCategory) {
@@ -45,16 +41,6 @@ const create = async (userId, data) => {
       expenseCategory = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
       if (!expenseCategory) expenseCategory = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
     }
-    expense = await Transaction.create({ user: userId, title: data.title, amount: userShare, type: 'expense', account: account._id, category: expenseCategory._id });
-  }
-
-  const settlementAmount = paidAmount - userShare;
-  if (settlementAmount > 0) {
-    paidTx = await Transaction.create({ user: userId, title: `تسوية (مدفوع): ${data.title}`, amount: -settlementAmount, type: 'settlement', account: account._id });
-  }
-
-  if (receivedAmount > 0 && receivedToAccount) {
-    receivedTx = await Transaction.create({ user: userId, title: `تسوية (مستلم): ${data.title}`, amount: receivedAmount, type: 'settlement', account: receivedToAccount._id });
   }
 
   return Receivable.create({ 
@@ -65,9 +51,6 @@ const create = async (userId, data) => {
     receivedAmount, 
     receivedTo: receivedToAccount?._id || null, 
     expenseCategory: expenseCategory?._id || null,
-    expenseTransaction: expense?._id || null, 
-    paidSettlementTransaction: paidTx?._id || null,
-    receivedSettlementTransaction: receivedTx?._id || null,
     participants 
   });
 };
@@ -121,10 +104,6 @@ const update = async (userId, id, data) => {
 
   const userShare = paidAmount - receivedAmount - sumOwed;
 
-  await Transaction.deleteMany({ _id: { $in: [receivable.expenseTransaction, receivable.paidSettlementTransaction, receivable.receivedSettlementTransaction].filter(Boolean) } });
-
-  let expenseTx = null, paidTx = null, receivedTx = null;
-
   let expenseCategory = null;
   if (userShare > 0) {
     if (data.expenseCategory) {
@@ -134,16 +113,6 @@ const update = async (userId, id, data) => {
       expenseCategory = await Category.findOne({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
       if (!expenseCategory) expenseCategory = await Category.create({ user: userId, name: 'مستحقات مشتركة', type: 'expense' });
     }
-    expenseTx = await Transaction.create({ user: userId, title: data.title, amount: userShare, type: 'expense', account: account._id, category: expenseCategory._id });
-  }
-
-  const settlementAmount = paidAmount - userShare;
-  if (settlementAmount > 0) {
-    paidTx = await Transaction.create({ user: userId, title: `تسوية (مدفوع): ${data.title}`, amount: -settlementAmount, type: 'settlement', account: account._id });
-  }
-
-  if (receivedAmount > 0 && receivedToAccount) {
-    receivedTx = await Transaction.create({ user: userId, title: `تسوية (مستلم): ${data.title}`, amount: receivedAmount, type: 'settlement', account: receivedToAccount._id });
   }
 
   receivable.title = data.title;
@@ -153,9 +122,6 @@ const update = async (userId, id, data) => {
   receivable.receivedTo = receivedToAccount?._id || null;
   receivable.participants = newParticipants;
   receivable.expenseCategory = expenseCategory?._id || null;
-  receivable.expenseTransaction = expenseTx?._id || null;
-  receivable.paidSettlementTransaction = paidTx?._id || null;
-  receivable.receivedSettlementTransaction = receivedTx?._id || null;
 
   await receivable.save();
   return receivable;
@@ -171,10 +137,8 @@ const recordPayment = async (userId, receivableId, participantId, data) => {
   const account = await Account.findOne({ _id: data.account, user: userId });
   if (!account) throw new AppError('Account not found.', 404);
   
-  const tx = await Transaction.create({ user: userId, title: `تسوية من ${participant.name}: ${receivable.title}`, amount, type: 'settlement', account: account._id, date: data.date || new Date() });
-  
   participant.paidAmount += amount;
-  participant.payments.push({ amount, account: account._id, paidAt: data.date || new Date(), transactionId: tx._id });
+  participant.payments.push({ amount, account: account._id, paidAt: data.date || new Date() });
   
   await receivable.save();
   return receivable;
@@ -184,22 +148,6 @@ const remove = async (userId, id) => {
   const receivable = await Receivable.findOne({ _id: id, user: userId });
   if (!receivable) throw new AppError('Receivable not found.', 404);
 
-  const txIdsToDelete = [
-    receivable.expenseTransaction,
-    receivable.paidSettlementTransaction,
-    receivable.receivedSettlementTransaction
-  ].filter(Boolean);
-
-  receivable.participants.forEach(p => {
-    p.payments.forEach(payment => {
-      if (payment.transactionId) txIdsToDelete.push(payment.transactionId);
-    });
-  });
-
-  if (txIdsToDelete.length > 0) {
-    await Transaction.deleteMany({ _id: { $in: txIdsToDelete } });
-  }
-  
   await receivable.deleteOne();
   return { success: true };
 };

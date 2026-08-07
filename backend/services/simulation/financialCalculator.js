@@ -1,6 +1,6 @@
 class FinancialCalculator {
   static calculate(state) {
-    const { accounts, transactions, debts, bills, investments, budgets } = state;
+    const { accounts, transactions, debts, bills, investments, budgets, receivables } = state;
     
     // 1. Balance & Cash Available
     let currentBalance = 0;
@@ -30,6 +30,22 @@ class FinancialCalculator {
         }
       });
       
+      if (receivables) {
+        receivables.forEach(r => {
+          if (r.paidFrom?.toString() === accIdStr) accBalance -= r.paidAmount;
+          if (r.receivedTo?.toString() === accIdStr) accBalance += r.receivedAmount;
+          if (r.participants) {
+            r.participants.forEach(p => {
+              if (p.payments) {
+                p.payments.forEach(pay => {
+                  if (pay.account?.toString() === accIdStr) accBalance += pay.amount;
+                });
+              }
+            });
+          }
+        });
+      }
+
       acc.calculatedBalance = accBalance;
 
       if (!acc.excludeFromTotal) {
