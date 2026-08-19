@@ -25,7 +25,9 @@ export default {
     thisWeek: 'This Week',
     thisMonth: 'This Month',
     weekOf: 'Week',
-    changeSettingsInfo: 'You can change this from App Settings'
+    changeSettingsInfo: 'You can change this from App Settings',
+    pendingReview: 'Pending Review',
+    reviewBtn: 'Review'
   },
   addTransaction: {
     title: 'Add Transaction',
