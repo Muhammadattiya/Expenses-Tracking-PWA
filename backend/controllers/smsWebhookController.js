@@ -6,6 +6,14 @@ const Transaction = require('../models/Transaction');
 const { parseSms } = require('../services/smsParser');
 const notificationService = require('../services/notificationService');
 
+// Redact sensitive PII from raw SMS before storage
+const redactSensitiveInfo = (text) => {
+  return text
+    .replace(/(رقم\s+)\d{4}/gi, '$1****')         // Card numbers
+    .replace(/المتاح\s+[\d.]+/gi, 'المتاح ***')    // Available balance
+    .replace(/(من|إلى)\s+[\u0600-\u06FF\s*]+(?=\s+رقم مرجعي)/gi, '$1 ***'); // Person names
+};
+
 exports.handleSmsWebhook = async (req, res) => {
   try {
     const { userToken } = req.params;
@@ -63,7 +71,7 @@ exports.handleSmsWebhook = async (req, res) => {
       status: 'needs_manual_review',
       source: 'sms_shortcut',
       referenceNumber: parsedData.referenceNumber,
-      rawSms: smsText,
+      rawSms: redactSensitiveInfo(smsText),
       smsHash: smsHash
     });
 
@@ -82,7 +90,8 @@ exports.handleSmsWebhook = async (req, res) => {
     res.status(200).json({ message: 'Transaction saved', id: newTx._id, status: 'needs_manual_review' });
 
   } catch (error) {
-    console.error('SMS Webhook Error:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error('[ERROR] SMS Webhook:', error.message);
+    console.error('[ERROR] Stack:', error.stack);
+    res.status(500).json({ message: 'An error occurred processing the SMS.' });
   }
 };

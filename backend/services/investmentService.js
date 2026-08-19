@@ -17,7 +17,14 @@ const getGoldPrice = async () => {
 };
 
 const list = (userId) => Investment.find({ user: userId }).sort({ purchasedAt: -1 }).lean();
-const create = (userId, input) => Investment.create({ ...input, user: userId });
+const create = (userId, input) => {
+  const safeData = {};
+  const ALLOWED_KEYS = ['type', 'name', 'weight', 'karat', 'purchasePrice', 'purchasedAt', 'notes'];
+  for (const key of ALLOWED_KEYS) {
+    if (input[key] !== undefined) safeData[key] = input[key];
+  }
+  return Investment.create({ ...safeData, user: userId });
+};
 const remove = async (userId, id) => {
   const investment = await Investment.findOneAndDelete({ _id: id, user: userId });
   if (!investment) throw new AppError('Investment not found.', 404);

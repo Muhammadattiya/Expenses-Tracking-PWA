@@ -6,20 +6,32 @@ const getAccounts = async (userId) => {
   return Account.find({ user: userId }).sort({ createdAt: -1 }).lean();
 };
 
+// Whitelist allowed fields to prevent mass assignment attacks
+const pickAccountFields = (data) => {
+  const allowed = {};
+  const ALLOWED_KEYS = ['name', 'type', 'icon', 'color', 'balance_adjustment', 'isDefault', 'isSavingsAccount', 'isArchived', 'excludeFromTotal', 'cardLast4'];
+  for (const key of ALLOWED_KEYS) {
+    if (data[key] !== undefined) allowed[key] = data[key];
+  }
+  return allowed;
+};
+
 const createAccount = async (userId, data) => {
-  if (data.isDefault === true) {
+  const safeData = pickAccountFields(data);
+  if (safeData.isDefault === true) {
     await Account.updateMany({ user: userId }, { $set: { isDefault: false } });
   }
-  const account = new Account({ ...data, user: userId });
+  const account = new Account({ ...safeData, user: userId });
   return await account.save();
 };
 
 const updateAccount = async (userId, id, data) => {
-  if (data.isDefault === true) {
+  const safeData = pickAccountFields(data);
+  if (safeData.isDefault === true) {
     await Account.updateMany({ user: userId, _id: { $ne: id } }, { $set: { isDefault: false } });
   }
 
-  const account = await Account.findOneAndUpdate({ _id: id, user: userId }, data, {
+  const account = await Account.findOneAndUpdate({ _id: id, user: userId }, safeData, {
     new: true,
     runValidators: true,
   });

@@ -19,6 +19,6 @@ router.put("/:id", updateTransaction);
 
 router.delete("/:id", deleteTransaction);
 
-router.post("/import", importTransactions);
+router.post("/import", express.json({ limit: '5mb' }), importTransactions);
 
 module.exports = router;

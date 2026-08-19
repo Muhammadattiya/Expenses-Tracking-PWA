@@ -109,7 +109,10 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(self.clients.openWindow(event.notification.data.url));
+  // Only allow relative paths to prevent open redirect attacks
+  const rawUrl = event.notification.data?.url || '/';
+  const safeUrl = (typeof rawUrl === 'string' && rawUrl.startsWith('/')) ? rawUrl : '/';
+  event.waitUntil(self.clients.openWindow(safeUrl));
 });
 
 // Skip waiting for prompt-based updates
