@@ -2,11 +2,14 @@ const transactionService = require("../services/transactionService");
 
 const getTransactions = async (req, res) => {
   try {
-    const transactions = await transactionService.getTransactions(req.user.id);
+    const isPaginatedRequest = req.query.cursor !== undefined || req.query.limit !== undefined;
+    const transactions = isPaginatedRequest
+      ? await transactionService.getTransactionPage(req.user.id, req.query)
+      : await transactionService.getTransactions(req.user.id);
 
     res.status(200).json(transactions);
   } catch (error) {
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       message: error.message,
     });
   }

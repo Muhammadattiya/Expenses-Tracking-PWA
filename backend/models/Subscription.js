@@ -10,4 +10,7 @@ const subscriptionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+subscriptionSchema.index({ endpoint: 1 });
+subscriptionSchema.index({ user: 1 });
+
 module.exports = mongoose.model('Subscription', subscriptionSchema);

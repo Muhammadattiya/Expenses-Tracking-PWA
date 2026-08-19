@@ -5,29 +5,16 @@ const Bill = require('../models/Bill');
 const Subscription = require('../models/Subscription');
 const SmartBudgetPlan = require('../models/SmartBudgetPlan');
 const IncomeProfile = require('../models/IncomeProfile');
-const webpush = require('web-push');
 const { createTransaction } = require('./transactionService');
+const notificationService = require('./notificationService');
 
-// Helper for sending push notifications
 const sendPushNotification = async (sub, payload, stats) => {
-  try {
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
-    console.log(`[PUSH] Notification sent successfully.`);
-    if (stats) stats.pushSuccess++;
-  } catch (err) {
-    if (stats) stats.pushFailed++;
-    console.error(`[ERROR] [PUSH] Push failed`);
-    console.error(`[ERROR] statusCode: ${err.statusCode}`);
-    console.error(`[ERROR] headers:`, err.headers);
-    console.error(`[ERROR] body:`, err.body);
-    console.error(`[ERROR] message:`, err.message);
-    console.error(`[ERROR] stack trace:`, err.stack);
-
-    if (err.statusCode === 410 || err.statusCode === 404) {
-      console.warn(`[WARNING] Subscription ${sub._id} expired or invalid. Deleting.`);
-      await Subscription.findByIdAndDelete(sub._id);
-    }
+  const result = await notificationService.sendToSubscription(sub, payload);
+  if (stats) {
+    stats.pushSuccess += Number(result.delivered);
+    stats.pushFailed += Number(!result.delivered);
   }
+  return result;
 };
 
 const initCronJobs = () => {
@@ -41,7 +28,6 @@ const initCronJobs = () => {
       billsProcessed: 0,
       recurringExecuted: 0,
       pushSuccess: 0,
-      pushFailed: 0,
       pushFailed: 0,
       budgetsChecked: 0,
       incomeProfilesExecuted: 0

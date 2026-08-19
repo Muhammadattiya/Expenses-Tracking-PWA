@@ -5,6 +5,15 @@ const Category = require('../models/Category');
 const Transaction = require('../models/Transaction');
 const Investment = require('../models/Investment');
 const Receivable = require('../models/Receivable');
+const Bill = require('../models/Bill');
+const Budget = require('../models/Budget');
+const Debt = require('../models/Debt');
+const DebtTransaction = require('../models/DebtTransaction');
+const IncomeProfile = require('../models/IncomeProfile');
+const RecurringTransaction = require('../models/RecurringTransaction');
+const SimulationHistory = require('../models/SimulationHistory');
+const SmartBudgetPlan = require('../models/SmartBudgetPlan');
+const Subscription = require('../models/Subscription');
 const AppError = require('../utils/AppError');
 const { adoptLegacyData } = require('./legacyDataService');
 
@@ -71,6 +80,15 @@ const deleteAllUserData = async (userId) => {
     Receivable.deleteMany({ user: userId }),
     Account.deleteMany({ user: userId }),
     Category.deleteMany({ user: userId }),
+    Bill.deleteMany({ user: userId }),
+    Budget.deleteMany({ user: userId }),
+    Debt.deleteMany({ user: userId }),
+    DebtTransaction.deleteMany({ user: userId }),
+    IncomeProfile.deleteMany({ user: userId }),
+    RecurringTransaction.deleteMany({ user: userId }),
+    SimulationHistory.deleteMany({ userId }),
+    SmartBudgetPlan.deleteMany({ user: userId }),
+    Subscription.deleteMany({ user: userId }),
   ]);
 };
 

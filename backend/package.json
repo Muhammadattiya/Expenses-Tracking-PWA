@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "worker": "node worker.js",
+    "test": "npm run test:webhook",
+    "test:webhook": "node test-webhook.js",
+    "test:syntax": "node --check app.js && node --check server.js && node --check worker.js && node --check services/transactionService.js && node --check services/notificationService.js"
   },
   "keywords": [],
   "author": "",

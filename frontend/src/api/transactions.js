@@ -5,6 +5,13 @@ export const getTransactions = async () => {
   return response.data;
 };
 
+// Opt-in cursor pagination. The legacy getTransactions() response remains an array
+// until each consumer can migrate without changing its existing behavior.
+export const getTransactionPage = async (params = {}) => {
+  const response = await api.get("/transactions", { params });
+  return response.data;
+};
+
 export const createTransaction = async (data) => {
   const response = await api.post("/transactions", data);
   return response.data;
