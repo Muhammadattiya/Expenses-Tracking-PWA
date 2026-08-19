@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const Subscription = require('../models/Subscription');
 const notificationService = require('../services/notificationService');
 
@@ -22,7 +23,8 @@ const subscribe = async (req, res) => {
 
     res.status(201).json({ message: 'Subscribed successfully.' });
   } catch (error) {
-    res.status(500).json({ message: 'Error saving subscription', error: error.message });
+    console.error('[ERROR] subscribe:', error.message);
+    res.status(500).json({ message: 'Failed to save subscription.' });
   }
 };
 
@@ -30,8 +32,6 @@ const sendNotification = async (req, res) => {
   try {
     const { title, body, url } = req.body;
     
-    // For demo purposes, we send to the current user's subscriptions.
-    // In a real app, an admin might send to all, or targeted users.
     const subscriptions = await Subscription.find({ user: req.user.id });
     
     if (subscriptions.length === 0) {
@@ -47,15 +47,31 @@ const sendNotification = async (req, res) => {
 
     res.status(200).json({ message: 'Notification sent successfully.' });
   } catch (error) {
-    res.status(500).json({ message: 'Error sending notification', error: error.message });
+    console.error('[ERROR] sendNotification:', error.message);
+    res.status(500).json({ message: 'Failed to send notification.' });
+  }
+};
+
+// Timing-safe API key comparison to prevent timing attacks
+const isValidApiKey = (provided) => {
+  const expected = process.env.ADMIN_API_KEY;
+  if (!expected || !provided) return false;
+  if (provided.length !== expected.length) return false;
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(provided, 'utf8'),
+      Buffer.from(expected, 'utf8')
+    );
+  } catch {
+    return false;
   }
 };
 
 const broadcastNotification = async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'];
-    if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
-      return res.status(401).json({ message: 'Unauthorized. Invalid API Key.' });
+    if (!isValidApiKey(apiKey)) {
+      return res.status(401).json({ message: 'Unauthorized.' });
     }
 
     const { title, body, url } = req.body;
@@ -67,10 +83,13 @@ const broadcastNotification = async (req, res) => {
       return res.status(404).json({ message: 'No subscriptions found in the database.' });
     }
 
+    // Validate URL — only allow relative paths for safety
+    const safeUrl = (url && typeof url === 'string' && url.startsWith('/')) ? url : '/';
+
     const payload = notificationService.buildPayload({
       title: title || 'إشعار جديد',
       body: body || 'لديك رسالة جديدة',
-      url: url || '/'
+      url: safeUrl
     });
     const result = await notificationService.sendToSubscriptions(subscriptions, payload);
 
@@ -81,7 +100,8 @@ const broadcastNotification = async (req, res) => {
       failed: result.failed
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error broadcasting notification', error: error.message });
+    console.error('[ERROR] broadcastNotification:', error.message);
+    res.status(500).json({ message: 'Failed to broadcast notification.' });
   }
 };
 
