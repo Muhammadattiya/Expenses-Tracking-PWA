@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { User, Plus, CheckCircle2, Trash2, Wallet, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { User, Plus, CheckCircle2, Trash2, Edit2, Wallet, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ListSkeleton } from '../ui/Skeletons';
 import { getAccounts } from '../../api/accounts';
-import { getDebts, createDebt, addDebtTransaction, deleteDebt } from '../../api/debts';
+import { getDebts, createDebt, addDebtTransaction, deleteDebt, updateDebt } from '../../api/debts';
 import CustomSelect from '../ui/CustomSelect';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ConfirmModal from '../modals/ConfirmModal';
@@ -21,6 +22,7 @@ export default function PersonalDebts() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [itemToEdit, setItemToEdit] = useState(null);
   
   // Add Transaction form
   const [activeTxDebt, setActiveTxDebt] = useState(null);
@@ -90,10 +92,10 @@ export default function PersonalDebts() {
   const totalOwedToMe = items.filter(i => i.type === 'owed_to_me').reduce((s, i) => s + i.remainingAmount, 0);
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="space-y-6">
       
       {/* Hero Card */}
-      <section className="relative overflow-hidden p-8 rounded-[2rem] bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl flex flex-col justify-center items-center text-center group">
+      <section className="relative overflow-hidden p-8 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] flex flex-col justify-center items-center text-center group">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/10 to-transparent opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-green/20 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-red/20 rounded-full blur-[100px] pointer-events-none" />
@@ -126,19 +128,20 @@ export default function PersonalDebts() {
       {/* Action Bar */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{t('debts.personalDebtsList', 'Personal Debts')}</h2>
-        <button 
+        <motion.button 
+          whileTap={{ scale: 0.95 }}
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 font-bold text-white hover:bg-brand-blue/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-brand-blue/20"
+          className="flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 font-bold text-white hover:bg-brand-blue/90 transition-colors shadow-lg shadow-brand-blue/20"
         >
           <Plus size={20} /> {t('debts.addDebt', 'Add Debt')}
-        </button>
+        </motion.button>
       </div>
 
       {error && <p className="text-sm text-brand-red bg-brand-red/10 p-3 rounded-xl border border-brand-red/20">{error}</p>}
 
       {/* Grid */}
       {items.length === 0 ? (
-        <div className="text-center py-16 text-[var(--color-text-muted)] flex flex-col items-center glass-panel rounded-[2rem]">
+        <div className="text-center py-16 text-[var(--color-text-muted)] flex flex-col items-center bg-black/20 backdrop-blur-[40px] border border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)] rounded-[2.5rem]">
           <Wallet size={48} className="mb-4 opacity-50" />
           <p>{t('debts.noDebts', 'No personal debts found')}</p>
         </div>
@@ -150,7 +153,12 @@ export default function PersonalDebts() {
             const bgClass = isIOwe ? 'bg-brand-red/10 border-brand-red/10' : 'bg-brand-green/10 border-brand-green/10';
             
             return (
-              <section key={item._id} className={`glass-panel p-6 rounded-[2rem] flex flex-col group hover:border-white/10 transition-colors h-full ${activeTxDebt === item._id ? 'ring-2 ring-brand-blue/30 shadow-2xl z-10' : ''}`}>
+              <motion.section 
+                key={item._id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] p-6 rounded-[2.5rem] flex flex-col group hover:border-white/20 transition-colors h-full ${activeTxDebt === item._id ? 'ring-2 ring-brand-blue/30 shadow-2xl z-10' : ''}`}
+              >
                 
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex gap-4 items-center">
@@ -164,17 +172,22 @@ export default function PersonalDebts() {
                       </p>
                     </div>
                   </div>
-                  <button onClick={() => { setItemToDelete(item); setDeleteModalOpen(true); }} className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-text-muted)] hover:text-brand-red bg-white/5 rounded-lg">
-                    <Trash2 size={16}/>
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setItemToEdit(item); setModalOpen(true); }} className="p-2 opacity-50 hover:opacity-100 transition-opacity text-[var(--color-text-muted)] hover:text-brand-blue bg-white/5 rounded-lg">
+                      <Edit2 size={16}/>
+                    </button>
+                    <button onClick={() => { setItemToDelete(item); setDeleteModalOpen(true); }} className="p-2 opacity-50 hover:opacity-100 transition-opacity text-[var(--color-text-muted)] hover:text-brand-red bg-white/5 rounded-lg">
+                      <Trash2 size={16}/>
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-white/5 rounded-xl p-4 flex flex-col justify-center">
+                  <div className="bg-black/10 shadow-inner border border-white/5 rounded-xl p-4 flex flex-col justify-center">
                     <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mb-1">{t('debts.remaining', 'Remaining')}</p>
                     <p className="font-bold text-xl text-white">{money(item.remainingAmount)}</p>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-4 flex flex-col justify-center items-center text-center">
+                  <div className="bg-black/10 shadow-inner border border-white/5 rounded-xl p-4 flex flex-col justify-center items-center text-center">
                     {item.status === 'settled' ? (
                       <>
                         <CheckCircle2 size={24} className="text-brand-green mb-1" />
@@ -191,12 +204,12 @@ export default function PersonalDebts() {
 
                 {item.status !== 'settled' && activeTxDebt !== item._id && (
                   <div className="mt-auto flex gap-3">
-                    <button onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'repayment', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-xl bg-brand-blue/10 text-brand-blue font-bold text-sm hover:bg-brand-blue/20 transition-colors">
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'repayment', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-xl bg-brand-blue/10 text-brand-blue font-bold text-sm hover:bg-brand-blue/20 transition-colors">
                       {t('debts.settle', 'Settle / Repay')}
-                    </button>
-                    <button onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'loan', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-xl bg-white/5 text-[var(--color-text-main)] font-bold text-sm hover:bg-white/10 transition-colors border border-white/5">
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'loan', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-xl bg-white/5 text-[var(--color-text-main)] font-bold text-sm hover:bg-white/10 hover:text-white transition-colors border border-white/5">
                       {t('debts.loan', 'Add Loan')}
-                    </button>
+                    </motion.button>
                   </div>
                 )}
 
@@ -204,11 +217,11 @@ export default function PersonalDebts() {
                   <form onSubmit={submitTransaction} className="mt-auto border-t border-white/5 pt-4 space-y-4 animate-fade-in">
                     <h3 className="text-sm font-bold text-white">{t('debts.addTransactionTitle', 'Record Payment or Loan')}</h3>
                     
-                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
-                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'repayment' })} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${txForm.type === 'repayment' ? 'bg-brand-blue text-white shadow-md' : 'text-[var(--color-text-muted)] hover:text-white'}`}>
+                    <div className="flex bg-black/20 shadow-inner p-1 rounded-xl border border-white/5">
+                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'repayment' })} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${txForm.type === 'repayment' ? 'bg-brand-blue text-white shadow-md' : 'text-white/50 hover:text-white'}`}>
                         {t('debts.repayment', 'Repayment')}
                       </button>
-                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'loan' })} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${txForm.type === 'loan' ? 'bg-white/20 text-white shadow-md' : 'text-[var(--color-text-muted)] hover:text-white'}`}>
+                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'loan' })} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${txForm.type === 'loan' ? 'bg-white/20 text-white shadow-md' : 'text-white/50 hover:text-white'}`}>
                         {t('debts.loan', 'Add Loan')}
                       </button>
                     </div>
@@ -233,16 +246,16 @@ export default function PersonalDebts() {
                     </div>
                     
                     <div className="flex gap-2">
-                      <button type="submit" className="flex-1 py-2.5 rounded-xl bg-brand-green text-black font-bold text-sm hover:bg-brand-green/90 transition-colors">
+                      <motion.button whileTap={{ scale: 0.95 }} type="submit" className="flex-1 py-2.5 rounded-xl bg-brand-green text-black font-bold text-sm hover:bg-brand-green/90 transition-colors">
                         {t('debts.saveTransaction', 'Save')}
-                      </button>
-                      <button type="button" onClick={() => setActiveTxDebt(null)} className="px-5 py-2.5 rounded-xl bg-white/10 font-bold text-sm text-white hover:bg-white/20 transition-colors">
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.95 }} type="button" onClick={() => setActiveTxDebt(null)} className="px-5 py-2.5 rounded-xl bg-white/10 font-bold text-sm text-white hover:bg-white/20 transition-colors">
                         {t('debts.cancel', 'Cancel')}
-                      </button>
+                      </motion.button>
                     </div>
                   </form>
                 )}
-              </section>
+              </motion.section>
             );
           })}
         </div>
@@ -251,8 +264,18 @@ export default function PersonalDebts() {
       {/* Modals */}
       <PersonalDebtModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={handleSaveDebt}
+        initialData={itemToEdit}
+        onClose={() => { setModalOpen(false); setItemToEdit(null); }}
+        onSave={async (data) => {
+          if (itemToEdit) {
+            await updateDebt(itemToEdit._id, data);
+          } else {
+            await handleSaveDebt(data);
+          }
+          await load();
+          setModalOpen(false);
+          setItemToEdit(null);
+        }}
         accounts={accounts}
       />
 

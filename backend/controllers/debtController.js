@@ -117,3 +117,22 @@ exports.deleteDebt = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+exports.updateDebt = async (req, res) => {
+  try {
+    const { debtId } = req.params;
+    const { personName, type } = req.body;
+    
+    const debt = await Debt.findOneAndUpdate(
+      { _id: debtId, user: req.user.id },
+      { personName, type },
+      { new: true }
+    );
+    
+    if (!debt) return res.status(404).json({ message: 'Debt not found' });
+    res.json({ debt });
+  } catch (err) {
+    console.error('[ERROR] updateDebt:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

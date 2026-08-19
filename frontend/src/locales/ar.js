@@ -226,6 +226,8 @@ export default {
       insights: 'رؤى'
     },
     filters: {
+      today: 'اليوم',
+      yesterday: 'أمس',
       thisWeek: 'هذا الأسبوع',
       lastWeek: 'الأسبوع الماضي',
       thisMonth: 'هذا الشهر',

@@ -158,7 +158,7 @@ export default function InsightsTab({ money, filters }) {
     <div className="space-y-6 animate-fade-in pb-10">
       
       {/* Future Balance Hero Card */}
-      <section className="p-8 rounded-[2.5rem] shadow-2xl bg-gradient-to-br from-black/60 to-black/40 border border-white/5 backdrop-blur-2xl relative overflow-hidden group">
+      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 rounded-[2.5rem] relative overflow-hidden group">
         <div className={`absolute -right-20 -top-20 w-64 h-64 rounded-full blur-3xl opacity-20 transition-colors duration-700 ${isTrendPositive ? 'bg-brand-green' : 'bg-brand-red'}`} />
         
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
@@ -195,7 +195,7 @@ export default function InsightsTab({ money, filters }) {
       </section>
 
       {/* Forecast Chart */}
-      <section className="p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 backdrop-blur-xl relative overflow-hidden">
+      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] relative overflow-hidden">
         <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={forecast.dailyForecast} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
@@ -263,21 +263,21 @@ export default function InsightsTab({ money, filters }) {
         
         {/* Statistics Grid */}
         <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
+          <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors">
              <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.highestBalance', 'Highest Balance')}</p>
              <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.maxBalance)}</p>
              <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.highestForecastDay).toLocaleDateString()}</p>
           </div>
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
+          <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors">
              <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.lowestBalance', 'Lowest Balance')}</p>
              <p className={`text-2xl font-black tabular-nums tracking-tight ${forecast.minBalance < 0 ? 'text-brand-red' : 'text-white'}`}>{money(forecast.minBalance)}</p>
              <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.lowestForecastDay).toLocaleDateString()}</p>
           </div>
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors">
+          <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors">
              <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.averageBalance', 'Average Balance')}</p>
              <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.averageBalance)}</p>
           </div>
-          <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 hover:bg-white/10 transition-colors relative overflow-hidden">
+          <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors relative overflow-hidden">
              <div className="absolute right-0 bottom-0 opacity-10">
                <Activity className="w-24 h-24" />
              </div>
@@ -288,7 +288,7 @@ export default function InsightsTab({ money, filters }) {
         </div>
 
         {/* AI Insights List */}
-        <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/20 p-6 rounded-[2rem] border border-indigo-500/30 flex flex-col gap-4">
+        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-indigo-500/30 border-l-indigo-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] flex flex-col gap-4">
            <div className="flex items-center gap-2 mb-2">
              <Lightbulb className="w-5 h-5 text-indigo-400" />
              <h3 className="font-bold text-white tracking-wide">{t('analytics.insights.forecastInsights', 'Forecast Insights')}</h3>
@@ -322,7 +322,7 @@ export default function InsightsTab({ money, filters }) {
       {/* Payday Survival Card */}
       {survival && (
         survival.hasIncomeProfile === true ? (
-          <section ref={paydayCardRef} className={`p-8 rounded-[2.5rem] shadow-2xl border backdrop-blur-xl relative overflow-hidden group ${getRiskColor(survival.risk)}`}>
+          <section ref={paydayCardRef} className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 rounded-[2.5rem] relative overflow-hidden group ${getRiskColor(survival.risk)}`}>
             {/* Top Header & Switcher */}
             <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 border-b border-white/10 pb-6">
               <div className="flex items-center gap-4">
@@ -357,7 +357,7 @@ export default function InsightsTab({ money, filters }) {
             </div>
 
             {/* Transparency Board */}
-            <div className="relative z-10 bg-black/20 p-5 rounded-3xl border border-white/5 mb-8">
+            <div className="relative z-10 bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 mb-8">
               <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-4 flex items-center gap-2">
                  <Info className="w-4 h-4" /> Transparency Board (Isolated Account)
               </h3>
@@ -451,7 +451,7 @@ export default function InsightsTab({ money, filters }) {
                  <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-4 flex items-center gap-2">
                     <Activity className="w-4 h-4" /> Financial Timeline
                  </h3>
-                 <div className="bg-black/20 p-6 rounded-3xl border border-white/5 h-full">
+                 <div className="bg-black/10 shadow-inner p-6 rounded-[2.5rem] border border-white/5 h-full">
                     <div className="relative border-l-2 border-white/10 ml-4 space-y-8 py-2">
                       {survival.timeline?.map((step, idx) => (
                         <div key={idx} className="relative pl-8">
@@ -476,7 +476,7 @@ export default function InsightsTab({ money, filters }) {
             </div>
           </section>
         ) : (
-          <section className="p-8 rounded-[2.5rem] shadow-2xl border border-white/10 bg-white/5 backdrop-blur-xl relative overflow-hidden group">
+          <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 rounded-[2.5rem] relative overflow-hidden group">
              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
                    <div className="flex items-center gap-3 mb-2">
@@ -501,7 +501,7 @@ export default function InsightsTab({ money, filters }) {
       )}
 
       {/* Sandbox Entry Point */}
-      <section className="p-6 rounded-[2rem] shadow-2xl bg-gradient-to-r from-purple-500/10 to-indigo-600/10 border border-purple-500/20 backdrop-blur-xl relative overflow-hidden group mt-6">
+      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-purple-500/30 border-l-purple-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] relative overflow-hidden group mt-6">
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl group-hover:bg-purple-500/30 transition-colors duration-700" />
         <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors duration-700" />
         

@@ -260,13 +260,41 @@ const processBills = async (stats) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    const activeBills = await Bill.find({ isActive: true, status: { $ne: 'paid' } });
+    const activeBills = await Bill.find({ 
+      isActive: true, 
+      $or: [
+        { status: { $ne: 'paid' } },
+        { status: 'paid', repeat: { $ne: 'never' } }
+      ]
+    });
 
     for (let bill of activeBills) {
       stats.billsProcessed++;
       try {
         const due = new Date(bill.dueDate);
         due.setHours(0, 0, 0, 0);
+
+        if (bill.status === 'paid' && bill.repeat !== 'never') {
+          if (now.getTime() > due.getTime()) {
+             let nextDate = new Date(bill.dueDate);
+             while (nextDate.getTime() <= now.getTime()) {
+                 if (bill.repeat === 'weekly') {
+                   nextDate.setDate(nextDate.getDate() + 7);
+                 } else if (bill.repeat === 'monthly') {
+                   nextDate.setMonth(nextDate.getMonth() + 1);
+                 } else if (bill.repeat === 'yearly') {
+                   nextDate.setFullYear(nextDate.getFullYear() + 1);
+                 } else {
+                   break;
+                 }
+             }
+             bill.dueDate = nextDate;
+             bill.status = 'upcoming';
+             bill.transactionId = undefined; 
+             await bill.save();
+          }
+          continue;
+        }
 
         let newStatus = 'upcoming';
         if (due.getTime() === now.getTime()) {

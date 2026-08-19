@@ -28,6 +28,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   getAccounts,
@@ -609,14 +610,32 @@ const Settings = () => {
   }
 
   return (
-    <div className="p-4 pt-8 animate-fade-in space-y-6">
-      <h2 className="text-2xl font-bold text-center tracking-wide text-[var(--color-text-main)] flex items-center justify-center gap-3">
-        {activeView !== 'main' && (
-          <button onClick={() => setActiveView('main')} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] p-2">
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        )}
-        <span className="text-[var(--color-text-main)]">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+      className="p-4 pt-8 pb-24 space-y-6 relative"
+    >
+      {/* Background Liquid Orbs */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/20 rounded-full mix-blend-screen filter blur-[60px] opacity-70 animate-pulse pointer-events-none" />
+      <div className="absolute bottom-20 left-0 w-72 h-72 bg-emerald-500/10 rounded-full mix-blend-screen filter blur-[80px] opacity-50 pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-screen filter blur-[100px] opacity-40 pointer-events-none" />
+
+      <h2 className="text-4xl font-bold text-center tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-sm flex items-center justify-center gap-3 relative z-10">
+        <AnimatePresence>
+          {activeView !== 'main' && (
+            <motion.button 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              onClick={() => setActiveView('main')} 
+              className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+        <span>
           {activeView === 'main' && t('nav.settings')}
           {activeView === 'appSettings' && t('settings.appSettings')}
           {activeView === 'notifications' && t('settings.pushNotifications')}
@@ -624,239 +643,242 @@ const Settings = () => {
           {activeView === 'categories' && t('settings.categoryManagement')}
           {activeView === 'data' && t('settings.dataManagement')}
           {activeView === 'recurring' && t('settings.recurringTransactions')}
+          {activeView === 'incomeProfiles' && t('incomeProfiles.title', 'Income Profiles')}
+          {activeView === 'sms' && t('settings.smsIntegration')}
         </span>
         {activeView !== 'main' && <div className="w-10"></div>}
       </h2>
 
+      <AnimatePresence mode="wait">
       {activeView === 'main' && (
-        <section className="glass-panel rounded-[2rem] divide-y divide-[var(--color-border)] overflow-hidden">
-          <button onClick={() => setActiveView('appSettings')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-500/20 p-2 rounded-xl text-orange-400"><SettingsIcon size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.appSettings')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
+        <motion.section 
+          key="main"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 rounded-[2.5rem] divide-y divide-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] overflow-hidden"
+        >
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
-          <button onClick={() => setActiveView('notifications')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-brand-blue/20 p-2 rounded-xl text-brand-blue"><Bell size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.pushNotifications')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
-
-          <button onClick={() => setActiveView('sms')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><MessageSquare size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.smsIntegration')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
-
-          <button onClick={() => setActiveView('accounts')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-brand-blue/20 p-2 rounded-xl text-brand-blue"><Wallet size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.accountManagement')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
-
-          <button onClick={() => setActiveView('categories')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-brand-green/20 p-2 rounded-xl text-brand-green"><Tag size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.categoryManagement')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
-
-          <button onClick={() => setActiveView('recurring')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-500/20 p-2 rounded-xl text-orange-400"><Repeat size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.recurringTransactions', 'المعاملات المتكررة')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
-
-          <button onClick={() => setActiveView('incomeProfiles')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><Banknote size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('incomeProfiles.title', 'Income Profiles')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
-
-          <button onClick={() => setActiveView('data')} className="w-full flex items-center justify-between p-5 hover:bg-[var(--color-surface-hover)] transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-500/20 p-2 rounded-xl text-purple-400"><Database size={20} /></div>
-              <span className="text-lg font-medium text-[var(--color-text-main)] tracking-wide">{t('settings.dataManagement')}</span>
-            </div>
-            <ChevronRight className={`text-[var(--color-text-muted)] w-5 h-5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-          </button>
-        </section>
+          {[
+            { id: 'appSettings', icon: <SettingsIcon size={20} />, label: t('settings.appSettings'), color: 'text-orange-400', bg: 'bg-orange-500/20', borderColor: 'border-orange-500/30' },
+            { id: 'notifications', icon: <Bell size={20} />, label: t('settings.pushNotifications'), color: 'text-brand-blue', bg: 'bg-brand-blue/20', borderColor: 'border-brand-blue/30' },
+            { id: 'sms', icon: <MessageSquare size={20} />, label: t('settings.smsIntegration'), color: 'text-emerald-400', bg: 'bg-emerald-500/20', borderColor: 'border-emerald-500/30' },
+            { id: 'accounts', icon: <Wallet size={20} />, label: t('settings.accountManagement'), color: 'text-brand-blue', bg: 'bg-brand-blue/20', borderColor: 'border-brand-blue/30' },
+            { id: 'categories', icon: <Tag size={20} />, label: t('settings.categoryManagement'), color: 'text-brand-green', bg: 'bg-brand-green/20', borderColor: 'border-brand-green/30' },
+            { id: 'recurring', icon: <Repeat size={20} />, label: t('settings.recurringTransactions', 'المعاملات المتكررة'), color: 'text-orange-400', bg: 'bg-orange-500/20', borderColor: 'border-orange-500/30' },
+            { id: 'incomeProfiles', icon: <Banknote size={20} />, label: t('incomeProfiles.title', 'Income Profiles'), color: 'text-emerald-400', bg: 'bg-emerald-500/20', borderColor: 'border-emerald-500/30' },
+            { id: 'data', icon: <Database size={20} />, label: t('settings.dataManagement'), color: 'text-purple-400', bg: 'bg-purple-500/20', borderColor: 'border-purple-500/30' },
+          ].map((item) => (
+            <motion.button 
+              key={item.id}
+              whileTap={{ scale: 0.98, backgroundColor: "rgba(255,255,255,0.1)" }}
+              onClick={() => setActiveView(item.id)} 
+              className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors group relative"
+            >
+              <div className="absolute inset-y-0 left-0 w-1 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex items-center gap-4">
+                <div className={`${item.bg} p-2.5 rounded-2xl ${item.color} border ${item.borderColor} shadow-inner`}>
+                  {item.icon}
+                </div>
+                <span className="text-lg font-medium text-white/90 tracking-wide drop-shadow-sm">{item.label}</span>
+              </div>
+              <ChevronRight className={`text-white/40 group-hover:text-white/80 w-5 h-5 transition-colors ${lang === 'ar' ? 'rotate-180' : ''}`} />
+            </motion.button>
+          ))}
+        </motion.section>
       )}
 
       {activeView === 'appSettings' && (
-        <section className="glass-panel rounded-[2rem] p-5">
+        <motion.section 
+          key="appSettings"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-6"
+        >
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-3">
-              <span className="text-[var(--color-text-main)] font-medium text-lg">{t('settings.language')}</span>
-              <div className="flex bg-black/10 dark:bg-black/30 rounded-xl p-1 border border-[var(--color-border)] w-full">
-                <button
+              <span className="text-white/90 font-medium text-lg ml-1">{t('settings.language')}</span>
+              <div className="flex bg-black/30 backdrop-blur-xl rounded-2xl p-1.5 border border-white/5 shadow-inner relative">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setLang('ar')}
-                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${lang === 'ar' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors relative z-10 ${lang === 'ar' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
                 >
+                  {lang === 'ar' && <motion.div layoutId="langIndicator" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
                   {t('settings.arabic', 'العربية')}
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setLang('en')}
-                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${lang === 'en' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors relative z-10 ${lang === 'en' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
                 >
+                  {lang === 'en' && <motion.div layoutId="langIndicator" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
                   {t('settings.english', 'English')}
-                </button>
+                </motion.button>
               </div>
             </div>
 
             <div className="flex flex-col gap-3">
-              <span className="text-[var(--color-text-main)] font-medium text-lg">{t('settings.theme')}</span>
-              <div className="flex bg-black/10 dark:bg-black/30 rounded-xl p-1 border border-[var(--color-border)] w-full">
-                <button
+              <span className="text-white/90 font-medium text-lg ml-1">{t('settings.theme')}</span>
+              <div className="flex bg-black/30 backdrop-blur-xl rounded-2xl p-1.5 border border-white/5 shadow-inner relative">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => toggleTheme('dark')}
-                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${theme === 'dark' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors relative z-10 ${theme === 'dark' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
                 >
+                  {theme === 'dark' && <motion.div layoutId="themeIndicator" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
                   {t('settings.dark', 'Dark')}
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => toggleTheme('light')}
-                  className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${theme === 'light' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors relative z-10 ${theme === 'light' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
                 >
+                  {theme === 'light' && <motion.div layoutId="themeIndicator" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
                   {t('settings.light', 'Light')}
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
 
-            <div className="flex flex-col gap-3 pt-4 border-t border-white/5">
-              <span className="text-[var(--color-text-main)] font-medium text-lg">{t('settings.budgetPreferences', 'إعدادات الميزانية')}</span>
-              
-              <label className="text-sm text-[var(--color-text-muted)]">{t('settings.defaultBudgetPeriod', 'الفترة الافتراضية للميزانية')}</label>
-              <div className="flex bg-black/10 dark:bg-black/30 rounded-xl p-1 border border-[var(--color-border)] w-full mb-4">
-                <button
-                  onClick={() => setBudgetPeriod('monthly')}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${budgetPeriod === 'monthly' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                >
-                  {t('budgets.monthly', 'Monthly')}
-                </button>
-                <button
-                  onClick={() => setBudgetPeriod('weekly')}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${budgetPeriod === 'weekly' ? 'bg-[var(--color-surface-active)] text-[var(--color-text-main)] shadow-md' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                >
-                  {t('budgets.weekly', 'Weekly')}
-                </button>
-              </div>
-
-              {budgetPeriod === 'weekly' ? (
-                <>
-                  <label className="text-sm text-[var(--color-text-muted)]">{t('settings.weekStartDay', 'بداية الأسبوع')}</label>
-                  <select
-                    value={budgetStartDayWeekly}
-                    onChange={(e) => setBudgetStartDayWeekly(Number(e.target.value))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-blue/50"
-                  >
-                    <option value={6} className="bg-[#12121a]">{t('days.saturday', 'السبت')}</option>
-                    <option value={0} className="bg-[#12121a]">{t('days.sunday', 'الأحد')}</option>
-                    <option value={1} className="bg-[#12121a]">{t('days.monday', 'الإثنين')}</option>
-                    <option value={2} className="bg-[#12121a]">{t('days.tuesday', 'الثلاثاء')}</option>
-                    <option value={3} className="bg-[#12121a]">{t('days.wednesday', 'الأربعاء')}</option>
-                    <option value={4} className="bg-[#12121a]">{t('days.thursday', 'الخميس')}</option>
-                    <option value={5} className="bg-[#12121a]">{t('days.friday', 'الجمعة')}</option>
-                  </select>
-                </>
-              ) : (
-                <>
-                  <label className="text-sm text-[var(--color-text-muted)]">{t('settings.monthStartDate', 'تاريخ بداية الشهر')}</label>
-                  <select
-                    value={budgetStartDayMonthly}
-                    onChange={(e) => setBudgetStartDayMonthly(Number(e.target.value))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-blue/50"
-                  >
-                    {[...Array(31)].map((_, i) => (
-                      <option key={i + 1} value={i + 1} className="bg-[#12121a]">
-                        {i + 1}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-white/40 mt-1">{t('settings.monthStartNotice', 'إذا كان الشهر لا يحتوي على هذا اليوم، سيتم استخدام اليوم الأخير من الشهر.')}</p>
-                </>
-              )}
-
-              <button
-                onClick={() => handleSavePreferences({
-                  budgetPeriod,
-                  budgetStartDayWeekly,
-                  budgetStartDayMonthly
-                })}
-                disabled={isUpdatingPreferences}
-                className="w-full mt-4 bg-brand-blue text-white rounded-xl py-3 font-semibold disabled:opacity-50"
+          <div className="flex flex-col gap-4 pt-6 mt-6 border-t border-white/10">
+            <span className="text-white/90 font-medium text-lg ml-1">{t('settings.budgetPreferences', 'إعدادات الميزانية')}</span>
+            
+            <label className="text-sm text-white/50 ml-1">{t('settings.defaultBudgetPeriod', 'الفترة الافتراضية للميزانية')}</label>
+            <div className="flex bg-black/30 backdrop-blur-xl rounded-2xl p-1.5 border border-white/5 shadow-inner relative mb-2">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setBudgetPeriod('monthly')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors relative z-10 ${budgetPeriod === 'monthly' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
               >
-                {isUpdatingPreferences ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('settings.savePreferences', 'حفظ الإعدادات')}
-              </button>
+                {budgetPeriod === 'monthly' && <motion.div layoutId="budgetIndicator" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
+                {t('budgets.monthly', 'Monthly')}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setBudgetPeriod('weekly')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors relative z-10 ${budgetPeriod === 'weekly' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+              >
+                {budgetPeriod === 'weekly' && <motion.div layoutId="budgetIndicator" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
+                {t('budgets.weekly', 'Weekly')}
+              </motion.button>
             </div>
-        </section>
+
+            {budgetPeriod === 'weekly' ? (
+              <>
+                <label className="text-sm text-white/50 ml-1 mt-2">{t('settings.weekStartDay', 'بداية الأسبوع')}</label>
+                <select
+                  value={budgetStartDayWeekly}
+                  onChange={(e) => setBudgetStartDayWeekly(Number(e.target.value))}
+                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white/90 focus:outline-none focus:border-brand-blue/50 shadow-inner"
+                >
+                  <option value={6} className="bg-[#12121a]">{t('days.saturday', 'السبت')}</option>
+                  <option value={0} className="bg-[#12121a]">{t('days.sunday', 'الأحد')}</option>
+                  <option value={1} className="bg-[#12121a]">{t('days.monday', 'الإثنين')}</option>
+                  <option value={2} className="bg-[#12121a]">{t('days.tuesday', 'الثلاثاء')}</option>
+                  <option value={3} className="bg-[#12121a]">{t('days.wednesday', 'الأربعاء')}</option>
+                  <option value={4} className="bg-[#12121a]">{t('days.thursday', 'الخميس')}</option>
+                  <option value={5} className="bg-[#12121a]">{t('days.friday', 'الجمعة')}</option>
+                </select>
+              </>
+            ) : (
+              <>
+                <label className="text-sm text-white/50 ml-1 mt-2">{t('settings.monthStartDate', 'تاريخ بداية الشهر')}</label>
+                <select
+                  value={budgetStartDayMonthly}
+                  onChange={(e) => setBudgetStartDayMonthly(Number(e.target.value))}
+                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white/90 focus:outline-none focus:border-brand-blue/50 shadow-inner"
+                >
+                  {[...Array(31)].map((_, i) => (
+                    <option key={i + 1} value={i + 1} className="bg-[#12121a]">
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-white/40 ml-1">{t('settings.monthStartNotice', 'إذا كان الشهر لا يحتوي على هذا اليوم، سيتم استخدام اليوم الأخير من الشهر.')}</p>
+              </>
+            )}
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleSavePreferences({
+                budgetPeriod,
+                budgetStartDayWeekly,
+                budgetStartDayMonthly
+              })}
+              disabled={isUpdatingPreferences}
+              className="w-full mt-6 bg-brand-blue/20 border border-brand-blue/30 text-brand-blue hover:bg-brand-blue hover:text-white rounded-2xl py-4 font-bold shadow-[0_4px_12px_rgba(59,130,246,0.2)] transition-colors disabled:opacity-50"
+            >
+              {isUpdatingPreferences ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('settings.savePreferences', 'حفظ الإعدادات')}
+            </motion.button>
+          </div>
+        </motion.section>
       )}
 
       {activeView === 'incomeProfiles' && (
-        <section className="glass-panel rounded-[2rem] p-5">
+        <motion.section 
+          key="incomeProfiles"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] mb-24 mt-2"
+        >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[var(--color-text-main)]">{t('incomeProfiles.title', 'Income Profiles')}</h2>
-            <button 
+            <h2 className="text-xl font-bold text-white/90">{t('incomeProfiles.title', 'Income Profiles')}</h2>
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
               onClick={() => setAddIncomeProfileModalOpen(true)}
-              className="bg-brand-blue hover:bg-brand-blue/90 text-white p-2 rounded-full transition-transform active:scale-95"
+              className="bg-brand-blue hover:bg-brand-blue/90 text-white p-2 rounded-xl transition-colors shadow-inner"
             >
               <Plus size={24} />
-            </button>
+            </motion.button>
           </div>
 
           <div className="flex flex-col gap-3">
             {incomeProfiles.length === 0 ? (
-              <div className="text-center py-10 text-[var(--color-text-muted)]">
+              <div className="text-center py-10 text-white/40">
                 <Banknote size={48} className="mx-auto mb-3 opacity-20" />
                 <p>{t('incomeProfiles.noProfiles', 'No active income profiles')}</p>
               </div>
             ) : (
               incomeProfiles.map(profile => (
-                <div key={profile._id} className="group relative bg-black/40 backdrop-blur-xl p-5 md:p-6 rounded-3xl border border-white/5 hover:border-brand-blue/30 transition-all duration-300 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div key={profile._id} className="group relative bg-black/30 backdrop-blur-xl p-5 md:p-6 rounded-3xl border border-white/5 hover:border-brand-blue/30 transition-all duration-300 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                   
                   <div className="relative z-10 flex w-full md:w-auto flex-col sm:flex-row items-start sm:items-center gap-5">
                     <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <div className={`p-4 rounded-2xl shrink-0 ${profile.isActive ? 'bg-brand-blue/20 text-brand-blue shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 'bg-white/5 text-white/40'}`}>
+                      <div className={`p-4 rounded-2xl shrink-0 ${profile.isActive ? 'bg-brand-blue/20 text-brand-blue shadow-[0_0_20px_rgba(59,130,246,0.3)] border border-brand-blue/30' : 'bg-white/5 text-white/40 border border-white/10'}`}>
                         <Banknote size={28} className={profile.isActive ? '' : 'grayscale'} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-[var(--color-text-main)] flex items-center gap-2">
+                        <h3 className="text-xl font-bold text-white/90 flex items-center gap-2">
                           {profile.name}
                           {!profile.isActive && (
-                            <span className="text-[10px] uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded-md text-white/50">
+                            <span className="text-[10px] uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded-md text-white/50 border border-white/10">
                               {t('incomeProfiles.inactive', 'Inactive')}
                             </span>
                           )}
                         </h3>
-                        <p className="text-2xl font-black tabular-nums text-brand-green mt-1 tracking-tight">
+                        <p className="text-2xl font-black tabular-nums text-emerald-400 mt-1 tracking-tight">
                           {Number(profile.amount).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}
                         </p>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-white/5 sm:border-t-0">
-                      <div className="bg-black/30 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+                      <div className="bg-black/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5 shadow-inner">
                         <Repeat size={14} className="text-brand-blue opacity-70" />
                         <span className="text-xs font-bold text-white/80">
                           {profile.frequency === 'weekly' ? t('incomeProfiles.weekly', 'Weekly') : t('incomeProfiles.monthly', 'Monthly')}
                         </span>
                       </div>
                       {profile.account && (
-                        <div className="bg-black/30 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+                        <div className="bg-black/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5 shadow-inner">
                           <Wallet size={14} className="text-emerald-400 opacity-70" />
                           <span className="text-xs font-bold text-white/80 truncate max-w-[100px]">
                             {profile.account.name || 'Account'}
@@ -864,7 +886,7 @@ const Settings = () => {
                         </div>
                       )}
                       {profile.category && (
-                        <div className="bg-black/30 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5 col-span-2">
+                        <div className="bg-black/40 px-3 py-2 rounded-xl flex items-center gap-2 border border-white/5 shadow-inner col-span-2">
                           <Tag size={14} className="text-amber-400 opacity-70" />
                           <span className="text-xs font-bold text-white/80">
                             {profile.category.name || 'Category'}
@@ -875,7 +897,8 @@ const Settings = () => {
                   </div>
 
                   <div className="relative z-10 flex items-center gap-2 w-full md:w-auto justify-end border-t border-white/5 md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0">
-                    <button 
+                    <motion.button 
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => {
                         setEditingIncomeProfile({
                           ...profile,
@@ -884,82 +907,113 @@ const Settings = () => {
                         });
                         setEditIncomeProfileModalOpen(true);
                       }}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 p-3 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-xl transition-all duration-300 font-bold text-sm"
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 p-3 bg-brand-blue/10 border border-brand-blue/20 text-brand-blue hover:bg-brand-blue hover:text-white rounded-xl transition-colors font-bold text-sm shadow-inner"
                     >
                       <Pencil size={18} />
                       <span className="md:hidden">Edit</span>
-                    </button>
-                    <button 
+                    </motion.button>
+                    <motion.button 
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => handleDeleteIncomeProfile(profile)}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 p-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-300 font-bold text-sm"
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 p-3 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-colors font-bold text-sm shadow-inner"
                     >
                       <Trash2 size={18} />
                       <span className="md:hidden">Delete</span>
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               ))
             )}
           </div>
-        </section>
+        </motion.section>
       )}
 
       {activeView === 'notifications' && (
-        <section className="glass-panel p-6 rounded-[2rem]">
-          <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.pushNotifications', 'الإشعارات الفورية (Push)')}</h3>
-          <p className="text-sm text-[var(--color-text-muted)] mb-6">{t('settings.pushDesc', 'احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.')}</p>
+        <motion.section 
+          key="notifications"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]"
+        >
+          <h3 className="text-lg font-bold mb-1 text-white/90">{t('settings.pushNotifications', 'الإشعارات الفورية (Push)')}</h3>
+          <p className="text-sm text-white/50 mb-6">{t('settings.pushDesc', 'احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.')}</p>
 
           <div className="mb-6">
-            <button onClick={handleSubscribe} className="w-full flex items-center justify-center gap-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-3 rounded-2xl hover:bg-blue-500/30 transition-colors">
+            <motion.button 
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSubscribe} 
+              className="w-full flex items-center justify-center gap-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-4 rounded-2xl hover:bg-blue-500/30 transition-colors shadow-inner"
+            >
               <Bell className="w-5 h-5" />
-              <span className="text-sm font-semibold">{t('settings.pushActivateBtn', 'تفعيل استلام الإشعارات على هذا الجهاز')}</span>
-            </button>
+              <span className="text-sm font-bold">{t('settings.pushActivateBtn', 'تفعيل استلام الإشعارات على هذا الجهاز')}</span>
+            </motion.button>
           </div>
 
-          {pushStatus && <p className="mt-4 rounded-xl bg-white/5 p-3 text-sm text-[var(--color-text-main)] text-center">{pushStatus}</p>}
-        </section>
+          <AnimatePresence>
+            {pushStatus && (
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-4 rounded-2xl bg-black/30 border border-white/10 p-4 text-sm font-medium text-white/80 text-center shadow-inner"
+              >
+                {pushStatus}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.section>
       )}
 
       {activeView === 'sms' && (
-        <div className="space-y-4 mb-24 mt-2">
-          <div className="glass-panel p-6 rounded-[2rem] border border-white/5 shadow-lg relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/5 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110" />
+        <motion.section 
+          key="sms"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="space-y-4 mb-24 mt-2"
+        >
+          <div className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/5 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110 pointer-events-none" />
             
-            <h3 className="text-xl font-bold mb-2 text-[var(--color-text-main)] flex items-center gap-2">
+            <h3 className="text-xl font-bold mb-2 text-white/90 flex items-center gap-2">
               <MessageSquare className="text-emerald-400 w-6 h-6" />
               {t('settings.smsIntegration')}
             </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-6 leading-relaxed">{t('settings.smsDesc')}</p>
+            <p className="text-sm text-white/50 mb-6 leading-relaxed">{t('settings.smsDesc')}</p>
 
             {smsToken ? (
               <div className="flex flex-col gap-6">
-                <div className="bg-black/20 p-5 rounded-2xl border border-white/5 relative">
-                  <label className="text-sm font-bold text-[var(--color-text-main)] flex items-center gap-2 mb-3">
+                <div className="bg-black/30 p-5 rounded-3xl border border-white/10 relative shadow-inner">
+                  <label className="text-sm font-bold text-white/90 flex items-center gap-2 mb-3">
                     <Link2 className="w-5 h-5 text-emerald-400" />
                     {t('settings.webhookUrlLabel')}
                   </label>
 
-                  <div className="flex gap-2 items-center bg-black/40 p-2 rounded-xl border border-white/10">
+                  <div className="flex gap-2 items-center bg-black/50 p-2 rounded-2xl border border-white/10 shadow-[inset_0_2px_8px_rgba(0,0,0,0.4)]">
                     <input
                       type="text"
                       readOnly
                       value={`https://finova-zzr7.onrender.com/api/sms/webhook/${smsToken}`}
-                      className="flex-1 bg-transparent text-xs sm:text-sm font-mono text-[var(--color-text-main)] outline-none px-3 py-2 w-full"
+                      className="flex-1 bg-transparent text-xs sm:text-sm font-mono text-white/80 outline-none px-3 py-2 w-full"
                       style={{ direction: 'ltr' }}
                     />
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => {
                         navigator.clipboard.writeText(`https://finova-zzr7.onrender.com/api/sms/webhook/${smsToken}`);
                         setCopiedToken(true);
                         setTimeout(() => setCopiedToken(false), 2000);
                       }}
-                      className={`p-3 rounded-lg transition-all duration-300 flex-shrink-0 ${copiedToken ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-white/10 text-[var(--color-text-main)] hover:bg-white/20 hover:text-emerald-400'}`}
+                      className={`p-3 rounded-xl transition-colors flex-shrink-0 border border-transparent ${copiedToken ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-emerald-400'}`}
                     >
                       {copiedToken ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                    </button>
+                    </motion.button>
                   </div>
                   
-                  <div className="mt-4 flex gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                  <div className="mt-5 flex gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl shadow-inner">
                     <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-orange-400/90 leading-relaxed font-medium">
                       {t('settings.webhookWarning')}
@@ -967,74 +1021,82 @@ const Settings = () => {
                   </div>
                 </div>
 
-                <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-                  <h4 className="font-bold text-[var(--color-text-main)] mb-4 text-sm flex items-center gap-2">
+                <div className="bg-black/20 p-5 rounded-3xl border border-white/5 shadow-inner">
+                  <h4 className="font-bold text-white/90 mb-4 text-sm flex items-center gap-2">
                     <Smartphone className="w-4 h-4 text-emerald-400" />
                     {t('settings.shortcutsGuideTitle')}
                   </h4>
                   {lang === 'ar' ? (
-                    <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-[var(--color-text-muted)] marker:text-emerald-500 marker:font-bold">
+                    <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/60 marker:text-emerald-500 marker:font-bold">
                       <li>افتح تطبيق <strong>Shortcuts</strong> في جهاز الآيفون الخاص بك.</li>
                       <li>انتقل إلى قسم <strong>Automation</strong> واضغط على <strong>+</strong> لإضافة أتمتة جديدة.</li>
-                      <li>اختر <strong>Message</strong> وابحث عن اسم البنك (مثال: <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">Banque Misr</span>). واختر <strong>Run Immediately</strong>.</li>
+                      <li>اختر <strong>Message</strong> وابحث عن اسم البنك (مثال: <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Banque Misr</span>). واختر <strong>Run Immediately</strong>.</li>
                       <li>اختر <strong>New Blank Automation</strong> ثم <strong>Add Action</strong>.</li>
                       <li>ابحث عن <strong>Get Contents of URL</strong> واخترها.</li>
                       <li>في حقل URL، الصق الرابط (Webhook URL) الخاص بك كاملاً.</li>
                       <li>اضغط على السهم بجانب الرابط (Show More) وغير <strong>Method</strong> إلى <strong>POST</strong>.</li>
-                      <li>في قسم <strong>Headers</strong>، أضف Header جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">Content-Type</span> والـ Text هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">application/json</span>.</li>
-                      <li>في قسم <strong>Request Body</strong>، اختر <strong>JSON</strong>، وأضف حقل <strong>Text</strong> جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">text</span> وفي الـ Text اضغط واختر متغير <strong>Shortcut Input</strong>.</li>
+                      <li>في قسم <strong>Headers</strong>، أضف Header جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Content-Type</span> والـ Text هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">application/json</span>.</li>
+                      <li>في قسم <strong>Request Body</strong>، اختر <strong>JSON</strong>، وأضف حقل <strong>Text</strong> جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">text</span> وفي الـ Text اضغط واختر متغير <strong>Shortcut Input</strong>.</li>
                       <li>اضغط <strong>Done</strong>. الآن أي رسالة بنكية سيتم تسجيلها كمعاملة تلقائياً!</li>
                     </ol>
                   ) : (
-                    <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-[var(--color-text-muted)] marker:text-emerald-500 marker:font-bold">
+                    <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/60 marker:text-emerald-500 marker:font-bold">
                       <li>Open the <strong>Shortcuts</strong> app on your iPhone.</li>
                       <li>Go to the <strong>Automation</strong> tab and tap <strong>+</strong> to add a new automation.</li>
-                      <li>Select <strong>Message</strong> and search for your bank's sender name (e.g., <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">Banque Misr</span>). Select <strong>Run Immediately</strong>.</li>
+                      <li>Select <strong>Message</strong> and search for your bank's sender name (e.g., <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Banque Misr</span>). Select <strong>Run Immediately</strong>.</li>
                       <li>Select <strong>New Blank Automation</strong> then <strong>Add Action</strong>.</li>
                       <li>Search for <strong>Get Contents of URL</strong> and select it.</li>
                       <li>In the URL field, paste your copied Webhook URL completely.</li>
                       <li>Tap the arrow next to the URL (Show More) and change the <strong>Method</strong> to <strong>POST</strong>.</li>
-                      <li>In the <strong>Headers</strong> section, add a new Header: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">Content-Type</span> and Text is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">application/json</span>.</li>
-                      <li>In the <strong>Request Body</strong> section, choose <strong>JSON</strong>, and add a new <strong>Text</strong> field: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded mx-1">text</span> and for Text tap it and select the <strong>Shortcut Input</strong> variable.</li>
+                      <li>In the <strong>Headers</strong> section, add a new Header: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Content-Type</span> and Text is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">application/json</span>.</li>
+                      <li>In the <strong>Request Body</strong> section, choose <strong>JSON</strong>, and add a new <strong>Text</strong> field: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">text</span> and for Text tap it and select the <strong>Shortcut Input</strong> variable.</li>
                       <li>Tap <strong>Done</strong>. Now any bank SMS will be logged automatically to your account!</li>
                     </ol>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="flex justify-center p-12 bg-white/5 rounded-2xl border border-white/5">
+              <div className="flex justify-center p-12 bg-black/20 rounded-3xl border border-white/5 shadow-inner">
                 <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
               </div>
             )}
           </div>
-        </div>
+        </motion.section>
       )}
 
       {activeView === 'accounts' && (
-        <section className="glass-panel p-6 rounded-[2rem]">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-400">
+        <motion.section 
+          key="accounts"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]"
+        >
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-400 drop-shadow-sm">
             <Wallet className="w-5 h-5" /> {t('settings.accountsTitle', 'الحسابات')}
           </h3>
 
-          <ul className="divide-y divide-white/5 mb-5">
+          <ul className="divide-y divide-white/5 mb-5 bg-black/10 rounded-2xl border border-white/5 px-2 shadow-inner">
             {accounts.filter(a => !a.isArchived).map((acc) => {
               const AccIcon = getIconComponent(acc.icon, 'Wallet');
               return (
-                <li key={acc._id} className="py-4 flex items-center justify-between gap-3">
-                  <div className="p-2 rounded-xl" style={{ backgroundColor: `${acc.color || '#3b82f6'}33`, color: acc.color || '#3b82f6' }}>
-                    <AccIcon size={20} />
+                <li key={acc._id} className="py-4 px-2 flex items-center justify-between gap-3 group">
+                  <div className="p-3 rounded-2xl shadow-inner transition-transform group-hover:scale-110" style={{ backgroundColor: `${acc.color || '#3b82f6'}20`, color: acc.color || '#3b82f6', border: `1px solid ${acc.color || '#3b82f6'}30` }}>
+                    <AccIcon size={22} />
                   </div>
                   <div className="flex flex-col flex-1">
-                    <span className="text-[var(--color-text-main)] font-medium text-lg">{acc.name}</span>
-                    <span className="text-xs text-[var(--color-text-muted)] capitalize">{acc.type === 'cash' ? t('settings.cash', 'كاش') : acc.type === 'bank' ? t('settings.bank', 'بنك') : t('settings.wallet', 'محفظة')}</span>
+                    <span className="text-white/90 font-bold text-base">{acc.name}</span>
+                    <span className="text-xs text-white/50 capitalize">{acc.type === 'cash' ? t('settings.cash', 'كاش') : acc.type === 'bank' ? t('settings.bank', 'بنك') : t('settings.wallet', 'محفظة')}</span>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                      <span className="font-bold text-blue-400 text-lg">{getAccountBalance(acc).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
-                      <span className="text-xs text-blue-400/70">{t('settings.egp', 'ج.م')}</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-inner">
+                      <span className="font-black text-blue-400 tabular-nums tracking-tight text-lg">{getAccountBalance(acc).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                      <span className="text-xs text-blue-400/70 font-bold">{t('settings.egp', 'ج.م')}</span>
                     </div>
                     <div className="flex gap-2">
-                      <button
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
                         onClick={async () => {
                           if (acc.isDefault) return;
                           try {
@@ -1044,23 +1106,25 @@ const Settings = () => {
                             showToast(t('settings.updateError', 'حدث خطأ'), 'error');
                           }
                         }}
-                        className={`p-2 transition rounded-xl border ${acc.isDefault ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10 text-[var(--color-text-muted)] hover:text-yellow-500'}`}
+                        className={`p-2 transition-colors rounded-xl border ${acc.isDefault ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30 shadow-inner' : 'bg-white/5 border-transparent hover:bg-white/10 text-white/40 hover:text-yellow-500'}`}
                         title={t('settings.setAsDefault', 'تعيين كافتراضي')}
                       >
                         <Star size={16} fill={acc.isDefault ? "currentColor" : "none"} />
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => openEditModal(acc, 'account')}
-                        className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 transition rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                        className="p-2 bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
                       >
                         <Pencil size={16} />
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleDeleteAccount(acc)}
-                        className="p-2 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition rounded-xl text-red-400"
+                        className="p-2 bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
                       >
                         <Trash2 size={16} />
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
                 </li>
@@ -1068,67 +1132,78 @@ const Settings = () => {
             })}
           </ul>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={() => setAddAccountModalOpen(true)}
-            className="bg-blue-500/10 border border-blue-500/20 w-full py-3 flex items-center justify-center rounded-xl text-blue-400 hover:bg-blue-500/20 transition-colors gap-2 mt-6"
+            className="bg-blue-500/10 border border-blue-500/20 shadow-inner w-full py-4 flex items-center justify-center rounded-2xl text-blue-400 hover:bg-blue-500/20 transition-colors gap-2 mt-6 font-bold"
           >
             <Plus className="w-5 h-5" /> {t('settings.addAccountBtn', 'إضافة حساب جديد')}
-          </button>
-        </section>
+          </motion.button>
+        </motion.section>
       )}
 
       {activeView === 'categories' && (
-        <section className="glass-panel p-6 rounded-[2rem] mb-24 mt-2">
-          <h3 className="text-lg font-bold mb-5 flex items-center gap-2 text-[var(--color-text-main)]">
-            <Tag className="w-6 h-6 text-emerald-400" /> {t('settings.categoriesTitle', 'الفئات')}
+        <motion.section 
+          key="categories"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] mb-24 mt-2"
+        >
+          <h3 className="text-lg font-bold mb-5 flex items-center gap-2 text-white/90">
+            <Tag className="w-6 h-6 text-emerald-400 drop-shadow" /> {t('settings.categoriesTitle', 'الفئات')}
           </h3>
 
-          <div className="flex bg-black/20 p-1.5 rounded-2xl border border-white/5 mb-6 relative">
-            <div
-              className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white/10 rounded-xl transition-all duration-300 ease-out shadow-sm ${categoryTab === 'expense' ? 'left-1.5' : 'left-[calc(50%+4px)]'}`}
-            />
-            <button
+          <div className="flex bg-black/30 backdrop-blur-xl p-1.5 rounded-2xl border border-white/5 mb-6 shadow-inner relative">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setCategoryTab('expense')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all relative z-10 ${categoryTab === 'expense' ? 'text-red-400' : 'text-[var(--color-text-muted)] hover:text-white'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-colors relative z-10 ${categoryTab === 'expense' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
             >
-              <TrendingDown size={18} className={categoryTab === 'expense' ? 'opacity-100' : 'opacity-50'} />
+              {categoryTab === 'expense' && <motion.div layoutId="catTab" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
+              <TrendingDown size={18} className={categoryTab === 'expense' ? 'text-red-400' : 'opacity-50'} />
               {t('settings.expense', 'مصروف')}
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={() => setCategoryTab('income')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all relative z-10 ${categoryTab === 'income' ? 'text-emerald-400' : 'text-[var(--color-text-muted)] hover:text-white'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-colors relative z-10 ${categoryTab === 'income' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
             >
-              <TrendingUp size={18} className={categoryTab === 'income' ? 'opacity-100' : 'opacity-50'} />
+              {categoryTab === 'income' && <motion.div layoutId="catTab" className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
+              <TrendingUp size={18} className={categoryTab === 'income' ? 'text-emerald-400' : 'opacity-50'} />
               {t('settings.income', 'دخل')}
-            </button>
+            </motion.button>
           </div>
 
-          <ul className="divide-y divide-white/5 mb-5">
+          <ul className="divide-y divide-white/5 mb-5 bg-black/10 rounded-2xl border border-white/5 px-2 shadow-inner">
             {categories.filter(cat => cat.type === categoryTab).map((cat) => {
               const CatIcon = getIconComponent(cat.icon, 'Tag');
               const colorClass = cat.type === 'expense' ? 'text-red-400' : 'text-emerald-400';
-              const bgClass = cat.type === 'expense' ? 'bg-red-500/10' : 'bg-emerald-500/10';
+              const bgClass = cat.type === 'expense' ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20';
               return (
-                <li key={cat._id} className="py-4 flex items-center justify-between gap-3 group">
-                  <div className={`${bgClass} p-3 rounded-2xl ${colorClass} transition-transform group-hover:scale-110`}>
+                <li key={cat._id} className="py-4 px-2 flex items-center justify-between gap-3 group">
+                  <div className={`${bgClass} border p-3 rounded-2xl ${colorClass} transition-transform group-hover:scale-110 shadow-inner`}>
                     <CatIcon size={22} />
                   </div>
                   <div className="flex flex-col flex-1">
-                    <span className="text-[var(--color-text-main)] font-bold text-base">{cat.name}</span>
+                    <span className="text-white/90 font-bold text-base">{cat.name}</span>
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => openEditModal(cat, 'category')}
-                      className="p-2.5 bg-white/5 border border-white/10 hover:bg-white/10 transition rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                      className="p-2.5 bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
                     >
                       <Pencil size={18} />
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => handleDeleteCategory(cat)}
-                      className="p-2.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition rounded-xl text-red-400"
+                      className="p-2.5 bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
                     >
                       <Trash2 size={18} />
-                    </button>
+                    </motion.button>
                   </div>
                 </li>
               )
@@ -1136,34 +1211,42 @@ const Settings = () => {
             
             {categories.filter(cat => cat.type === categoryTab).length === 0 && (
               <div className="py-12 flex flex-col items-center justify-center text-center opacity-60">
-                <Tag size={40} className="mb-4 text-[var(--color-text-muted)]" />
-                <span className="text-[var(--color-text-main)] font-medium">لا توجد فئات مضافة هنا</span>
+                <Tag size={40} className="mb-4 text-white/30" />
+                <span className="text-white/60 font-medium">لا توجد فئات مضافة هنا</span>
               </div>
             )}
           </ul>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={() => setAddCategoryModalOpen(true)}
-            className="bg-emerald-500/10 border border-emerald-500/20 w-full py-3 flex items-center justify-center rounded-xl text-emerald-400 hover:bg-emerald-500/20 transition-colors gap-2 mt-6"
+            className="bg-emerald-500/10 border border-emerald-500/20 shadow-inner w-full py-4 flex items-center justify-center rounded-2xl text-emerald-400 hover:bg-emerald-500/20 transition-colors gap-2 mt-6 font-bold"
           >
             <Plus className="w-5 h-5" /> {t('settings.addCategoryBtn', 'إضافة فئة جديدة')}
-          </button>
-        </section>
+          </motion.button>
+        </motion.section>
       )}
 
       {activeView === 'recurring' && (
-        <div className="space-y-4 mb-24 mt-2">
+        <motion.section 
+          key="recurring"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="space-y-4 mb-24 mt-2"
+        >
           {recurringTransactions.map((rt) => (
-            <div key={rt._id} className="glass-panel p-5 rounded-[2rem] border border-white/5 shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/5 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110" />
+            <div key={rt._id} className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/5 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110 pointer-events-none" />
               
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex justify-between items-start mb-5">
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-[var(--color-text-main)] mb-1 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-white/90 mb-1 flex items-center gap-2">
                     {rt.title || t('recurring.untitled', 'معاملة بدون عنوان')}
-                    {rt.reminderEnabled && <Bell size={14} className="text-yellow-400" />}
+                    {rt.reminderEnabled && <Bell size={14} className="text-yellow-400 drop-shadow" />}
                   </h3>
-                  <div className="text-2xl font-black text-brand-blue tracking-tight">
+                  <div className="text-2xl font-black text-brand-blue tracking-tight drop-shadow-sm">
                     {new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP' }).format(rt.amount)}
                   </div>
                 </div>
@@ -1171,94 +1254,126 @@ const Settings = () => {
                 <div className="flex flex-col items-end gap-2">
                   <button
                     onClick={() => handleToggleRecurring(rt._id)}
-                    className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${rt.isActive ? 'bg-brand-blue' : 'bg-white/10'}`}
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-300 shadow-inner border border-white/10 ${rt.isActive ? 'bg-brand-blue' : 'bg-black/40'}`}
                   >
-                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${rt.isActive ? 'translate-x-6' : 'translate-x-0'}`} />
+                    <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${rt.isActive ? 'translate-x-6' : 'translate-x-0'}`} />
                   </button>
                   <div className="flex gap-1 mt-1">
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => setEditingRecurring(rt)}
-                      className="p-2 text-[var(--color-text-muted)] hover:text-brand-blue transition bg-white/5 rounded-xl hover:bg-brand-blue/10"
+                      className="p-2 text-white/40 hover:text-white transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/10"
                     >
                       <Pencil size={16} />
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => handleDeleteRecurring(rt)}
-                      className="p-2 text-[var(--color-text-muted)] hover:text-brand-red transition bg-white/5 rounded-xl hover:bg-brand-red/10"
+                      className="p-2 text-red-400/60 hover:text-red-400 transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-red-500/20"
                     >
                       <Trash2 size={16} />
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs">
-                <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
+                <div className="flex items-center gap-2 text-white/60 bg-black/30 p-2 rounded-xl border border-white/5 shadow-inner">
                   <Repeat size={14} className="text-orange-400" />
-                  <span>{t(`recurring.${rt.repeatType}`, rt.repeatType)}</span>
+                  <span className="font-bold">{t(`recurring.${rt.repeatType}`, rt.repeatType)}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
-                  <span dir="ltr">{new Date(rt.nextExecutionDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')} {rt.executionTime && `- ${rt.executionTime}`}</span>
+                <div className="flex items-center gap-2 text-white/60 bg-black/30 p-2 rounded-xl border border-white/5 shadow-inner">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  <span dir="ltr" className="font-bold">{new Date(rt.nextExecutionDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')} {rt.executionTime && `- ${rt.executionTime}`}</span>
                 </div>
               </div>
             </div>
           ))}
           {recurringTransactions.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 text-[var(--color-text-muted)] space-y-5 flex-1">
-              <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center mb-2 shadow-inner border border-white/5">
-                <Repeat size={40} className="text-[var(--color-text-muted)]" />
+            <div className="flex flex-col items-center justify-center py-24 text-white/40 space-y-5 flex-1">
+              <div className="w-24 h-24 bg-black/20 rounded-[2rem] flex items-center justify-center mb-2 shadow-inner border border-white/5">
+                <Repeat size={40} className="text-white/20" />
               </div>
-              <p className="text-xl font-bold text-[var(--color-text-main)] text-center">{t('recurring.noRecurring', 'لا توجد معاملات متكررة')}</p>
+              <p className="text-xl font-bold text-white/60 text-center">{t('recurring.noRecurring', 'لا توجد معاملات متكررة')}</p>
             </div>
           )}
           
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/add', { state: { openRecurring: true } })}
-            className="bg-brand-blue/10 border border-brand-blue/20 w-full py-4 flex items-center justify-center rounded-2xl text-brand-blue hover:bg-brand-blue/20 transition-colors gap-2 mt-6 font-bold"
+            className="bg-brand-blue/10 border border-brand-blue/20 shadow-inner w-full py-4 flex items-center justify-center rounded-2xl text-brand-blue hover:bg-brand-blue hover:text-white transition-colors gap-2 mt-6 font-bold"
           >
             <Plus className="w-5 h-5" /> {t('recurring.addBtn', 'إضافة معاملة متكررة')}
-          </button>
-        </div>
+          </motion.button>
+        </motion.section>
       )}
 
       {activeView === 'data' && (
-        <div className="space-y-6">
-          <section className="glass-panel p-6 rounded-[2rem]">
-            <h3 className="text-lg font-semibold mb-1 text-[var(--color-text-main)]">{t('settings.dataManagement', 'إدارة البيانات')}</h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-4">{t('settings.dataDesc', 'الاستيراد ينشئ الحسابات والفئات الناقصة تلقائيًا ويحفظ كل معاملة في حسابها الصحيح.')}</p>
+        <motion.section 
+          key="data"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="space-y-6"
+        >
+          <div className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]">
+            <h3 className="text-lg font-bold mb-1 text-white/90">{t('settings.dataManagement', 'إدارة البيانات')}</h3>
+            <p className="text-sm text-white/50 mb-6">{t('settings.dataDesc', 'الاستيراد ينشئ الحسابات والفئات الناقصة تلقائيًا ويحفظ كل معاملة في حسابها الصحيح.')}</p>
 
             <div className="flex gap-3">
-              <button onClick={handleExport} className="flex-1 flex flex-col items-center justify-center gap-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-4 rounded-2xl hover:bg-blue-500/30 transition-colors">
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={handleExport} 
+                className="flex-1 flex flex-col items-center justify-center gap-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 py-5 rounded-2xl hover:bg-blue-500/30 transition-colors shadow-inner"
+              >
                 <Download className="w-6 h-6" />
-                <span className="text-sm">{t('settings.exportBtn', 'تصدير')}</span>
-              </button>
+                <span className="text-sm font-bold">{t('settings.exportBtn', 'تصدير')}</span>
+              </motion.button>
 
               <input type="file" accept=".json,.csv" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
 
-              <button onClick={handleImportClick} disabled={isImporting} className="flex-1 flex flex-col items-center justify-center gap-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-4 rounded-2xl hover:bg-purple-500/30 transition-colors disabled:opacity-50">
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={handleImportClick} 
+                disabled={isImporting} 
+                className="flex-1 flex flex-col items-center justify-center gap-2 bg-purple-500/20 text-purple-400 border border-purple-500/30 py-5 rounded-2xl hover:bg-purple-500/30 transition-colors disabled:opacity-50 shadow-inner"
+              >
                 <Upload className="w-6 h-6" />
-                <span className="text-sm">{t('settings.importBtn', 'استيراد')}</span>
-              </button>
+                <span className="text-sm font-bold">{t('settings.importBtn', 'استيراد')}</span>
+              </motion.button>
             </div>
-            {dataStatus && <p className="mt-3 rounded-xl bg-white/5 p-3 text-sm text-[var(--color-text-main)]">{dataStatus}</p>}
-          </section>
+            <AnimatePresence>
+              {dataStatus && (
+                <motion.p 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mt-4 rounded-xl bg-black/30 border border-white/10 p-3 text-sm font-medium text-white/80 text-center shadow-inner"
+                >
+                  {dataStatus}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
 
-          <section className="glass-panel border-brand-red/30 p-6 rounded-[2rem] bg-brand-red/5">
-            <h3 className="text-lg font-semibold mb-1 text-red-400 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" /> {t('settings.dangerZone', 'منطقة الخطر')}
+          <div className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-red-500/30 border-t-red-500/40 border-l-red-500/30 shadow-[0_8px_32px_rgba(220,38,38,0.1),inset_0_1px_2px_rgba(255,255,255,0.1)] p-6 rounded-[2.5rem] bg-red-500/5">
+            <h3 className="text-lg font-bold mb-2 text-red-400 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 drop-shadow" /> {t('settings.dangerZone', 'منطقة الخطر')}
             </h3>
-            <p className="text-sm text-[var(--color-text-muted)] mb-4">{t('settings.wipeWarning', 'حذف جميع البيانات نهائياً بما في ذلك المعاملات والحسابات والفئات والاستثمارات والمستحقات. لا يمكن التراجع عن هذا الإجراء.')}</p>
-            <button
+            <p className="text-sm text-white/50 mb-6">{t('settings.wipeWarning', 'حذف جميع البيانات نهائياً بما في ذلك المعاملات والحسابات والفئات والاستثمارات والمستحقات. لا يمكن التراجع عن هذا الإجراء.')}</p>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               onClick={() => setWipeModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-4 rounded-2xl hover:bg-red-500/30 transition-colors font-semibold"
+              className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-colors font-bold shadow-inner"
             >
               <Trash2 className="w-5 h-5" />
               {t('settings.wipeBtn', 'مسح جميع البيانات')}
-            </button>
-          </section>
-        </div>
+            </motion.button>
+          </div>
+        </motion.section>
       )}
+      </AnimatePresence>
 
       {/* Edit Modal */}
       {editModalOpen && createPortal(
@@ -1516,7 +1631,7 @@ const Settings = () => {
         />
       )}
 
-    </div>
+    </motion.div>
   );
 };
 

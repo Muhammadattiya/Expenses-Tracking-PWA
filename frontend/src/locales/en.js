@@ -210,6 +210,8 @@ export default {
       insights: 'Insights'
     },
     filters: {
+      today: 'Today',
+      yesterday: 'Yesterday',
       thisWeek: 'This Week',
       lastWeek: 'Last Week',
       thisMonth: 'This Month',

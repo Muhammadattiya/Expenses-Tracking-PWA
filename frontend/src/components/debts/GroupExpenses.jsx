@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HandCoins, Plus, CheckCircle2, Pencil, Trash2, Users } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ListSkeleton } from '../ui/Skeletons';
 import { getAccounts } from '../../api/accounts';
 import { getCategories } from '../../api/categories';
@@ -105,10 +106,10 @@ export default function GroupExpenses() {
   }, 0);
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="space-y-6">
       
       {/* Hero Card */}
-      <section className="relative overflow-hidden p-8 rounded-[2rem] bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl flex flex-col justify-center items-center text-center group">
+      <section className="relative overflow-hidden p-8 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] flex flex-col justify-center items-center text-center group">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/20 to-purple-900/10 opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-brand-blue/30 rounded-full blur-[100px] pointer-events-none" />
         
@@ -138,26 +139,28 @@ export default function GroupExpenses() {
         </div>
       </section>
 
-      <p className="glass-panel border-brand-blue/30 bg-brand-blue/10 p-4 text-sm text-[var(--color-text-main)] leading-relaxed rounded-2xl">
+      <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 shadow-inner p-4 text-sm text-[var(--color-text-main)] leading-relaxed rounded-2xl flex items-start gap-3">
+        <div className="p-2 bg-brand-blue/20 text-brand-blue rounded-lg shrink-0"><Users size={20} /></div>
         <span dangerouslySetInnerHTML={{__html: t('receivables.infoText', 'المبلغ الذي دفعته سيتم خصمه بالكامل، ولكن <strong>نصيبك الفعلي فقط</strong> سيُسجل كمصروف (الفرق بين ما دفعته، ما استلمته، وما على أصدقائك). المدفوعات المستلمة تعتبر تسوية للحساب بدون التأثير على التقارير.')}} />
-      </p>
+      </div>
 
       {/* Action Bar */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{t('debts.groupExpensesList', 'Group Expenses')}</h2>
-        <button 
+        <motion.button 
+          whileTap={{ scale: 0.95 }}
           onClick={() => { setEditingItem(null); setModalOpen(true); }}
-          className="flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 font-bold text-white hover:bg-brand-blue/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-brand-blue/20"
+          className="flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 font-bold text-white hover:bg-brand-blue/90 transition-colors shadow-lg shadow-brand-blue/20"
         >
           <Plus size={20} /> {t('receivables.addTitle', 'Add Group Expense')}
-        </button>
+        </motion.button>
       </div>
 
       {error && <p className="text-sm text-brand-red bg-brand-red/10 p-3 rounded-xl border border-brand-red/20">{error}</p>}
 
       {/* Grid */}
       {items.length === 0 ? (
-        <div className="text-center py-16 text-[var(--color-text-muted)] flex flex-col items-center glass-panel rounded-[2rem]">
+        <div className="text-center py-16 text-[var(--color-text-muted)] flex flex-col items-center bg-black/20 backdrop-blur-[40px] border border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)] rounded-[2.5rem]">
           <Users size={48} className="mb-4 opacity-50" />
           <p>{t('receivables.noItems', 'No group expenses found')}</p>
         </div>
@@ -166,7 +169,12 @@ export default function GroupExpenses() {
           {items.map((item) => {
             const actualShare = item.paidAmount - (item.receivedAmount || 0) - item.participants.reduce((s, p) => s + p.owedAmount, 0);
             return (
-              <section key={item._id} className="glass-panel p-6 rounded-[2rem] flex flex-col group hover:border-white/10 transition-colors h-full">
+              <motion.section 
+                key={item._id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] p-6 rounded-[2.5rem] flex flex-col group hover:border-white/20 transition-colors h-full"
+              >
                 
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="font-bold flex gap-2 items-center text-lg text-white">
@@ -241,19 +249,20 @@ export default function GroupExpenses() {
                                 />
                               </div>
                             </div>
-                            <button 
+                            <motion.button 
+                              whileTap={{ scale: 0.95 }}
                               onClick={() => pay(item, participant)} 
                               className="w-full rounded-xl bg-brand-green/10 text-brand-green border border-brand-green/20 font-bold py-2 text-sm hover:bg-brand-green/20 transition-colors"
                             >
                               {t('receivables.collect', 'تحصيل المبلغ')}
-                            </button>
+                            </motion.button>
                           </div>
                         )}
                       </div>
                     );
                   })}
                 </div>
-              </section>
+              </motion.section>
             );
           })}
         </div>

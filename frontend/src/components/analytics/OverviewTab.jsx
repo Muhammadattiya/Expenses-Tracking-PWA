@@ -170,7 +170,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
       {/* Hero Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Net Worth */}
-        <div className="relative overflow-hidden glass-panel p-6 rounded-[2rem] shadow-2xl bg-gradient-to-br from-brand-blue/20 to-brand-blue/5 border border-brand-blue/30 group hover:shadow-brand-blue/20 transition-all duration-500">
+        <div className="relative overflow-hidden p-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-brand-blue/30 border-l-brand-blue/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] group hover:shadow-brand-blue/20 transition-all duration-500">
           <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
             <Landmark className="w-24 h-24 text-brand-blue" />
           </div>
@@ -183,7 +183,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
         </div>
 
         {/* Total Assets */}
-        <div className="relative overflow-hidden glass-panel p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 group hover:bg-white/5 transition-all duration-500">
+        <div className="relative overflow-hidden p-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] group hover:bg-white/5 transition-all duration-500">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
             <TrendingUp className="w-24 h-24 text-emerald-400" />
           </div>
@@ -196,7 +196,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
         </div>
 
         {/* Total Liabilities */}
-        <div className="relative overflow-hidden glass-panel p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 group hover:bg-white/5 transition-all duration-500">
+        <div className="relative overflow-hidden p-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] group hover:bg-white/5 transition-all duration-500">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
             <TrendingDown className="w-24 h-24 text-rose-400" />
           </div>
@@ -209,7 +209,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
         </div>
 
         {/* Fixed Income */}
-        <div className="relative overflow-hidden glass-panel p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 group hover:bg-white/5 transition-all duration-500">
+        <div className="relative overflow-hidden p-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] group hover:bg-white/5 transition-all duration-500">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
             <Wallet className="w-24 h-24 text-brand-green" />
           </div>
@@ -222,7 +222,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
         </div>
 
         {/* Net After Liabilities */}
-        <div className="relative overflow-hidden glass-panel p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 group hover:bg-white/5 transition-all duration-500">
+        <div className="relative overflow-hidden p-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] group hover:bg-white/5 transition-all duration-500">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
             <CreditCard className="w-24 h-24 text-purple-400" />
           </div>
@@ -235,7 +235,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
         </div>
 
         {/* Savings */}
-        <div className="relative overflow-hidden glass-panel p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 group hover:bg-white/5 transition-all duration-500">
+        <div className="relative overflow-hidden p-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] group hover:bg-white/5 transition-all duration-500">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700">
             <PiggyBank className="w-24 h-24 text-amber-400" />
           </div>
@@ -249,7 +249,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
       </div>
 
       {/* Balances Section */}
-      <section className="glass-panel p-6 lg:p-8 rounded-[2rem] shadow-2xl border border-white/5 bg-black/20">
+      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 lg:p-8 rounded-[2.5rem]">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-brand-blue/20 rounded-2xl text-brand-blue">
             <Wallet className="w-6 h-6" />
@@ -262,7 +262,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
             const AccIcon = getIconComponent(acc.icon, 'Wallet');
             const accBalance = accountBalances[acc._id] || 0;
             return (
-              <div className="bg-black/30 p-5 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group flex items-center gap-4" key={acc._id}>
+              <div className="bg-black/10 shadow-inner p-5 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group flex items-center gap-4" key={acc._id}>
                 <div 
                   className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 transition-transform group-hover:scale-110 shadow-lg"
                   style={{ backgroundColor: `${acc.color}20`, color: acc.color }}
@@ -270,7 +270,7 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
                   <AccIcon size={24} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[var(--color-text-main)] truncate">{acc.name}</p>
+                  <p className="font-bold text-white truncate">{acc.name}</p>
                   <p className={`text-sm font-bold tracking-tight truncate mt-1 ${accBalance < 0 ? 'text-brand-red' : 'text-brand-green'}`}>
                     {money(accBalance)}
                   </p>

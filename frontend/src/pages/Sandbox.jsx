@@ -135,7 +135,7 @@ export default function Sandbox() {
             
             {/* Action Queue Section */}
             {actionQueue.length > 0 && (
-              <div className="bg-gradient-to-br from-brand-blue/10 to-indigo-900/10 border border-brand-blue/20 rounded-[2rem] p-6 backdrop-blur-xl animate-fade-in-up">
+              <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 animate-fade-in-up">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-[var(--color-text-main)] flex items-center gap-2">
                     <ListPlus className="w-5 h-5 text-brand-blue" />
@@ -148,7 +148,7 @@ export default function Sandbox() {
                   {actionQueue.map((action, idx) => {
                     const simDef = SIMULATION_TYPES.find(s => s.id === action.type);
                     return (
-                      <div key={idx} className="flex items-center justify-between bg-black/40 border border-white/5 p-4 rounded-2xl">
+                      <div key={idx} className="flex items-center justify-between bg-black/10 shadow-inner border border-white/5 p-4 rounded-2xl">
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-xl bg-gradient-to-br ${simDef.color}`}>
                             <simDef.icon className="w-4 h-4 text-white" />
@@ -182,7 +182,7 @@ export default function Sandbox() {
                 <button
                   key={sim.id}
                   onClick={() => setActiveModal(sim.id)}
-                  className="flex flex-col items-center justify-center p-6 bg-black/40 border border-white/5 rounded-[2rem] hover:bg-white/5 transition-all group backdrop-blur-xl"
+                  className="flex flex-col items-center justify-center p-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] hover:bg-white/5 transition-all group"
                 >
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${sim.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
                     <sim.icon className="w-6 h-6 text-white" />

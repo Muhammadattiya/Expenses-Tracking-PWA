@@ -30,7 +30,7 @@ export default function AssetsTab({ investments, money }) {
     <div className="space-y-10 animate-fade-in pb-10">
       
       {/* Hero Summary */}
-      <div className="glass-panel p-8 flex flex-col md:flex-row justify-between items-center rounded-[2rem] shadow-2xl border border-white/5 bg-gradient-to-br from-brand-blue/20 to-black/40 relative overflow-hidden group">
+      <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-brand-blue/30 border-l-brand-blue/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 flex flex-col md:flex-row justify-between items-center rounded-[2.5rem] relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
           <TrendingUp className="w-32 h-32 text-brand-blue" />
         </div>
@@ -57,7 +57,7 @@ export default function AssetsTab({ investments, money }) {
           const color = getTypeColor(inv.type);
           
           return (
-            <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" key={inv._id}>
+            <div className="bg-black/10 shadow-inner p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" key={inv._id}>
               {/* Type Glow */}
               <div 
                 className="absolute top-0 right-0 w-24 h-24 rounded-bl-[100px] -z-10 opacity-20 group-hover:scale-110 transition-transform"

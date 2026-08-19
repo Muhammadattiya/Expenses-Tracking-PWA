@@ -5,10 +5,10 @@ export default function DecisionPanel({ decision, insights }) {
   if (!decision) return null;
 
   const getScoreColor = (score) => {
-    if (score >= 80) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30 shadow-emerald-900/20';
-    if (score >= 50) return 'text-brand-blue bg-brand-blue/10 border-brand-blue/30 shadow-brand-blue/20';
-    if (score >= 30) return 'text-amber-400 bg-amber-400/10 border-amber-400/30 shadow-amber-900/20';
-    return 'text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-rose-900/20';
+    if (score >= 80) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30 shadow-[0_8px_32px_rgba(52,211,153,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-emerald-400/40 border-l-emerald-400/30';
+    if (score >= 50) return 'text-brand-blue bg-brand-blue/10 border-brand-blue/30 shadow-[0_8px_32px_rgba(0,122,255,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-brand-blue/40 border-l-brand-blue/30';
+    if (score >= 30) return 'text-amber-400 bg-amber-400/10 border-amber-400/30 shadow-[0_8px_32px_rgba(251,191,36,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-amber-400/40 border-l-amber-400/30';
+    return 'text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_8px_32px_rgba(244,63,94,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-rose-400/40 border-l-rose-400/30';
   };
 
   const getRiskColor = (risk) => {
@@ -36,7 +36,7 @@ export default function DecisionPanel({ decision, insights }) {
   return (
     <div className="space-y-6 mb-8 animate-fade-in-up">
       {/* Hero Decision Score */}
-      <div className={`p-8 rounded-[2rem] border backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 shadow-2xl ${getScoreColor(decision.score)}`}>
+      <div className={`backdrop-blur-[40px] border p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 ${getScoreColor(decision.score)}`}>
         <div className="flex items-center gap-6">
           <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center flex-shrink-0 relative">
              <div className="absolute inset-0 rounded-full animate-ping opacity-20 border-inherit" />
@@ -54,11 +54,11 @@ export default function DecisionPanel({ decision, insights }) {
         </div>
         
         <div className="flex flex-col gap-3 min-w-[200px]">
-           <div className="bg-black/30 p-4 rounded-2xl flex items-center justify-between">
+           <div className="bg-black/10 shadow-inner p-4 rounded-2xl flex items-center justify-between border border-white/5">
               <span className="text-xs uppercase tracking-wider opacity-70">Overall Risk</span>
               <span className={`font-bold ${getRiskColor(decision.risk)}`}>{decision.risk}</span>
            </div>
-           <div className="bg-black/30 p-4 rounded-2xl flex items-center justify-between">
+           <div className="bg-black/10 shadow-inner p-4 rounded-2xl flex items-center justify-between border border-white/5">
               <span className="text-xs uppercase tracking-wider opacity-70">Financial Stress</span>
               <span className={`font-bold ${getStressColor(decision.financialStress)}`}>{decision.financialStress}</span>
            </div>
@@ -68,7 +68,7 @@ export default function DecisionPanel({ decision, insights }) {
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Cash Impact */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
+        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
              <DollarSign className="w-4 h-4 text-brand-blue" />
              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Cash Impact</span>
@@ -79,7 +79,7 @@ export default function DecisionPanel({ decision, insights }) {
         </div>
 
         {/* Liquidity Score */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
+        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
              <Activity className="w-4 h-4 text-brand-blue" />
              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Liquidity Score</span>
@@ -88,7 +88,7 @@ export default function DecisionPanel({ decision, insights }) {
         </div>
 
         {/* Emergency Coverage */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
+        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
              <ShieldCheck className="w-4 h-4 text-brand-blue" />
              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Emergency Cover</span>
@@ -97,7 +97,7 @@ export default function DecisionPanel({ decision, insights }) {
         </div>
 
         {/* Budget Stability */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
+        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
              <PieChart className="w-4 h-4 text-brand-blue" />
              <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Budget Stability</span>
@@ -112,7 +112,7 @@ export default function DecisionPanel({ decision, insights }) {
       {insights && insights.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {insights.map((insight, idx) => (
-            <div key={idx} className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md
+            <div key={idx} className={`p-4 rounded-2xl border shadow-inner flex items-start gap-3
               ${insight.type === 'critical' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : 
                 insight.type === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 
                 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'

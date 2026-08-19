@@ -9,5 +9,6 @@ router.post('/', debtController.createDebt);
 router.get('/', debtController.getDebts);
 router.post('/:debtId/transactions', debtController.addTransaction);
 router.delete('/:debtId', debtController.deleteDebt);
+router.put('/:debtId', debtController.updateDebt);
 
 module.exports = router;
