@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const compression = require('compression');
+const mongoose = require('mongoose');
 const errorHandler = require("./middleware/errorHandler");
 
 const transactionsRoutes = require("./routes/transactions");
@@ -21,6 +23,15 @@ const incomeProfileRoutes = require('./routes/incomeProfileRoutes');
 const app = express();
 
 app.use(cors());
+app.use(compression());
+
+app.get('/healthz', (req, res) => {
+  const databaseReady = mongoose.connection.readyState === 1;
+  res.status(databaseReady ? 200 : 503).json({
+    status: databaseReady ? 'ok' : 'degraded',
+    database: databaseReady ? 'connected' : 'disconnected',
+  });
+});
 
 // Mount SMS Webhook route BEFORE global JSON middleware
 app.use('/api/sms/webhook', require('./routes/smsWebhook'));

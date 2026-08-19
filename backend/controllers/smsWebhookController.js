@@ -4,8 +4,7 @@ const Account = require('../models/Account');
 const Category = require('../models/Category');
 const Transaction = require('../models/Transaction');
 const { parseSms } = require('../services/smsParser');
-const Subscription = require('../models/Subscription');
-const webpush = require('web-push');
+const notificationService = require('../services/notificationService');
 
 exports.handleSmsWebhook = async (req, res) => {
   try {
@@ -70,23 +69,12 @@ exports.handleSmsWebhook = async (req, res) => {
 
     // Fire push notification if subscriptions exist
     try {
-      const subscriptions = await Subscription.find({ user: user._id });
-      if (subscriptions.length > 0) {
-        const payload = JSON.stringify({
-          title: 'معاملة جديدة من رسالة (SMS)',
-          body: `مبلغ ${parsedData.amount} ج.م - اضغط للمراجعة وتأكيد الحساب`,
-          url: '/'
-        });
-        const sendPromises = subscriptions.map(sub => 
-          webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload)
-            .catch(err => {
-              if (err.statusCode === 410 || err.statusCode === 404) {
-                return Subscription.findByIdAndDelete(sub._id);
-              }
-            })
-        );
-        await Promise.all(sendPromises);
-      }
+      const payload = notificationService.buildPayload({
+        title: 'معاملة جديدة من رسالة (SMS)',
+        body: `مبلغ ${parsedData.amount} ج.م - اضغط للمراجعة وتأكيد الحساب`,
+        url: '/'
+      });
+      await notificationService.sendToUser(user._id, payload);
     } catch (pushErr) {
       console.error('Error sending push for SMS webhook', pushErr);
     }

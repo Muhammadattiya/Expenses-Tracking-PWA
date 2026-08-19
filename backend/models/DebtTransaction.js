@@ -10,4 +10,6 @@ const debtTransactionSchema = new mongoose.Schema({
   notes: { type: String, trim: true }
 }, { timestamps: true });
 
+debtTransactionSchema.index({ user: 1, debtId: 1, date: -1 });
+
 module.exports = mongoose.model('DebtTransaction', debtTransactionSchema);

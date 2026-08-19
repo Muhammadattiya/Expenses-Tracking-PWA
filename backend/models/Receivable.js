@@ -19,4 +19,6 @@ const receivableSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
+receivableSchema.index({ user: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Receivable', receivableSchema);

@@ -1,17 +1,128 @@
 const Transaction = require("../models/Transaction");
 const Account = require("../models/Account");
 const Category = require("../models/Category");
+const AppError = require('../utils/AppError');
 const { checkBudgetThresholds } = require("./budgetEngine");
 const { adoptLegacyData } = require('./legacyDataService');
 
+const POPULATE_TRANSACTION_REFERENCES = [
+  { path: 'account', select: 'name type icon color' },
+  { path: 'category', select: 'name type icon color' },
+  { path: 'from_account', select: 'name type icon color' },
+  { path: 'to_account', select: 'name type icon color' },
+];
+
 const getTransactions = async (userId) => {
   return Transaction.find({ user: userId })
-    .populate("account")
-    .populate("category")
-    .populate("from_account")
-    .populate("to_account")
+    // Preserve the legacy endpoint's complete populated document shape.
+    .populate('account')
+    .populate('category')
+    .populate('from_account')
+    .populate('to_account')
     .sort({ date: -1, createdAt: -1 })
     .lean();
+};
+
+const decodeCursor = (cursor) => {
+  try {
+    const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    const date = new Date(decoded.date);
+
+    if (!decoded.id || !Transaction.db.base.Types.ObjectId.isValid(decoded.id) || Number.isNaN(date.getTime())) {
+      throw new Error('Invalid cursor');
+    }
+
+    return { date, id: decoded.id };
+  } catch {
+    throw new AppError('Invalid transaction cursor.', 400);
+  }
+};
+
+const encodeCursor = (transaction) => Buffer.from(JSON.stringify({
+  date: transaction.date.toISOString(),
+  id: transaction._id.toString(),
+})).toString('base64url');
+
+const normalizeLimit = (limit) => {
+  if (limit === undefined) return 50;
+  if (!/^\d+$/.test(String(limit))) throw new AppError('Transaction limit must be a positive integer.', 400);
+  const parsed = Number(limit);
+  if (parsed < 1 || parsed > 100) throw new AppError('Transaction limit must be between 1 and 100.', 400);
+  return parsed;
+};
+
+const requireObjectId = (value, field) => {
+  if (!Transaction.db.base.Types.ObjectId.isValid(value)) {
+    throw new AppError(`Invalid ${field} filter.`, 400);
+  }
+  return value;
+};
+
+const parseDate = (value, field) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new AppError(`Invalid ${field} date.`, 400);
+  return date;
+};
+
+const buildTransactionFilter = (userId, query) => {
+  const filter = { user: userId };
+  const date = {};
+
+  if (query.from) date.$gte = parseDate(query.from, 'from');
+  if (query.to) date.$lte = parseDate(query.to, 'to');
+  if (Object.keys(date).length) filter.date = date;
+  if (query.type) {
+    if (!['income', 'expense', 'transfer', 'settlement'].includes(query.type)) {
+      throw new AppError('Invalid transaction type filter.', 400);
+    }
+    filter.type = query.type;
+  }
+  if (query.status) {
+    if (!['completed', 'pending_review', 'needs_manual_review'].includes(query.status)) {
+      throw new AppError('Invalid transaction status filter.', 400);
+    }
+    filter.status = query.status;
+  }
+  if (query.category) filter.category = requireObjectId(query.category, 'category');
+  if (query.account) {
+    const accountId = requireObjectId(query.account, 'account');
+    filter.$or = [{ account: accountId }, { from_account: accountId }, { to_account: accountId }];
+  }
+  if (query.search) {
+    const escapedSearch = String(query.search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.title = { $regex: escapedSearch.slice(0, 100), $options: 'i' };
+  }
+
+  return filter;
+};
+
+const getTransactionPage = async (userId, query = {}) => {
+  const limit = normalizeLimit(query.limit);
+  const filter = buildTransactionFilter(userId, query);
+
+  if (query.cursor) {
+    const { date, id } = decodeCursor(query.cursor);
+    const cursorFilter = {
+      $or: [
+        { date: { $lt: date } },
+        { date, _id: { $lt: id } },
+      ],
+    };
+    filter.$and = [cursorFilter];
+  }
+
+  const results = await Transaction.find(filter)
+    .populate(POPULATE_TRANSACTION_REFERENCES)
+    .sort({ date: -1, _id: -1 })
+    .limit(limit + 1)
+    .lean();
+  const hasMore = results.length > limit;
+  const items = hasMore ? results.slice(0, limit) : results;
+
+  return {
+    items,
+    nextCursor: hasMore ? encodeCursor(items.at(-1)) : null,
+  };
 };
 
 const validateReferences = async (userId, data) => {
@@ -275,6 +386,7 @@ const importTransactions = async (userId, backup) => {
 
 module.exports = {
   getTransactions,
+  getTransactionPage,
   createTransaction,
   updateTransaction,
   deleteTransaction,
