@@ -11,7 +11,7 @@ const MetricCard = ({ label, before, after, diff, money, invertColors = false })
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-colors">
+    <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5 hover:border-white/20 transition-colors">
       <p className="text-sm font-medium text-[var(--color-text-muted)] mb-4">{label}</p>
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -120,7 +120,7 @@ export default function ResultsView({ before, after, difference, money }) {
             const diff = (aAcc?.balance || 0) - bAcc.balance;
             const isAffected = diff !== 0;
             return (
-              <div key={bAcc._id} className={`bg-white/5 border ${isAffected ? 'border-brand-blue/50 bg-brand-blue/5' : 'border-white/10'} rounded-2xl p-4 transition-colors`}>
+              <div key={bAcc._id} className={`bg-black/10 shadow-inner border ${isAffected ? 'border-brand-blue/50' : 'border-white/5'} rounded-2xl p-4 transition-colors`}>
                 <div className="flex items-center gap-2 mb-3">
                   <Wallet className={`w-4 h-4 ${isAffected ? 'text-brand-blue' : 'text-[var(--color-text-muted)]'}`} />
                   <p className="font-bold text-[var(--color-text-main)] truncate">{bAcc.name}</p>
@@ -156,7 +156,7 @@ export default function ResultsView({ before, after, difference, money }) {
               else if (aStatus === 'pending') statusLabel = 'Pending';
               
               return (
-                <div key={bBill._id} className={`bg-white/5 border ${isAffected ? 'border-brand-orange/50 bg-brand-orange/5' : 'border-white/10'} rounded-2xl p-4 transition-colors`}>
+                <div key={bBill._id} className={`bg-black/10 shadow-inner border ${isAffected ? 'border-brand-orange/50' : 'border-white/5'} rounded-2xl p-4 transition-colors`}>
                   <div className="flex items-center gap-2 mb-3">
                     <Receipt className={`w-4 h-4 ${isAffected ? 'text-amber-500' : 'text-[var(--color-text-muted)]'}`} />
                     <p className="font-bold text-[var(--color-text-main)] truncate">{bBill.name}</p>

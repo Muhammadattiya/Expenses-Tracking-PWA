@@ -45,7 +45,7 @@ export default function BudgetCard({ budget, spent, onEdit, onDelete, index = 0 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
-      className={`bg-black/30 rounded-[2rem] p-6 border border-white/5 relative overflow-hidden backdrop-blur-xl group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/10 hover:shadow-2xl hover:scale-[1.01]'} cursor-pointer`}
+      className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 relative overflow-hidden group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/20 hover:scale-[1.01]'} cursor-pointer`}
       onClick={() => setIsExpanded(!isExpanded)}
     >
       {/* Background glow based on progress */}
@@ -142,26 +142,28 @@ export default function BudgetCard({ budget, spent, onEdit, onDelete, index = 0 
             className="relative z-10 overflow-hidden"
           >
             <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
-              <button 
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit(budget);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-white/80 hover:text-white backdrop-blur-md text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-white/80 hover:text-white backdrop-blur-md text-sm font-medium shadow-inner"
               >
                 <Icons.Edit2 size={16} />
                 {t('modals.editTransactionTitle').split(' ')[0]} {/* Simple 'Edit' fallback */}
-              </button>
-              <button 
+              </motion.button>
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(budget);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition-colors text-red-400 hover:text-red-300 backdrop-blur-md text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition-colors text-red-400 hover:text-red-300 backdrop-blur-md text-sm font-medium shadow-inner"
               >
                 <Icons.Trash2 size={16} />
                 {t('settings.deleteBtn')}
-              </button>
+              </motion.button>
             </div>
           </motion.div>
         )}

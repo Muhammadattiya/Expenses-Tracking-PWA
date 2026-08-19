@@ -199,7 +199,7 @@ const AddTransaction = () => {
       </h2>
 
       {/* Segmented Control */}
-      <div className="flex bg-black/10 dark:bg-black/30 p-1.5 rounded-[1.5rem] mb-10 border border-[var(--color-border)] shadow-inner">
+      <div className="flex bg-black/20 p-1.5 rounded-[1.5rem] mb-10 border border-white/5 shadow-inner">
         <button
           type="button"
           onClick={() => setType('expense')}
@@ -227,7 +227,7 @@ const AddTransaction = () => {
       </div>
 
       {/* Form Container */}
-      <form onSubmit={handleSubmit} className="space-y-6 glass-panel p-6 rounded-[2rem]">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]">
 
         {/* Massive Amount Input */}
         <div className="mb-2 flex flex-col items-center justify-center py-4 border-b border-white/5">
@@ -259,7 +259,7 @@ const AddTransaction = () => {
 
         <div>
           <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.date', 'التاريخ')}</label>
-          <div className="flex bg-black/10 dark:bg-black/30 p-1.5 rounded-[1.2rem] border border-[var(--color-border)] shadow-inner">
+          <div className="flex bg-black/20 p-1.5 rounded-[1.2rem] border border-white/5 shadow-inner">
             <button
               type="button"
               onClick={() => setDate(todayStr)}

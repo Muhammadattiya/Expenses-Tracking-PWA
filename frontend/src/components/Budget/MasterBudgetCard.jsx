@@ -43,7 +43,7 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
-      className={`bg-black/30 rounded-[2rem] p-6 border border-white/5 relative overflow-hidden backdrop-blur-xl group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/10 hover:shadow-2xl hover:scale-[1.01]'}`}
+      className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 relative overflow-hidden group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/20 hover:scale-[1.01]'}`}
     >
       <div 
         className="cursor-pointer relative z-10 flex-1 flex flex-col justify-between"
@@ -67,18 +67,20 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
             </div>
           </div>
           <div className="flex gap-2 relative z-20">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); onEditPlan?.(plan); }}
-              className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:bg-brand-blue/20 hover:text-brand-blue transition-colors"
+              className="w-8 h-8 rounded-full bg-white/5 shadow-inner flex items-center justify-center text-white/50 hover:bg-brand-blue/20 hover:text-brand-blue transition-colors border border-white/5"
             >
               <Icons.Edit2 size={14} />
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); onDeletePlan?.(plan); }}
-              className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:bg-red-500/20 hover:text-red-500 transition-colors"
+              className="w-8 h-8 rounded-full bg-white/5 shadow-inner flex items-center justify-center text-white/50 hover:bg-red-500/20 hover:text-red-500 transition-colors border border-white/5"
             >
               <Icons.Trash2 size={14} />
-            </button>
+            </motion.button>
             <motion.div 
               animate={{ rotate: isExpanded ? 180 : 0 }} 
               className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 pointer-events-none"

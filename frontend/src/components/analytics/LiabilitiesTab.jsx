@@ -70,7 +70,7 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
     <div className="space-y-10 animate-fade-in pb-10">
       
       {/* Master Hero Summary: All Liabilities */}
-      <div className="glass-panel p-8 flex flex-col justify-center items-center text-center rounded-[2rem] shadow-2xl border border-white/5 bg-gradient-to-br from-brand-red/30 to-black/60 relative overflow-hidden group">
+      <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-brand-red/30 border-l-brand-red/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 flex flex-col justify-center items-center text-center rounded-[2.5rem] relative overflow-hidden group">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 group-hover:scale-125 transition-transform duration-1000">
           <TrendingDown className="w-64 h-64 text-brand-red" />
         </div>
@@ -84,7 +84,7 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
       {/* Sub Summaries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Debts Overview */}
-        <div className="glass-panel p-8 flex flex-col md:flex-row justify-between items-center rounded-[2rem] shadow-2xl border border-white/5 bg-gradient-to-br from-brand-red/20 to-black/40 relative overflow-hidden group">
+        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 flex flex-col md:flex-row justify-between items-center rounded-[2.5rem] relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700">
             <Users className="w-24 h-24 text-brand-red" />
           </div>
@@ -114,7 +114,7 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
         </div>
 
         {/* Bills Overview */}
-        <div className="glass-panel p-8 flex flex-col md:flex-row justify-between items-center rounded-[2rem] shadow-2xl border border-white/5 bg-gradient-to-br from-brand-red/20 to-black/40 relative overflow-hidden group">
+        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 flex flex-col md:flex-row justify-between items-center rounded-[2.5rem] relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700">
             <CalendarClock className="w-24 h-24 text-brand-red" />
           </div>
@@ -145,7 +145,7 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
           const progress = initialAmount > 0 ? (paid / initialAmount) * 100 : 0;
           
           return (
-            <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" key={d._id}>
+            <div className="bg-black/10 shadow-inner p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" key={d._id}>
               {/* Type Glow */}
               <div 
                 className="absolute top-0 right-0 w-24 h-24 rounded-bl-[100px] -z-10 opacity-10 group-hover:scale-110 transition-transform"
@@ -201,7 +201,7 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
       </div>
 
       {/* Bills Section */}
-      <section className="glass-panel p-6 lg:p-8 rounded-[2rem] shadow-2xl border border-white/5 bg-black/20">
+      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 lg:p-8 rounded-[2.5rem]">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-brand-red/20 rounded-2xl text-brand-red">
             <CalendarClock className="w-6 h-6" />
@@ -211,7 +211,7 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {bills?.length ? bills.map((b) => (
-            <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden flex flex-col justify-between min-h-[140px]" key={b._id}>
+            <div className="bg-black/10 shadow-inner p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden flex flex-col justify-between min-h-[140px]" key={b._id}>
                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-red/10 rounded-bl-[100px] -z-10 group-hover:scale-110 transition-transform" />
                <div className="z-10">
                  <p className="font-bold text-[var(--color-text-main)] text-lg mb-1">{b.name}</p>

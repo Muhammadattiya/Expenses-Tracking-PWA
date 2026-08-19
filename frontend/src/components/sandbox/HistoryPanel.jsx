@@ -14,7 +14,7 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 backdrop-blur-xl h-full flex flex-col">
+    <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 h-full flex flex-col">
       <div className="flex items-center gap-2 mb-6">
         <Clock className="w-5 h-5 text-brand-blue" />
         <h2 className="text-xl font-bold text-[var(--color-text-main)]">History</h2>
@@ -27,7 +27,7 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
       ) : (
         <div className="space-y-3 overflow-y-auto pr-2">
           {history.map(item => (
-            <div key={item._id} className="bg-black/40 border border-white/5 p-4 rounded-2xl group hover:border-white/10 transition-colors">
+            <div key={item._id} className="bg-black/10 shadow-inner border border-white/5 p-4 rounded-2xl group hover:border-white/10 transition-colors">
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h4 className="font-bold text-white">{item.title}</h4>

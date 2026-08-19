@@ -43,3 +43,8 @@ export const deleteDebt = async (debtId) => {
   const response = await api.delete(`/debts/${debtId}`);
   return response.data;
 };
+
+export const updateDebt = async (debtId, debtData) => {
+  const response = await api.put(`/debts/${debtId}`, debtData);
+  return response.data;
+};

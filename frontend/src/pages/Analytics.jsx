@@ -11,6 +11,7 @@ import { getRecurringTransactions } from '../api/recurringTransactions';
 import { getReceivables } from '../api/receivables';
 import { getCurrentUser } from '../api/auth';
 import { Loader2, Download, Filter, Search, FlaskConical } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import CustomSelect from '../components/ui/CustomSelect';
@@ -240,36 +241,40 @@ export default function Analytics() {
   const isAssetsTab = activeTab === 'assets';
 
   return (
-    <div className="p-4 pt-8 animate-fade-in space-y-8 pb-24 max-w-7xl mx-auto">
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+      className="p-4 pt-8 space-y-8 pb-24 max-w-7xl mx-auto"
+    >
       
       {/* Header & Global Actions */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <p className="text-brand-blue text-xs font-bold tracking-widest uppercase mb-1">{t('analytics.tabs.overview', 'Overview')}</p>
-          <h1 className="text-3xl md:text-4xl font-black text-[var(--color-text-main)] tracking-tight">{t('analytics.title', 'Reports & Analytics')}</h1>
+          <p className="text-brand-blue text-xs font-bold tracking-widest uppercase mb-1 drop-shadow-sm">{t('analytics.tabs.overview', 'Overview')}</p>
+          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">{t('analytics.title', 'Reports & Analytics')}</h1>
         </div>
         <div className="flex items-center gap-3">
           {!isAssetsTab && (
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowFilters(!showFilters)} 
-              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg hover:-translate-y-0.5 ${showFilters ? 'bg-brand-blue text-white shadow-brand-blue/20' : 'bg-white/5 border border-white/10 text-[var(--color-text-main)] hover:bg-white/10'}`}
+              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${showFilters ? 'bg-brand-blue text-white shadow-brand-blue/20' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
             >
               <Filter className="w-4 h-4" />
               <span>{showFilters ? t('analytics.hideFilters', 'Hide Filters') : t('analytics.filterResults', 'Filter Results')}</span>
-            </button>
+            </motion.button>
           )}
           
-          <button onClick={exportReport} className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg hover:shadow-brand-blue/20 hover:-translate-y-0.5">
+          <motion.button whileTap={{ scale: 0.95 }} onClick={exportReport} className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-3 rounded-2xl text-sm font-bold transition-colors shadow-lg shadow-brand-blue/20">
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">{t('analytics.export', 'Export JSON')}</span>
-          </button>
+          </motion.button>
         </div>
       </header>
 
       {/* Control Panel (Filters) */}
       {!isAssetsTab && (
         <div className={`transition-all duration-500 overflow-hidden ${showFilters ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="glass-panel p-4 md:p-6 rounded-[2rem] shadow-2xl bg-black/40 border border-white/5 backdrop-blur-2xl">
+          <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-4 md:p-6 rounded-[2.5rem]">
           <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
            <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
              <DateFilterChips filters={filters} setFilters={setFilters} userPrefs={userPrefs} />
@@ -324,38 +329,48 @@ export default function Analytics() {
 
       {/* Main Content Area */}
       <div className="relative">
-        {activeTab === 'overview' && (
-            <OverviewTab 
-              money={money} 
-              data={data} 
-              accounts={accounts} 
-              investments={investments} 
-              debts={debts} 
-              bills={bills}
-              recurring={recurring}
-              filters={filters}
-              allTransactions={allTransactions}
-              allDebtTransactions={allDebtTransactions}
-              allReceivables={allReceivables}
-            />
-        )}
-        {activeTab === 'spending' && (
-            <SpendingTab data={data} categories={categories} money={money} />
-        )}
-        {activeTab === 'planning' && (
-            <PlanningTab budgets={budgets} money={money} />
-        )}
-        {activeTab === 'assets' && (
-            <AssetsTab investments={investments} money={money} />
-        )}
-        {activeTab === 'liabilities' && (
-            <LiabilitiesTab debts={debts} bills={bills} filters={filters} money={money} />
-        )}
-        {activeTab === 'insights' && (
-            <InsightsTab data={data} money={money} filters={filters} />
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          >
+            {activeTab === 'overview' && (
+                <OverviewTab 
+                  money={money} 
+                  data={data} 
+                  accounts={accounts} 
+                  investments={investments} 
+                  debts={debts} 
+                  bills={bills}
+                  recurring={recurring}
+                  filters={filters}
+                  allTransactions={allTransactions}
+                  allDebtTransactions={allDebtTransactions}
+                  allReceivables={allReceivables}
+                />
+            )}
+            {activeTab === 'spending' && (
+                <SpendingTab data={data} categories={categories} money={money} />
+            )}
+            {activeTab === 'planning' && (
+                <PlanningTab budgets={budgets} money={money} />
+            )}
+            {activeTab === 'assets' && (
+                <AssetsTab investments={investments} money={money} />
+            )}
+            {activeTab === 'liabilities' && (
+                <LiabilitiesTab debts={debts} bills={bills} filters={filters} money={money} />
+            )}
+            {activeTab === 'insights' && (
+                <InsightsTab data={data} money={money} filters={filters} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-    </div>
+    </motion.div>
   );
 }

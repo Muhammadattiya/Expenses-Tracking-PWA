@@ -39,9 +39,24 @@ exports.markAsPaid = async (userId, id, transactionId) => {
   const bill = await Bill.findOne({ _id: id, user: userId });
   if (!bill) throw new Error('Bill not found');
 
-  bill.status = 'paid';
   bill.transactionId = transactionId;
   bill.paymentDate = new Date();
+
+  if (bill.repeat !== 'never') {
+    let nextDate = new Date(bill.dueDate);
+    if (bill.repeat === 'weekly') {
+      nextDate.setDate(nextDate.getDate() + 7);
+    } else if (bill.repeat === 'monthly') {
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    } else if (bill.repeat === 'yearly') {
+      nextDate.setFullYear(nextDate.getFullYear() + 1);
+    }
+    bill.dueDate = nextDate;
+    bill.status = calculateBillStatus(nextDate);
+    bill.transactionId = undefined; 
+  } else {
+    bill.status = 'paid';
+  }
   
   await bill.save();
   return bill;

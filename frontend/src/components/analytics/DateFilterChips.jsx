@@ -7,6 +7,22 @@ export const getFilterBounds = (type, userPrefs = {}) => {
   today.setHours(0, 0, 0, 0);
 
   if (type === 'all') return { from: '', to: '' };
+
+  if (type === 'today') {
+    const start = new Date(today);
+    const end = new Date(today);
+    end.setHours(23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }
+
+  if (type === 'yesterday') {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 1);
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }
+
   if (type === 'year') {
     const start = new Date(today.getFullYear(), 0, 1);
     const end = new Date(today.getFullYear(), 11, 31);
@@ -98,6 +114,28 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
       
       {!showCustom && (
         <div className="flex flex-wrap gap-2 w-full xl:w-auto">
+          <button 
+            type="button"
+            onClick={() => handleQuickFilter('today')}
+            className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
+              checkActive('today')
+                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
+            }`}
+          >
+            {t('analytics.filters.today', 'Today')}
+          </button>
+          <button 
+            type="button"
+            onClick={() => handleQuickFilter('yesterday')}
+            className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
+              checkActive('yesterday')
+                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
+            }`}
+          >
+            {t('analytics.filters.yesterday', 'Yesterday')}
+          </button>
           <button 
             type="button"
             onClick={() => handleQuickFilter('this_week')}

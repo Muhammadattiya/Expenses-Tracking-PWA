@@ -293,94 +293,104 @@ export default function Budgets() {
           </h1>
           <p className="text-[var(--color-text-muted)] text-sm">{t('budgets.subtitle')}</p>
         </div>
-        <button
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={() => {
             setBudgetToEdit(null);
             setIsModalOpen(true);
           }}
-          className="bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3.5 rounded-2xl shadow-lg shadow-brand-blue/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 font-bold"
+          className="bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3.5 rounded-2xl shadow-inner transition-colors flex items-center justify-center gap-2 font-bold border border-brand-blue/20"
         >
           <Plus size={20} />
           {t('budgets.addBudget')}
-        </button>
+        </motion.button>
       </div>
 
       {/* Hero Card */}
       {!isLoading && (
-        <section className="relative overflow-hidden p-8 rounded-[2rem] bg-black/40 border border-white/5 backdrop-blur-xl shadow-2xl flex flex-col justify-center items-center text-center group mb-8">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden p-8 rounded-[2.5rem] bg-black/20 border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] backdrop-blur-[40px] flex flex-col justify-center items-center text-center group mb-8"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/20 to-purple-900/10 opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-brand-blue/30 rounded-full blur-[100px] pointer-events-none" />
           
           <div className="relative z-10 w-full">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-brand-blue/20 rounded-2xl border border-brand-blue/30 text-brand-blue">
+              <div className="p-3 bg-brand-blue/20 rounded-2xl border border-brand-blue/30 text-brand-blue shadow-inner">
                 <Target size={28} />
               </div>
             </div>
-            <p className="text-sm font-medium text-[var(--color-text-muted)] tracking-wider uppercase mb-2">
+            <p className="text-sm font-medium text-white/50 tracking-wider uppercase mb-2">
               {t('budgets.totalRemaining', 'Total Remaining')}
             </p>
-            <h2 className={`text-4xl md:text-5xl font-bold tabular-nums tracking-tight mb-8 drop-shadow-md ${
+            <h2 className={`text-4xl md:text-5xl font-bold tabular-nums tracking-tight mb-8 drop-shadow-sm ${
               budgets.reduce((s, b) => s + (b.amount || 0), 0) < budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0) 
                 ? 'text-brand-red' 
-                : 'text-white'
+                : 'text-white/90'
             }`}>
               {(budgets.reduce((s, b) => s + (b.amount || 0), 0) - budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0)).toLocaleString()} {t('nav.currency')}
             </h2>
 
             <div className="flex flex-col md:flex-row justify-center gap-4 w-full max-w-xl mx-auto">
-              <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-xs text-[var(--color-text-muted)] mb-1 uppercase tracking-wider">{t('budgets.totalBudgeted', 'Total Budgeted')}</span>
-                <span className="font-bold text-lg text-white">{budgets.reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()} {t('nav.currency')}</span>
+              <div className="flex-1 bg-black/30 border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col items-center">
+                <span className="text-xs text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalBudgeted', 'Total Budgeted')}</span>
+                <span className="font-bold text-lg text-white/90 tabular-nums">{budgets.reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()} {t('nav.currency')}</span>
               </div>
-              <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-xs text-[var(--color-text-muted)] mb-1 uppercase tracking-wider">{t('budgets.totalSpent', 'Total Spent')}</span>
-                <span className="font-bold text-lg text-brand-blue">{budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0).toLocaleString()} {t('nav.currency')}</span>
+              <div className="flex-1 bg-black/30 border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col items-center">
+                <span className="text-xs text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalSpent', 'Total Spent')}</span>
+                <span className="font-bold text-lg text-brand-blue tabular-nums">{budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0).toLocaleString()} {t('nav.currency')}</span>
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* Smart Budget Planner Entry */}
-      <div 
+      <motion.div 
+        whileTap={{ scale: 0.98 }}
         onClick={() => navigate('/budgets/smart-planner')}
-        className="relative overflow-hidden bg-gradient-to-r from-brand-blue/20 to-purple-500/20 border border-brand-blue/30 rounded-[2rem] p-6 mb-8 cursor-pointer hover:border-brand-blue/60 transition-all flex items-center justify-between group shadow-lg"
+        className="relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 mb-8 cursor-pointer group"
       >
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/20 to-purple-500/20 opacity-50" />
         <div className="absolute right-0 top-0 w-32 h-32 bg-brand-blue/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-brand-blue/40 transition-colors" />
-        <div className="relative z-10">
-          <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-2">
-            <Target className="text-brand-blue" size={20} />
-            {t('smartBudget.entryButton', 'Smart Planner')}
-          </h3>
-          <p className="text-white/60 text-sm">{t('smartBudget.entryDesc', 'Let us distribute your budget for you')}</p>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h3 className="text-white/90 font-bold text-lg mb-1 flex items-center gap-2 drop-shadow-sm">
+              <Target className="text-brand-blue" size={20} />
+              {t('smartBudget.entryButton', 'Smart Planner')}
+            </h3>
+            <p className="text-white/50 text-sm">{t('smartBudget.entryDesc', 'Let us distribute your budget for you')}</p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-brand-blue/20 border border-brand-blue/30 shadow-inner flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
+            <ArrowRight size={24} className={language === 'ar' ? 'rotate-180' : ''} />
+          </div>
         </div>
-        <div className="relative z-10 w-12 h-12 rounded-2xl bg-brand-blue/20 flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
-          <ArrowRight size={24} className={language === 'ar' ? 'rotate-180' : ''} />
-        </div>
-      </div>
+      </motion.div>
 
       {!isLoading && draftPlans.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-white font-bold mb-4">{t('smartBudget.drafts', 'Recent Drafts')}</h2>
+          <h2 className="text-white/90 font-bold mb-4 drop-shadow-sm">{t('smartBudget.drafts', 'Recent Drafts')}</h2>
           <div className="space-y-3">
             {draftPlans.map(draft => (
               <div 
                 key={draft._id} 
-                className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between"
+                className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5 flex items-center justify-between"
               >
                 <div>
-                  <h3 className="text-white font-medium">{draft.name || t('smartBudget.untitledDraft', 'Untitled Draft')}</h3>
-                  <p className="text-white/50 text-sm">
+                  <h3 className="text-white/90 font-bold text-lg drop-shadow-sm">{draft.name || t('smartBudget.untitledDraft', 'Untitled Draft')}</h3>
+                  <p className="text-white/50 text-sm mt-1 tabular-nums">
                     {draft.availableBudget?.toLocaleString()} {t('nav.currency')} • {draft.categories?.length || 0} {t('smartBudget.categories', 'categories')}
                   </p>
                 </div>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => navigate('/budgets/smart-planner', { state: { draftPlan: draft } })}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-5 py-2.5 bg-brand-blue/10 border border-brand-blue/20 hover:bg-brand-blue hover:text-white text-brand-blue rounded-xl text-sm font-bold transition-colors shadow-inner"
                 >
                   {t('smartBudget.resume', 'Resume')}
-                </button>
+                </motion.button>
               </div>
             ))}
           </div>
@@ -432,27 +442,28 @@ export default function Budgets() {
         </div>
       ) : groupedDisplayItems.length === 0 ? (
         <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-16 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-xl mt-8"
+          className="text-center py-16 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] mt-8"
         >
-          <div className="w-20 h-20 bg-brand-blue/10 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-black/30 shadow-inner border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
             <Target className="w-10 h-10 text-brand-blue/80" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">{t('budgets.noBudgets')}</h3>
+          <h3 className="text-xl font-bold text-white/90 mb-2 drop-shadow-sm">{t('budgets.noBudgets')}</h3>
           <p className="text-white/50 mb-8 max-w-[80%] mx-auto text-sm leading-relaxed">
             {t('budgets.emptyDesc')}
           </p>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => {
               setBudgetToEdit(null);
               setIsModalOpen(true);
             }}
-            className="px-8 py-4 bg-white hover:bg-gray-100 text-black rounded-2xl transition-all font-bold inline-flex items-center gap-2 shadow-[0_10px_40px_rgba(255,255,255,0.1)] active:scale-95"
+            className="px-8 py-4 bg-brand-blue/10 border border-brand-blue/20 hover:bg-brand-blue text-brand-blue hover:text-white rounded-2xl transition-colors font-bold inline-flex items-center gap-2 shadow-inner"
           >
             <Plus size={20} />
             {t('budgets.addBudget')}
-          </button>
+          </motion.button>
         </motion.div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

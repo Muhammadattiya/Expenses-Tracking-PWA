@@ -4,7 +4,7 @@ import { X, Plus, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
 
-export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts }) {
+export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, initialData }) {
   const { t } = useLanguage();
   
   const defaultForm = { personName: '', type: 'i_owe', amount: '', account: accounts[0]?._id || '' };
@@ -14,10 +14,19 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts })
 
   useEffect(() => {
     if (isOpen) {
-      setForm(defaultForm);
+      if (initialData) {
+        setForm({
+          personName: initialData.personName,
+          type: initialData.type,
+          amount: initialData.initialAmount || '',
+          account: accounts[0]?._id || ''
+        });
+      } else {
+        setForm(defaultForm);
+      }
       setError('');
     }
-  }, [isOpen, accounts]);
+  }, [isOpen, accounts, initialData]);
 
   if (!isOpen) return null;
 
@@ -55,7 +64,7 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts })
               <User className="w-5 h-5" />
             </div>
             <h2 className="text-xl font-bold text-white tracking-wide">
-              {t('debts.addDebt', 'Add Debt')}
+              {initialData ? t('debts.editDebt', 'Edit Debt') : t('debts.addDebt', 'Add Debt')}
             </h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-[var(--color-text-muted)] transition-colors">
@@ -106,10 +115,11 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts })
               <label className="text-sm font-medium text-[var(--color-text-main)] px-1">{t('debts.amount', 'Amount')}</label>
               <div className="grid grid-cols-2 gap-3">
                 <input 
-                  className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
+                  className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all disabled:opacity-50" 
                   required 
                   type="number" 
                   min="1" 
+                  disabled={!!initialData}
                   placeholder={t('debts.amount', 'Amount')} 
                   value={form.amount} 
                   onChange={(e) => setForm({ ...form, amount: e.target.value })} 
@@ -119,6 +129,7 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts })
                   onChange={(v) => setForm({ ...form, account: v })} 
                   options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
                   placeholder={t('debts.account', 'Account')} 
+                  disabled={!!initialData}
                 />
               </div>
             </div>
@@ -139,7 +150,7 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts })
             ) : (
               <Plus className="w-5 h-5" />
             )}
-            {t('debts.saveDebt', 'Save Debt')}
+            {initialData ? t('debts.saveChanges', 'Save Changes') : t('debts.saveDebt', 'Save Debt')}
           </button>
         </div>
 

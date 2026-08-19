@@ -56,14 +56,7 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// ─── Stricter auth rate limiting ────────────────────────────────────────────────
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many authentication attempts, please try again later.' },
-});
+// Auth rate limiting moved to auth routes
 
 app.get('/healthz', (req, res) => {
   const databaseReady = mongoose.connection.readyState === 1;
@@ -92,7 +85,7 @@ app.use(
 app.use("/api/transactions", transactionsRoutes);
 app.use("/api/accounts", accountsRoutes);
 app.use("/api/categories", categoriesRoutes);
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/receivables', receivableRoutes);
 app.use('/api/analytics', analyticsRoutes);

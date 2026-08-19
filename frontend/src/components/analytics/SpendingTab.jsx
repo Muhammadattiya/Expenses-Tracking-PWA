@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, AreaChart, Area, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { TrendingDown, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#f43f5e', '#10b981', '#ec4899', '#06b6d4', '#84cc16'];
 
 function ChartCard({ title, children, className = '' }) { 
   return (
-    <section className={`relative overflow-hidden p-6 rounded-[2.5rem] shadow-2xl border border-white/5 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-2xl group transition-all duration-500 ${className}`}>
+    <section className={`relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] group transition-all duration-500 ${className}`}>
       {/* Background glow effects */}
       <div className="absolute -right-20 -top-20 w-64 h-64 bg-brand-blue/10 rounded-full blur-3xl group-hover:bg-brand-blue/20 transition-colors duration-700 pointer-events-none" />
       <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-brand-purple/10 rounded-full blur-3xl group-hover:bg-brand-purple/20 transition-colors duration-700 pointer-events-none" />
@@ -28,14 +29,46 @@ export default function SpendingTab({ data }) {
 
   const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(value || 0);
 
-  const totalExpense = useMemo(() => {
-    return data?.categories?.reduce((sum, cat) => sum + cat.amount, 0) || 0;
-  }, [data]);
+  const totalExpense = data?.summary?.expense || 0;
+  const totalIncome = data?.summary?.income || 0;
 
   if (!data || !data.monthly) return null;
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in pb-10">
+      
+      {/* Overview Totals Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Expense Card */}
+        <section className="relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] group flex flex-col justify-between min-h-[160px] transition-all duration-500 hover:scale-[1.02] hover:bg-black/30">
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-brand-red/10 rounded-full blur-3xl group-hover:bg-brand-red/20 transition-colors duration-700 pointer-events-none" />
+          <div className="relative z-10 flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-full bg-brand-red/10 border border-brand-red/20 flex items-center justify-center shadow-inner">
+              <TrendingDown className="w-6 h-6 text-brand-red" />
+            </div>
+            <h3 className="text-white/70 font-bold text-lg tracking-wide">{t('analytics.expense', 'Expense')}</h3>
+          </div>
+          <div className="relative z-10">
+            <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tight drop-shadow-md">{money(totalExpense)}</span>
+          </div>
+        </section>
+
+        {/* Income Card */}
+        <section className="relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] group flex flex-col justify-between min-h-[160px] transition-all duration-500 hover:scale-[1.02] hover:bg-black/30">
+          <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-brand-green/10 rounded-full blur-3xl group-hover:bg-brand-green/20 transition-colors duration-700 pointer-events-none" />
+          <div className="relative z-10 flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-full bg-brand-green/10 border border-brand-green/20 flex items-center justify-center shadow-inner">
+              <TrendingUp className="w-6 h-6 text-brand-green" />
+            </div>
+            <h3 className="text-white/70 font-bold text-lg tracking-wide">{t('analytics.income', 'Income')}</h3>
+          </div>
+          <div className="relative z-10">
+            <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tight drop-shadow-md">{money(totalIncome)}</span>
+          </div>
+        </section>
+
+      </div>
       
       {/* Area Chart: Net Cash Flow */}
       <ChartCard title={t('analytics.netCashFlow', 'Net Cash Flow (Monthly)')}>
@@ -142,7 +175,7 @@ export default function SpendingTab({ data }) {
           </BarChart>
         </ChartCard>
 
-        <section className="relative overflow-hidden p-6 rounded-[2.5rem] shadow-2xl border border-white/5 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-2xl flex flex-col group lg:col-span-2">
+        <section className="relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] flex flex-col group lg:col-span-2">
           <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-brand-green/10 rounded-full blur-3xl group-hover:bg-brand-green/20 transition-colors duration-700 pointer-events-none" />
           
           <h2 className="mb-6 text-xl font-bold text-white tracking-wide sticky top-0 z-10">{t('analytics.topCategories', 'Top Categories')}</h2>
@@ -156,7 +189,7 @@ export default function SpendingTab({ data }) {
                     <span className="font-bold text-white group-hover/item:text-[var(--color-text-main)] transition-colors">{cat.name}</span>
                     <span className="text-sm font-black tabular-nums" style={{ color }}>{money(cat.amount)}</span>
                   </div>
-                  <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/5 shadow-inner">
+                  <div className="w-full bg-black/10 shadow-inner rounded-full h-3 overflow-hidden border border-white/5">
                     <div 
                       className="h-full rounded-full transition-all duration-1000 ease-out group-hover/item:brightness-125" 
                       style={{ width: `${percentage}%`, backgroundColor: color, boxShadow: `0 0 15px ${color}90` }}

@@ -9,7 +9,7 @@ export default function PlanningTab({ budgets, bills, money }) {
   return (
     <div className="space-y-10 animate-fade-in pb-10">
       
-      <section className="glass-panel p-6 lg:p-8 rounded-[2rem] shadow-2xl border border-white/5 bg-black/20">
+      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 lg:p-8 rounded-[2.5rem]">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-brand-blue/20 rounded-2xl text-brand-blue">
             <Target className="w-6 h-6" />
@@ -26,7 +26,7 @@ export default function PlanningTab({ budgets, bills, money }) {
             const color = b.category?.color || '#3b82f6';
             
             return (
-              <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" key={b._id}>
+              <div className="bg-black/10 shadow-inner p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" key={b._id}>
                 {/* Background glow */}
                 <div 
                   className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity"
