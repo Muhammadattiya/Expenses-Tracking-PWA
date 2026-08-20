@@ -98,6 +98,7 @@ app.use('/api/debts', debtsRoutes);
 app.use('/api/sandbox', simulationRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/income-profiles', incomeProfileRoutes);
+app.use('/api/quick-add', require('./routes/quickAddRoutes'));
 
 app.use(errorHandler);
 module.exports = app;

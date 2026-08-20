@@ -1,4 +1,20 @@
 export default {
+  quickAdd: {
+    title: 'إضافة سريعة',
+    placeholder: 'مثال: امبارح دفعت 150 جنيه في كنتاكي...',
+    analyze: 'تحليل وفهم',
+    detectedTransactions: 'المعاملات المستخرجة',
+    descPlaceholder: 'الوصف',
+    selectCategory: 'اختر الفئة...',
+    needCategory: 'يرجى اختيار الفئة',
+    confirmAll: 'تأكيد الكل',
+    noTransactions: 'لم يتم التعرف على أي معاملات.',
+    parseError: 'حدث خطأ أثناء التحليل.',
+    missingFields: 'يرجى استكمال الحقول الناقصة (مثل الفئة).',
+    success: 'تم حفظ المعاملات بنجاح!',
+    confirmError: 'حدث خطأ أثناء الحفظ.',
+    date: 'التاريخ'
+  },
   nav: {
     dashboard: 'الرئيسية',
     add: 'إضافة',
@@ -17,7 +33,8 @@ export default {
   },
   common: {
     allAccounts: 'جميع الحسابات',
-    deleteError: 'حدث خطأ أثناء الحذف'
+    deleteError: 'حدث خطأ أثناء الحذف',
+    cancel: 'إلغاء'
   },
   dashboard: {
     transactions: 'المعاملات',

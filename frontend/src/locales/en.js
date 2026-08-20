@@ -1,4 +1,20 @@
 export default {
+  quickAdd: {
+    title: 'Quick Add',
+    placeholder: 'e.g., I spent 150 EGP at KFC yesterday...',
+    analyze: 'Analyze',
+    detectedTransactions: 'Detected Transactions',
+    descPlaceholder: 'Description',
+    selectCategory: 'Select Category...',
+    needCategory: 'Please select a category',
+    confirmAll: 'Confirm All',
+    noTransactions: 'No transactions detected.',
+    parseError: 'An error occurred during analysis.',
+    missingFields: 'Please complete the missing fields.',
+    success: 'Transactions saved successfully!',
+    confirmError: 'An error occurred while saving.',
+    date: 'Date'
+  },
   nav: {
     dashboard: 'Home',
     add: 'Add',
@@ -16,7 +32,8 @@ export default {
   },
   common: {
     allAccounts: 'All Accounts',
-    deleteError: 'Error occurred during deletion'
+    deleteError: 'Error occurred during deletion',
+    cancel: 'Cancel'
   },
   dashboard: {
     transactions: 'Transactions',

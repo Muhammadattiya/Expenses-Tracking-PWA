@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
@@ -17,6 +17,7 @@ import { getReceivables } from "../api/receivables";
 import { getCurrentUser } from "../api/auth";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
+import QuickAddModal from "../components/modals/QuickAddModal";
 import CustomSelect from "../components/ui/CustomSelect";
 import { useNotification } from "../contexts/NotificationContext";
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -82,6 +83,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const { showToast } = useNotification();
 
   // Swipe logic using native touch events
@@ -610,6 +612,19 @@ const Dashboard = () => {
         }}
         onDelete={confirmDeleteTransaction}
         onSuccess={handleEditSuccess}
+      />
+
+      <button
+        onClick={() => setQuickAddOpen(true)}
+        className={`fixed bottom-24 ${lang === 'ar' ? 'left-4' : 'right-4'} z-40 bg-brand-blue/90 backdrop-blur-md hover:bg-brand-blue text-white p-4 rounded-[1.25rem] shadow-[0_8px_32px_rgba(0,122,255,0.4)] border border-white/20 transition-transform active:scale-90 flex items-center justify-center`}
+      >
+        <Mic className="w-7 h-7" />
+      </button>
+
+      <QuickAddModal 
+        isOpen={quickAddOpen} 
+        onClose={() => setQuickAddOpen(false)} 
+        onSuccess={fetchData}
       />
     </div>
   );

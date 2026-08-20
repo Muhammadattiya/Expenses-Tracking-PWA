@@ -16,6 +16,23 @@ const categorySchema = new mongoose.Schema({
     type: String,
     default: 'Tag'
   },
+  intent: {
+    type: String,
+    default: null
+  },
+  intentConfidence: {
+    type: Number,
+    default: null
+  },
+  intentSource: {
+    type: String,
+    enum: ['automatic', 'manual', null],
+    default: null
+  },
+  intentVersion: {
+    type: Number,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
