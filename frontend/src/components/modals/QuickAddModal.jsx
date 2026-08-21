@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, X, Send, Loader2, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, X, Send, Loader2, Trash2, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { parseQuickAddText, confirmQuickAddTransactions } from '../../api/quickAdd';
 import { getAccounts } from '../../api/accounts';
@@ -85,7 +85,13 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   };
   
   const handleConfirm = async () => {
-    const invalid = candidates.find(c => !c.amount || !c.categoryId || !c.accountId);
+    const invalid = candidates.find(c => {
+       if (!c.amount) return true;
+       if (c.type === 'transfer') {
+          return !c.sourceAccountId || !c.destinationAccountId;
+       }
+       return !c.categoryId || !c.accountId;
+    });
     if (invalid) {
        showToast(t('quickAdd.missingFields'), 'warning');
        return;
@@ -209,25 +215,49 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                         className="bg-black/30 border border-white/5 rounded-xl px-3 py-2 text-[var(--color-text-main)] text-sm focus:outline-none focus:border-white/20 transition-colors"
                       />
                       
-                      <div className="flex gap-2 z-10">
-                         <div className="flex-1">
-                           <CustomSelect
-                             value={cand.categoryId}
-                             onChange={val => updateCandidate(cand.id, 'categoryId', val)}
-                             options={categories[cand.type]?.map(c => ({ value: c._id, label: c.name, icon: c.icon })) || []}
-                             placeholder={t('quickAdd.selectCategory')}
-                           />
-                         </div>
-                         <div className="flex-1">
-                           <CustomSelect
-                             value={cand.accountId}
-                             onChange={val => updateCandidate(cand.id, 'accountId', val)}
-                             options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
-                           />
-                         </div>
-                      </div>
+                      {cand.type === 'transfer' ? (
+                        <div className="flex gap-2 z-10 items-center">
+                           <div className="flex-1">
+                             <CustomSelect
+                               value={cand.sourceAccountId}
+                               onChange={val => updateCandidate(cand.id, 'sourceAccountId', val)}
+                               options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
+                               placeholder={lang === 'ar' ? 'من حساب' : 'From Account'}
+                             />
+                           </div>
+                           <div className="flex-shrink-0 text-[var(--color-text-muted)] opacity-50 px-1">
+                             {lang === 'ar' ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                           </div>
+                           <div className="flex-1">
+                             <CustomSelect
+                               value={cand.destinationAccountId}
+                               onChange={val => updateCandidate(cand.id, 'destinationAccountId', val)}
+                               options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
+                               placeholder={lang === 'ar' ? 'إلى حساب' : 'To Account'}
+                             />
+                           </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 z-10">
+                           <div className="flex-1">
+                             <CustomSelect
+                               value={cand.categoryId}
+                               onChange={val => updateCandidate(cand.id, 'categoryId', val)}
+                               options={categories[cand.type]?.map(c => ({ value: c._id, label: c.name, icon: c.icon })) || []}
+                               placeholder={t('quickAdd.selectCategory')}
+                             />
+                           </div>
+                           <div className="flex-1">
+                             <CustomSelect
+                               value={cand.accountId}
+                               onChange={val => updateCandidate(cand.id, 'accountId', val)}
+                               options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
+                             />
+                           </div>
+                        </div>
+                      )}
                       
-                      {!cand.categoryId && (
+                      {!cand.categoryId && cand.type !== 'transfer' && (
                          <p className="text-[10px] text-yellow-400/90 font-bold flex items-center gap-1.5 mt-1">
                            <AlertCircle className="w-3.5 h-3.5"/> {t('quickAdd.needCategory')}
                          </p>
