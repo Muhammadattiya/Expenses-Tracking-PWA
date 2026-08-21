@@ -54,23 +54,6 @@ const confirmTransactions = async (req, res) => {
     
     const results = [];
     for (const t of transactions) {
-      if (!t.amount || t.amount <= 0 || !t.type || !t.categoryId || !t.accountId) {
-          throw new Error("Invalid transaction data provided.");
-      }
-      
-      if (!mongoose.Types.ObjectId.isValid(t.categoryId) || !mongoose.Types.ObjectId.isValid(t.accountId)) {
-          throw new Error("Invalid Object IDs.");
-      }
-      
-      // Strict ownership checks
-      const [account, category] = await Promise.all([
-         Account.findOne({ _id: t.accountId, user: req.user.id }).lean(),
-         Category.findOne({ _id: t.categoryId, user: req.user.id }).lean()
-      ]);
-      
-      if (!account) throw new Error("Account not found or unauthorized.");
-      if (!category) throw new Error("Category not found or unauthorized.");
-      
       let title = (t.description || 'معاملة سريعة').toString().trim();
       if (title.length > 100) title = title.substring(0, 100);
       
@@ -79,16 +62,53 @@ const confirmTransactions = async (req, res) => {
          const parsedDate = new Date(t.date);
          if (!isNaN(parsedDate.getTime())) date = parsedDate;
       }
-      
-      const created = await transactionService.createTransaction(req.user.id, {
-         title,
-         amount: Number(t.amount),
-         type: t.type,
-         date: date.toISOString(),
-         category: t.categoryId,
-         account: t.accountId
-      });
-      results.push(created);
+
+      if (t.type === 'transfer') {
+         if (!t.amount || t.amount <= 0 || !t.sourceAccountId || !t.destinationAccountId) {
+             throw new Error("Invalid transfer data provided.");
+         }
+         if (!mongoose.Types.ObjectId.isValid(t.sourceAccountId) || !mongoose.Types.ObjectId.isValid(t.destinationAccountId)) {
+             throw new Error("Invalid Object IDs.");
+         }
+         const [fromAccount, toAccount] = await Promise.all([
+            Account.findOne({ _id: t.sourceAccountId, user: req.user.id }).lean(),
+            Account.findOne({ _id: t.destinationAccountId, user: req.user.id }).lean()
+         ]);
+         if (!fromAccount || !toAccount) throw new Error("Account not found or unauthorized.");
+         
+         const created = await transactionService.createTransaction(req.user.id, {
+            title,
+            amount: Number(t.amount),
+            type: 'transfer',
+            date: date.toISOString(),
+            from_account: t.sourceAccountId,
+            to_account: t.destinationAccountId
+         });
+         results.push(created);
+      } else {
+         if (!t.amount || t.amount <= 0 || !t.type || !t.categoryId || !t.accountId) {
+             throw new Error("Invalid transaction data provided.");
+         }
+         if (!mongoose.Types.ObjectId.isValid(t.categoryId) || !mongoose.Types.ObjectId.isValid(t.accountId)) {
+             throw new Error("Invalid Object IDs.");
+         }
+         const [account, category] = await Promise.all([
+            Account.findOne({ _id: t.accountId, user: req.user.id }).lean(),
+            Category.findOne({ _id: t.categoryId, user: req.user.id }).lean()
+         ]);
+         if (!account) throw new Error("Account not found or unauthorized.");
+         if (!category) throw new Error("Category not found or unauthorized.");
+         
+         const created = await transactionService.createTransaction(req.user.id, {
+            title,
+            amount: Number(t.amount),
+            type: t.type,
+            date: date.toISOString(),
+            category: t.categoryId,
+            account: t.accountId
+         });
+         results.push(created);
+      }
     }
     
     res.status(201).json({ success: true, count: results.length, transactions: results });

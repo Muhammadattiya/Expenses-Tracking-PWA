@@ -92,17 +92,27 @@ const tests = [
   { input: 'I paid 50 from telda', expectAmount: 50, expectAccount: 'acc_telda', customAccounts: [ { _id: 'acc_telda', name: 'Telda' }, { _id: 'acc_cash', name: 'Cash' } ] },
   { input: 'انا دفعت 100 جنيه في الاكل بحساب تيلدا', expectAmount: 100, expectAccount: 'acc_telda', customAccounts: [ { _id: 'acc_telda', name: 'Telda' }, { _id: 'acc_cash', name: 'Cash' } ] },
   { input: 'اشتريت بـ200 من ميزة', expectAmount: 200, expectAccount: 'acc_meeza', customAccounts: [ { _id: 'acc_meeza', name: 'meeza' }, { _id: 'acc_cash', name: 'Cash' } ] },
-  { input: 'حولت 100 من فودافون كاش', expectAmount: 100, expectAccount: 'acc_vodafone', customAccounts: [ { _id: 'acc_vodafone', name: 'vodafone cash' }, { _id: 'acc_cash', name: 'Cash' } ] },
+  { input: 'حولت 100 من فودافون كاش', expectAmount: 100, expectSourceAccount: 'acc_vodafone', expectType: 'transfer', customAccounts: [ { _id: 'acc_vodafone', name: 'vodafone cash' }, { _id: 'acc_cash', name: 'Cash' } ] },
   { input: 'دفعت 300 انستا باي', expectAmount: 300, expectAccount: 'acc_instapay', customAccounts: [ { _id: 'acc_instapay', name: 'InstaPay' }, { _id: 'acc_cash', name: 'Cash' } ] },
   { input: 'سحبت 500 من كيو ان بي', expectAmount: 500, expectAccount: 'acc_qnb', customAccounts: [ { _id: 'acc_qnb', name: 'qnb' }, { _id: 'acc_cash', name: 'Cash' } ] },
-  { input: 'دفعت 100 من ببساطة', expectAmount: 100, expectAccount: 'acc_bebasata', customAccounts: [ { _id: 'acc_bebasata', name: 'Bebasata' }, { _id: 'acc_cash', name: 'Cash' } ] }
+  { input: 'دفعت 100 من ببساطة', expectAmount: 100, expectAccount: 'acc_bebasata', customAccounts: [ { _id: 'acc_bebasata', name: 'Bebasata' }, { _id: 'acc_cash', name: 'Cash' } ] },
+  { input: 'حولت 500 جنيه من البنك للمحفظة', expectAmount: 500, expectType: 'transfer', expectSourceAccount: 'acc_bank', expectDestAccount: 'acc_wallet', customAccounts: [ { _id: 'acc_bank', name: 'Bank' }, { _id: 'acc_wallet', name: 'Wallet' } ] },
+  { input: 'نقلت 1000 من الكاش للبنك', expectAmount: 1000, expectType: 'transfer', expectSourceAccount: 'acc_cash', expectDestAccount: 'acc_bank', customAccounts: [ { _id: 'acc_cash', name: 'Cash' }, { _id: 'acc_bank', name: 'Bank' } ] },
+  { input: 'حطيت 200 في فودافون كاش من البنك', expectAmount: 200, expectType: 'transfer', expectSourceAccount: 'acc_bank', expectDestAccount: 'acc_vodafone', customAccounts: [ { _id: 'acc_bank', name: 'Bank' }, { _id: 'acc_vodafone', name: 'vodafone' } ] },
+  { input: 'حولت 200 جنيه من حساب تلده الي حساب ميزه', expectAmount: 200, expectType: 'transfer', expectSourceAccount: 'acc_telda', expectDestAccount: 'acc_meeza', customAccounts: [ { _id: 'acc_telda', name: 'Telda' }, { _id: 'acc_meeza', name: 'Meeza' } ] },
+  { input: 'حولت من فيزا ميزه الي فيزا تلده 300', expectAmount: 300, expectType: 'transfer', expectSourceAccount: 'acc_meeza', expectDestAccount: 'acc_telda', customAccounts: [ { _id: 'acc_telda', name: 'Telda' }, { _id: 'acc_meeza', name: 'Meeza' } ] }
 ];
 
 const multiTests = [
   { input: 'اشتريت قهوة بـ30 من الكاش وركبت تاكسي بـ100 من المحفظة', expectCount: 2, 
     results: [ { expectAmount: 30, expectDesc: 'قهوة', expectAccount: 'acc1' }, { expectAmount: 100, expectDesc: 'تاكسي', expectAccount: 'acc2' } ] },
   { input: 'اشتريت قهوة بـ30 وساندوتش بـ50 بالكاش', expectCount: 2,
-    results: [ { expectAmount: 30, expectDesc: 'قهوة', expectAccount: 'acc1' }, { expectAmount: 50, expectDesc: 'ساندوتش', expectAccount: 'acc1' } ] }
+    results: [ { expectAmount: 30, expectDesc: 'قهوة', expectAccount: 'acc1' }, { expectAmount: 50, expectDesc: 'ساندوتش', expectAccount: 'acc1' } ] },
+  { input: 'اشتريت قهوة بـ50 وبعدين ركبت تاكسي بـ100', expectCount: 2, 
+    results: [ { expectAmount: 50, expectDesc: 'قهوة' }, { expectAmount: 100, expectDesc: 'تاكسي' } ] },
+  { input: 'حولت 1000 من البنك للمحفظة وبعدين اشتريت قهوة بـ50 من المحفظة', expectCount: 2, 
+    results: [ { expectAmount: 1000, expectType: 'transfer', expectSourceAccount: 'acc_bank', expectDestAccount: 'acc_wallet' }, { expectAmount: 50, expectType: 'expense', expectAccount: 'acc_wallet' } ],
+    customAccounts: [ { _id: 'acc_bank', name: 'Bank' }, { _id: 'acc_wallet', name: 'Wallet' } ] }
 ];
 
 let failed = 0;
@@ -151,6 +161,12 @@ for (const t of tests) {
   if (t.expectAccount !== undefined && r.accountId !== t.expectAccount) {
      console.error(`❌ [FAIL ACCOUNT] ${t.input} -> Expected ${t.expectAccount}, got ${r.accountId}`); pass = false;
   }
+  if (t.expectSourceAccount !== undefined && r.sourceAccountId !== t.expectSourceAccount) {
+     console.error(`❌ [FAIL SOURCE ACCOUNT] ${t.input} -> Expected ${t.expectSourceAccount}, got ${r.sourceAccountId}`); pass = false;
+  }
+  if (t.expectDestAccount !== undefined && r.destinationAccountId !== t.expectDestAccount) {
+     console.error(`❌ [FAIL DEST ACCOUNT] ${t.input} -> Expected ${t.expectDestAccount}, got ${r.destinationAccountId}`); pass = false;
+  }
   
   if (pass) {
      console.log(`✅ [PASS] ${t.input}`);
@@ -162,7 +178,7 @@ for (const t of tests) {
 
 console.log("\n=== RUNNING MULTI TESTS ===");
 for (const t of multiTests) {
-   const result = parseText(t.input, mockAccounts);
+   const result = parseText(t.input, t.customAccounts || mockAccounts);
    if (result.length !== t.expectCount) {
       console.error(`❌ [FAIL MULTI COUNT] ${t.input} -> Expected count ${t.expectCount}, got ${result.length}`);
       failed++;
@@ -176,6 +192,8 @@ for (const t of multiTests) {
       if (exp.expectAmount !== undefined && r.amount !== exp.expectAmount) { console.error(`❌ [FAIL MULTI AMOUNT] i=${i} Exp ${exp.expectAmount}, got ${r.amount}`); pass = false; }
       if (exp.expectDesc !== undefined && r.description !== exp.expectDesc) { console.error(`❌ [FAIL MULTI DESC] i=${i} Exp '${exp.expectDesc}', got '${r.description}'`); pass = false; }
       if (exp.expectAccount !== undefined && r.accountId !== exp.expectAccount) { console.error(`❌ [FAIL MULTI ACCOUNT] i=${i} Exp ${exp.expectAccount}, got ${r.accountId}`); pass = false; }
+      if (exp.expectSourceAccount !== undefined && r.sourceAccountId !== exp.expectSourceAccount) { console.error(`❌ [FAIL MULTI SOURCE ACC] i=${i} Exp ${exp.expectSourceAccount}, got ${r.sourceAccountId}`); pass = false; }
+      if (exp.expectDestAccount !== undefined && r.destinationAccountId !== exp.expectDestAccount) { console.error(`❌ [FAIL MULTI DEST ACC] i=${i} Exp ${exp.expectDestAccount}, got ${r.destinationAccountId}`); pass = false; }
    }
    
    if (pass) {

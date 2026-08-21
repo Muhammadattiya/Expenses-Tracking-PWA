@@ -11,6 +11,7 @@ const EGYPTIAN_NUMBERS = {
 
 const EXPENSE_VERBS = ['اشتريت', 'دفعت', 'جبت', 'حاسبت', 'صرفت', 'ركبت', 'bought', 'paid', 'spent', 'took'];
 const INCOME_VERBS = ['قبضت', 'استلمت', 'جالي', 'اخدت', 'وصلني', 'received', 'earned'];
+const TRANSFER_VERBS = ['حولت', 'حول', 'تحويل', 'نقلت', 'نقل', 'حطيت', 'transferred', 'transfer', 'moved', 'sent', '7awalt', '7awelt', 'na2alt'];
 
 const ACCOUNT_SYNONYMS = {
    'cash': ['كاش', 'نقدي', 'نقدا', 'cash'],
@@ -69,9 +70,15 @@ function convertArabicIndic(text) {
 }
 
 function extractType(text) {
+   const francoText = transliterateFranco(text);
    const normText = normalizeArabic(text);
+
    const isIncome = INCOME_VERBS.some(v => normText.includes(normalizeArabic(v)));
    if (isIncome) return 'income';
+
+   const isTransfer = TRANSFER_VERBS.some(v => normText.includes(normalizeArabic(v)) || francoText.includes(v));
+   if (isTransfer) return 'transfer';
+
    return 'expense';
 }
 
@@ -133,11 +140,11 @@ function extractAccountTokens(origWords, normWords, francoWords, userAccounts, k
       const isBank = Array.from(exactAliases).some(a => a.includes('بنك') || a.includes('bank') || a.includes('فيزا') || a.includes('visa') || a.includes('card'));
       const isVodafone = Array.from(exactAliases).some(a => a.includes('vodafone') || a.includes('فودافون'));
       const isTelda = Array.from(exactAliases).some(a => a.includes('telda') || a.includes('tilda') || a.includes('تيلد') || a.includes('تلد'));
-      const isMeeza = Array.from(exactAliases).some(a => a.includes('meeza') || a.includes('miza') || a.includes('ميزه') || a.includes('ميزة'));
+      const isMeeza = Array.from(exactAliases).some(a => a.includes('meeza') || a.includes('miza') || a.includes('ميزه') || a.includes('ميزة') || a.includes('ميزا'));
       const isInstapay = Array.from(exactAliases).some(a => a.includes('instapay') || a.includes('insta') || a.includes('انستا'));
       const isFawry = Array.from(exactAliases).some(a => a.includes('fawry') || a.includes('فوري'));
-      const isEtisalat = Array.from(exactAliases).some(a => a.includes('etisalat') || a.includes('اتصالات'));
-      const isOrange = Array.from(exactAliases).some(a => a.includes('orange') || a.includes('اورانج') || a.includes('اورنج'));
+      const isEtisalat = Array.from(exactAliases).some(a => a.includes('etisalat') || a.includes('اتصالات') || a.includes('اتصالات كاش'));
+      const isOrange = Array.from(exactAliases).some(a => a.includes('orange') || a.includes('اورانج') || a.includes('اورنج') || a.includes('اورنج كاش'));
       const isWe = Array.from(exactAliases).some(a => a.includes('we cash') || a.includes('wepay') || a === 'we' || a === 'وي');
       const isQnb = Array.from(exactAliases).some(a => a.includes('qnb') || a.includes('كيو ان بي'));
       const isBebasata = Array.from(exactAliases).some(a => a.includes('bebasata') || a.includes('ببساط'));
@@ -167,6 +174,7 @@ function extractAccountTokens(origWords, normWords, francoWords, userAccounts, k
       let bestMatchIndices = null;
       let highestPriority = 999;
       let bestAlias = null;
+      let bestPrep = null;
 
       for (const alias of allAliases) {
          if (!alias) continue;
@@ -180,14 +188,17 @@ function extractAccountTokens(origWords, normWords, francoWords, userAccounts, k
             let match = true;
             let isFrancoOnly = false;
             for (let j = 0; j < aliasWords.length; j++) {
-               const nw = normWords[i + j];
+               const w = normWords[i + j];
                const fw = francoWords[i + j];
                const aw = aliasWords[j];
-               const nwMatch = nw === aw || nw === `ال${aw}` || nw === `بال${aw}` || nw === `ب${aw}` || nw === `من${aw}`;
-               const fwMatch = fw === aw || fw === `ال${aw}` || fw === `بال${aw}` || fw === `ب${aw}` || fw === `من${aw}`;
 
-               if (!nwMatch && !fwMatch) { match = false; break; }
-               if (!nwMatch && fwMatch) { isFrancoOnly = true; }
+               let localMatch = (w === aw) || (fw === aw);
+               if (!localMatch && j === 0) {
+                  localMatch = (w === `ال${aw}`) || (w === `بال${aw}`) || (w === `ب${aw}`) || (w === `من${aw}`) || (w === `لل${aw}`) || (w === `ل${aw}`) || (fw === `el${aw}`) || (fw === `b${aw}`) || (fw === `bel${aw}`) || (fw === `le${aw}`);
+               }
+
+               if (!localMatch) { match = false; break; }
+               if (w !== aw && fw === aw) { isFrancoOnly = true; }
             }
 
             if (match) {
@@ -200,11 +211,16 @@ function extractAccountTokens(origWords, normWords, francoWords, userAccounts, k
                   indicesToRemove.push(checkIdx);
                   checkIdx--;
                }
+               
+               if (checkIdx >= 0 && (normWords[checkIdx] === 'حساب' || normWords[checkIdx] === 'فيزا' || normWords[checkIdx] === 'كارت' || normWords[checkIdx] === 'بطاقه')) {
+                  indicesToRemove.push(checkIdx);
+                  checkIdx--;
+               }
 
                if (checkIdx >= 0) {
                   const prevW = normWords[checkIdx];
-                  const ind = ['من', 'بـ', 'ب', 'في', 'بواسطة', 'عن', 'طريق', 'استخدمت', 'استخدم', 'from', 'using', 'with', 'via', 'paid'];
-                  if (ind.includes(prevW) || ['من', 'بـ', 'ب', 'from', 'using', 'with'].includes(francoWords[checkIdx])) {
+                  const ind = ['من', 'بـ', 'ب', 'في', 'بواسطة', 'عن', 'طريق', 'استخدمت', 'استخدم', 'from', 'using', 'with', 'via', 'paid', 'ل', 'لـ', 'إلى', 'الي', 'to', 'le', 'into'];
+                  if (ind.includes(prevW) || ind.includes(francoWords[checkIdx])) {
                      priority = basePriority + (isFrancoOnly ? 0.5 : 0);
                      indicesToRemove.push(checkIdx);
                      if (checkIdx > 0 && ((normWords[checkIdx - 1] === 'عن' && prevW === 'طريق') || (normWords[checkIdx - 1] === 'paid' && prevW === 'with'))) {
@@ -221,6 +237,7 @@ function extractAccountTokens(origWords, normWords, francoWords, userAccounts, k
                if (priority < highestPriority) {
                   highestPriority = priority;
                   bestMatchIndices = indicesToRemove;
+                  bestPrep = (checkIdx >= 0) ? (normWords[checkIdx] || francoWords[checkIdx]) : null;
                   bestAlias = alias; // Needs let bestAlias = null; at top
                }
             }
@@ -228,11 +245,11 @@ function extractAccountTokens(origWords, normWords, francoWords, userAccounts, k
       }
 
       if (bestMatchIndices) {
-         matchedAccounts.push({ account: acc, indices: bestMatchIndices, priority: highestPriority, bestAlias });
+         matchedAccounts.push({ account: acc, indices: bestMatchIndices, priority: highestPriority, bestAlias, preposition: bestPrep });
       }
    }
 
-   if (matchedAccounts.length === 0) return { accountId: null };
+   if (matchedAccounts.length === 0) return { matches: [] };
 
    // Remove subsets (e.g. 'Cash' matching 'كاش' inside 'فودافون كاش')
    matchedAccounts = matchedAccounts.filter((m, i) => {
@@ -253,42 +270,52 @@ function extractAccountTokens(origWords, normWords, francoWords, userAccounts, k
    const bestPriority = matchedAccounts[0].priority;
    const topMatches = matchedAccounts.filter(m => m.priority === bestPriority);
 
-   if (topMatches.length === 1) {
-      topMatches[0].indices.forEach(idx => keepFlags[idx] = false);
-      return { accountId: topMatches[0].account._id };
-   }
-   return { accountId: null };
+   // Instead of returning just one, we return all top matches if they don't overlap, 
+   // but matchedAccounts already filtered subsets.
+   // Let's just return ALL remaining matchedAccounts that have valid priorities (e.g. they actually matched).
+   matchedAccounts.forEach(m => {
+      m.indices.forEach(idx => keepFlags[idx] = false);
+   });
+   return { matches: matchedAccounts };
 }
 
 function parseText(text, userAccounts = []) {
    const textIndic = convertArabicIndic(text);
-   const rawParts = textIndic.split(/\s(?:و|and)\s?/i);
+   // Normalize "وبعدين" variations into a strict token
+   let processedText = textIndic
+      .replace(/(?:^|\s)(?:و\s*بعدين|وبعدين|بعدين|و\s*بعد\s*كده|وبعد\s*كده|بعد\s*كده|وبعدين\s*كده)(?=\s|$)/gi, ' __THEN__ ')
+      .replace(/\b(?:then|and then)\b/gi, ' __THEN__ ');
+
+
+   const strictSegments = processedText.split(/\s__THEN__\s/i).filter(s => s.trim());
 
    const transactions = [];
-   let buffer = [];
 
-   // Rough fallback extractAmount to safely split multi-transactions
-   const roughExtractAmount = (txt) => {
-      const norm = convertArabicIndic(txt);
-      const m = norm.match(/(?:^|\s)(?:بـ|ب|for )?(\d+(?:\.\d+)?)(?:\s|$)/i);
-      if (m) return parseFloat(m[1]);
-      for (const [word, val] of Object.entries(EGYPTIAN_NUMBERS)) {
-         if (new RegExp(`(?:^|\\s)(?:بـ|ب)?${word}(?:\\s|$)`, 'i').test(norm)) return val;
-      }
-      return null;
-   };
+   for (const segment of strictSegments) {
+      const rawParts = segment.split(/\s(?:و|and)\s?/i);
+      let buffer = [];
+      const roughExtractAmount = (txt) => {
+         const norm = convertArabicIndic(txt);
+         const m = norm.match(/(?:^|\s)(?:بـ|ب|for )?(\d+(?:\.\d+)?)(?:\s|$)/i);
+         if (m) return parseFloat(m[1]);
+         for (const [word, val] of Object.entries(EGYPTIAN_NUMBERS)) {
+            if (new RegExp(`(?:^|\\s)(?:بـ|ب)?${word}(?:\\s|$)`, 'i').test(norm)) return val;
+         }
+         return null;
+      };
 
-   for (let i = 0; i < rawParts.length; i++) {
-      buffer.push(rawParts[i]);
-      const combined = buffer.join(' و ');
-      const combinedAmount = roughExtractAmount(combined);
-      const hasRemainingAmount = rawParts.slice(i + 1).some(part => roughExtractAmount(part) !== null);
+      for (let i = 0; i < rawParts.length; i++) {
+         buffer.push(rawParts[i]);
+         const combined = buffer.join(' و ');
+         const combinedAmount = roughExtractAmount(combined);
+         const hasRemainingAmount = rawParts.slice(i + 1).some(part => roughExtractAmount(part) !== null);
 
-      if (combinedAmount !== null && hasRemainingAmount) {
-         transactions.push(combined);
-         buffer = [];
-      } else if (i === rawParts.length - 1) {
-         if (combined.trim()) transactions.push(combined);
+         if (combinedAmount !== null && hasRemainingAmount) {
+            transactions.push(combined);
+            buffer = [];
+         } else if (i === rawParts.length - 1) {
+            if (combined.trim()) transactions.push(combined);
+         }
       }
    }
 
@@ -333,11 +360,59 @@ function parseText(text, userAccounts = []) {
 
       if (amount === null && results.length > 0) continue;
 
+      // 4. Extract Intent & Type BEFORE Account, so we know if it's a transfer
+      const intent = extractIntent(t);
+      const type = extractType(t);
+
       // 2. Extract Account Structurally
       const accResult = extractAccountTokens(origWords, normWords, francoWords, userAccounts, keepFlags);
-      let accountId = accResult.accountId;
-      if (accountId) inheritedAccountId = accountId;
-      else if (inheritedAccountId) accountId = inheritedAccountId;
+
+      let accountId = null;
+      let sourceAccountId = null;
+      let destinationAccountId = null;
+
+      if (type === 'transfer') {
+         // Process multiple matches for transfer
+         for (const match of accResult.matches) {
+            const prep = match.preposition;
+            const destPreps = ['ل', 'لـ', 'إلى', 'الي', 'في', 'to', 'le', 'into'];
+            const srcPreps = ['من', 'from', 'mn'];
+
+            // Look at words directly before the match if prep is null
+            let isDest = false;
+            let isSrc = false;
+            if (prep) {
+               if (destPreps.includes(prep)) isDest = true;
+               else if (srcPreps.includes(prep)) isSrc = true;
+            } else if (match.indices && match.indices.length > 0) {
+               const firstIdx = match.indices[0];
+               if (firstIdx > 0) {
+                  const w = normWords[firstIdx - 1];
+                  const fw = francoWords[firstIdx - 1];
+                  if (destPreps.includes(w) || destPreps.includes(fw)) isDest = true;
+                  else if (srcPreps.includes(w) || srcPreps.includes(fw)) isSrc = true;
+               }
+               // Also check prefix of the first matched word
+               const fwWord = normWords[firstIdx];
+               if (fwWord.startsWith('ل') || fwWord.startsWith('الي')) isDest = true;
+            }
+
+            if (isDest && !destinationAccountId) destinationAccountId = match.account._id;
+            else if (isSrc && !sourceAccountId) sourceAccountId = match.account._id;
+            else if (!destinationAccountId) destinationAccountId = match.account._id; // Fallback
+         }
+      } else {
+         if (accResult.matches && accResult.matches.length > 0) {
+            // Only assign if there is exactly ONE top priority match (to handle ambiguity properly)
+            const bestPriority = accResult.matches[0].priority;
+            const topMatches = accResult.matches.filter(m => m.priority === bestPriority);
+            if (topMatches.length === 1) {
+               accountId = topMatches[0].account._id;
+            }
+         }
+         if (accountId) inheritedAccountId = accountId;
+         else if (inheritedAccountId) accountId = inheritedAccountId;
+      }
 
       // 3. Extract Date Structurally
       const date = extractDate(t);
@@ -352,9 +427,7 @@ function parseText(text, userAccounts = []) {
          }
       }
 
-      // 4. Extract Intent & Type
-      const intent = extractIntent(t);
-      const type = extractType(t);
+      // (Intent & Type extracted earlier)
 
       // 5. Extract Description Structurally
       const verbsAndPronouns = [...EXPENSE_VERBS, ...INCOME_VERBS, 'انا', 'انهارده', 'i'];
@@ -387,6 +460,10 @@ function parseText(text, userAccounts = []) {
          else description = type === 'income' ? 'دخل' : 'معاملة';
       }
 
+      if (type === 'transfer' && (!description || description === 'معاملة')) {
+         description = 'تحويل';
+      }
+
       results.push({
          rawText: t,
          amount,
@@ -394,14 +471,19 @@ function parseText(text, userAccounts = []) {
          intent,
          date: date.toISOString(),
          accountId,
+         sourceAccountId,
+         destinationAccountId,
          description
       });
    }
 
    // Backfill accountId for multi-transactions (e.g. "I bought X and Y with Cash")
-   const foundAccount = results.find(r => r.accountId)?.accountId;
+   // But skip transfers!
+   const foundAccount = results.find(r => r.accountId && r.type !== 'transfer')?.accountId;
    if (foundAccount) {
-      results.forEach(r => { if (!r.accountId) r.accountId = foundAccount; });
+      results.forEach(r => {
+         if (!r.accountId && r.type !== 'transfer') r.accountId = foundAccount;
+      });
    }
 
    return results;
