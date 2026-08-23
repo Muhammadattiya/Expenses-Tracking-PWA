@@ -195,6 +195,7 @@ export default {
     saveDebt: 'حفظ الدين',
     settle: 'سداد',
     loan: 'إضافة دفعة',
+    totalAmount: 'الإجمالي',
     remaining: 'المتبقي',
     settled: 'مسدد',
     active: 'نشط',

@@ -19,7 +19,7 @@ const getGoldPrice = async () => {
 const list = (userId) => Investment.find({ user: userId }).sort({ purchasedAt: -1 }).lean();
 const create = (userId, input) => {
   const safeData = {};
-  const ALLOWED_KEYS = ['type', 'name', 'weight', 'karat', 'purchasePrice', 'purchasedAt', 'notes'];
+  const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'purchasedAt', 'notes'];
   for (const key of ALLOWED_KEYS) {
     if (input[key] !== undefined) safeData[key] = input[key];
   }
@@ -29,4 +29,15 @@ const remove = async (userId, id) => {
   const investment = await Investment.findOneAndDelete({ _id: id, user: userId });
   if (!investment) throw new AppError('Investment not found.', 404);
 };
-module.exports = { getGoldPrice, list, create, remove };
+const update = async (userId, id, input) => {
+  const safeData = {};
+  const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'purchasedAt', 'notes'];
+  for (const key of ALLOWED_KEYS) {
+    if (input[key] !== undefined) safeData[key] = input[key];
+  }
+  const investment = await Investment.findOneAndUpdate({ _id: id, user: userId }, safeData, { new: true });
+  if (!investment) throw new AppError('Investment not found.', 404);
+  return investment;
+};
+
+module.exports = { getGoldPrice, list, create, update, remove };

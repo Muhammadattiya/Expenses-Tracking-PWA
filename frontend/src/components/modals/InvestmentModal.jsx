@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, Sparkles } from 'lucide-react';
+import { X, Plus, Sparkles, Pencil } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
 
-export default function InvestmentModal({ isOpen, onClose, onSave }) {
+export default function InvestmentModal({ isOpen, onClose, onSave, initialData = null }) {
   const { t } = useLanguage();
   
   const [form, setForm] = useState({ 
@@ -19,6 +19,25 @@ export default function InvestmentModal({ isOpen, onClose, onSave }) {
   
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setForm(initialData);
+      } else {
+        setForm({ 
+          type: 'gold', 
+          karat: 21, 
+          name: t('investments.gold21Name', 'ذهب عيار 21'), 
+          symbol: '', 
+          quantity: '', 
+          purchasePrice: '', 
+          currency: 'EGP' 
+        });
+      }
+      setError('');
+    }
+  }, [isOpen, initialData, t]);
 
   if (!isOpen) return null;
 
@@ -66,10 +85,10 @@ export default function InvestmentModal({ isOpen, onClose, onSave }) {
         <div className="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#111]/80 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-brand-blue/20 rounded-xl text-brand-blue">
-              <Sparkles className="w-5 h-5" />
+              {initialData ? <Pencil className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
             </div>
             <h2 className="text-xl font-bold text-white tracking-wide">
-              {t('investments.addInvestment', 'إضافة استثمار')}
+              {initialData ? t('investments.editInvestment', 'تعديل استثمار') : t('investments.addInvestment', 'إضافة استثمار')}
             </h2>
           </div>
           <button 
@@ -202,9 +221,9 @@ export default function InvestmentModal({ isOpen, onClose, onSave }) {
             {isSubmitting ? (
               <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             ) : (
-              <Plus className="w-5 h-5" />
+              initialData ? <Pencil className="w-5 h-5" /> : <Plus className="w-5 h-5" />
             )}
-            {t('investments.saveInvestment', 'حفظ الاستثمار')}
+            {initialData ? t('investments.saveChanges', 'حفظ التعديلات') : t('investments.saveInvestment', 'حفظ الاستثمار')}
           </button>
         </div>
 

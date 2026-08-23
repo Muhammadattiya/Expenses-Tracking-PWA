@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus, TrendingDown, TrendingUp, Trash2, Coins, LineChart, Activity } from 'lucide-react';
-import { createInvestment, deleteInvestment, getGoldPrice, getInvestments } from '../api/investments';
+import { Loader2, Plus, TrendingDown, TrendingUp, Trash2, Coins, LineChart, Activity, Pencil } from 'lucide-react';
+import { createInvestment, deleteInvestment, getGoldPrice, getInvestments, updateInvestment } from '../api/investments';
 import { useLanguage } from '../contexts/LanguageContext';
 import InvestmentModal from '../components/modals/InvestmentModal';
 import { InvestmentsSkeleton } from '../components/ui/Skeletons';
@@ -20,6 +20,7 @@ export default function Investments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingInvestment, setEditingInvestment] = useState(null);
 
   const load = async () => {
     setLoading(true); 
@@ -63,7 +64,11 @@ export default function Investments() {
   const isProfit = profit >= 0;
 
   const handleSaveInvestment = async (formData) => {
-    await createInvestment(formData);
+    if (editingInvestment) {
+      await updateInvestment(editingInvestment._id, formData);
+    } else {
+      await createInvestment(formData);
+    }
     await load();
   };
 
@@ -99,7 +104,7 @@ export default function Investments() {
         </div>
         
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => { setEditingInvestment(null); setIsModalOpen(true); }}
           className="bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand-blue/20"
         >
           <Plus className="w-5 h-5" />
@@ -186,13 +191,22 @@ export default function Investments() {
                     )}
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleDelete(item._id)} 
-                  className="text-[var(--color-text-muted)] hover:text-brand-red hover:bg-brand-red/10 p-2 rounded-xl transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label="Delete investment"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => { setEditingInvestment(item); setIsModalOpen(true); }} 
+                    className="text-[var(--color-text-muted)] hover:text-brand-blue hover:bg-brand-blue/10 p-2 rounded-xl transition-all focus:opacity-100"
+                    aria-label="Edit investment"
+                  >
+                    <Pencil className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(item._id)} 
+                    className="text-[var(--color-text-muted)] hover:text-brand-red hover:bg-brand-red/10 p-2 rounded-xl transition-all focus:opacity-100"
+                    aria-label="Delete investment"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -239,7 +253,8 @@ export default function Investments() {
 
       <InvestmentModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        initialData={editingInvestment}
+        onClose={() => { setIsModalOpen(false); setEditingInvestment(null); }}
         onSave={handleSaveInvestment}
       />
     </div>
