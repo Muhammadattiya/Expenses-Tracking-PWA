@@ -1028,29 +1028,29 @@ const Settings = () => {
                   </h4>
                   {lang === 'ar' ? (
                     <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/60 marker:text-emerald-500 marker:font-bold">
-                      <li>افتح تطبيق <strong>Shortcuts</strong> في جهاز الآيفون الخاص بك.</li>
-                      <li>انتقل إلى قسم <strong>Automation</strong> واضغط على <strong>+</strong> لإضافة أتمتة جديدة.</li>
-                      <li>اختر <strong>Message</strong> وابحث عن اسم البنك (مثال: <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Banque Misr</span>). واختر <strong>Run Immediately</strong>.</li>
-                      <li>اختر <strong>New Blank Automation</strong> ثم <strong>Add Action</strong>.</li>
-                      <li>ابحث عن <strong>Get Contents of URL</strong> واخترها.</li>
-                      <li>في حقل URL، الصق الرابط (Webhook URL) الخاص بك كاملاً.</li>
-                      <li>اضغط على السهم بجانب الرابط (Show More) وغير <strong>Method</strong> إلى <strong>POST</strong>.</li>
-                      <li>في قسم <strong>Headers</strong>، أضف Header جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Content-Type</span> والـ Text هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">application/json</span>.</li>
-                      <li>في قسم <strong>Request Body</strong>، اختر <strong>JSON</strong>، وأضف حقل <strong>Text</strong> جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">text</span> وفي الـ Text اضغط واختر متغير <strong>Shortcut Input</strong>.</li>
-                      <li>اضغط <strong>Done</strong>. الآن أي رسالة بنكية سيتم تسجيلها كمعاملة تلقائياً!</li>
+                      <li>افتح تطبيق <strong>Shortcuts (الاختصارات)</strong> في جهاز الآيفون الخاص بك.</li>
+                      <li>انتقل إلى قسم <strong>Automation (التحكم التلقائي)</strong> من الأسفل واضغط على <strong>+</strong> لإضافة تحكم تلقائي شخصي.</li>
+                      <li>اختر <strong>Message (رسالة)</strong>. في خانة المرسل (Sender) اكتب اسم البنك كما يظهر في رسائلك (مثال: <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">NBE</span> أو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">CIB</span>).</li>
+                      <li><strong>مهم جداً:</strong> بالأسفل اختر <strong>Run Immediately (تشغيل فوراً)</strong>، والغي تفعيل خيار <strong>Notify When Run (الإعلام عند التشغيل)</strong> لتعمل في الخلفية بصمت. ثم اضغط التالي (Next).</li>
+                      <li>اختر <strong>New Blank Automation (تحكم تلقائي فارغ جديد)</strong> ثم <strong>Add Action (إضافة إجراء)</strong>.</li>
+                      <li>ابحث عن <strong>Get Contents of URL (الحصول على محتويات عنوان URL)</strong> واخترها.</li>
+                      <li>في حقل URL، الصق الرابط (Webhook URL) الخاص بك كاملاً من الأعلى.</li>
+                      <li>اضغط على السهم الصغير بجانب الرابط للخيارات المتقدمة، وغير <strong>Method (الطريقة)</strong> إلى <strong>POST</strong>.</li>
+                      <li>في قسم <strong>Request Body (جسم الطلب)</strong>، اختر <strong>JSON</strong>، وأضف حقل <strong>Text (نص)</strong> جديد: الـ Key هو <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">text</span> وفي الـ Text اضغط واختر متغير <strong>Shortcut Input (إدخال الاختصار)</strong>.</li>
+                      <li>اضغط <strong>Done (تم)</strong>. الآن أي رسالة بنكية سيتم تسجيلها كمعاملة في Finova تلقائياً!</li>
                     </ol>
                   ) : (
                     <ol className="list-decimal list-inside space-y-3 text-xs sm:text-sm text-white/60 marker:text-emerald-500 marker:font-bold">
                       <li>Open the <strong>Shortcuts</strong> app on your iPhone.</li>
-                      <li>Go to the <strong>Automation</strong> tab and tap <strong>+</strong> to add a new automation.</li>
-                      <li>Select <strong>Message</strong> and search for your bank's sender name (e.g., <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Banque Misr</span>). Select <strong>Run Immediately</strong>.</li>
+                      <li>Go to the <strong>Automation</strong> tab at the bottom and tap <strong>+</strong> to add a new Personal Automation.</li>
+                      <li>Select <strong>Message</strong>. In the Sender field, type your bank's exact name as it appears in SMS (e.g., <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">NBE</span> or <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">CIB</span>).</li>
+                      <li><strong>CRITICAL:</strong> At the bottom, select <strong>Run Immediately</strong>, and turn OFF <strong>Notify When Run</strong> so it works silently in the background. Tap Next.</li>
                       <li>Select <strong>New Blank Automation</strong> then <strong>Add Action</strong>.</li>
                       <li>Search for <strong>Get Contents of URL</strong> and select it.</li>
                       <li>In the URL field, paste your copied Webhook URL completely.</li>
-                      <li>Tap the arrow next to the URL (Show More) and change the <strong>Method</strong> to <strong>POST</strong>.</li>
-                      <li>In the <strong>Headers</strong> section, add a new Header: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">Content-Type</span> and Text is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">application/json</span>.</li>
+                      <li>Tap the small arrow next to the URL (Show More) and change the <strong>Method</strong> to <strong>POST</strong>.</li>
                       <li>In the <strong>Request Body</strong> section, choose <strong>JSON</strong>, and add a new <strong>Text</strong> field: Key is <span className="font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20 mx-1">text</span> and for Text tap it and select the <strong>Shortcut Input</strong> variable.</li>
-                      <li>Tap <strong>Done</strong>. Now any bank SMS will be logged automatically to your account!</li>
+                      <li>Tap <strong>Done</strong>. Now any bank SMS will be logged automatically as a Finova transaction!</li>
                     </ol>
                   )}
                 </div>
