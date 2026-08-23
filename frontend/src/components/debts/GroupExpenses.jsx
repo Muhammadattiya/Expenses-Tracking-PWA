@@ -183,7 +183,7 @@ export default function GroupExpenses() {
                     </div>
                     {item.title}
                   </h2>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 transition-opacity">
                     <button onClick={() => editItem(item)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-blue transition bg-white/5 rounded-lg"><Pencil size={16}/></button>
                     <button onClick={() => deleteItem(item)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-red transition bg-white/5 rounded-lg"><Trash2 size={16}/></button>
                   </div>

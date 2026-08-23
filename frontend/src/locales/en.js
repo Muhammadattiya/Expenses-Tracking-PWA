@@ -181,6 +181,7 @@ export default {
     saveDebt: 'Save Debt',
     settle: 'Settle',
     loan: 'Add Loan',
+    totalAmount: 'Total Amount',
     remaining: 'Remaining',
     settled: 'Settled',
     active: 'Active',

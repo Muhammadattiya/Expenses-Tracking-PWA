@@ -173,15 +173,20 @@ export default function PersonalDebts() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setItemToEdit(item); setModalOpen(true); }} className="p-2 opacity-50 hover:opacity-100 transition-opacity text-[var(--color-text-muted)] hover:text-brand-blue bg-white/5 rounded-lg">
+                    <button onClick={() => { setItemToEdit(item); setModalOpen(true); }} className="p-2 transition-opacity text-[var(--color-text-muted)] hover:text-brand-blue bg-white/5 rounded-lg">
                       <Edit2 size={16}/>
                     </button>
-                    <button onClick={() => { setItemToDelete(item); setDeleteModalOpen(true); }} className="p-2 opacity-50 hover:opacity-100 transition-opacity text-[var(--color-text-muted)] hover:text-brand-red bg-white/5 rounded-lg">
+                    <button onClick={() => { setItemToDelete(item); setDeleteModalOpen(true); }} className="p-2 transition-opacity text-[var(--color-text-muted)] hover:text-brand-red bg-white/5 rounded-lg">
                       <Trash2 size={16}/>
                     </button>
                   </div>
                 </div>
                 
+                <div className="flex justify-between items-center bg-black/10 border border-white/5 rounded-xl px-4 py-2.5 mb-4 shadow-inner">
+                  <span className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold">{t('debts.totalAmount', 'الإجمالي')}</span>
+                  <span className="font-bold text-sm text-white/90">{money(item.initialAmount)}</span>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-black/10 shadow-inner border border-white/5 rounded-xl p-4 flex flex-col justify-center">
                     <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mb-1">{t('debts.remaining', 'Remaining')}</p>
