@@ -13,6 +13,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
   const { t } = useLanguage();
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
+  const [type, setType] = useState("");
   const [account, setAccount] = useState("");
   const [category, setCategory] = useState("");
   const [fromAccount, setFromAccount] = useState("");
@@ -33,6 +34,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
         // Format to YYYY-MM-DD for input[type="date"]
         setDate(new Date(transaction.date).toISOString().split('T')[0]);
       }
+      setType(transaction.type || "");
       setAccount(transaction.account?._id || "");
       setCategory(transaction.category?._id || "");
       setFromAccount(transaction.from_account?._id || "");
@@ -59,11 +61,11 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
         amount: Number(amount),
         title,
         date: new Date(date).toISOString(),
-        type: transaction.type,
+        type: type,
         status: 'completed'
       };
 
-      if (transaction.type === "transfer") {
+      if (type === "transfer") {
         payload.from_account = fromAccount;
         payload.to_account = toAccount;
       } else {
@@ -80,7 +82,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
     }
   };
 
-  const filteredCategories = categories.filter(c => c.type === transaction.type);
+  const filteredCategories = categories.filter(c => c.type === type);
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -95,6 +97,30 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex bg-black/20 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setType('expense')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${type === 'expense' ? 'bg-red-500/20 text-red-400' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+            >
+              {t('nav.expense', 'المصروفات')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('income')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${type === 'income' ? 'bg-green-500/20 text-green-400' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+            >
+              {t('nav.income', 'الدخل')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('transfer')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${type === 'transfer' ? 'bg-blue-500/20 text-blue-400' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+            >
+              {t('addTransaction.transfer', 'تحويل')}
+            </button>
+          </div>
+
           <div>
             <label className="block text-sm text-[var(--color-text-muted)] mb-1 ml-1">{t('modals.amountLabel', 'المبلغ')}</label>
             <div className="relative">
@@ -130,7 +156,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onDelete, onSuccess 
             />
           </div>
 
-          {transaction.type === 'transfer' ? (
+          {type === 'transfer' ? (
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-sm text-blue-400/80 mb-1 ml-1">{t('modals.fromAccount', 'من حساب')}</label>
