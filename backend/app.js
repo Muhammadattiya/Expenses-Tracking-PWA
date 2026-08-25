@@ -100,5 +100,8 @@ app.use('/api/forecast', forecastRoutes);
 app.use('/api/income-profiles', incomeProfileRoutes);
 app.use('/api/quick-add', require('./routes/quickAddRoutes'));
 
+const integrationsRoutes = require('./routes/integrations');
+app.use('/api/integrations', integrationsRoutes);
+
 app.use(errorHandler);
 module.exports = app;

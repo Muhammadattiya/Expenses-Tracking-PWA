@@ -22,7 +22,8 @@ import {
   TrendingUp,
   TrendingDown,
   Smartphone,
-  Repeat
+  Repeat,
+  Command
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -62,6 +63,7 @@ import { getCurrentUser, deleteAllUserData, updatePreferences } from "../api/aut
 import { getDebts } from "../api/debts";
 import { getReceivables } from "../api/receivables";
 import { getIncomeProfiles, createIncomeProfile, updateIncomeProfile, deleteIncomeProfile } from "../api/incomeProfiles";
+import { getShortcutTokenStatus, generateShortcutToken, revokeShortcutToken } from "../api/integrations";
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
@@ -159,6 +161,10 @@ const Settings = () => {
   const [budgetStartDayMonthly, setBudgetStartDayMonthly] = useState(1);
   const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
 
+  // Apple Shortcuts State
+  const [shortcutConnected, setShortcutConnected] = useState(false);
+  const [shortcutToken, setShortcutToken] = useState(null);
+
   const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
@@ -220,6 +226,14 @@ const Settings = () => {
       // Fetch user data
       const user = await getCurrentUser();
       setSmsToken(user.smsWebhookToken || null);
+      
+      try {
+        const tokenStatus = await getShortcutTokenStatus();
+        setShortcutConnected(tokenStatus.isConnected);
+      } catch (e) {
+        console.error('Failed to get shortcut token status', e);
+      }
+
       if (user.preferences) {
         setBudgetPeriod(user.preferences.budgetPeriod || 'monthly');
         setBudgetStartDayWeekly(user.preferences.budgetStartDayWeekly ?? 6);
@@ -645,6 +659,7 @@ const Settings = () => {
           {activeView === 'recurring' && t('settings.recurringTransactions')}
           {activeView === 'incomeProfiles' && t('incomeProfiles.title', 'Income Profiles')}
           {activeView === 'sms' && t('settings.smsIntegration')}
+          {activeView === 'appleShortcuts' && t('appleShortcuts.title')}
         </span>
         {activeView !== 'main' && <div className="w-10"></div>}
       </h2>
@@ -665,6 +680,7 @@ const Settings = () => {
             { id: 'appSettings', icon: <SettingsIcon size={20} />, label: t('settings.appSettings'), color: 'text-orange-400', bg: 'bg-orange-500/20', borderColor: 'border-orange-500/30' },
             { id: 'notifications', icon: <Bell size={20} />, label: t('settings.pushNotifications'), color: 'text-brand-blue', bg: 'bg-brand-blue/20', borderColor: 'border-brand-blue/30' },
             { id: 'sms', icon: <MessageSquare size={20} />, label: t('settings.smsIntegration'), color: 'text-emerald-400', bg: 'bg-emerald-500/20', borderColor: 'border-emerald-500/30' },
+            { id: 'appleShortcuts', icon: <Command size={20} />, label: t('appleShortcuts.title'), color: 'text-purple-400', bg: 'bg-purple-500/20', borderColor: 'border-purple-500/30' },
             { id: 'accounts', icon: <Wallet size={20} />, label: t('settings.accountManagement'), color: 'text-brand-blue', bg: 'bg-brand-blue/20', borderColor: 'border-brand-blue/30' },
             { id: 'categories', icon: <Tag size={20} />, label: t('settings.categoryManagement'), color: 'text-brand-green', bg: 'bg-brand-green/20', borderColor: 'border-brand-green/30' },
             { id: 'recurring', icon: <Repeat size={20} />, label: t('settings.recurringTransactions', 'المعاملات المتكررة'), color: 'text-orange-400', bg: 'bg-orange-500/20', borderColor: 'border-orange-500/30' },
@@ -813,7 +829,7 @@ const Settings = () => {
               disabled={isUpdatingPreferences}
               className="w-full mt-6 bg-brand-blue/20 border border-brand-blue/30 text-brand-blue hover:bg-brand-blue hover:text-white rounded-2xl py-4 font-bold shadow-[0_4px_12px_rgba(59,130,246,0.2)] transition-colors disabled:opacity-50"
             >
-              {isUpdatingPreferences ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('settings.savePreferences', 'حفظ الإعدادات')}
+              {isUpdatingPreferences ? <Loader2 className="w-5 h-5 animate-spin" /> : t('settings.savePreferences', 'حفظ الإعدادات')}
             </motion.button>
           </div>
         </motion.section>
@@ -1370,6 +1386,148 @@ const Settings = () => {
               <Trash2 className="w-5 h-5" />
               {t('settings.wipeBtn', 'مسح جميع البيانات')}
             </motion.button>
+          </div>
+        </motion.section>
+      )}
+
+      {/* Apple Shortcuts Settings */}
+      {activeView === 'appleShortcuts' && (
+        <motion.section 
+          key="appleShortcuts"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 space-y-6"
+        >
+          {/* Header & Status */}
+          <div className="flex flex-col items-center justify-center space-y-3 mb-6">
+            <div className="w-16 h-16 bg-purple-500/20 border border-purple-500/30 rounded-2xl flex items-center justify-center text-purple-400 shadow-inner">
+              <Command size={32} />
+            </div>
+            <p className="text-white/70 text-center text-sm leading-relaxed px-4">
+              {t('appleShortcuts.description')}
+            </p>
+            <div className={`mt-2 px-4 py-1.5 rounded-full text-xs font-semibold border ${shortcutConnected ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 border-white/20 text-white/50'}`}>
+              {shortcutConnected ? t('appleShortcuts.statusConnected') : t('appleShortcuts.statusDisconnected')}
+            </div>
+          </div>
+
+          {/* Token Generation / Revocation */}
+          <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-inner">
+            {shortcutToken ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-emerald-400 font-medium">
+                  <span className="flex items-center gap-2"><CheckCircle2 size={18} /> {t('appleShortcuts.tokenGenerated')}</span>
+                </div>
+                <div className="bg-[#12121a] border border-white/10 rounded-xl p-4 text-white/50 font-mono text-sm tracking-widest text-center select-none">
+                  ••••••••••••••••••••••••••••••••••••••••
+                </div>
+                <p className="text-orange-400/90 text-xs flex items-start gap-2">
+                  <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                  {t('appleShortcuts.tokenWarning')}
+                </p>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(shortcutToken);
+                    showToast(t('appleShortcuts.tokenCopied'), 'success');
+                  }}
+                  className="w-full py-3 bg-brand-blue text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
+                >
+                  <Copy size={18} />
+                  {t('appleShortcuts.copyToken')}
+                </motion.button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {shortcutConnected ? (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={async () => {
+                      if (window.confirm(t('appleShortcuts.revokeWarning'))) {
+                        try {
+                          await revokeShortcutToken();
+                          setShortcutConnected(false);
+                          setShortcutToken(null);
+                          showToast(t('settings.revokedSuccessfully'), 'success');
+                        } catch(e) {
+                          showToast(t('addTransaction.errorMsg'), 'error');
+                        }
+                      }
+                    }}
+                    className="w-full py-3 bg-red-500/10 text-red-500 border border-red-500/20 font-semibold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 size={18} />
+                    {t('appleShortcuts.revokeToken')}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={async () => {
+                      try {
+                        const res = await generateShortcutToken();
+                        setShortcutToken(res.token);
+                        setShortcutConnected(true);
+                      } catch (error) {
+                        showToast(t('common.error'), 'error');
+                      }
+                    }}
+                    className="w-full py-3 bg-purple-500 text-white font-semibold rounded-xl hover:bg-purple-600 transition-colors flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(168,85,247,0.3)]"
+                  >
+                    <Command size={18} />
+                    {t('appleShortcuts.generateToken')}
+                  </motion.button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Setup Guide */}
+          <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-inner space-y-4">
+            <h3 className="text-white/90 font-semibold flex items-center gap-2">
+              <Smartphone size={18} className="text-purple-400" />
+              {t('appleShortcuts.setupGuide')}
+            </h3>
+            <ol className="list-decimal list-inside space-y-3 text-sm text-white/70">
+              <li>{t('appleShortcuts.step1')}</li>
+              <li>{t('appleShortcuts.step2')}</li>
+              <li>{t('appleShortcuts.step3')}</li>
+              <li>{t('appleShortcuts.step4')}</li>
+              <li>{t('appleShortcuts.step5')}</li>
+              <li>{t('appleShortcuts.step6')}</li>
+              <li className="break-all">{t('appleShortcuts.step7').replace('[API_URL]', (() => {
+                const base = api.defaults.baseURL || '';
+                return base.startsWith('http') ? base : `${window.location.origin}${base}`;
+              })())}</li>
+              <li>{t('appleShortcuts.step8')}</li>
+              <li>{t('appleShortcuts.step9')}</li>
+              <li>{t('appleShortcuts.step10')}</li>
+              <li>{t('appleShortcuts.step11')}</li>
+              <li className="break-all">{t('appleShortcuts.step12').replace('[API_URL]', (() => {
+                const base = api.defaults.baseURL || '';
+                return base.startsWith('http') ? base : `${window.location.origin}${base}`;
+              })())}</li>
+              <li>{t('appleShortcuts.step13')}</li>
+              <li>{t('appleShortcuts.step14')}</li>
+              <li>{t('appleShortcuts.step15')}</li>
+              <li>{t('appleShortcuts.step16')}</li>
+              <li className="break-all">{t('appleShortcuts.step17').replace('[API_URL]', (() => {
+                const base = api.defaults.baseURL || '';
+                return base.startsWith('http') ? base : `${window.location.origin}${base}`;
+              })())}</li>
+              <li>{t('appleShortcuts.step18')}</li>
+              <li>{t('appleShortcuts.step19')}</li>
+              <li>{t('appleShortcuts.step20')}</li>
+              <li>{t('appleShortcuts.step21')}</li>
+              <li>{t('appleShortcuts.step22')}</li>
+              <li>{t('appleShortcuts.step23')}</li>
+              <li>{t('appleShortcuts.step24')}</li>
+              <li>{t('appleShortcuts.step25')}</li>
+              <li>{t('appleShortcuts.step26')}</li>
+              <li>{t('appleShortcuts.step27')}</li>
+              <li>{t('appleShortcuts.step28')}</li>
+            </ol>
           </div>
         </motion.section>
       )}
