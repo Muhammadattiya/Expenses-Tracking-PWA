@@ -5,6 +5,8 @@ const Category = require('../models/Category');
 const Transaction = require('../models/Transaction');
 const { parseSms } = require('../services/smsParser');
 const notificationService = require('../services/notificationService');
+const { extractIntent } = require('../services/quickAdd/nlpParser');
+const { resolveCategory } = require('../services/quickAdd/intentResolver');
 
 // Redact sensitive PII from raw SMS before storage
 const redactSensitiveInfo = (text) => {
@@ -58,8 +60,18 @@ exports.handleSmsWebhook = async (req, res) => {
       }
     }
     
-    // Category is always null, requiring manual review
-    const categoryId = null;
+    // Guess Intent and Category using NLP on the merchant text
+    let categoryId = null;
+    let inferredIntent = null;
+    if (parsedData.merchant && parsedData.merchant !== 'Unrecognized SMS') {
+      inferredIntent = extractIntent(parsedData.merchant);
+      if (inferredIntent) {
+        const resolvedCategory = await resolveCategory(user._id, inferredIntent, parsedData.type);
+        if (resolvedCategory) {
+          categoryId = resolvedCategory._id;
+        }
+      }
+    }
 
     const newTx = await Transaction.create({
       user: user._id,
