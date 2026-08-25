@@ -54,7 +54,11 @@ exports.getTokenStatus = async (req, res, next) => {
 exports.getAccounts = async (req, res, next) => {
   try {
     const accounts = await Account.find({ user: req.user._id }).select('name').lean();
-    res.json(accounts.map(a => ({ id: a._id.toString(), name: a.name })));
+    const accountsDict = {};
+    accounts.forEach(a => {
+      accountsDict[a.name] = a._id.toString();
+    });
+    res.json(accountsDict);
   } catch (error) {
     console.error('[ERROR] shortcut getAccounts:', error);
     res.status(500).json({ message: 'Server error' });
@@ -65,7 +69,11 @@ exports.getCategories = async (req, res, next) => {
   try {
     // Return only expense categories for now, as Shortcuts usually add expenses
     const categories = await Category.find({ user: req.user._id, type: 'expense' }).select('name').lean();
-    res.json(categories.map(c => ({ id: c._id.toString(), name: c.name })));
+    const categoriesDict = {};
+    categories.forEach(c => {
+      categoriesDict[c.name] = c._id.toString();
+    });
+    res.json(categoriesDict);
   } catch (error) {
     console.error('[ERROR] shortcut getCategories:', error);
     res.status(500).json({ message: 'Server error' });
