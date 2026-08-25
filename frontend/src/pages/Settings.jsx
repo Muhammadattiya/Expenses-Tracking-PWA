@@ -1489,45 +1489,94 @@ const Settings = () => {
               <Smartphone size={18} className="text-purple-400" />
               {t('appleShortcuts.setupGuide')}
             </h3>
-            <ol className="list-decimal list-inside space-y-3 text-sm text-white/70">
-              <li>{t('appleShortcuts.step1')}</li>
-              <li>{t('appleShortcuts.step2')}</li>
-              <li>{t('appleShortcuts.step3')}</li>
-              <li>{t('appleShortcuts.step4')}</li>
-              <li>{t('appleShortcuts.step5')}</li>
-              <li>{t('appleShortcuts.step6')}</li>
-              <li className="break-all">{t('appleShortcuts.step7').replace('[API_URL]', (() => {
-                const base = api.defaults.baseURL || '';
-                return base.startsWith('http') ? base : `${window.location.origin}${base}`;
-              })())}</li>
-              <li>{t('appleShortcuts.step8')}</li>
-              <li>{t('appleShortcuts.step9')}</li>
-              <li>{t('appleShortcuts.step10')}</li>
-              <li>{t('appleShortcuts.step11')}</li>
-              <li className="break-all">{t('appleShortcuts.step12').replace('[API_URL]', (() => {
-                const base = api.defaults.baseURL || '';
-                return base.startsWith('http') ? base : `${window.location.origin}${base}`;
-              })())}</li>
-              <li>{t('appleShortcuts.step13')}</li>
-              <li>{t('appleShortcuts.step14')}</li>
-              <li>{t('appleShortcuts.step15')}</li>
-              <li>{t('appleShortcuts.step16')}</li>
-              <li className="break-all">{t('appleShortcuts.step17').replace('[API_URL]', (() => {
-                const base = api.defaults.baseURL || '';
-                return base.startsWith('http') ? base : `${window.location.origin}${base}`;
-              })())}</li>
-              <li>{t('appleShortcuts.step18')}</li>
-              <li>{t('appleShortcuts.step19')}</li>
-              <li>{t('appleShortcuts.step20')}</li>
-              <li>{t('appleShortcuts.step21')}</li>
-              <li>{t('appleShortcuts.step22')}</li>
-              <li>{t('appleShortcuts.step23')}</li>
-              <li>{t('appleShortcuts.step24')}</li>
-              <li>{t('appleShortcuts.step25')}</li>
-              <li>{t('appleShortcuts.step26')}</li>
-              <li>{t('appleShortcuts.step27')}</li>
-              <li>{t('appleShortcuts.step28')}</li>
-            </ol>
+            <div className="space-y-6 mt-4">
+              {/* Group 1: Preparation */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                  Preparation
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2">
+                  <li>{t('appleShortcuts.step1')}</li>
+                  <li>{t('appleShortcuts.step2')}</li>
+                  <li>{t('appleShortcuts.step3')}</li>
+                  <li>{t('appleShortcuts.step4')}</li>
+                  <li>{t('appleShortcuts.step5')}</li>
+                  <li>{t('appleShortcuts.step6')}</li>
+                </ol>
+              </div>
+
+              {/* Group 2: Account Selection */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                  Account Selection
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="7">
+                  <li className="break-all">{t('appleShortcuts.step7').replace('[API_URL]', (() => {
+                    const base = api.defaults.baseURL || '';
+                    return base.startsWith('http') ? base : `${window.location.origin}${base}`;
+                  })())}</li>
+                  <li>{t('appleShortcuts.step8')}</li>
+                  <li>{t('appleShortcuts.step9')}</li>
+                  <li>{t('appleShortcuts.step10')}</li>
+                  <li>{t('appleShortcuts.step11')}</li>
+                </ol>
+              </div>
+
+              {/* Group 3: Category Selection */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+                  Category Selection
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="12">
+                  <li className="break-all">{t('appleShortcuts.step12').replace('[API_URL]', (() => {
+                    const base = api.defaults.baseURL || '';
+                    return base.startsWith('http') ? base : `${window.location.origin}${base}`;
+                  })())}</li>
+                  <li>{t('appleShortcuts.step13')}</li>
+                  <li>{t('appleShortcuts.step14')}</li>
+                  <li>{t('appleShortcuts.step15')}</li>
+                  <li>{t('appleShortcuts.step16')}</li>
+                </ol>
+              </div>
+
+              {/* Group 4: Sending Transaction */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
+                  Saving Transaction
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="17">
+                  <li className="break-all">{t('appleShortcuts.step17').replace('[API_URL]', (() => {
+                    const base = api.defaults.baseURL || '';
+                    return base.startsWith('http') ? base : `${window.location.origin}${base}`;
+                  })())}</li>
+                  <li>{t('appleShortcuts.step18')}</li>
+                  <li>{t('appleShortcuts.step19')}</li>
+                  <li>{t('appleShortcuts.step20')}</li>
+                  <li>{t('appleShortcuts.step21')}</li>
+                  <li>{t('appleShortcuts.step22')}</li>
+                  <li>{t('appleShortcuts.step23')}</li>
+                  <li>{t('appleShortcuts.step24')}</li>
+                  <li>{t('appleShortcuts.step25')}</li>
+                </ol>
+              </div>
+
+              {/* Group 5: Back Tap Config */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">5</span>
+                  Back Tap Setup
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="26">
+                  <li>{t('appleShortcuts.step26')}</li>
+                  <li>{t('appleShortcuts.step27')}</li>
+                  <li>{t('appleShortcuts.step28')}</li>
+                </ol>
+              </div>
+            </div>
           </div>
         </motion.section>
       )}

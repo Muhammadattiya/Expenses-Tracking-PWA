@@ -33,7 +33,7 @@ export default {
     step4: 'Open the Apple Shortcuts app on your iPhone.',
     step5: 'Tap + to create a new Finova Shortcut.',
     step6: 'Add action: "Ask for Input" (Type: Number, Prompt: "Amount").',
-    step7: 'Add action: "Get Contents of URL" and set the URL to:',
+    step7: 'Add action: "Get Contents of URL" and set the URL to: [API_URL]/accounts',
     step8: 'In the URL action, expand "Headers" and add a new header: Key = Authorization, Value = Bearer [Your_Copied_Token].',
     step9: 'The API returns a JSON list of objects. Add action: "Get Dictionary from Input" (pass the URL contents).',
     step10: 'Add action: "Choose from List". (This will show your account names).',
