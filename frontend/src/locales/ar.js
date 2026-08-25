@@ -33,7 +33,7 @@ export default {
     step4: 'افتح تطبيق الاختصارات (Shortcuts) على الآيفون.',
     step5: 'اضغط + لإنشاء اختصار جديد لـ Finova.',
     step6: 'أضف إجراء: "Ask for Input" (النوع: Number، الموجه: "المبلغ").',
-    step7: 'أضف إجراء: "Get Contents of URL" واضبط الرابط على:',
+    step7: 'أضف إجراء: "Get Contents of URL" واضبط الرابط على: [API_URL]/accounts',
     step8: 'في إجراء الرابط، قم بتوسيع "Headers" وأضف: Key = Authorization، Value = Bearer [الرمز_المنسوخ].',
     step9: 'الخادم يرجع قائمة JSON. أضف إجراء: "Get Dictionary from Input" ومَرِّر محتوى الرابط.',
     step10: 'أضف إجراء: "Choose from List". (سيقوم بعرض أسماء حساباتك لتختار منها).',
