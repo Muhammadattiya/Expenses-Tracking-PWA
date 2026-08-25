@@ -12,6 +12,10 @@ const userSchema = new mongoose.Schema({
     index: true,
     default: () => require('crypto').randomBytes(16).toString('hex')
   },
+  shortcutTokenHash: {
+    type: String,
+    select: false
+  },
   preferences: {
     budgetPeriod: { type: String, enum: ['weekly', 'monthly'], default: 'monthly' },
     budgetStartDayWeekly: { type: Number, min: 0, max: 6, default: 6 },

@@ -34,7 +34,7 @@ const transactionSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['manual', 'sms_shortcut', 'system'],
+    enum: ['manual', 'sms_shortcut', 'system', 'apple_shortcut'],
     default: 'manual'
   },
   referenceNumber: {
@@ -47,12 +47,17 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  idempotencyKey: {
+    type: String,
+    index: true,
+    sparse: true
+  },
   // --- حقول الدخل والمصروف ---
 account: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "Account",
   required: function () {
-    if (this.source === 'sms_shortcut') return false;
+    if (this.source === 'sms_shortcut' || this.source === 'apple_shortcut') return false;
     return this.type !== "transfer";
   },
 },
@@ -61,7 +66,7 @@ category: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "Category",
   required: function () {
-    if (this.source === 'sms_shortcut') return false;
+    if (this.source === 'sms_shortcut' || this.source === 'apple_shortcut') return false;
     return ['income', 'expense'].includes(this.type);
   },
 },
@@ -89,5 +94,6 @@ transactionSchema.index({ user: 1, type: 1, date: -1 });
 transactionSchema.index({ user: 1, account: 1, date: -1 });
 transactionSchema.index({ user: 1, category: 1, date: -1 });
 transactionSchema.index({ user: 1, smsHash: 1 }, { sparse: true });
+transactionSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Transaction', transactionSchema);
