@@ -17,6 +17,7 @@ import {
   Star,
   MessageSquare,
   Copy,
+  Check,
   CheckCircle2,
   Link2,
   TrendingUp,
@@ -77,22 +78,53 @@ import EditRecurringTransactionModal from "../components/modals/EditRecurringTra
 
 const CopyableURL = ({ url }) => {
   const { showToast } = useNotification();
+  const { t } = useLanguage();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    showToast(t('appleShortcuts.urlCopied', 'تم نسخ الرابط بنجاح!'), 'success');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="mt-2 flex items-center justify-between bg-black/40 border border-white/10 rounded-xl p-3 shadow-inner">
-      <code className="text-xs text-blue-400 break-all select-all font-mono">{url}</code>
+    <div 
+      dir="ltr"
+      className="mt-2 flex items-center justify-between gap-2.5 bg-black/50 backdrop-blur-md border border-white/10 rounded-xl p-2.5 shadow-inner hover:border-purple-500/30 transition-colors"
+    >
+      <div className="flex items-center gap-2 min-w-0 flex-1 overflow-x-auto scrollbar-hide py-0.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+        <code className="text-xs text-purple-300 font-mono whitespace-nowrap select-all tracking-tight">{url}</code>
+      </div>
       <motion.button 
-        whileTap={{ scale: 0.9 }}
-        onClick={() => {
-          navigator.clipboard.writeText(url);
-          showToast('URL Copied', 'success');
-        }}
-        className="shrink-0 p-2 ml-3 bg-white/5 hover:bg-white/10 text-white/70 rounded-md transition-colors"
+        type="button"
+        whileTap={{ scale: 0.92 }}
+        onClick={handleCopy}
+        className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+          copied 
+            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+            : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/80 hover:text-white'
+        }`}
       >
-        <Copy size={16} />
+        {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+        <span>{copied ? (t('common.copied', 'تم النسخ')) : (t('common.copy', 'نسخ'))}</span>
       </motion.button>
     </div>
   );
 };
+
+const ShortcutStep = ({ num, text, children }) => (
+  <div className="flex items-start gap-3 text-sm text-white/80 leading-relaxed">
+    <div className="shrink-0 w-6 h-6 rounded-lg bg-white/5 border border-white/10 text-purple-400 text-xs font-bold flex items-center justify-center tabular-nums shadow-sm mt-0.5">
+      {num}
+    </div>
+    <div className="flex-1 min-w-0 space-y-1.5">
+      <div className="text-white/85 text-sm leading-relaxed break-words">{text}</div>
+      {children}
+    </div>
+  </div>
+);
 
 const Settings = () => {
   const { showToast } = useNotification();
@@ -1424,14 +1456,20 @@ const Settings = () => {
           className="relative z-10 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 space-y-6"
         >
           {/* Header & Status */}
-          <div className="flex flex-col items-center justify-center space-y-3 mb-6">
-            <div className="w-16 h-16 bg-purple-500/20 border border-purple-500/30 rounded-2xl flex items-center justify-center text-purple-400 shadow-inner">
+          <div className="flex flex-col items-center justify-center text-center space-y-3 mb-2">
+            <div className="w-16 h-16 bg-purple-500/15 border border-purple-500/30 rounded-2xl flex items-center justify-center text-purple-400 shadow-inner">
               <Command size={32} />
             </div>
-            <p className="text-white/70 text-center text-sm leading-relaxed px-4">
-              {t('appleShortcuts.description')}
-            </p>
-            <div className={`mt-2 px-4 py-1.5 rounded-full text-xs font-semibold border ${shortcutConnected ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 border-white/20 text-white/50'}`}>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                {t('appleShortcuts.title', 'اختصارات آبل (النقر من الخلف)')}
+              </h2>
+              <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto mt-1">
+                {t('appleShortcuts.description')}
+              </p>
+            </div>
+            <div className={`px-4 py-1.5 rounded-full text-xs font-semibold border inline-flex items-center gap-2 ${shortcutConnected ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 border-white/20 text-white/50'}`}>
+              <span className={`w-2 h-2 rounded-full ${shortcutConnected ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`} />
               {shortcutConnected ? t('appleShortcuts.statusConnected') : t('appleShortcuts.statusDisconnected')}
             </div>
           </div>
@@ -1440,23 +1478,24 @@ const Settings = () => {
           <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-inner">
             {shortcutToken ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-emerald-400 font-medium">
+                <div className="flex items-center justify-between text-emerald-400 font-medium text-sm">
                   <span className="flex items-center gap-2"><CheckCircle2 size={18} /> {t('appleShortcuts.tokenGenerated')}</span>
                 </div>
-                <div className="bg-[#12121a] border border-white/10 rounded-xl p-4 text-white/50 font-mono text-sm tracking-widest text-center select-none">
+                <div dir="ltr" className="bg-[#12121a] border border-white/10 rounded-xl p-4 text-white/50 font-mono text-sm tracking-widest text-center select-none">
                   ••••••••••••••••••••••••••••••••••••••••
                 </div>
-                <p className="text-orange-400/90 text-xs flex items-start gap-2">
-                  <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                  {t('appleShortcuts.tokenWarning')}
+                <p className="text-amber-400/90 text-xs flex items-start gap-2 leading-relaxed">
+                  <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-400" />
+                  <span>{t('appleShortcuts.tokenWarning')}</span>
                 </p>
                 <motion.button
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => {
                     navigator.clipboard.writeText(shortcutToken);
                     showToast(t('appleShortcuts.tokenCopied'), 'success');
+                    setShortcutToken(null);
                   }}
-                  className="w-full py-3 bg-brand-blue text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(59,130,246,0.3)]"
                 >
                   <Copy size={18} />
                   {t('appleShortcuts.copyToken')}
@@ -1466,37 +1505,37 @@ const Settings = () => {
               <div className="flex flex-col gap-3">
                 {shortcutConnected ? (
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={async () => {
                       if (window.confirm(t('appleShortcuts.revokeWarning'))) {
                         try {
                           await revokeShortcutToken();
                           setShortcutConnected(false);
                           setShortcutToken(null);
-                          showToast(t('settings.revokedSuccessfully'), 'success');
+                          showToast(t('settings.revokedSuccessfully', 'تم إلغاء الربط بنجاح'), 'success');
                         } catch(e) {
-                          showToast(t('addTransaction.errorMsg'), 'error');
+                          showToast(t('addTransaction.errorMsg', 'حدث خطأ'), 'error');
                         }
                       }
                     }}
-                    className="w-full py-3 bg-red-500/10 text-red-500 border border-red-500/20 font-semibold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-red-500/10 text-red-400 border border-red-500/20 font-semibold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
                   >
                     <Trash2 size={18} />
                     {t('appleShortcuts.revokeToken')}
                   </motion.button>
                 ) : (
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={async () => {
                       try {
                         const res = await generateShortcutToken();
                         setShortcutToken(res.token);
                         setShortcutConnected(true);
                       } catch (error) {
-                        showToast(t('common.error'), 'error');
+                        showToast(t('common.error', 'حدث خطأ'), 'error');
                       }
                     }}
-                    className="w-full py-3 bg-purple-500 text-white font-semibold rounded-xl hover:bg-purple-600 transition-colors flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(168,85,247,0.3)]"
+                    className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(168,85,247,0.3)]"
                   >
                     <Command size={18} />
                     {t('appleShortcuts.generateToken')}
@@ -1507,89 +1546,98 @@ const Settings = () => {
           </div>
 
           {/* Setup Guide */}
-          <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-inner space-y-4">
-            <h3 className="text-white/90 font-semibold flex items-center gap-2">
-              <Smartphone size={18} className="text-purple-400" />
-              {t('appleShortcuts.setupGuide')}
-            </h3>
-            <div className="space-y-6 mt-4">
+          <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-inner space-y-5">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <h3 className="text-white font-bold flex items-center gap-2 text-base">
+                <Smartphone size={19} className="text-purple-400" />
+                {t('appleShortcuts.setupGuide')}
+              </h3>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/25 text-purple-300">
+                iOS Shortcuts
+              </span>
+            </div>
+
+            <div className="space-y-4">
               {/* Group 1: Preparation */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                  Preparation
+              <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 space-y-3.5">
+                <h4 className="text-white font-semibold flex items-center gap-2.5 text-sm">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-purple-500/30">1</span>
+                  {t('appleShortcuts.group1', 'التجهيز والتحضير')}
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2">
-                  <li>{t('appleShortcuts.step1')}</li>
-                  <li>{t('appleShortcuts.step2')}</li>
-                  <li>{t('appleShortcuts.step3')}</li>
-                  <li>{t('appleShortcuts.step4')}</li>
-                  <li>{t('appleShortcuts.step5')}</li>
-                  <li>{t('appleShortcuts.step6')}</li>
-                </ol>
+                <div className="space-y-3 pt-1">
+                  <ShortcutStep num={1} text={t('appleShortcuts.step1')} />
+                  <ShortcutStep num={2} text={t('appleShortcuts.step2')} />
+                  <ShortcutStep num={3} text={t('appleShortcuts.step3')} />
+                  <ShortcutStep num={4} text={t('appleShortcuts.step4')} />
+                  <ShortcutStep num={5} text={t('appleShortcuts.step5')} />
+                  <ShortcutStep num={6} text={t('appleShortcuts.step6')} />
+                </div>
               </div>
 
               {/* Group 2: Account Selection */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-                  Account Selection
+              <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 space-y-3.5">
+                <h4 className="text-white font-semibold flex items-center gap-2.5 text-sm">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-purple-500/30">2</span>
+                  {t('appleShortcuts.group2', 'جلب أسماء الحسابات')}
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="7">
-                  <li>{t('appleShortcuts.step7')}</li>
-                  <CopyableURL url={`${apiUrl}/integrations/shortcut/accounts`} />
-                  <li>{t('appleShortcuts.step8')}</li>
-                  <li>{t('appleShortcuts.step9')}</li>
-                  <li>{t('appleShortcuts.step10')}</li>
-                </ol>
+                <div className="space-y-3 pt-1">
+                  <ShortcutStep num={7} text={t('appleShortcuts.step7')}>
+                    <CopyableURL url={`${apiUrl}/integrations/shortcut/accounts`} />
+                  </ShortcutStep>
+                  <ShortcutStep num={8} text={t('appleShortcuts.step8')} />
+                  <ShortcutStep num={9} text={t('appleShortcuts.step9')} />
+                  <ShortcutStep num={10} text={t('appleShortcuts.step10')} />
+                </div>
               </div>
 
               {/* Group 3: Category Selection */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
-                  Category Selection
+              <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 space-y-3.5">
+                <h4 className="text-white font-semibold flex items-center gap-2.5 text-sm">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-purple-500/30">3</span>
+                  {t('appleShortcuts.group3', 'جلب أسماء التصنيفات')}
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="11">
-                  <li>{t('appleShortcuts.step11')}</li>
-                  <CopyableURL url={`${apiUrl}/integrations/shortcut/categories`} />
-                  <li>{t('appleShortcuts.step12')}</li>
-                  <li>{t('appleShortcuts.step13')}</li>
-                  <li>{t('appleShortcuts.step14')}</li>
-                </ol>
+                <div className="space-y-3 pt-1">
+                  <ShortcutStep num={11} text={t('appleShortcuts.step11')}>
+                    <CopyableURL url={`${apiUrl}/integrations/shortcut/categories`} />
+                  </ShortcutStep>
+                  <ShortcutStep num={12} text={t('appleShortcuts.step12')} />
+                  <ShortcutStep num={13} text={t('appleShortcuts.step13')} />
+                  <ShortcutStep num={14} text={t('appleShortcuts.step14')} />
+                </div>
               </div>
 
-              {/* Group 4: Sending Transaction */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
-                  Saving Transaction
+              {/* Group 4: Saving Transaction */}
+              <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 space-y-3.5">
+                <h4 className="text-white font-semibold flex items-center gap-2.5 text-sm">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-purple-500/30">4</span>
+                  {t('appleShortcuts.group4', 'إرسال وحفظ المعاملة')}
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="15">
-                  <li>{t('appleShortcuts.step15')}</li>
-                  <CopyableURL url={`${apiUrl}/integrations/shortcut/transactions`} />
-                  <li>{t('appleShortcuts.step16')}</li>
-                  <li>{t('appleShortcuts.step17')}</li>
-                  <li>{t('appleShortcuts.step18')}</li>
-                  <li>{t('appleShortcuts.step19')}</li>
-                  <li>{t('appleShortcuts.step20')}</li>
-                  <li>{t('appleShortcuts.step21')}</li>
-                  <li>{t('appleShortcuts.step22')}</li>
-                  <li>{t('appleShortcuts.step23')}</li>
-                </ol>
+                <div className="space-y-3 pt-1">
+                  <ShortcutStep num={15} text={t('appleShortcuts.step15')}>
+                    <CopyableURL url={`${apiUrl}/integrations/shortcut/transactions`} />
+                  </ShortcutStep>
+                  <ShortcutStep num={16} text={t('appleShortcuts.step16')} />
+                  <ShortcutStep num={17} text={t('appleShortcuts.step17')} />
+                  <ShortcutStep num={18} text={t('appleShortcuts.step18')} />
+                  <ShortcutStep num={19} text={t('appleShortcuts.step19')} />
+                  <ShortcutStep num={20} text={t('appleShortcuts.step20')} />
+                  <ShortcutStep num={21} text={t('appleShortcuts.step21')} />
+                  <ShortcutStep num={22} text={t('appleShortcuts.step22')} />
+                  <ShortcutStep num={23} text={t('appleShortcuts.step23')} />
+                </div>
               </div>
 
-              {/* Group 5: Back Tap Config */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">5</span>
-                  Back Tap Setup
+              {/* Group 5: Back Tap Setup */}
+              <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 space-y-3.5">
+                <h4 className="text-white font-semibold flex items-center gap-2.5 text-sm">
+                  <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-purple-500/30">5</span>
+                  {t('appleShortcuts.group5', 'تفعيل النقر من الخلف')}
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="24">
-                  <li>{t('appleShortcuts.step24')}</li>
-                  <li>{t('appleShortcuts.step25')}</li>
-                  <li>{t('appleShortcuts.step26')}</li>
-                </ol>
+                <div className="space-y-3 pt-1">
+                  <ShortcutStep num={24} text={t('appleShortcuts.step24')} />
+                  <ShortcutStep num={25} text={t('appleShortcuts.step25')} />
+                  <ShortcutStep num={26} text={t('appleShortcuts.step26')} />
+                </div>
               </div>
             </div>
           </div>

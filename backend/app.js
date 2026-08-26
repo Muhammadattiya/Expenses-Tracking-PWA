@@ -39,7 +39,7 @@ app.use(cors({
     cb(new Error('Blocked by CORS policy'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Idempotency-Key'], // Fix #5
   credentials: true,
   maxAge: 86400,
 }));

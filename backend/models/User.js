@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     select: false
   },
+  shortcutTokenCreatedAt: {
+    type: Date,
+    select: false
+  },
   preferences: {
     budgetPeriod: { type: String, enum: ['weekly', 'monthly'], default: 'monthly' },
     budgetStartDayWeekly: { type: Number, min: 0, max: 6, default: 6 },
