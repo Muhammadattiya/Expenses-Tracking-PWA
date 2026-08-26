@@ -75,6 +75,25 @@ import { useTheme } from "../contexts/ThemeContext";
 import { Settings as SettingsIcon } from "lucide-react";
 import EditRecurringTransactionModal from "../components/modals/EditRecurringTransactionModal";
 
+const CopyableURL = ({ url }) => {
+  const { showToast } = useNotification();
+  return (
+    <div className="mt-2 flex items-center justify-between bg-black/40 border border-white/10 rounded-xl p-3 shadow-inner">
+      <code className="text-xs text-blue-400 break-all select-all font-mono">{url}</code>
+      <motion.button 
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          navigator.clipboard.writeText(url);
+          showToast('URL Copied', 'success');
+        }}
+        className="shrink-0 p-2 ml-3 bg-white/5 hover:bg-white/10 text-white/70 rounded-md transition-colors"
+      >
+        <Copy size={16} />
+      </motion.button>
+    </div>
+  );
+};
+
 const Settings = () => {
   const { showToast } = useNotification();
   const { t, lang, setLang } = useLanguage();
@@ -100,6 +119,10 @@ const Settings = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryType, setNewCategoryType] = useState('expense');
   const [newCategoryIcon, setNewCategoryIcon] = useState('Tag');
+  const [newCategoryColor, setNewCategoryColor] = useState('#ef4444');
+
+  const base = api.defaults.baseURL || '';
+  const apiUrl = base.startsWith('http') ? base : `${window.location.origin}${base}`;
   const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
   const [categoryTab, setCategoryTab] = useState('expense');
 
@@ -1513,14 +1536,11 @@ const Settings = () => {
                   Account Selection
                 </h4>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="7">
-                  <li className="break-all">{t('appleShortcuts.step7').replace('[API_URL]', (() => {
-                    const base = api.defaults.baseURL || '';
-                    return base.startsWith('http') ? base : `${window.location.origin}${base}`;
-                  })())}</li>
+                  <li>{t('appleShortcuts.step7')}</li>
+                  <CopyableURL url={`${apiUrl}/integrations/shortcut/accounts`} />
                   <li>{t('appleShortcuts.step8')}</li>
                   <li>{t('appleShortcuts.step9')}</li>
                   <li>{t('appleShortcuts.step10')}</li>
-                  <li>{t('appleShortcuts.step11')}</li>
                 </ol>
               </div>
 
@@ -1530,15 +1550,12 @@ const Settings = () => {
                   <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
                   Category Selection
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="12">
-                  <li className="break-all">{t('appleShortcuts.step12').replace('[API_URL]', (() => {
-                    const base = api.defaults.baseURL || '';
-                    return base.startsWith('http') ? base : `${window.location.origin}${base}`;
-                  })())}</li>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="11">
+                  <li>{t('appleShortcuts.step11')}</li>
+                  <CopyableURL url={`${apiUrl}/integrations/shortcut/categories`} />
+                  <li>{t('appleShortcuts.step12')}</li>
                   <li>{t('appleShortcuts.step13')}</li>
                   <li>{t('appleShortcuts.step14')}</li>
-                  <li>{t('appleShortcuts.step15')}</li>
-                  <li>{t('appleShortcuts.step16')}</li>
                 </ol>
               </div>
 
@@ -1548,19 +1565,17 @@ const Settings = () => {
                   <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
                   Saving Transaction
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="17">
-                  <li className="break-all">{t('appleShortcuts.step17').replace('[API_URL]', (() => {
-                    const base = api.defaults.baseURL || '';
-                    return base.startsWith('http') ? base : `${window.location.origin}${base}`;
-                  })())}</li>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="15">
+                  <li>{t('appleShortcuts.step15')}</li>
+                  <CopyableURL url={`${apiUrl}/integrations/shortcut/transactions`} />
+                  <li>{t('appleShortcuts.step16')}</li>
+                  <li>{t('appleShortcuts.step17')}</li>
                   <li>{t('appleShortcuts.step18')}</li>
                   <li>{t('appleShortcuts.step19')}</li>
                   <li>{t('appleShortcuts.step20')}</li>
                   <li>{t('appleShortcuts.step21')}</li>
                   <li>{t('appleShortcuts.step22')}</li>
                   <li>{t('appleShortcuts.step23')}</li>
-                  <li>{t('appleShortcuts.step24')}</li>
-                  <li>{t('appleShortcuts.step25')}</li>
                 </ol>
               </div>
 
@@ -1570,10 +1585,10 @@ const Settings = () => {
                   <span className="bg-purple-500/20 text-purple-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">5</span>
                   Back Tap Setup
                 </h4>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="26">
+                <ol className="list-decimal list-inside space-y-2 text-sm text-white/70 ml-2" start="24">
+                  <li>{t('appleShortcuts.step24')}</li>
+                  <li>{t('appleShortcuts.step25')}</li>
                   <li>{t('appleShortcuts.step26')}</li>
-                  <li>{t('appleShortcuts.step27')}</li>
-                  <li>{t('appleShortcuts.step28')}</li>
                 </ol>
               </div>
             </div>

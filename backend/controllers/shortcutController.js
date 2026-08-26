@@ -54,11 +54,8 @@ exports.getTokenStatus = async (req, res, next) => {
 exports.getAccounts = async (req, res, next) => {
   try {
     const accounts = await Account.find({ user: req.user._id }).select('name').lean();
-    const accountsDict = {};
-    accounts.forEach(a => {
-      accountsDict[a.name] = a._id.toString();
-    });
-    res.json(accountsDict);
+    const accountNames = accounts.map(a => a.name);
+    res.json(accountNames);
   } catch (error) {
     console.error('[ERROR] shortcut getAccounts:', error);
     res.status(500).json({ message: 'Server error' });
@@ -69,11 +66,8 @@ exports.getCategories = async (req, res, next) => {
   try {
     // Return only expense categories for now, as Shortcuts usually add expenses
     const categories = await Category.find({ user: req.user._id, type: 'expense' }).select('name').lean();
-    const categoriesDict = {};
-    categories.forEach(c => {
-      categoriesDict[c.name] = c._id.toString();
-    });
-    res.json(categoriesDict);
+    const categoryNames = categories.map(c => c.name);
+    res.json(categoryNames);
   } catch (error) {
     console.error('[ERROR] shortcut getCategories:', error);
     res.status(500).json({ message: 'Server error' });
@@ -83,7 +77,7 @@ exports.getCategories = async (req, res, next) => {
 exports.createTransaction = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const { amount, accountId, categoryId, title } = req.body;
+    const { amount, accountName, categoryName, title } = req.body;
     
     // Idempotency check MUST be mandatory
     const idempotencyKey = req.header('Idempotency-Key');
@@ -92,13 +86,13 @@ exports.createTransaction = async (req, res, next) => {
     }
 
     if (idempotencyKey) {
-      const existing = await Transaction.findOne({ user: userId, idempotencyKey });
+      const existing = await Transaction.findOne({ user: userId, idempotencyKey }).populate('account category');
       if (existing) {
-        // Strict payload matching
+        // Strict payload matching (use optional chaining in case populated fields are missing)
         if (
           existing.amount === Number(amount) &&
-          existing.account.toString() === accountId &&
-          existing.category.toString() === categoryId
+          existing.account?.name === accountName &&
+          existing.category?.name === categoryName
         ) {
           return res.status(200).json({ 
             message: 'Transaction already processed', 
@@ -119,19 +113,19 @@ exports.createTransaction = async (req, res, next) => {
       return res.status(400).json({ message: 'Amount must be a positive number' });
     }
 
-    if (!accountId || !categoryId) {
-      return res.status(400).json({ message: 'accountId and categoryId are required' });
+    if (!accountName || !categoryName) {
+      return res.status(400).json({ message: 'accountName and categoryName are required' });
     }
 
-    // Explicit Ownership & Existence Validation
-    const accountDoc = await Account.findOne({ _id: accountId, user: userId });
+    // Explicit Ownership & Existence Validation by Name
+    const accountDoc = await Account.findOne({ name: accountName, user: userId });
     if (!accountDoc) {
-      return res.status(400).json({ message: `Account not found or access denied` });
+      return res.status(400).json({ message: `Account "${accountName}" not found` });
     }
     
-    const categoryDoc = await Category.findOne({ _id: categoryId, user: userId });
+    const categoryDoc = await Category.findOne({ name: categoryName, user: userId });
     if (!categoryDoc) {
-      return res.status(400).json({ message: `Category not found or access denied` });
+      return res.status(400).json({ message: `Category "${categoryName}" not found` });
     }
 
     // Rely on transactionService validation, but we explicitly construct the data
