@@ -6,14 +6,14 @@ import { getCategories } from '../api/categories';
 import { getTransactions } from '../api/transactions';
 import { smartBudgetService } from '../api/smartBudgets';
 import { getCurrentUser } from '../api/auth';
-import { db } from '../db/db';
+
 import MasterBudgetCard from '../components/Budget/MasterBudgetCard';
 import BudgetCard from '../components/Budget/BudgetCard';
 import BudgetModal from '../components/Budget/BudgetModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import FormModal from '../components/modals/FormModal';
 import CustomSelect from '../components/ui/CustomSelect';
-import { Plus, Target, Filter, ChevronDown, ArrowRight } from 'lucide-react';
+import { Plus, Target, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -39,7 +39,7 @@ const SkeletonCard = () => (
 );
 
 export default function Budgets() {
-  const { t, language } = useLanguage();
+  const { t, lang } = useLanguage();
   const { showToast } = useNotification();
   const navigate = useNavigate();
   
@@ -249,7 +249,7 @@ export default function Budgets() {
   const filteredBudgets = useMemo(() => {
     return budgets.filter(b => {
       if (filterPeriod !== 'all' && b.period !== filterPeriod) return false;
-      const catId = typeof b.category === 'object' ? b.category._id : b.category;
+      const catId = typeof b.category === 'object' ? b.category?._id : b.category;
       if (filterCategory !== 'all' && catId !== filterCategory) return false;
       return true;
     });
@@ -364,7 +364,7 @@ export default function Budgets() {
             <p className="text-white/50 text-sm">{t('smartBudget.entryDesc', 'Let us distribute your budget for you')}</p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-brand-blue/20 border border-brand-blue/30 shadow-inner flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
-            <ArrowRight size={24} className={language === 'ar' ? 'rotate-180' : ''} />
+            <ArrowRight size={24} className={lang === 'ar' ? 'rotate-180' : ''} />
           </div>
         </div>
       </motion.div>

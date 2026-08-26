@@ -7,10 +7,10 @@ import BudgetCard from './BudgetCard';
 export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onDelete, onEditPlan, onDeletePlan, index = 0, categories }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { t } = useLanguage();
-  
+
   const safeAmount = budgets.reduce((sum, b) => sum + (b.amount || 0), 0);
   const safeSpent = budgets.reduce((sum, b) => sum + (spentData[b._id] || 0), 0);
-  
+
   const progress = Math.min((safeSpent / safeAmount) * 100, 100) || 0;
   const utilization = safeAmount > 0 ? (safeSpent / safeAmount) * 100 : 0;
   const isOverBudget = safeSpent > safeAmount;
@@ -20,7 +20,7 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
   let stateBorder = 'border-brand-blue/30';
   let stateBg = 'bg-brand-blue/10';
   let RiskIcon = Icons.CheckCircle;
-  
+
   if (utilization >= 100) {
     stateColor = 'bg-red-500 text-red-400';
     stateBorder = 'border-red-500/30';
@@ -39,13 +39,13 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
       className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 relative overflow-hidden group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/20 hover:scale-[1.01]'}`}
     >
-      <div 
+      <div
         className="cursor-pointer relative z-10 flex-1 flex flex-col justify-between"
         onClick={() => setIsExpanded(!isExpanded)}
       >
@@ -81,8 +81,8 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
             >
               <Icons.Trash2 size={14} />
             </motion.button>
-            <motion.div 
-              animate={{ rotate: isExpanded ? 180 : 0 }} 
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
               className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 pointer-events-none"
             >
               <Icons.ChevronDown size={16} />
@@ -100,23 +100,22 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
                 {isOverBudget ? t('budgets.overbudget') : t('budgets.remaining')}
               </span>
               <span className={`font-bold text-2xl ${isOverBudget ? 'text-red-400' : 'text-white'}`}>
-                {isOverBudget ? (safeSpent - safeAmount).toLocaleString() : remaining.toLocaleString()} 
+                {isOverBudget ? (safeSpent - safeAmount).toLocaleString() : remaining.toLocaleString()}
                 <span className="text-sm font-normal text-white/40 ml-1">{t('nav.currency')}</span>
               </span>
             </div>
           </div>
 
           <div className="h-5 w-full bg-black/40 rounded-full overflow-hidden border border-[var(--color-border)] shadow-inner relative group-hover:border-white/10 transition-colors">
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 1, ease: "easeOut" }}
-              className={`h-full rounded-full transition-colors duration-500 shadow-[inset_0_1px_rgba(255,255,255,0.2)] flex items-center justify-end px-2 ${
-                utilization >= 100 ? 'bg-gradient-to-r from-red-600 to-red-400' :
+              className={`h-full rounded-full transition-colors duration-500 shadow-[inset_0_1px_rgba(255,255,255,0.2)] flex items-center justify-end px-2 ${utilization >= 100 ? 'bg-gradient-to-r from-red-600 to-red-400' :
                 utilization >= 85 ? 'bg-gradient-to-r from-orange-600 to-orange-400' :
-                utilization >= 70 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
-                'bg-gradient-to-r from-blue-600 to-blue-400'
-              }`}
+                  utilization >= 70 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
+                    'bg-gradient-to-r from-blue-600 to-blue-400'
+                }`}
             >
               {progress > 15 && (
                 <span className="text-[10px] font-bold text-white drop-shadow-md">
@@ -125,7 +124,7 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
               )}
             </motion.div>
           </div>
-          
+
           <div className="flex justify-between items-center text-xs text-white/40 font-medium pt-1">
             <div className="flex items-center gap-1">
               <RiskIcon size={14} className={stateColor.split(' ')[1]} />
@@ -146,12 +145,12 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
           >
             <div className="pt-6 space-y-4 border-t border-white/10">
               {budgets.map((budget, idx) => {
-                const mappedCategory = typeof budget.category === 'object' 
-                  ? budget.category 
-                  : categories.find(c => c._id === budget.category);
-                
+                const mappedCategory = typeof budget.category === 'object'
+                  ? (budget.category || { name: t('nav.category', 'Category') })
+                  : (categories.find(c => c._id === budget.category) || { name: t('nav.category', 'Category') });
+
                 const fullBudget = { ...budget, category: mappedCategory };
-                
+
                 return (
                   <BudgetCard
                     key={budget._id}
