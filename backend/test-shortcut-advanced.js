@@ -67,13 +67,13 @@ async function runTests() {
     console.log('\n--- 2. Fetch Accounts & Categories (ID-Based) ---');
     const accRes = await fetch(`${baseUrl}/accounts`, { headers: { 'Authorization': `Bearer ${rawShortcutToken}` } });
     const accData = await accRes.json();
-    assert(Array.isArray(accData) && accData.length === 1, 'Accounts is an array of size 1');
-    assert(accData[0].id === account._id.toString() && accData[0].name === 'Cash', 'Account returns ID and Name correctly');
+    assert(typeof accData === 'object' && !Array.isArray(accData) && Object.keys(accData).length === 1, 'Accounts is a dictionary of size 1');
+    assert(accData['Cash'] === account._id.toString(), 'Account returns ID secretly behind the Name key');
 
     const catRes = await fetch(`${baseUrl}/categories`, { headers: { 'Authorization': `Bearer ${rawShortcutToken}` } });
     const catData = await catRes.json();
-    assert(Array.isArray(catData) && catData.length === 1, 'Categories is an array of size 1');
-    assert(catData[0].id === category._id.toString() && catData[0].name === 'Food', 'Category returns ID and Name correctly');
+    assert(typeof catData === 'object' && !Array.isArray(catData) && Object.keys(catData).length === 1, 'Categories is a dictionary of size 1');
+    assert(catData['Food'] === category._id.toString(), 'Category returns ID secretly behind the Name key');
 
     console.log('\n--- 3. Missing Idempotency Key ---');
     const missIdempRes = await fetch(`${baseUrl}/transactions`, {
