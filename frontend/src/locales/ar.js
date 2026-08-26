@@ -574,7 +574,9 @@ export default {
     confidenceLabel: 'هذا الاقتراح مبني على:',
     confidenceStats: '{{months}} أشهر • {{transactions}} معاملات',
     recurring: 'ميزانية متكررة',
-    recurringDesc: 'تتجدد تلقائياً عند انتهاء الفترة'
+    recurringDesc: 'تتجدد تلقائياً عند انتهاء الفترة',
+    oneTime: 'مرة واحدة',
+    custom: 'مخصص'
   },
   smartBudget: {
     title: 'مخطط الميزانية الذكي',
@@ -621,7 +623,14 @@ export default {
     deletePlanWarning: 'هل أنت متأكد من حذف هذه الميزانية الرئيسية؟ سيتم أيضاً حذف جميع الميزانيات التابعة لها.',
     deleteSuccess: 'تم حذف الميزانية الرئيسية.',
     next: 'التالي',
-    back: 'السابق'
+    back: 'السابق',
+    masterBudgetLabel: 'ميزانية رئيسية',
+    items: 'عناصر',
+    groupedPlan: 'ميزانية مجمعة',
+    drafts: 'المسودات الأخيرة',
+    untitledDraft: 'مسودة بدون عنوان',
+    categories: 'فئات',
+    resume: 'استئناف'
   },
   recurring: {
     settings: 'إعدادات التكرار',

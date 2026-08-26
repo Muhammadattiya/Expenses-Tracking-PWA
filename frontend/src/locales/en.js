@@ -568,7 +568,9 @@ export default {
     confidenceLabel: 'This recommendation is based on:',
     confidenceStats: '{{months}} months • {{transactions}} transactions',
     recurring: 'Recurring Budget',
-    recurringDesc: 'Automatically repeats when period ends'
+    recurringDesc: 'Automatically repeats when period ends',
+    oneTime: 'One-Time',
+    custom: 'Custom'
   },
   smartBudget: {
     title: 'Smart Budget Planner',
@@ -615,7 +617,14 @@ export default {
     deletePlanWarning: 'Are you sure you want to delete this Master Budget? All grouped budgets will also be deleted.',
     deleteSuccess: 'Master Budget deleted.',
     next: 'Next',
-    back: 'Back'
+    back: 'Back',
+    masterBudgetLabel: 'Master Budget',
+    items: 'Items',
+    groupedPlan: 'Grouped Budget Plan',
+    drafts: 'Recent Drafts',
+    untitledDraft: 'Untitled Draft',
+    categories: 'categories',
+    resume: 'Resume'
   },
   recurring: {
     settings: 'Recurring Settings',

@@ -61,18 +61,18 @@ export default function BudgetCard({ budget, spent, onEdit, onDelete, index = 0 
           </div>
           <div>
             <h3 className="font-semibold text-white/90 text-lg flex items-center gap-2">
-              {budget.category?.name || 'Category'}
+              {budget.category?.name || t('budgets.category', 'Category')}
               {budget.carryOver && (
                 <Icons.Repeat size={14} className="text-white/40" />
               )}
               {budget.isRecurring === false && (
                 <span className="text-[10px] font-bold bg-white/10 text-white/60 px-2 py-0.5 rounded-full">
-                  One-Time
+                  {t('budgets.oneTime', 'One-Time')}
                 </span>
               )}
             </h3>
             <p className="text-xs text-white/50">
-              {budget.period === 'weekly' ? t('budgets.weekly') : budget.period === 'custom' ? 'Custom' : t('budgets.monthly')}
+              {budget.period === 'weekly' ? t('budgets.weekly') : budget.period === 'custom' ? t('budgets.custom', 'Custom') : t('budgets.monthly')}
               {budget.account && ` • ${t('budgets.account')}`}
             </p>
           </div>
