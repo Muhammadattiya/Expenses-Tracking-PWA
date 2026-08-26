@@ -5,6 +5,10 @@ const Category = require('../models/Category');
 const Transaction = require('../models/Transaction');
 const transactionService = require('../services/transactionService');
 
+// Validation constants
+const IDEMPOTENCY_KEY_REGEX = /^[a-zA-Z0-9\-_]{8,128}$/;
+const MAX_TITLE_LENGTH = 200;
+
 // Admin generating the token for the user via the settings UI
 exports.generateToken = async (req, res, next) => {
   try {
@@ -15,6 +19,7 @@ exports.generateToken = async (req, res, next) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     user.shortcutTokenHash = hashedToken;
+    user.shortcutTokenCreatedAt = new Date(); // Fix #6: track creation date for expiry
     await user.save();
 
     res.json({ token: rawToken, message: 'Token generated successfully. Please save it now.' });
@@ -29,6 +34,7 @@ exports.revokeToken = async (req, res, next) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     user.shortcutTokenHash = undefined;
+    user.shortcutTokenCreatedAt = undefined; // Fix #6: clear creation date on revoke
     await user.save();
 
     res.json({ message: 'Token revoked successfully' });
@@ -39,10 +45,19 @@ exports.revokeToken = async (req, res, next) => {
 
 exports.getTokenStatus = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('+shortcutTokenHash');
+    const user = await User.findById(req.user.id).select('+shortcutTokenHash +shortcutTokenCreatedAt');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.json({ isConnected: !!user.shortcutTokenHash });
+    // Also return expiry info if connected
+    let expiresAt = null;
+    if (user.shortcutTokenHash && user.shortcutTokenCreatedAt) {
+      expiresAt = new Date(user.shortcutTokenCreatedAt.getTime() + 365 * 24 * 60 * 60 * 1000);
+    }
+
+    res.json({ 
+      isConnected: !!user.shortcutTokenHash,
+      expiresAt,
+    });
   } catch (error) {
     next(error);
   }
@@ -79,28 +94,32 @@ exports.createTransaction = async (req, res, next) => {
     const userId = req.user._id;
     const { amount, accountName, categoryName, title } = req.body;
     
-    // Idempotency check MUST be mandatory
+    // Fix #3 + #9: Mandatory Idempotency-Key with format & length validation (dead code removed)
     const idempotencyKey = req.header('Idempotency-Key');
     if (!idempotencyKey) {
       return res.status(400).json({ message: 'Idempotency-Key header is required' });
     }
+    if (!IDEMPOTENCY_KEY_REGEX.test(String(idempotencyKey))) {
+      return res.status(400).json({ 
+        message: 'Idempotency-Key must be 8-128 alphanumeric characters (dashes and underscores allowed)' 
+      });
+    }
 
-    if (idempotencyKey) {
-      const existing = await Transaction.findOne({ user: userId, idempotencyKey }).populate('account category');
-      if (existing) {
-        // Strict payload matching (use optional chaining in case populated fields are missing)
-        if (
-          existing.amount === Number(amount) &&
-          existing.account?.name === accountName &&
-          existing.category?.name === categoryName
-        ) {
-          return res.status(200).json({ 
-            message: 'Transaction already processed', 
-            transaction: existing 
-          });
-        } else {
-          return res.status(409).json({ message: 'Idempotency conflict: Key reused with different payload' });
-        }
+    // Idempotency check — dead if(idempotencyKey) wrapper removed
+    const existing = await Transaction.findOne({ user: userId, idempotencyKey }).populate('account category');
+    if (existing) {
+      // Strict payload matching
+      if (
+        existing.amount === Number(amount) &&
+        existing.account?.name === accountName &&
+        existing.category?.name === categoryName
+      ) {
+        return res.status(200).json({ 
+          message: 'Transaction already processed', 
+          transaction: existing 
+        });
+      } else {
+        return res.status(409).json({ message: 'Idempotency conflict: Key reused with different payload' });
       }
     }
 
@@ -128,9 +147,13 @@ exports.createTransaction = async (req, res, next) => {
       return res.status(400).json({ message: `Category "${categoryName}" not found` });
     }
 
-    // Rely on transactionService validation, but we explicitly construct the data
+    // Fix #4: Sanitize title — enforce max length
+    const sanitizedTitle = title
+      ? String(title).trim().slice(0, MAX_TITLE_LENGTH)
+      : 'Shortcut Transaction';
+
     const transactionData = {
-      title: title || 'Shortcut Transaction',
+      title: sanitizedTitle,
       amount: numAmount,
       type: 'expense',
       account: accountDoc._id,
