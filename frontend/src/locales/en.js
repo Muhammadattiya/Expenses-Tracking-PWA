@@ -650,5 +650,13 @@ export default {
     reminderDaysBefore: 'Remind Before (Days)',
     saveSettings: 'Save Settings',
     untitled: 'Untitled Transaction'
+  },
+  pwa: {
+    installTitle: 'Install App',
+    installDesc: 'Get a faster offline experience',
+    installBtn: 'Install',
+    updateTitle: 'New Update Available',
+    updateDesc: 'Tap to update to the latest version',
+    updateBtn: 'Update'
   }
 };

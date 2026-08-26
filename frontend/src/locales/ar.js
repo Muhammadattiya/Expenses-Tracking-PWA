@@ -656,5 +656,13 @@ export default {
     reminderDaysBefore: 'التذكير قبل (أيام)',
     saveSettings: 'حفظ الإعدادات',
     untitled: 'معاملة بدون عنوان'
+  },
+  pwa: {
+    installTitle: 'تثبيت التطبيق',
+    installDesc: 'احصل على تجربة أسرع بدون إنترنت',
+    installBtn: 'تثبيت',
+    updateTitle: 'تحديث جديد متاح',
+    updateDesc: 'اضغط للتحديث إلى أحدث نسخة',
+    updateBtn: 'تحديث'
   }
 };

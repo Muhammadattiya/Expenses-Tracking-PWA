@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Download, RefreshCw, X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function PWABadge() {
+  const { t } = useLanguage();
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -58,8 +60,8 @@ export default function PWABadge() {
           <div className="flex items-center gap-2">
             <Download className="w-5 h-5" />
             <div className="text-sm">
-              <p className="font-bold">تثبيت التطبيق</p>
-              <p className="text-blue-200 text-xs">احصل على تجربة أسرع بدون إنترنت</p>
+              <p className="font-bold">{t('pwa.installTitle')}</p>
+              <p className="text-blue-200 text-xs">{t('pwa.installDesc')}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -67,7 +69,7 @@ export default function PWABadge() {
               onClick={handleInstallClick}
               className="bg-white/20 hover:bg-white/30 transition px-3 py-1.5 rounded-lg text-sm font-semibold"
             >
-              تثبيت
+              {t('pwa.installBtn')}
             </button>
             <button
               onClick={() => setShowInstallBtn(false)}
@@ -85,8 +87,8 @@ export default function PWABadge() {
           <div className="flex items-center gap-2">
             <RefreshCw className="w-5 h-5 text-amber-400" />
             <div className="text-sm">
-              <p className="font-bold">تحديث جديد متاح</p>
-              <p className="text-zinc-400 text-xs">اضغط للتحديث إلى أحدث نسخة</p>
+              <p className="font-bold">{t('pwa.updateTitle')}</p>
+              <p className="text-zinc-400 text-xs">{t('pwa.updateDesc')}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -94,7 +96,7 @@ export default function PWABadge() {
               onClick={() => updateServiceWorker(true)}
               className="bg-amber-500 text-black hover:bg-amber-400 transition px-3 py-1.5 rounded-lg text-sm font-semibold"
             >
-              تحديث
+              {t('pwa.updateBtn')}
             </button>
             <button
               onClick={() => setNeedRefresh(false)}
