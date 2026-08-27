@@ -22,7 +22,8 @@ const seedDefaultData = async (userId) => {
   if (!hasAccounts) {
     await Account.insertMany([
       { user: userId, name: 'Cash', type: 'cash', icon: 'Wallet', isDefault: true },
-      { user: userId, name: 'Visa', type: 'bank', icon: 'CreditCard' }
+      { user: userId, name: 'Visa', type: 'bank', icon: 'CreditCard' },
+      { user: userId, name: 'Investments', type: 'investment', icon: 'TrendingUp', color: '#eab308', isSystemAccount: true, excludeFromTotal: true }
     ]);
   }
 

@@ -16,6 +16,7 @@ import { getDebts } from "../api/debts";
 import { getSurvival } from "../api/forecast";
 import { getReceivables } from "../api/receivables";
 import { getCurrentUser } from "../api/auth";
+import { getInvestments, getGoldPrice } from "../api/investments";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
 import QuickAddModal from "../components/modals/QuickAddModal";
@@ -33,6 +34,7 @@ const Dashboard = () => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
   const [allReceivables, setAllReceivables] = useState([]);
+  const [investmentsValue, setInvestmentsValue] = useState(0);
   const [pendingTransactions, setPendingTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -129,14 +131,16 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [transactionsData, accountsData, userData, debtsData, survivalData, receivablesData, categoriesData] = await Promise.all([
+      const [transactionsData, accountsData, userData, debtsData, survivalData, receivablesData, categoriesData, investmentsData, goldPriceData] = await Promise.all([
         getTransactions(),
         getAccounts(),
         getCurrentUser().catch(() => null),
         getDebts().catch(() => ({ debts: [], transactions: [] })),
         getSurvival().catch(() => null),
         getReceivables().catch(() => []),
-        getCategories().catch(() => [])
+        getCategories().catch(() => []),
+        getInvestments().catch(() => []),
+        getGoldPrice().catch(() => null)
       ]);
 
       setAllTransactions(transactionsData);
@@ -144,6 +148,19 @@ const Dashboard = () => {
       setCategories(categoriesData || []);
       setAllDebtTransactions(debtsData.transactions || []);
       setAllReceivables(receivablesData || []);
+      
+      let invValue = 0;
+      if (investmentsData && investmentsData.length > 0) {
+        investmentsData.forEach(inv => {
+          if (inv.type === 'gold' && goldPriceData) {
+            const currentPrice = inv.karat === 24 ? goldPriceData.perGram24 : goldPriceData.perGram21;
+            invValue += Number(inv.quantity) * currentPrice;
+          } else {
+            invValue += Number(inv.quantity) * Number(inv.currentPrice || inv.purchasePrice);
+          }
+        });
+      }
+      setInvestmentsValue(invValue);
       setSurvival(survivalData);
       if (userData && userData.preferences) {
         setUserPrefs({
@@ -216,6 +233,7 @@ const Dashboard = () => {
     });
 
     const getAccountBalance = (account) => {
+      if (account.type === 'investment') return investmentsValue;
       let bal = account.balance_adjustment || 0;
       completedTransactions.forEach(t => {
         if (t.type === 'income' && (t.account?._id || t.account) === account._id) bal += t.amount;
@@ -272,7 +290,7 @@ const Dashboard = () => {
       expense: currentMonthExpense,
       balance: calculatedBalance
     });
-  }, [allTransactions, allDebtTransactions, allReceivables, selectedAccount, periodStart, periodEnd, accounts]);
+  }, [allTransactions, allDebtTransactions, allReceivables, selectedAccount, periodStart, periodEnd, accounts, investmentsValue]);
 
   const displayedTransactions = useMemo(() => {
     const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');

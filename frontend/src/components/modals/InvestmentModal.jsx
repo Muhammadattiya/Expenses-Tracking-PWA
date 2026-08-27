@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Plus, Sparkles, Pencil } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
+import { getAccounts } from '../../api/accounts';
 
 export default function InvestmentModal({ isOpen, onClose, onSave, initialData = null }) {
   const { t } = useLanguage();
@@ -13,17 +14,41 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
     name: t('investments.gold21Name', 'ذهب عيار 21'), 
     symbol: '', 
     quantity: '', 
-    purchasePrice: '', 
-    currency: 'EGP' 
+    purchasePrice: initialData?.purchasePrice || '',
+    currentPrice: initialData?.currentPrice || '',
+    currency: 'EGP',
+    from_account: ''
   });
+  
+  const [accounts, setAccounts] = useState([]);
   
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const data = await getAccounts();
+        setAccounts(data);
+      } catch (e) {
+        console.error("Failed to load accounts", e);
+      }
+    };
+    fetchAccounts();
+  }, []);
+
+  React.useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        setForm(initialData);
+        let updatedName = initialData.name;
+        if (initialData.type === 'gold') {
+          if (initialData.karat === 21 && (updatedName === 'ذهب عيار 21' || updatedName === '21k Gold')) {
+            updatedName = t('investments.gold21Name', 'ذهب عيار 21');
+          } else if (initialData.karat === 24 && (updatedName === 'ذهب عيار 24' || updatedName === '24k Gold')) {
+            updatedName = t('investments.gold24Name', 'ذهب عيار 24');
+          }
+        }
+        setForm({ ...initialData, name: updatedName });
       } else {
         setForm({ 
           type: 'gold', 
@@ -32,7 +57,9 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
           symbol: '', 
           quantity: '', 
           purchasePrice: '', 
-          currency: 'EGP' 
+          currentPrice: '',
+          currency: 'EGP',
+          from_account: ''
         });
       }
       setError('');
@@ -50,7 +77,8 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
         ...form, 
         karat: Number(form.karat), 
         quantity: Number(form.quantity), 
-        purchasePrice: Number(form.purchasePrice) 
+        purchasePrice: Number(form.purchasePrice),
+        transferTitle: t('investments.transferTitle', 'استثمار في {name}').replace('{name}', form.name)
       });
       // Reset form
       setForm({ 
@@ -60,7 +88,8 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
         symbol: '', 
         quantity: '', 
         purchasePrice: '', 
-        currency: 'EGP' 
+        currency: 'EGP',
+        from_account: ''
       });
       onClose();
     } catch (err) { 
@@ -206,6 +235,39 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
                 />
               </div>
             </div>
+
+            {form.type === 'stock' && (
+              <div className="space-y-1.5 animate-fade-in mt-4">
+                <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">
+                  {t('investments.currentPrice', 'السعر الحالي للسهم')}
+                </label>
+                <input 
+                  className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
+                  type="number" 
+                  step="any" 
+                  min="0" 
+                  placeholder="0.00"
+                  value={form.currentPrice} 
+                  onChange={(event) => setForm({ ...form, currentPrice: event.target.value })}
+                />
+              </div>
+            )}
+
+            {!initialData && (
+              <div className="space-y-1.5 animate-fade-in border-t border-white/5 pt-4 mt-2">
+                <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">
+                  {t('investments.deductFromAccount', 'خصم قيمة الاستثمار من حساب؟ (اختياري)')}
+                </label>
+                <CustomSelect 
+                  value={form.from_account} 
+                  onChange={(val) => setForm({ ...form, from_account: val })} 
+                  options={[
+                    { value: '', label: t('investments.noAccountSelected', 'بدون خصم (تجاوز)') },
+                    ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
+                  ]} 
+                />
+              </div>
+            )}
 
           </form>
         </div>

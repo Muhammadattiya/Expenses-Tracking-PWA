@@ -174,6 +174,7 @@ export default {
     karat24: 'عيار 24',
     perGram: 'للجرام',
     addInvestment: 'إضافة استثمار',
+    editInvestment: 'تعديل استثمار',
     gold21Name: 'ذهب عيار 21',
     gold24Name: 'ذهب عيار 24',
     gold: 'ذهب',
@@ -183,14 +184,21 @@ export default {
     investmentDesc: 'وصف الاستثمار',
     stockName: 'اسم السهم',
     stockSymbol: 'رمز السهم (AAPL)',
-    weightGrams: 'الوزن بالجرام',
+    weightGrams: 'الوزن (جرام)',
     quantity: 'الكمية',
     purchasePrice: 'سعر الشراء للوحدة (ج.م)',
+    currentPrice: 'السعر الحالي للسهم',
+    deleteTitle: 'حذف الاستثمار',
+    deleteConfirm: 'هل أنت متأكد من حذف هذا الاستثمار؟ لا يمكن التراجع عن هذا الإجراء.',
     saveInvestment: 'حفظ الاستثمار',
+    saveChanges: 'حفظ التعديلات',
     liveGoldPrices: 'أسعار الذهب مباشر',
     currentValue: 'القيمة الحالية',
     noInvestments: 'لا توجد استثمارات مضافة حالياً',
-    deleteError: 'حدث خطأ أثناء الحذف'
+    deleteError: 'حدث خطأ أثناء الحذف',
+    deductFromAccount: 'خصم قيمة الاستثمار من حساب؟ (اختياري)',
+    noAccountSelected: 'بدون خصم (تجاوز)',
+    transferTitle: 'استثمار في {name}'
   },
   receivables: {
     loadError: 'تعذر تحميل المبالغ المستحقة.',
@@ -416,6 +424,7 @@ export default {
     cash: 'كاش',
     bank: 'بنك',
     wallet: 'محفظة',
+    investmentsAccount: 'الاستثمارات',
     accountNamePlaceholder: 'اسم الحساب (مثال: كاش، بنك مصر)',
     addAccountBtn: 'إضافة حساب',
     categoriesTitle: 'الفئات',
@@ -700,5 +709,11 @@ export default {
     updateTitle: 'تحديث جديد متاح',
     updateDesc: 'اضغط للتحديث إلى أحدث نسخة',
     updateBtn: 'تحديث'
+  },
+  calculator: {
+    title: 'الحاسبة',
+    done: 'إدخال',
+    clear: 'مسح',
+    error: 'خطأ'
   }
 };

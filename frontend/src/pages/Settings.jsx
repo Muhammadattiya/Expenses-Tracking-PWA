@@ -63,6 +63,7 @@ import { subscribeToNotifications, sendNotification } from "../api/notifications
 import { getCurrentUser, deleteAllUserData, updatePreferences } from "../api/auth";
 import { getDebts } from "../api/debts";
 import { getReceivables } from "../api/receivables";
+import { getInvestments, getGoldPrice } from "../api/investments";
 import { getIncomeProfiles, createIncomeProfile, updateIncomeProfile, deleteIncomeProfile } from "../api/incomeProfiles";
 import { getShortcutTokenStatus, generateShortcutToken, revokeShortcutToken } from "../api/integrations";
 import api from "../api/axios";
@@ -137,6 +138,7 @@ const Settings = () => {
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
   const [allReceivables, setAllReceivables] = useState([]);
   const [incomeProfiles, setIncomeProfiles] = useState([]);
+  const [investmentsValue, setInvestmentsValue] = useState(0);
   const navigate = useNavigate();
   const [editingRecurring, setEditingRecurring] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -261,14 +263,16 @@ const Settings = () => {
 
   const fetchData = async () => {
     try {
-      const [accs, cats, trans, recurringData, debtsData, incomeProfilesData, receivablesData] = await Promise.all([
+      const [accs, cats, trans, recurringData, debtsData, incomeProfilesData, receivablesData, investmentsData, goldPriceData] = await Promise.all([
         getAccounts(),
         getCategories(),
         getTransactions(),
         getRecurringTransactions(),
         getDebts().catch(() => ({ debts: [], transactions: [] })),
         getIncomeProfiles().catch(() => []),
-        getReceivables().catch(() => [])
+        getReceivables().catch(() => []),
+        getInvestments().catch(() => []),
+        getGoldPrice().catch(() => null)
       ]);
       setAccounts(accs);
       setCategories(cats);
@@ -277,6 +281,19 @@ const Settings = () => {
       setAllDebtTransactions(debtsData.transactions || []);
       setIncomeProfiles(incomeProfilesData);
       setAllReceivables(receivablesData || []);
+
+      let invValue = 0;
+      if (investmentsData && investmentsData.length > 0) {
+        investmentsData.forEach(inv => {
+          if (inv.type === 'gold' && goldPriceData) {
+            const currentPrice = inv.karat === 24 ? goldPriceData.perGram24 : goldPriceData.perGram21;
+            invValue += Number(inv.quantity) * currentPrice;
+          } else {
+            invValue += Number(inv.quantity) * Number(inv.currentPrice || inv.purchasePrice);
+          }
+        });
+      }
+      setInvestmentsValue(invValue);
 
       // Fetch user data
       const user = await getCurrentUser();
@@ -319,6 +336,7 @@ const Settings = () => {
   };
 
   const getAccountBalance = (account) => {
+    if (account.type === 'investment') return investmentsValue;
     let balance = account.balance_adjustment || 0;
     transactions.forEach(t => {
       if (t.type === 'income' && t.account?._id === account._id) balance += t.amount;
@@ -1157,8 +1175,8 @@ const Settings = () => {
                     <AccIcon size={22} />
                   </div>
                   <div className="flex flex-col flex-1">
-                    <span className="text-white/90 font-bold text-base">{acc.name}</span>
-                    <span className="text-xs text-white/50 capitalize">{acc.type === 'cash' ? t('settings.cash', 'كاش') : acc.type === 'bank' ? t('settings.bank', 'بنك') : t('settings.wallet', 'محفظة')}</span>
+                    <span className="text-white/90 font-bold text-base">{acc.type === 'investment' ? t('settings.investmentsAccount', 'استثمارات') : acc.name}</span>
+                    <span className="text-xs text-white/50 capitalize">{acc.type === 'cash' ? t('settings.cash', 'كاش') : acc.type === 'bank' ? t('settings.bank', 'بنك') : acc.type === 'investment' ? t('investments.title', 'الاستثمارات') : t('settings.wallet', 'محفظة')}</span>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-inner">
@@ -1182,20 +1200,24 @@ const Settings = () => {
                       >
                         <Star size={16} fill={acc.isDefault ? "currentColor" : "none"} />
                       </motion.button>
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => openEditModal(acc, 'account')}
-                        className="p-2 bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
-                      >
-                        <Pencil size={16} />
-                      </motion.button>
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handleDeleteAccount(acc)}
-                        className="p-2 bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
-                      >
-                        <Trash2 size={16} />
-                      </motion.button>
+                      {!acc.isSystemAccount && (
+                        <>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => openEditModal(acc, 'account')}
+                            className="p-2 bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
+                          >
+                            <Pencil size={16} />
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleDeleteAccount(acc)}
+                            className="p-2 bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
+                          >
+                            <Trash2 size={16} />
+                          </motion.button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </li>
@@ -1660,34 +1682,44 @@ const Settings = () => {
 
             <form onSubmit={submitEdit} className="flex flex-col gap-3">
               {editType === 'account' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.nameLabel', 'الاسم')}</label>
-                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50" required />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.balanceLabel', 'الرصيد')}</label>
-                      <input type="number" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50" required />
-                    </div>
+                editingItem?.isSystemAccount ? (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-xs text-[var(--color-text-muted)]">{t('settings.systemAccountNotice', 'لا يمكن تغيير اسم أو أيقونة هذا الحساب الأساسي.')}</p>
+                    <label className="flex items-center w-full justify-between gap-2 p-3 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
+                      <span className="text-sm font-medium text-[var(--color-text-main)]">{t('settings.excludeFromTotal', 'استبعاد من الإجمالي')}</span>
+                      <input type="checkbox" checked={editExcludeFromTotal} onChange={(e) => setEditExcludeFromTotal(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
+                    </label>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.cardLast4', 'أخر 4 أرقام (اختياري)')}</label>
-                      <input type="text" maxLength="4" pattern="\d{4}" value={editCardLast4} onChange={(e) => setEditCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50" />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.nameLabel', 'الاسم')}</label>
+                        <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.balanceLabel', 'الرصيد')}</label>
+                        <input type="number" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50" required />
+                      </div>
                     </div>
-                    <div className="flex items-end pb-0.5">
-                      <label className="flex items-center w-full justify-between gap-2 p-2.5 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
-                        <span className="text-xs font-medium text-[var(--color-text-main)]">{t('settings.excludeFromTotal', 'استبعاد من الإجمالي')}</span>
-                        <input type="checkbox" checked={editExcludeFromTotal} onChange={(e) => setEditExcludeFromTotal(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
-                      </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.cardLast4', 'أخر 4 أرقام (اختياري)')}</label>
+                        <input type="text" maxLength="4" pattern="\d{4}" value={editCardLast4} onChange={(e) => setEditCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-blue-500/50" />
+                      </div>
+                      <div className="flex items-end pb-0.5">
+                        <label className="flex items-center w-full justify-between gap-2 p-2.5 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
+                          <span className="text-xs font-medium text-[var(--color-text-main)]">{t('settings.excludeFromTotal', 'استبعاد من الإجمالي')}</span>
+                          <input type="checkbox" checked={editExcludeFromTotal} onChange={(e) => setEditExcludeFromTotal(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
+                        </label>
+                      </div>
                     </div>
-                  </div>
-                  <label className="flex items-center justify-between p-2.5 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
-                    <span className="text-xs font-medium text-[var(--color-text-main)]">{t('settings.isSavingsAccount', 'حساب توفير')}</span>
-                    <input type="checkbox" checked={editIsSavingsAccount} onChange={(e) => setEditIsSavingsAccount(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
-                  </label>
-                </>
+                    <label className="flex items-center justify-between p-2.5 bg-black/20 border border-white/5 rounded-xl cursor-pointer hover:bg-black/40 transition-colors">
+                      <span className="text-xs font-medium text-[var(--color-text-main)]">{t('settings.isSavingsAccount', 'حساب توفير')}</span>
+                      <input type="checkbox" checked={editIsSavingsAccount} onChange={(e) => setEditIsSavingsAccount(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/50 bg-black/50" />
+                    </label>
+                  </>
+                )
               ) : (
                 <div>
                   <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.nameLabel', 'الاسم')}</label>
@@ -1697,17 +1729,19 @@ const Settings = () => {
 
 
 
-              <IconPicker
-                type={editType === 'account' ? 'account' : 'category'}
-                selectedIcon={editIcon}
-                onSelect={setEditIcon}
-                selectedColor={editColor}
-                onColorSelect={setEditColor}
-                colorClass={
-                  editType === 'account' ? 'text-blue-400'
-                    : (editingItem?.type === 'expense' ? 'text-red-400' : 'text-emerald-400')
-                }
-              />
+              {!editingItem?.isSystemAccount && (
+                <IconPicker
+                  type={editType === 'account' ? 'account' : 'category'}
+                  selectedIcon={editIcon}
+                  onSelect={setEditIcon}
+                  selectedColor={editColor}
+                  onColorSelect={setEditColor}
+                  colorClass={
+                    editType === 'account' ? 'text-blue-400'
+                      : (editingItem?.type === 'expense' ? 'text-red-400' : 'text-emerald-400')
+                  }
+                />
+              )}
 
               <button
                 type="submit"

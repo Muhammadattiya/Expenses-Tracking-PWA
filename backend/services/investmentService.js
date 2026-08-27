@@ -1,5 +1,7 @@
 const Investment = require('../models/Investment');
+const Account = require('../models/Account');
 const AppError = require('../utils/AppError');
+const transactionService = require('./transactionService');
 
 const getGoldPrice = async () => {
   if (!process.env.GOLD_API_KEY) throw new AppError('Gold price service is not configured.', 503);
@@ -17,13 +19,33 @@ const getGoldPrice = async () => {
 };
 
 const list = (userId) => Investment.find({ user: userId }).sort({ purchasedAt: -1 }).lean();
-const create = (userId, input) => {
+const create = async (userId, input) => {
   const safeData = {};
-  const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'purchasedAt', 'notes'];
+  const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'currentPrice', 'purchasedAt', 'notes'];
   for (const key of ALLOWED_KEYS) {
     if (input[key] !== undefined) safeData[key] = input[key];
   }
-  return Investment.create({ ...safeData, user: userId });
+  const investment = await Investment.create({ ...safeData, user: userId });
+
+  // If a source account is provided, create a transfer transaction
+  if (input.from_account) {
+    const totalAmount = (Number(safeData.quantity) || 0) * (Number(safeData.purchasePrice) || 0);
+    if (totalAmount > 0) {
+      const transactionTitle = input.transferTitle || `Investment: ${safeData.name}`;
+      const invAccount = await Account.findOne({ user: userId, type: 'investment' });
+      await transactionService.createTransaction(userId, {
+        type: 'transfer',
+        amount: totalAmount,
+        from_account: input.from_account,
+        to_account: invAccount ? invAccount._id : undefined,
+        investment: investment._id,
+        title: transactionTitle,
+        date: safeData.purchasedAt || new Date()
+      });
+    }
+  }
+
+  return investment;
 };
 const remove = async (userId, id) => {
   const investment = await Investment.findOneAndDelete({ _id: id, user: userId });
@@ -31,7 +53,7 @@ const remove = async (userId, id) => {
 };
 const update = async (userId, id, input) => {
   const safeData = {};
-  const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'purchasedAt', 'notes'];
+  const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'currentPrice', 'purchasedAt', 'notes'];
   for (const key of ALLOWED_KEYS) {
     if (input[key] !== undefined) safeData[key] = input[key];
   }

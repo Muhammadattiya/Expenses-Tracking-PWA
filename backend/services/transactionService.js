@@ -10,6 +10,7 @@ const POPULATE_TRANSACTION_REFERENCES = [
   { path: 'category', select: 'name type icon color' },
   { path: 'from_account', select: 'name type icon color' },
   { path: 'to_account', select: 'name type icon color' },
+  { path: 'investment', select: 'name type symbol' },
 ];
 
 const getTransactions = async (userId) => {
@@ -127,11 +128,15 @@ const getTransactionPage = async (userId, query = {}) => {
 
 const validateReferences = async (userId, data) => {
   if (data.type === "transfer") {
-    const [fromAccount, toAccount] = await Promise.all([
-      Account.findOne({ _id: data.from_account, user: userId }),
-      Account.findOne({ _id: data.to_account, user: userId }),
-    ]);
+    const fromAccount = await Account.findOne({ _id: data.from_account, user: userId });
     if (!fromAccount) throw new Error("Source account not found.");
+    
+    if (data.investment) {
+      // Transfer to investment
+      return;
+    }
+
+    const toAccount = await Account.findOne({ _id: data.to_account, user: userId });
     if (!toAccount) throw new Error("Destination account not found.");
     return;
   }
