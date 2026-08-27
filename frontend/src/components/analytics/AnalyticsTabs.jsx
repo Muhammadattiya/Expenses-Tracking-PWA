@@ -8,6 +8,7 @@ export default function AnalyticsTabs({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'overview', label: t('analytics.tabs.overview', 'Overview') },
     { id: 'spending', label: t('analytics.tabs.spending', 'Spending') },
+    { id: 'income', label: t('analytics.tabs.income', 'Income') },
     { id: 'planning', label: t('analytics.tabs.planning', 'Planning') },
     { id: 'assets', label: t('analytics.tabs.assets', 'Assets') },
     { id: 'liabilities', label: t('analytics.tabs.liabilities', 'Liabilities') },

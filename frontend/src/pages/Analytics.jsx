@@ -20,6 +20,7 @@ import AnalyticsTabs from '../components/analytics/AnalyticsTabs';
 import DateFilterChips, { getFilterBounds } from '../components/analytics/DateFilterChips';
 import OverviewTab from '../components/analytics/OverviewTab';
 import SpendingTab from '../components/analytics/SpendingTab';
+import IncomeTab from '../components/analytics/IncomeTab';
 import PlanningTab from '../components/analytics/PlanningTab';
 import AssetsTab from '../components/analytics/AssetsTab';
 import LiabilitiesTab from '../components/analytics/LiabilitiesTab';
@@ -353,7 +354,10 @@ export default function Analytics() {
                 />
             )}
             {activeTab === 'spending' && (
-                <SpendingTab data={data} categories={categories} money={money} />
+                <SpendingTab data={data} categories={categories} money={money} allTransactions={allTransactions} filters={filters} />
+            )}
+            {activeTab === 'income' && (
+                <IncomeTab data={data} categories={categories} money={money} allTransactions={allTransactions} filters={filters} />
             )}
             {activeTab === 'planning' && (
                 <PlanningTab budgets={budgets} money={money} />
