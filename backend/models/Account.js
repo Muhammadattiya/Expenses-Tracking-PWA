@@ -9,7 +9,7 @@ const accountSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['cash', 'bank', 'wallet'],
+    enum: ['cash', 'bank', 'wallet', 'investment'],
     default: 'cash'
   },
   icon: {
@@ -33,6 +33,10 @@ const accountSchema = new mongoose.Schema({
     default: false
   },
   isArchived: {
+    type: Boolean,
+    default: false
+  },
+  isSystemAccount: {
     type: Boolean,
     default: false
   },

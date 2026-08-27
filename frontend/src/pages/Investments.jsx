@@ -3,6 +3,7 @@ import { Loader2, Plus, TrendingDown, TrendingUp, Trash2, Coins, LineChart, Acti
 import { createInvestment, deleteInvestment, getGoldPrice, getInvestments, updateInvestment } from '../api/investments';
 import { useLanguage } from '../contexts/LanguageContext';
 import InvestmentModal from '../components/modals/InvestmentModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 import { InvestmentsSkeleton } from '../components/ui/Skeletons';
 
 export default function Investments() {
@@ -21,6 +22,7 @@ export default function Investments() {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   const load = async () => {
     setLoading(true); 
@@ -52,7 +54,7 @@ export default function Investments() {
 
   useEffect(() => { load(); }, []);
 
-  const unitValue = (item) => item.type === 'gold' ? goldUnitPrice(gold, item.karat) || 0 : item.purchasePrice;
+  const unitValue = (item) => item.type === 'gold' ? goldUnitPrice(gold, item.karat) || 0 : (item.currentPrice || item.purchasePrice);
   
   const totals = useMemo(() => investments.reduce((acc, item) => {
     acc.purchase += item.quantity * item.purchasePrice; 
@@ -72,7 +74,10 @@ export default function Investments() {
     await load();
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const id = deleteId;
+    setDeleteId(null);
     // Optimistic UI update
     const previous = [...investments];
     setInvestments(investments.filter(item => item._id !== id));
@@ -200,7 +205,7 @@ export default function Investments() {
                     <Pencil className="w-5 h-5" />
                   </button>
                   <button 
-                    onClick={() => handleDelete(item._id)} 
+                    onClick={() => setDeleteId(item._id)} 
                     className="text-[var(--color-text-muted)] hover:text-brand-red hover:bg-brand-red/10 p-2 rounded-xl transition-all focus:opacity-100"
                     aria-label="Delete investment"
                   >
@@ -216,6 +221,14 @@ export default function Investments() {
                   </span>
                   <span className="font-mono font-medium text-white">{item.quantity}</span>
                 </div>
+                {item.type === 'stock' && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-[var(--color-text-muted)]">
+                      {t('investments.currentPrice', 'السعر الحالي للسهم')}
+                    </span>
+                    <span className="font-mono font-medium text-white">{money(item.currentPrice || item.purchasePrice)}</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-[var(--color-text-muted)]">
@@ -252,10 +265,18 @@ export default function Investments() {
       </section>
 
       <InvestmentModal 
-        isOpen={isModalOpen}
+        isOpen={isModalOpen} 
+        onClose={() => { setIsModalOpen(false); setEditingInvestment(null); }} 
         initialData={editingInvestment}
-        onClose={() => { setIsModalOpen(false); setEditingInvestment(null); }}
         onSave={handleSaveInvestment}
+      />
+
+      <ConfirmModal
+        open={!!deleteId}
+        title={t('investments.deleteTitle', 'حذف الاستثمار')}
+        message={t('investments.deleteConfirm', 'هل أنت متأكد من حذف هذا الاستثمار؟ لا يمكن التراجع عن هذا الإجراء.')}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   );

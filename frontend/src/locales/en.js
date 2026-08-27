@@ -132,6 +132,7 @@ export default {
     karat24: '24K',
     perGram: 'per gram',
     addInvestment: 'Add Investment',
+    editInvestment: 'Edit Investment',
     gold21Name: '21K Gold',
     gold24Name: '24K Gold',
     gold: 'Gold',
@@ -144,11 +145,18 @@ export default {
     weightGrams: 'Weight (grams)',
     quantity: 'Quantity',
     purchasePrice: 'Unit Purchase Price (EGP)',
+    currentPrice: 'Current Stock Price',
+    deleteTitle: 'Delete Investment',
+    deleteConfirm: 'Are you sure you want to delete this investment? This action cannot be undone.',
     saveInvestment: 'Save Investment',
+    saveChanges: 'Save Changes',
     liveGoldPrices: 'Live Gold Prices',
     currentValue: 'Current Value',
     noInvestments: 'No investments added yet',
-    deleteError: 'An error occurred while deleting'
+    deleteError: 'An error occurred while deleting',
+    deductFromAccount: 'Deduct investment cost from account? (Optional)',
+    noAccountSelected: 'No deduction (Skip)',
+    transferTitle: 'Investment in {name}'
   },
   incomeProfiles: {
     title: 'Income Profiles',
@@ -400,6 +408,7 @@ export default {
     cash: 'Cash',
     bank: 'Bank',
     wallet: 'Wallet',
+    investmentsAccount: 'Investments',
     accountNamePlaceholder: 'Account Name (e.g., Cash, Bank)',
     addAccountBtn: 'Add Account',
     categoriesTitle: 'Categories',
@@ -694,5 +703,11 @@ export default {
     updateTitle: 'New Update Available',
     updateDesc: 'Tap to update to the latest version',
     updateBtn: 'Update'
+  },
+  calculator: {
+    title: 'Calculator',
+    done: 'Enter',
+    clear: 'Clear',
+    error: 'Error'
   }
 };

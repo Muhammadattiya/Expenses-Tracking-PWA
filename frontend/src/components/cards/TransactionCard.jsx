@@ -14,13 +14,18 @@ const TransactionCard = ({ transaction, onClick }) => {
   }
   if (leftIconName) LeftIconToRender = getIconComponent(leftIconName, 'Wallet');
 
-  // Right Icon (Category or Destination Account)
+  // Right Icon (Category or Destination Account or Investment)
   let RightIconToRender = Tag;
   let rightIconName = transaction.category?.icon;
   let rightColor = transaction.type === "expense" ? '#f87171' : (transaction.type === "income" ? '#4ade80' : '#60a5fa');
   if (transaction.type === "transfer") {
-    rightIconName = transaction.to_account?.icon;
-    rightColor = transaction.to_account?.color || '#3b82f6';
+    if (transaction.investment) {
+      rightIconName = "TrendingUp";
+      rightColor = "#eab308"; // yellow/gold for investments
+    } else {
+      rightIconName = transaction.to_account?.icon;
+      rightColor = transaction.to_account?.color || '#3b82f6';
+    }
   }
   if (rightIconName) RightIconToRender = getIconComponent(rightIconName, transaction.type === "transfer" ? 'Wallet' : 'Tag');
 
@@ -65,7 +70,9 @@ const TransactionCard = ({ transaction, onClick }) => {
               <span className="flex items-center gap-1">
                 <span className="bg-white/10 px-2 py-0.5 rounded text-[10px]">{transaction.from_account?.name || t('transactions.deletedAccount', 'حساب محذوف')}</span>
                 <span>⟶</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded text-[10px]">{transaction.to_account?.name || t('transactions.deletedAccount', 'حساب محذوف')}</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded text-[10px]">
+                  {transaction.investment ? t('investments.title', 'استثمار') : (transaction.to_account?.name || t('transactions.deletedAccount', 'حساب محذوف'))}
+                </span>
               </span>
             ) : (
               <>

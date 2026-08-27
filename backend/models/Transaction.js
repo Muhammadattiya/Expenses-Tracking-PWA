@@ -83,8 +83,14 @@ to_account: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "Account",
   required: function () {
-    return this.type === "transfer";
+    return this.type === "transfer" && !this.investment;
   },
+},
+
+investment: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Investment",
+  required: false
 },
 }, { timestamps: true });
 

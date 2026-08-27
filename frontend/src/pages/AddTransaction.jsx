@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell } from "lucide-react";
+import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell, Calculator } from "lucide-react";
 
 import { getAccounts } from "../api/accounts";
 import { getCategories } from "../api/categories";
@@ -9,6 +9,7 @@ import { createRecurringTransaction } from "../api/recurringTransactions";
 import CustomDatePicker from "../components/ui/CustomDatePicker";
 import CustomSelect from "../components/ui/CustomSelect";
 import RecurringSettingsModal from "../components/modals/RecurringSettingsModal";
+import CalculatorModal from "../components/modals/CalculatorModal";
 import { payBill } from "../api/bills";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -25,6 +26,7 @@ const AddTransaction = () => {
   const [title, setTitle] = useState(location.state?.defaultName || '');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })();
@@ -230,19 +232,30 @@ const AddTransaction = () => {
       <form onSubmit={handleSubmit} className="space-y-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]">
 
         {/* Massive Amount Input */}
-        <div className="mb-2 flex flex-col items-center justify-center py-4 border-b border-white/5">
+        <div className="mb-2 flex flex-col items-center justify-center py-4 border-b border-white/5 relative">
           <label className="text-xs text-[var(--color-text-muted)] font-bold mb-2 uppercase tracking-widest">{t('addTransaction.amount', 'المبلغ')}</label>
-          <div className="flex items-end justify-center gap-2 w-full">
-            <input
-              type="number"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0"
-              className="bg-transparent text-center text-6xl font-bold text-[var(--color-text-main)] focus:outline-none w-full max-w-[220px] placeholder-gray-800 transition-colors"
-              style={{ caretColor: type === 'expense' ? '#FF3B30' : type === 'income' ? '#34C759' : '#007AFF' }}
-            />
-            <span className="text-xl text-[var(--color-text-muted)] font-medium mb-2">{t('nav.currency', 'ج.م')}</span>
+          <div className="flex items-center justify-center gap-3 w-full relative">
+            <div className="flex items-end gap-2 max-w-[220px]">
+              <input
+                type="number"
+                inputMode="decimal"
+                required
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                className="bg-transparent text-center text-6xl font-bold text-[var(--color-text-main)] focus:outline-none w-full placeholder-gray-800 transition-colors"
+                style={{ caretColor: type === 'expense' ? '#FF3B30' : type === 'income' ? '#34C759' : '#007AFF' }}
+              />
+              <span className="text-xl text-[var(--color-text-muted)] font-medium mb-2">{t('nav.currency', 'ج.م')}</span>
+            </div>
+            
+            <button 
+              type="button"
+              onClick={() => setShowCalculator(true)}
+              className="absolute left-0 p-3 bg-white/5 hover:bg-white/10 active:bg-white/20 rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+            >
+              <Calculator size={24} />
+            </button>
           </div>
         </div>
 
@@ -412,6 +425,16 @@ const AddTransaction = () => {
         onClose={() => setIsRecurringModalOpen(false)}
         initialSettings={recurringSettings}
         onSave={setRecurringSettings}
+      />
+
+      <CalculatorModal 
+        isOpen={showCalculator} 
+        onClose={() => setShowCalculator(false)} 
+        initialValue={amount}
+        onSave={(result) => {
+          setAmount(result);
+          setShowCalculator(false);
+        }}
       />
     </div>
   );
