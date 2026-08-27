@@ -6,8 +6,8 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
   const { t } = useLanguage();
 
   const totalDebts = debts?.reduce((sum, d) => sum + (d.remainingAmount || 0), 0) || 0;
-  const totalBorrowed = debts?.filter(d => d.type === 'borrowed').reduce((sum, d) => sum + (d.remainingAmount || 0), 0) || 0;
-  const totalLent = debts?.filter(d => d.type === 'lent').reduce((sum, d) => sum + (d.remainingAmount || 0), 0) || 0;
+  const totalBorrowed = debts?.filter(d => d.type === 'i_owe').reduce((sum, d) => sum + (d.remainingAmount || 0), 0) || 0;
+  const totalLent = debts?.filter(d => d.type === 'owed_to_me').reduce((sum, d) => sum + (d.remainingAmount || 0), 0) || 0;
 
   // Helper to count exact occurrences of a repeating event within the filtered date range (Mathematically accurate for JS Dates)
   const calculateOccurrences = (eventDate, frequency, filters) => {
@@ -138,9 +138,9 @@ export default function LiabilitiesTab({ debts, bills, filters, money }) {
       {/* Grid of Debts */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {debts?.length ? debts.map((d) => {
-          const isBorrowed = d.type === 'borrowed';
+          const isBorrowed = d.type === 'i_owe';
           const color = isBorrowed ? '#f43f5e' : '#10b981'; // rose-500 or emerald-500
-          const initialAmount = d.amount || d.remainingAmount;
+          const initialAmount = d.initialAmount || d.amount || d.remainingAmount;
           const paid = initialAmount - d.remainingAmount;
           const progress = initialAmount > 0 ? (paid / initialAmount) * 100 : 0;
           

@@ -11,6 +11,7 @@ import {
   getTransactions,
   deleteTransaction,
 } from "../api/transactions";
+import { getCategories } from "../api/categories";
 import { getDebts } from "../api/debts";
 import { getSurvival } from "../api/forecast";
 import { getReceivables } from "../api/receivables";
@@ -23,6 +24,8 @@ import { useNotification } from "../contexts/NotificationContext";
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import * as LucideIcons from 'lucide-react';
 
 const Dashboard = () => {
   const { t, lang } = useLanguage();
@@ -32,7 +35,9 @@ const Dashboard = () => {
   const [allReceivables, setAllReceivables] = useState([]);
   const [pendingTransactions, setPendingTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [referenceDate, setReferenceDate] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -124,17 +129,19 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [transactionsData, accountsData, userData, debtsData, survivalData, receivablesData] = await Promise.all([
+      const [transactionsData, accountsData, userData, debtsData, survivalData, receivablesData, categoriesData] = await Promise.all([
         getTransactions(),
         getAccounts(),
         getCurrentUser().catch(() => null),
         getDebts().catch(() => ({ debts: [], transactions: [] })),
         getSurvival().catch(() => null),
-        getReceivables().catch(() => [])
+        getReceivables().catch(() => []),
+        getCategories().catch(() => [])
       ]);
 
       setAllTransactions(transactionsData);
       setAccounts(accountsData);
+      setCategories(categoriesData || []);
       setAllDebtTransactions(debtsData.transactions || []);
       setAllReceivables(receivablesData || []);
       setSurvival(survivalData);
@@ -273,13 +280,16 @@ const Dashboard = () => {
       if (selectedAccount !== 'all' && (t.account?._id || t.account) !== selectedAccount && (t.from_account?._id || t.from_account) !== selectedAccount && (t.to_account?._id || t.to_account) !== selectedAccount) {
         return false;
       }
+      if (selectedCategory !== 'all' && (t.category?._id || t.category) !== selectedCategory) {
+        return false;
+      }
       const tDate = new Date(t.date);
       if (tDate < periodStart || tDate > periodEnd) {
         return false;
       }
       return true;
     });
-  }, [allTransactions, selectedAccount, periodStart, periodEnd]);
+  }, [allTransactions, selectedAccount, selectedCategory, periodStart, periodEnd]);
 
   const { groupedTransactions, sortedDates, groupCounts } = useMemo(() => {
     const getCreationTime = (t) => {
@@ -536,6 +546,59 @@ const Dashboard = () => {
         <h2 className="text-xl font-bold text-[var(--color-text-main)]">
           {selectedAccount === 'all' ? t('dashboard.transactions', 'المعاملات') : `${t('dashboard.transactionsFor', 'معاملات:')} ${accounts.find(a => a._id === selectedAccount)?.name}`}
         </h2>
+      </div>
+
+      <div className="mb-4 w-full overflow-hidden">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-3 pt-1 px-1 -mx-1">
+           {/* All Categories Chip */}
+           <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSelectedCategory('all')}
+              className={`relative px-5 py-2.5 rounded-[1.2rem] flex items-center gap-2 whitespace-nowrap transition-colors duration-300 ${selectedCategory === 'all' ? 'text-white' : 'text-[var(--color-text-muted)] hover:text-white bg-black/10 border border-white/5'}`}
+           >
+              {selectedCategory === 'all' && (
+                  <motion.div
+                      layoutId="activeCategory"
+                      className="absolute inset-0 bg-brand-blue/30 backdrop-blur-[40px] border border-brand-blue/40 shadow-[0_8px_32px_rgba(0,122,255,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[1.2rem]"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                  />
+              )}
+              <span className="relative z-10 font-bold text-sm tracking-wide">{t('dashboard.allCategories', 'جميع الفئات')}</span>
+           </motion.button>
+
+           {/* Dynamic Category Chips */}
+           {categories.map(cat => {
+              const IconComponent = LucideIcons[cat.icon] || LucideIcons.Tag;
+              const isActive = selectedCategory === cat._id;
+              
+              return (
+                  <motion.button
+                      key={cat._id}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setSelectedCategory(cat._id)}
+                      className={`relative px-5 py-2.5 rounded-[1.2rem] flex items-center gap-2 whitespace-nowrap transition-colors duration-300 ${isActive ? 'text-white' : 'text-[var(--color-text-muted)] hover:text-white bg-black/10 border border-white/5'}`}
+                  >
+                      {isActive && (
+                          <motion.div
+                              layoutId="activeCategory"
+                              className="absolute inset-0 backdrop-blur-[40px] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[1.2rem]"
+                              style={{ 
+                                  backgroundColor: `${cat.color}30`, 
+                                  borderColor: `${cat.color}50`,
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid'
+                              }}
+                              transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                          />
+                      )}
+                      <span className="relative z-10 flex items-center justify-center bg-black/20 p-1.5 rounded-full shadow-inner">
+                        <IconComponent className="w-3.5 h-3.5" style={{ color: isActive ? '#fff' : cat.color }} />
+                      </span>
+                      <span className="relative z-10 font-bold text-sm tracking-wide">{lang === 'ar' ? (cat.nameAr || cat.name) : (cat.nameEn || cat.name)}</span>
+                  </motion.button>
+              )
+           })}
+        </div>
       </div>
 
       <div className="w-full pb-4">
