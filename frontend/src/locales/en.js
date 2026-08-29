@@ -709,5 +709,13 @@ export default {
     done: 'Enter',
     clear: 'Clear',
     error: 'Error'
+  },
+  agent: {
+    welcomeMessage: "Hello! I am Nova, Finova's AI Assistant. How can I help you with your finances today?",
+    title: "Nova",
+    subtitle: "Powered by AI",
+    errorMessage: "Sorry, an error occurred while connecting to Nova.",
+    thinking: "Thinking...",
+    placeholder: "Ask about your finances..."
   }
 };
