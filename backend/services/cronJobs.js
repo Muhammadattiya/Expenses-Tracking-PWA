@@ -246,6 +246,25 @@ const processRecurringTransactions = async (stats) => {
         console.error(`[ERROR] User ID: ${r.user}`);
         console.error(`[ERROR] message:`, err.message);
         console.error(`[ERROR] stack trace:`, err.stack);
+
+        try {
+          r.isActive = false;
+          await r.save();
+
+          const subscriptions = await Subscription.find({ user: r.user });
+          if (subscriptions.length > 0) {
+            const payload = JSON.stringify({
+              title: `⚠️ فشل معاملة متكررة`,
+              body: `تم إيقاف المعاملة المتكررة "${r.title || 'بدون عنوان'}" بسبب خطأ: ${err.message}`,
+              url: '/settings'
+            });
+            for (let sub of subscriptions) {
+              await sendPushNotification(sub, payload, null);
+            }
+          }
+        } catch (innerErr) {
+          console.error('[ERROR] Failed to pause and notify for failed recurring transaction:', innerErr.message);
+        }
       }
     }
   } catch (error) {

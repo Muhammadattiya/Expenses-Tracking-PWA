@@ -51,7 +51,7 @@ exports.updateBudget = async (req, res, next) => {
     const budget = await Budget.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },
       { amount, period, isActive, account: account || null, carryOver: carryOver || false, isRecurring: isRecurring !== undefined ? isRecurring : true },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).populate('category', 'name icon type');
 
     if (!budget) {

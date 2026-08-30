@@ -33,7 +33,7 @@ exports.updateRecurringTransaction = async (userId, id, data) => {
   const recurring = await RecurringTransaction.findOneAndUpdate(
     { _id: id, user: userId },
     data,
-    { new: true }
+    { returnDocument: 'after' }
   );
 
   if (!recurring) {

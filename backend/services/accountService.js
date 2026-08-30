@@ -32,7 +32,7 @@ const updateAccount = async (userId, id, data) => {
   }
 
   const account = await Account.findOneAndUpdate({ _id: id, user: userId }, safeData, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true,
   });
 
