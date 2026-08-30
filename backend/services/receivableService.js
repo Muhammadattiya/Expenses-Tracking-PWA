@@ -43,7 +43,7 @@ const create = async (userId, data) => {
     }
   }
 
-  return Receivable.create({ 
+  const receivable = await Receivable.create({ 
     user: userId, 
     title: data.title, 
     paidAmount, 
@@ -53,6 +53,28 @@ const create = async (userId, data) => {
     expenseCategory: expenseCategory?._id || null,
     participants 
   });
+
+  const refId = receivable._id.toString();
+
+  if (userShare > 0) {
+    await Transaction.create({
+      user: userId,
+      title: `${data.title} (My Share)`,
+      amount: userShare,
+      type: 'expense',
+      account: account._id,
+      category: expenseCategory._id,
+      date: new Date(),
+      source: 'system',
+      referenceNumber: refId
+    });
+    const { checkBudgetThresholds } = require('./budgetEngine');
+    checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+  }
+
+
+
+  return receivable;
 };
 
 const update = async (userId, id, data) => {
@@ -124,6 +146,28 @@ const update = async (userId, id, data) => {
   receivable.expenseCategory = expenseCategory?._id || null;
 
   await receivable.save();
+
+  const refId = receivable._id.toString();
+  await Transaction.deleteMany({ user: userId, referenceNumber: refId });
+
+  if (userShare > 0) {
+    await Transaction.create({
+      user: userId,
+      title: `${data.title} (My Share)`,
+      amount: userShare,
+      type: 'expense',
+      account: account._id,
+      category: expenseCategory._id,
+      date: new Date(),
+      source: 'system',
+      referenceNumber: refId
+    });
+    const { checkBudgetThresholds } = require('./budgetEngine');
+    checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+  }
+
+
+
   return receivable;
 };
 
@@ -137,10 +181,14 @@ const recordPayment = async (userId, receivableId, participantId, data) => {
   const account = await Account.findOne({ _id: data.account, user: userId });
   if (!account) throw new AppError('Account not found.', 404);
   
+  const paymentTime = data.date || new Date();
   participant.paidAmount += amount;
-  participant.payments.push({ amount, account: account._id, paidAt: data.date || new Date() });
+  participant.payments.push({ amount, account: account._id, paidAt: paymentTime });
   
   await receivable.save();
+
+
+
   return receivable;
 };
 
@@ -148,7 +196,10 @@ const remove = async (userId, id) => {
   const receivable = await Receivable.findOne({ _id: id, user: userId });
   if (!receivable) throw new AppError('Receivable not found.', 404);
 
+  const refId = receivable._id.toString();
+  await Transaction.deleteMany({ user: userId, referenceNumber: { $regex: `^${refId}` } });
   await receivable.deleteOne();
+  
   return { success: true };
 };
 

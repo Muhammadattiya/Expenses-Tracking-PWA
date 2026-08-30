@@ -29,7 +29,7 @@ const updateProfile = async (req, res) => {
     const profile = await IncomeProfile.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },
       req.body,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!profile) return res.status(404).json({ message: 'Profile not found' });
     res.status(200).json(profile);

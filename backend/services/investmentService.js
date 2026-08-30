@@ -57,7 +57,7 @@ const update = async (userId, id, input) => {
   for (const key of ALLOWED_KEYS) {
     if (input[key] !== undefined) safeData[key] = input[key];
   }
-  const investment = await Investment.findOneAndUpdate({ _id: id, user: userId }, safeData, { new: true });
+  const investment = await Investment.findOneAndUpdate({ _id: id, user: userId }, safeData, { returnDocument: 'after' });
   if (!investment) throw new AppError('Investment not found.', 404);
   return investment;
 };

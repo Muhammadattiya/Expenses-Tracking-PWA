@@ -186,7 +186,7 @@ const updateTransaction = async (userId, id, data) => {
   }
   await validateReferences(userId, normalizedData);
   const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, normalizedData, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true,
   })
     .populate("account")

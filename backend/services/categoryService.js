@@ -12,7 +12,7 @@ const createCategory = async (userId, data) => {
 
 const updateCategory = async (userId, id, data) => {
   const category = await Category.findOneAndUpdate({ _id: id, user: userId }, data, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true,
   });
 

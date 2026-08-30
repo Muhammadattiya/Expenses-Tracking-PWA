@@ -126,7 +126,7 @@ exports.updateDebt = async (req, res) => {
     const debt = await Debt.findOneAndUpdate(
       { _id: debtId, user: req.user.id },
       { personName, type },
-      { new: true }
+      { returnDocument: 'after' }
     );
     
     if (!debt) return res.status(404).json({ message: 'Debt not found' });
