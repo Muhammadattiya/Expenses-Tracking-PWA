@@ -715,5 +715,13 @@ export default {
     done: 'إدخال',
     clear: 'مسح',
     error: 'خطأ'
+  },
+  agent: {
+    welcomeMessage: "أهلاً بك! أنا Nova، المساعد الذكي لتطبيق Finova. كيف يمكنني مساعدتك في أمورك المالية اليوم؟",
+    title: "Nova",
+    subtitle: "مدعوم بالذكاء الاصطناعي",
+    errorMessage: "عذراً، حدث خطأ أثناء الاتصال بالمساعد الذكي.",
+    thinking: "جاري التفكير...",
+    placeholder: "اسأل عن مصاريفك..."
   }
 };

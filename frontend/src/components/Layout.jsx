@@ -3,6 +3,7 @@ import BottomNav from './BottomNav';
 import InstallPrompt from './InstallPrompt';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNetwork } from '../hooks/useNetwork';
+import AgentButton from './agent/AgentButton';
 
 export default function Layout() {
   const { lang, t } = useLanguage();
@@ -24,6 +25,7 @@ export default function Layout() {
       </main>
       <InstallPrompt />
       
+      <AgentButton />
       <BottomNav />
     </div>
   );
