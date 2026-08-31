@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Loader2, WalletCards } from 'lucide-react';
+import SplashScreen from './SplashScreen';
 import { getCurrentUser, signInWithGoogle } from '../api/auth';
 
 export default function AuthGate({ children }) {
@@ -11,9 +12,15 @@ export default function AuthGate({ children }) {
   const googleBtnRef = useRef(null);
 
   useEffect(() => {
+    const minLoadTime = new Promise(resolve => setTimeout(resolve, 2000));
+    
     const token = localStorage.getItem('auth_token');
-    if (!token) return setLoading(false);
-    getCurrentUser().then(u => {
+    if (!token) {
+      minLoadTime.then(() => setLoading(false));
+      return;
+    }
+    
+    const fetchUser = getCurrentUser().then(u => {
       setUser(u);
       localStorage.setItem('auth_user', JSON.stringify(u));
     }).catch((err) => {
@@ -24,7 +31,9 @@ export default function AuthGate({ children }) {
         const cachedUser = localStorage.getItem('auth_user');
         if (cachedUser) setUser(JSON.parse(cachedUser));
       }
-    }).finally(() => setLoading(false));
+    });
+
+    Promise.all([fetchUser, minLoadTime]).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -62,7 +71,7 @@ export default function AuthGate({ children }) {
     }
   }, [user, clientId, loading, googleScriptLoaded]);
 
-  if (loading) return <div className="min-h-screen grid place-items-center bg-zinc-950"><Loader2 className="animate-spin text-blue-400" /></div>;
+  if (loading) return <SplashScreen />;
   if (user) return children;
   
   return (
