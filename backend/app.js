@@ -24,6 +24,9 @@ const incomeProfileRoutes = require('./routes/incomeProfileRoutes');
 
 const app = express();
 
+// ─── Trust the first proxy (Render) for accurate IP detection in rate limiters ─
+app.set('trust proxy', 1);
+
 // ─── Security Headers ──────────────────────────────────────────────────────────
 app.use(helmet());
 
@@ -40,7 +43,6 @@ app.use(cors({
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Idempotency-Key'], // Fix #5
-  credentials: true,
   maxAge: 86400,
 }));
 

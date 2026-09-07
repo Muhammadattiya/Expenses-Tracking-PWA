@@ -81,7 +81,7 @@ function getBudgetPeriodDates(budget, userPrefs, now = new Date()) {
   if (period === 'custom' && budget.startDate && budget.endDate) {
     return { startDate: new Date(budget.startDate), endDate: new Date(budget.endDate) };
   } else if (period === 'monthly') {
-    const prefMonthStart = userPrefs.budgetStartDayMonthly || 1;
+    const prefMonthStart = userPrefs.trackingStartDayMonthly || 1;
     const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
 
@@ -100,7 +100,7 @@ function getBudgetPeriodDates(budget, userPrefs, now = new Date()) {
     endDate.setHours(23, 59, 59, 999);
   } else if (period === 'weekly') {
     // weekly
-    const prefWeekStart = userPrefs.budgetStartDayWeekly !== undefined ? userPrefs.budgetStartDayWeekly : 6;
+    const prefWeekStart = userPrefs.trackingStartDayWeekly !== undefined ? userPrefs.trackingStartDayWeekly : 6;
     let day = now.getDay();
     let diff = day >= prefWeekStart ? day - prefWeekStart : 7 - (prefWeekStart - day);
     
@@ -120,10 +120,14 @@ async function checkBudgetThresholds(userId, stats = null) {
   if (!user) return;
 
   const budgets = await Budget.find({ user: userId, isActive: true }).populate('category');
-  if (!budgets || budgets.length === 0) return;
-
-  if (stats) {
+  if (stats && budgets) {
     stats.budgetsChecked += budgets.length;
+  }
+
+  const masterBudgets = await SmartBudgetPlan.find({ user: userId, status: 'confirmed', groupAsMaster: true });
+  
+  if ((!budgets || budgets.length === 0) && (!masterBudgets || masterBudgets.length === 0)) {
+    return;
   }
 
   const subs = await Subscription.find({ user: userId });
@@ -134,8 +138,6 @@ async function checkBudgetThresholds(userId, stats = null) {
 
   for (let budget of budgets) {
     let { startDate, endDate } = getBudgetPeriodDates(budget, user.preferences || {}, now);
-    let state = budget.notificationState || {};
-    let isModified = false;
     let isNewCycle = false;
 
     if (budget.period === 'custom') {
@@ -149,57 +151,89 @@ async function checkBudgetThresholds(userId, stats = null) {
               newStart = new Date(newStart.getTime() + duration);
               newEnd = new Date(newEnd.getTime() + duration);
             }
-            budget.startDate = newStart;
-            budget.endDate = newEnd;
             startDate = newStart;
             endDate = newEnd;
             
-            isNewCycle = true;
-            state = {
-              lastPeriodStart: budget.startDate,
-              notified50: false,
-              notified75: false,
-              notified90: false,
-              notified100: false,
-              notifiedExceeded: false
-            };
-            isModified = true;
+            const resetResult = await Budget.findOneAndUpdate(
+              { _id: budget._id, endDate: { $lt: now } },
+              { 
+                $set: { 
+                  startDate: newStart,
+                  endDate: newEnd,
+                  'notificationState.lastPeriodStart': newStart,
+                  'notificationState.notified50': false,
+                  'notificationState.notified75': false,
+                  'notificationState.notified90': false,
+                  'notificationState.notified100': false,
+                  'notificationState.notifiedExceeded': false
+                }
+              },
+              { new: true }
+            );
+
+            if (resetResult) {
+              isNewCycle = true;
+              budget = resetResult;
+            }
           } else {
-            budget.isActive = false;
-            await budget.save();
+            await Budget.updateOne({ _id: budget._id }, { $set: { isActive: false } });
             continue;
           }
         } else {
-          budget.isActive = false;
-          await budget.save();
+          await Budget.updateOne({ _id: budget._id }, { $set: { isActive: false } });
           continue;
         }
       }
     } else {
-      if (!state.lastPeriodStart || new Date(state.lastPeriodStart).getTime() !== startDate.getTime()) {
-        if (state.lastPeriodStart) {
+      const lastStart = budget.notificationState?.lastPeriodStart;
+      if (!lastStart || new Date(lastStart).getTime() !== startDate.getTime()) {
+        if (lastStart) {
           if (budget.isRecurring === false) {
-            budget.isActive = false;
-            await budget.save();
+            await Budget.updateOne({ _id: budget._id }, { $set: { isActive: false } });
             continue;
           }
-          isNewCycle = true;
         }
-        state = {
-          lastPeriodStart: startDate,
-          notified50: false,
-          notified75: false,
-          notified90: false,
-          notified100: false,
-          notifiedExceeded: false
-        };
-        isModified = true;
+        
+        const resetResult = await Budget.findOneAndUpdate(
+          { 
+            _id: budget._id, 
+            $or: [
+              { 'notificationState.lastPeriodStart': { $ne: startDate } },
+              { 'notificationState.lastPeriodStart': null }
+            ]
+          },
+          {
+            $set: {
+              'notificationState.lastPeriodStart': startDate,
+              'notificationState.notified50': false,
+              'notificationState.notified75': false,
+              'notificationState.notified90': false,
+              'notificationState.notified100': false,
+              'notificationState.notifiedExceeded': false
+            }
+          },
+          { new: true }
+        );
+
+        if (resetResult) {
+          if (lastStart) {
+            isNewCycle = true;
+          }
+          budget = resetResult;
+        }
       }
+    }
+
+    if (isNewCycle) {
+      notificationsToGroup.push({
+        categoryName: budget.category?.name || 'Budget',
+        threshold: 'new_cycle'
+      });
     }
 
     const query = {
       user: userId,
-      category: budget.category._id,
+      category: budget.category._id || budget.category,
       type: 'expense',
       date: { $gte: startDate, $lte: endDate }
     };
@@ -211,59 +245,70 @@ async function checkBudgetThresholds(userId, stats = null) {
     const spent = txs.reduce((sum, tx) => sum + tx.amount, 0);
     const pct = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
     
-    let triggeredThreshold = null;
+    let targetThreshold = null;
     let exceedAmount = 0;
 
-    if (spent > budget.amount && !state.notifiedExceeded) {
-      triggeredThreshold = 'exceeded';
+    if (spent > budget.amount) {
+      targetThreshold = 'exceeded';
       exceedAmount = spent - budget.amount;
-      state.notifiedExceeded = true;
-      isModified = true;
-    } else if (pct >= 100 && !state.notified100 && !state.notifiedExceeded && spent <= budget.amount) {
-      triggeredThreshold = 100;
-      state.notified100 = true;
-      isModified = true;
-    } else if (pct >= 90 && !state.notified90 && pct < 100) {
-      triggeredThreshold = 90;
-      state.notified90 = true;
-      isModified = true;
-    } else if (pct >= 75 && !state.notified75 && pct < 90) {
-      triggeredThreshold = 75;
-      state.notified75 = true;
-      isModified = true;
-    } else if (pct >= 50 && !state.notified50 && pct < 75) {
-      triggeredThreshold = 50;
-      state.notified50 = true;
-      isModified = true;
+    } else if (pct >= 100) {
+      targetThreshold = 100;
+    } else if (pct >= 90) {
+      targetThreshold = 90;
+    } else if (pct >= 75) {
+      targetThreshold = 75;
+    } else if (pct >= 50) {
+      targetThreshold = 50;
     }
 
-    if (triggeredThreshold) {
-      notificationsToGroup.push({
-        categoryName: budget.category.name,
-        threshold: triggeredThreshold,
-        exceedAmount
-      });
-    }
+    if (targetThreshold) {
+      const thresholdKey = targetThreshold === 'exceeded' ? 'notifiedExceeded' : `notified${targetThreshold}`;
+      const setFields = {};
+      
+      if (targetThreshold === 'exceeded') {
+        setFields['notificationState.notifiedExceeded'] = true;
+        setFields['notificationState.notified100'] = true;
+        setFields['notificationState.notified90'] = true;
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 100) {
+        setFields['notificationState.notified100'] = true;
+        setFields['notificationState.notified90'] = true;
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 90) {
+        setFields['notificationState.notified90'] = true;
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 75) {
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 50) {
+        setFields['notificationState.notified50'] = true;
+      }
 
-    if (isNewCycle) {
-      notificationsToGroup.push({
-        categoryName: budget.category.name,
-        threshold: 'new_cycle'
-      });
-    }
+      const updateResult = await Budget.findOneAndUpdate(
+        { 
+          _id: budget._id, 
+          [`notificationState.${thresholdKey}`]: false 
+        },
+        { $set: setFields },
+        { new: true }
+      );
 
-    if (isModified) {
-      budget.notificationState = state;
-      await budget.save();
+      if (updateResult) {
+        notificationsToGroup.push({
+          categoryName: budget.category?.name || 'Budget',
+          threshold: targetThreshold,
+          exceedAmount
+        });
+      }
     }
   }
 
   // --- MASTER BUDGET (SmartBudgetPlan) THRESHOLDS ---
-  const masterBudgets = await SmartBudgetPlan.find({ user: userId, status: 'confirmed', groupAsMaster: true });
   for (let mBudget of masterBudgets) {
     let { startDate, endDate } = getBudgetPeriodDates(mBudget, user.preferences || {}, now);
-    let state = mBudget.notificationState || {};
-    let isModified = false;
     let isNewCycle = false;
 
     if (mBudget.period === 'custom') {
@@ -277,42 +322,75 @@ async function checkBudgetThresholds(userId, stats = null) {
               newStart = new Date(newStart.getTime() + duration);
               newEnd = new Date(newEnd.getTime() + duration);
             }
-            mBudget.startDate = newStart;
-            mBudget.endDate = newEnd;
             startDate = newStart;
             endDate = newEnd;
             
-            isNewCycle = true;
-            state = {
-              lastPeriodStart: mBudget.startDate,
-              notified50: false,
-              notified75: false,
-              notified90: false,
-              notified100: false,
-              notifiedExceeded: false
-            };
-            isModified = true;
+            const resetResult = await SmartBudgetPlan.findOneAndUpdate(
+              { _id: mBudget._id, endDate: { $lt: now } },
+              { 
+                $set: { 
+                  startDate: newStart,
+                  endDate: newEnd,
+                  'notificationState.lastPeriodStart': newStart,
+                  'notificationState.notified50': false,
+                  'notificationState.notified75': false,
+                  'notificationState.notified90': false,
+                  'notificationState.notified100': false,
+                  'notificationState.notifiedExceeded': false
+                }
+              },
+              { new: true }
+            );
+
+            if (resetResult) {
+              isNewCycle = true;
+              mBudget = resetResult;
+            }
           }
         }
       }
     } else {
-      if (!state.lastPeriodStart || new Date(state.lastPeriodStart).getTime() !== startDate.getTime()) {
-        if (state.lastPeriodStart) {
-          isNewCycle = true;
+      const lastStart = mBudget.notificationState?.lastPeriodStart;
+      if (!lastStart || new Date(lastStart).getTime() !== startDate.getTime()) {
+        const resetResult = await SmartBudgetPlan.findOneAndUpdate(
+          { 
+            _id: mBudget._id, 
+            $or: [
+              { 'notificationState.lastPeriodStart': { $ne: startDate } },
+              { 'notificationState.lastPeriodStart': null }
+            ]
+          },
+          {
+            $set: {
+              'notificationState.lastPeriodStart': startDate,
+              'notificationState.notified50': false,
+              'notificationState.notified75': false,
+              'notificationState.notified90': false,
+              'notificationState.notified100': false,
+              'notificationState.notifiedExceeded': false
+            }
+          },
+          { new: true }
+        );
+
+        if (resetResult) {
+          if (lastStart) {
+            isNewCycle = true;
+          }
+          mBudget = resetResult;
         }
-        state = {
-          lastPeriodStart: startDate,
-          notified50: false,
-          notified75: false,
-          notified90: false,
-          notified100: false,
-          notifiedExceeded: false
-        };
-        isModified = true;
       }
     }
 
-    // Get all categories for this master budget
+    const planName = mBudget.name || 'Master Budget';
+
+    if (isNewCycle) {
+      notificationsToGroup.push({
+        categoryName: planName,
+        threshold: 'new_cycle'
+      });
+    }
+
     const categoryIds = mBudget.categories.map(c => c.category);
     const query = {
       user: userId,
@@ -326,51 +404,64 @@ async function checkBudgetThresholds(userId, stats = null) {
     const limit = mBudget.availableBudget;
     const pct = limit > 0 ? (spent / limit) * 100 : 0;
     
-    let triggeredThreshold = null;
+    let targetThreshold = null;
     let exceedAmount = 0;
-    const planName = mBudget.name || 'Master Budget';
 
-    if (spent > limit && !state.notifiedExceeded) {
-      triggeredThreshold = 'exceeded';
+    if (spent > limit) {
+      targetThreshold = 'exceeded';
       exceedAmount = spent - limit;
-      state.notifiedExceeded = true;
-      isModified = true;
-    } else if (pct >= 100 && !state.notified100 && !state.notifiedExceeded && spent <= limit) {
-      triggeredThreshold = 100;
-      state.notified100 = true;
-      isModified = true;
-    } else if (pct >= 90 && !state.notified90 && pct < 100) {
-      triggeredThreshold = 90;
-      state.notified90 = true;
-      isModified = true;
-    } else if (pct >= 75 && !state.notified75 && pct < 90) {
-      triggeredThreshold = 75;
-      state.notified75 = true;
-      isModified = true;
-    } else if (pct >= 50 && !state.notified50 && pct < 75) {
-      triggeredThreshold = 50;
-      state.notified50 = true;
-      isModified = true;
+    } else if (pct >= 100) {
+      targetThreshold = 100;
+    } else if (pct >= 90) {
+      targetThreshold = 90;
+    } else if (pct >= 75) {
+      targetThreshold = 75;
+    } else if (pct >= 50) {
+      targetThreshold = 50;
     }
 
-    if (triggeredThreshold) {
-      notificationsToGroup.push({
-        categoryName: planName,
-        threshold: triggeredThreshold,
-        exceedAmount
-      });
-    }
+    if (targetThreshold) {
+      const thresholdKey = targetThreshold === 'exceeded' ? 'notifiedExceeded' : `notified${targetThreshold}`;
+      const setFields = {};
+      
+      if (targetThreshold === 'exceeded') {
+        setFields['notificationState.notifiedExceeded'] = true;
+        setFields['notificationState.notified100'] = true;
+        setFields['notificationState.notified90'] = true;
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 100) {
+        setFields['notificationState.notified100'] = true;
+        setFields['notificationState.notified90'] = true;
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 90) {
+        setFields['notificationState.notified90'] = true;
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 75) {
+        setFields['notificationState.notified75'] = true;
+        setFields['notificationState.notified50'] = true;
+      } else if (targetThreshold === 50) {
+        setFields['notificationState.notified50'] = true;
+      }
 
-    if (isNewCycle) {
-      notificationsToGroup.push({
-        categoryName: planName,
-        threshold: 'new_cycle'
-      });
-    }
+      const updateResult = await SmartBudgetPlan.findOneAndUpdate(
+        { 
+          _id: mBudget._id, 
+          [`notificationState.${thresholdKey}`]: false 
+        },
+        { $set: setFields },
+        { new: true }
+      );
 
-    if (isModified) {
-      mBudget.notificationState = state;
-      await mBudget.save();
+      if (updateResult) {
+        notificationsToGroup.push({
+          categoryName: planName,
+          threshold: targetThreshold,
+          exceedAmount
+        });
+      }
     }
   }
 

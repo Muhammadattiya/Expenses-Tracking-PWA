@@ -1,55 +1,42 @@
 import React, { useMemo } from 'react';
-import { TrendingUp, Calendar, AlertCircle, Briefcase, Zap, Target } from 'lucide-react';
+import { TrendingUp, Calendar, AlertCircle, Briefcase, Zap, PieChart } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 
-function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'brand-green', delay = 0 }) {
+function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper', delay = 0 }) {
   const colorMap = {
-    'brand-blue': 'from-blue-500/20 to-cyan-500/5 border-blue-500/20 text-blue-400',
-    'brand-purple': 'from-purple-500/20 to-fuchsia-500/5 border-purple-500/20 text-purple-400',
-    'brand-green': 'from-emerald-500/20 to-teal-500/5 border-emerald-500/20 text-emerald-400',
-    'brand-red': 'from-rose-500/20 to-orange-500/5 border-rose-500/20 text-rose-400',
-    'brand-amber': 'from-amber-500/20 to-yellow-500/5 border-amber-500/20 text-amber-400',
+    'brand-blue': 'text-brand-blue',
+    'brand-purple': 'text-purple-400',
+    'brand-green': 'text-emerald-400',
+    'brand-red': 'text-rose-400',
+    'brand-amber': 'text-amber-400',
+    'copper': 'text-[#E8C5A8]',
+    'emerald': 'text-emerald-400',
+    'rose': 'text-rose-400',
   };
 
-  const glowMap = {
-    'brand-blue': 'bg-blue-500/20',
-    'brand-purple': 'bg-purple-500/20',
-    'brand-green': 'bg-emerald-500/20',
-    'brand-red': 'bg-rose-500/20',
-    'brand-amber': 'bg-amber-500/20',
-  };
+  const textColor = colorMap[color] || (color.startsWith('text-') ? color : 'text-[#E8C5A8]');
 
   return (
-    <motion.section 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', bounce: 0, duration: 0.6, delay }}
-      className={`relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] group transition-all duration-500 hover:scale-[1.02] flex flex-col justify-between`}
-    >
-      <div className={`absolute -right-20 -top-20 w-64 h-64 ${glowMap[color]} rounded-full blur-[50px] group-hover:scale-110 transition-transform duration-700 pointer-events-none`} />
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-inner bg-gradient-to-br ${colorMap[color]} border`}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <h3 className="text-white/70 font-bold tracking-wide text-sm uppercase">{title}</h3>
-        </div>
-        
-        <div className="mt-2">
-          <span className="text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight drop-shadow-md block mb-1">
+    <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500 flex flex-col justify-between min-h-[140px]">
+      <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+        <Icon className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+      </div>
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{title}</p>
+        <div>
+          <p className={`text-xl md:text-3xl font-black tabular-nums tracking-tight ${textColor}`}>
             {value}
-          </span>
+          </p>
           {(subtitle || highlight) && (
-            <p className="text-sm font-medium mt-2 flex items-center gap-2">
-               {highlight && <span className={`px-2 py-0.5 rounded-md bg-white/10 ${colorMap[color].split(' ').pop()} border border-white/5`}>{highlight}</span>}
-               {subtitle && <span className="text-white/50">{subtitle}</span>}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+               {highlight && <span className="text-[10px] md:text-xs font-bold px-2 py-1 bg-white/5 border border-white/5 rounded-md text-[var(--color-text-muted)] uppercase tracking-wider">{highlight}</span>}
+               {subtitle && <span className="text-[10px] md:text-xs text-[var(--color-text-muted)] leading-tight">{subtitle}</span>}
+            </div>
           )}
         </div>
       </div>
-    </motion.section>
+    </div>
   );
 }
 
@@ -98,7 +85,7 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
     const biggest = filteredTransactions.reduce((max, tx) => tx.amount > max.amount ? tx : max, { amount: 0, title: '' });
     const biggestCat = categories.find(c => c._id === (typeof biggest.category === 'object' ? biggest.category?._id : biggest.category));
     const biggestCatName = biggestCat ? (lang === 'ar' ? (biggestCat.nameAr || biggestCat.name) : (biggestCat.nameEn || biggestCat.name)) : '';
-    const biggestTitle = biggest.amount > 0 ? (biggest.title ? `${biggest.title} (${biggestCatName})` : biggestCatName) : t('analytics.insights.none', 'None');
+    const biggestTitle = biggest.amount > 0 ? (biggest.title ? `${biggest.title} (${biggestCatName})` : biggestCatName) : t('analytics.insights.none');
     
     const catCounts = {};
     
@@ -128,7 +115,7 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
        const catObj = categories.find(c => c._id === id);
        return {
           id,
-          name: catObj ? (lang === 'ar' ? (catObj.nameAr || catObj.name) : (catObj.nameEn || catObj.name)) : t('analytics.insights.unknownCategory', 'Unknown'),
+          name: catObj ? (lang === 'ar' ? (catObj.nameAr || catObj.name) : (catObj.nameEn || catObj.name)) : t('analytics.insights.unknownCategory'),
           amount: catData.amount,
           count: catData.count,
           avg: catData.amount / catData.count,
@@ -153,7 +140,7 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
   if (!data || !filteredTransactions) return null;
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-10 relative min-h-screen">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in pb-10 relative min-h-screen">
       
       {/* Background Effect for Income (Emerald/Green/Blue) */}
       <div className="absolute inset-0 z-[-1] pointer-events-none rounded-[3rem] overflow-hidden">
@@ -162,56 +149,59 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40" />
       </div>
 
+      <div className="xl:col-span-7 flex flex-col gap-6">
       {/* 1. Main Insight Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-6">
         
         <InsightCard 
-          title={t('analytics.insights.totalIncome', 'Total Income')}
+          title={t('analytics.insights.totalIncome')}
           icon={TrendingUp}
           value={money(totalIncome)}
-          subtitle={`${t('analytics.insights.inPeriod', 'in period of')} ${daysInPeriod} ${t('analytics.insights.days', 'days')}`}
-          color="brand-green"
+          subtitle={`${t('analytics.insights.inPeriod')} ${daysInPeriod} ${t('analytics.insights.days')}`}
+          color="emerald"
           delay={0.1}
         />
         
         <InsightCard 
-          title={t('analytics.insights.dailyAvgIncome', 'Daily Avg Income')}
+          title={t('analytics.insights.dailyAvgIncome')}
           icon={Calendar}
           value={money(dailyAverage)}
-          subtitle={t('analytics.insights.perDay', 'per day')}
-          color="brand-blue"
+          subtitle={t('analytics.insights.perDay')}
+          color="copper"
           delay={0.2}
         />
 
         <InsightCard 
-          title={t('analytics.insights.biggestIncome', 'Biggest Income')}
+          title={t('analytics.insights.biggestIncome')}
           icon={Briefcase}
           value={biggestIncome.amount > 0 ? money(biggestIncome.amount) : '---'}
           highlight={biggestIncome.displayTitle}
-          color="brand-purple"
+          color="emerald"
           delay={0.3}
         />
 
         <InsightCard 
-          title={t('analytics.insights.mostFrequentIncome', 'Most Frequent')}
+          title={t('analytics.insights.mostFrequentIncome')}
           icon={Zap}
           value={frequentCategory.name || '---'}
-          subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount', 'transactions')}` : ''}
-          color="brand-amber"
+          subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount')}` : ''}
+          color="copper"
           delay={0.4}
         />
 
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      </div>
+      <div className="xl:col-span-5 h-full">
+      <div className="grid grid-cols-1 gap-6 h-full">
         
         {/* 2. Where Does Your Money Come From (Category Concentration) */}
         <motion.section 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.5 }}
-          className="relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]"
+          className="relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
-           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Target className="w-5 h-5 text-emerald-400" /> {t('analytics.insights.incomeSources', 'Income Sources')}</h2>
-           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.incomeSourcesDesc', 'Breakdown of where your money comes from and average income size.')}</p>
+           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><PieChart className="w-5 h-5 text-emerald-400" /> {t('analytics.insights.incomeSources')}</h2>
+           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.incomeSourcesDesc')}</p>
            
            <div className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
@@ -219,7 +209,7 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
               </div>
               <div>
                  <p className="text-sm text-white/80 leading-relaxed">
-                   {t('analytics.insights.top3IncomeRule', 'Your top 3 income sources account for')} <strong className="text-emerald-400 font-black text-lg mx-1">{top3Percentage}%</strong> {t('analytics.insights.ofTotalIncome', 'of your total income this period.')}
+                   {t('analytics.insights.top3IncomeRule')} <strong className="text-emerald-400 font-black text-lg mx-1">{top3Percentage}%</strong> {t('analytics.insights.ofTotalIncome')}
                  </p>
               </div>
            </div>
@@ -234,7 +224,7 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white bg-black/30 border border-white/10">{idx + 1}</span>
                         <div>
                           <span className="font-bold text-white text-sm">{cat.name}</span>
-                          <p className="text-xs text-white/40 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount', 'transactions')} • {t('analytics.insights.avg', 'Avg')}: {money(cat.avg)}</p>
+                          <p className="text-xs text-white/40 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
                         </div>
                      </div>
                      <div className="text-right">
@@ -252,11 +242,12 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
                )
              })}
              {topCategories.length === 0 && (
-                <div className="text-center py-10 text-white/40 font-medium tracking-wide">{t('analytics.noData', 'No data available for the selected period')}</div>
+                <div className="text-center py-10 text-white/40 font-medium tracking-wide">{t('analytics.noData')}</div>
              )}
            </div>
 
         </motion.section>
+      </div>
       </div>
     </div>
   );

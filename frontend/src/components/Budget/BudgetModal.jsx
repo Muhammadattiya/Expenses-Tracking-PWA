@@ -120,10 +120,10 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-[#111116] border border-white/10 rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 overflow-y-auto max-h-[90vh] scrollbar-hide"
+        className="bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] w-full max-w-md shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative z-10 overflow-y-auto max-h-[90vh] scrollbar-hide"
       >
-        {/* Glow effect */}
-        <div className="absolute -top-32 -left-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Inner Highlight Line */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-20" />
         
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -177,7 +177,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   onClick={() => setPeriod('weekly')}
                   className={`py-3 rounded-2xl border transition-all ${
                     period === 'weekly' 
-                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400 font-medium shadow-[inset_0_0_20px_rgba(59,130,246,0.1)]' 
+                    ? 'bg-[#8D6346]/20 border-[#8D6346]/50 text-[#8D6346] font-medium shadow-[inset_0_0_20px_rgba(141,99,70,0.1)]' 
                     : 'bg-white/5 border-transparent text-white/50 hover:bg-white/10'
                   }`}
                 >
@@ -188,7 +188,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   onClick={() => setPeriod('monthly')}
                   className={`py-3 rounded-2xl border transition-all ${
                     period === 'monthly' 
-                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400 font-medium shadow-[inset_0_0_20px_rgba(59,130,246,0.1)]' 
+                    ? 'bg-[#8D6346]/20 border-[#8D6346]/50 text-[#8D6346] font-medium shadow-[inset_0_0_20px_rgba(141,99,70,0.1)]' 
                     : 'bg-white/5 border-transparent text-white/50 hover:bg-white/10'
                   }`}
                 >
@@ -210,7 +210,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   checked={carryOver}
                   onChange={(e) => setCarryOver(e.target.checked)}
                 />
-                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
               </label>
             </div>
 
@@ -227,7 +227,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   checked={isRecurring}
                   onChange={(e) => setIsRecurring(e.target.checked)}
                 />
-                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
               </label>
             </div>
 
@@ -239,7 +239,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white font-bold text-2xl focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder-white/20"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white font-bold text-2xl focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all placeholder-white/20"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -258,7 +258,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center justify-center py-4 text-blue-400"
+                  className="flex items-center justify-center py-4 text-[#8D6346]"
                 >
                   <Loader2 size={24} className="animate-spin" />
                 </motion.div>
@@ -268,14 +268,14 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   animate={{ opacity: 1, height: 'auto', scale: 1 }}
                   exit={{ opacity: 0, height: 0, scale: 0.95 }}
                   onClick={() => setAmount(recommendedData.amount.toString())}
-                  className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-2xl p-4 overflow-hidden relative cursor-pointer hover:border-blue-500/50 transition-all group mt-4"
+                  className="bg-gradient-to-br from-[#8D6346]/20 to-[#141115]/20 border border-[#8D6346]/30 rounded-2xl p-4 overflow-hidden relative cursor-pointer hover:border-[#8D6346]/50 transition-all group mt-4"
                 >
                   <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Sparkles size={48} className="animate-pulse" />
+                    <Sparkles size={48} className="animate-pulse text-[#8D6346]" />
                   </div>
                   <div className="relative z-10">
-                    <h4 className="text-blue-300 font-semibold flex items-center gap-2 mb-1">
-                      <Sparkles size={16} className="text-blue-400" />
+                    <h4 className="text-[#8D6346] font-semibold flex items-center gap-2 mb-1">
+                      <Sparkles size={16} className="text-[#8D6346]" />
                       {t('budgets.recommendationTitle')}
                     </h4>
                     <p className="text-white/70 text-xs mb-3">{t('budgets.recommendationDesc')}</p>
@@ -283,10 +283,10 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                     {recommendedData.basedOn && (
                       <div className="bg-black/20 rounded-lg p-2.5 mb-3 border border-white/5 inline-block">
                         <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold mb-1">
-                          {t('budgets.confidenceLabel', 'This recommendation is based on:')}
+                          {t('budgets.confidenceLabel')}
                         </p>
-                        <p className="text-xs font-medium text-blue-200">
-                          {t('budgets.confidenceStats', '{{months}} months • {{transactions}} transactions')
+                        <p className="text-xs font-medium text-[#E8C5A8]">
+                          {t('budgets.confidenceStats')
                             .replace('{{months}}', recommendedData.basedOn.months)
                             .replace('{{transactions}}', recommendedData.basedOn.transactions)}
                         </p>
@@ -298,7 +298,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                         {recommendedData.amount.toLocaleString()} <span className="text-sm font-normal text-white/50">{t('nav.currency')}</span>
                       </div>
                       {Number(amount) !== recommendedData.amount && (
-                        <div className="text-xs bg-blue-500/20 text-blue-300 px-3 py-1.5 rounded-lg font-medium">
+                        <div className="text-xs bg-[#8D6346]/20 text-[#8D6346] px-3 py-1.5 rounded-lg font-medium">
                           {t('budgets.save') || 'Apply'}
                         </div>
                       )}
@@ -316,12 +316,13 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
 
             {/* Submit */}
             <div className="pt-4">
-              <button 
+              <motion.button 
                 type="submit"
-                className="w-full py-4 rounded-2xl bg-brand-blue text-white font-bold text-lg hover:bg-blue-600 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] active:scale-[0.98]"
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
               >
                 {t('budgets.save')}
-              </button>
+              </motion.button>
             </div>
           </form>
         </div>

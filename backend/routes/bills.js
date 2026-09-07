@@ -14,5 +14,6 @@ router.route('/:id')
   .delete(billController.deleteBill);
 
 router.post('/:id/pay', billController.markAsPaid);
+router.post('/:id/ignore', billController.ignoreBill);
 
 module.exports = router;

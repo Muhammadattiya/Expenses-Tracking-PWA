@@ -252,6 +252,7 @@ class PaydaySurvivalService {
       explanations,
       actionableInsights,
       timeline,
+      chartData: dailyForecast.slice(0, daysRemaining + 1).map(d => ({ date: d.date, balance: d.balance })),
       availableProfiles,
       selectedProfileId: selectedProfile._id.toString()
     };

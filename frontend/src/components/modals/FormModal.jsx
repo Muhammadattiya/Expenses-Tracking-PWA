@@ -20,8 +20,8 @@ const FormModal = ({
 }) => {
   const { t } = useLanguage();
 
-  const finalSaveText = saveText || t('modals.save', 'حفظ');
-  const finalCancelText = cancelText || t('modals.cancelBtn', 'إلغاء');
+  const finalSaveText = saveText || t('modals.save');
+  const finalCancelText = cancelText || t('modals.cancelBtn');
 
   useEffect(() => {
     if (!open || !closeOnEsc) return;

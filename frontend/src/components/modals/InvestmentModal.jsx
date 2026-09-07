@@ -11,7 +11,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
   const [form, setForm] = useState({ 
     type: 'gold', 
     karat: 21, 
-    name: t('investments.gold21Name', 'ذهب عيار 21'), 
+    name: t('investments.gold21Name'), 
     symbol: '', 
     quantity: '', 
     purchasePrice: initialData?.purchasePrice || '',
@@ -43,9 +43,9 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
         let updatedName = initialData.name;
         if (initialData.type === 'gold') {
           if (initialData.karat === 21 && (updatedName === 'ذهب عيار 21' || updatedName === '21k Gold')) {
-            updatedName = t('investments.gold21Name', 'ذهب عيار 21');
+            updatedName = t('investments.gold21Name');
           } else if (initialData.karat === 24 && (updatedName === 'ذهب عيار 24' || updatedName === '24k Gold')) {
-            updatedName = t('investments.gold24Name', 'ذهب عيار 24');
+            updatedName = t('investments.gold24Name');
           }
         }
         setForm({ ...initialData, name: updatedName });
@@ -53,7 +53,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
         setForm({ 
           type: 'gold', 
           karat: 21, 
-          name: t('investments.gold21Name', 'ذهب عيار 21'), 
+          name: t('investments.gold21Name'), 
           symbol: '', 
           quantity: '', 
           purchasePrice: '', 
@@ -78,13 +78,13 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
         karat: Number(form.karat), 
         quantity: Number(form.quantity), 
         purchasePrice: Number(form.purchasePrice),
-        transferTitle: t('investments.transferTitle', 'استثمار في {name}').replace('{name}', form.name)
+        transferTitle: t('investments.transferTitle').replace('{name}', form.name)
       });
       // Reset form
       setForm({ 
         type: 'gold', 
         karat: 21, 
-        name: t('investments.gold21Name', 'ذهب عيار 21'), 
+        name: t('investments.gold21Name'), 
         symbol: '', 
         quantity: '', 
         purchasePrice: '', 
@@ -93,7 +93,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
       });
       onClose();
     } catch (err) { 
-      setError(err.response?.data?.message || err.message || t('investments.saveError', 'تعذر حفظ الاستثمار.')); 
+      setError(err.response?.data?.message || err.message || t('investments.saveError')); 
     } finally {
       setIsSubmitting(false);
     }
@@ -117,7 +117,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
               {initialData ? <Pencil className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
             </div>
             <h2 className="text-xl font-bold text-white tracking-wide">
-              {initialData ? t('investments.editInvestment', 'تعديل استثمار') : t('investments.addInvestment', 'إضافة استثمار')}
+              {initialData ? t('investments.editInvestment') : t('investments.addInvestment')}
             </h2>
           </div>
           <button 
@@ -140,25 +140,25 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
           <form id="investment-form" onSubmit={submit} className="space-y-5">
             
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">{t('investments.investmentType', 'نوع الاستثمار')}</label>
+              <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">{t('investments.investmentType')}</label>
               <CustomSelect 
                 value={form.type} 
                 onChange={(val) => setForm({ 
                   ...form, 
                   type: val, 
-                  name: val === 'gold' ? t('investments.gold21Name', 'ذهب عيار 21') : '', 
+                  name: val === 'gold' ? t('investments.gold21Name') : '', 
                   currency: 'EGP' 
                 })} 
                 options={[
-                  {value: 'gold', label: t('investments.gold', 'ذهب')}, 
-                  {value: 'stock', label: t('investments.stock', 'سهم')}
+                  {value: 'gold', label: t('investments.gold')}, 
+                  {value: 'stock', label: t('investments.stock')}
                 ]} 
               />
             </div>
 
             {form.type === 'gold' && (
               <div className="space-y-1.5 animate-fade-in">
-                <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">{t('investments.selectKarat', 'اختر العيار')}</label>
+                <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">{t('investments.selectKarat')}</label>
                 <CustomSelect 
                   value={form.karat} 
                   onChange={(val) => { 
@@ -166,12 +166,12 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
                     setForm({ 
                       ...form, 
                       karat, 
-                      name: karat === 24 ? t('investments.gold24Name', 'ذهب عيار 24') : t('investments.gold21Name', 'ذهب عيار 21') 
+                      name: karat === 24 ? t('investments.gold24Name') : t('investments.gold21Name') 
                     }); 
                   }} 
                   options={[
-                    {value: 21, label: t('investments.gold21Name', 'ذهب عيار 21')}, 
-                    {value: 24, label: t('investments.gold24Name', 'ذهب عيار 24')}
+                    {value: 21, label: t('investments.gold21Name')}, 
+                    {value: 24, label: t('investments.gold24Name')}
                   ]} 
                 />
               </div>
@@ -179,12 +179,12 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">
-                {form.type === 'gold' ? t('investments.investmentDesc', 'وصف الاستثمار') : t('investments.stockName', 'اسم السهم')}
+                {form.type === 'gold' ? t('investments.investmentDesc') : t('investments.stockName')}
               </label>
               <input 
                 className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
                 required 
-                placeholder={form.type === 'gold' ? t('investments.investmentDesc', 'وصف الاستثمار') : t('investments.stockName', 'اسم السهم')} 
+                placeholder={form.type === 'gold' ? t('investments.investmentDesc') : t('investments.stockName')} 
                 value={form.name} 
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
               />
@@ -192,10 +192,10 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
 
             {form.type === 'stock' && (
               <div className="space-y-1.5 animate-fade-in">
-                <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">{t('investments.stockSymbol', 'رمز السهم (AAPL)')}</label>
+                <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">{t('investments.stockSymbol')}</label>
                 <input 
                   className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all uppercase" 
-                  placeholder={t('investments.stockSymbol', 'رمز السهم (AAPL)')} 
+                  placeholder={t('investments.stockSymbol')} 
                   value={form.symbol} 
                   onChange={(event) => setForm({ ...form, symbol: event.target.value })}
                 />
@@ -205,7 +205,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">
-                  {form.type === 'gold' ? t('investments.weightGrams', 'الوزن بالجرام') : t('investments.quantity', 'الكمية')}
+                  {form.type === 'gold' ? t('investments.weightGrams') : t('investments.quantity')}
                 </label>
                 <input 
                   className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
@@ -221,7 +221,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
 
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">
-                  {t('investments.purchasePrice', 'سعر الشراء')}
+                  {t('investments.purchasePrice')}
                 </label>
                 <input 
                   className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
@@ -239,7 +239,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
             {form.type === 'stock' && (
               <div className="space-y-1.5 animate-fade-in mt-4">
                 <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">
-                  {t('investments.currentPrice', 'السعر الحالي للسهم')}
+                  {t('investments.currentPrice')}
                 </label>
                 <input 
                   className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
@@ -256,13 +256,13 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
             {!initialData && (
               <div className="space-y-1.5 animate-fade-in border-t border-white/5 pt-4 mt-2">
                 <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">
-                  {t('investments.deductFromAccount', 'خصم قيمة الاستثمار من حساب؟ (اختياري)')}
+                  {t('investments.deductFromAccount')}
                 </label>
                 <CustomSelect 
                   value={form.from_account} 
                   onChange={(val) => setForm({ ...form, from_account: val })} 
                   options={[
-                    { value: '', label: t('investments.noAccountSelected', 'بدون خصم (تجاوز)') },
+                    { value: '', label: t('investments.noAccountSelected') },
                     ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
                   ]} 
                 />
@@ -285,7 +285,7 @@ export default function InvestmentModal({ isOpen, onClose, onSave, initialData =
             ) : (
               initialData ? <Pencil className="w-5 h-5" /> : <Plus className="w-5 h-5" />
             )}
-            {initialData ? t('investments.saveChanges', 'حفظ التعديلات') : t('investments.saveInvestment', 'حفظ الاستثمار')}
+            {initialData ? t('investments.saveChanges') : t('investments.saveInvestment')}
           </button>
         </div>
 

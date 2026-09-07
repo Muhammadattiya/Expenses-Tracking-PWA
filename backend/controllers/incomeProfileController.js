@@ -11,10 +11,21 @@ const getProfiles = async (req, res) => {
   }
 };
 
+// Whitelist allowed fields to prevent mass assignment
+const PROFILE_ALLOWED_KEYS = ['name', 'amount', 'frequency', 'weekDay', 'monthDay', 'account', 'category', 'isActive'];
+const pickProfileFields = (data) => {
+  const safe = {};
+  for (const key of PROFILE_ALLOWED_KEYS) {
+    if (data[key] !== undefined) safe[key] = data[key];
+  }
+  return safe;
+};
+
 const createProfile = async (req, res) => {
   try {
+    const safeData = pickProfileFields(req.body);
     const profile = new IncomeProfile({
-      ...req.body,
+      ...safeData,
       user: req.user.id
     });
     await profile.save();
@@ -26,9 +37,10 @@ const createProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
+    const safeData = pickProfileFields(req.body);
     const profile = await IncomeProfile.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },
-      req.body,
+      safeData,
       { returnDocument: 'after', runValidators: true }
     );
     if (!profile) return res.status(404).json({ message: 'Profile not found' });

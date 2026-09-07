@@ -1,75 +1,227 @@
 @import "tailwindcss";
 
+
+
 @theme {
-  --font-sans: 'Outfit', sans-serif;
-  
+
+  --font-sans: 'Exo 2', sans-serif;
+
+  --color-brand-copper: #8D6346;
+
+  --color-copper-light: #E8C5A8;
+
+  --color-copper-dark: #3D2E2B;
+
   --color-brand-blue: #007AFF;
+
   --color-brand-green: #34C759;
+
   --color-brand-red: #FF3B30;
-  
+
+
+
   /* Default (Dark) Midnight theme */
+
   --color-background: var(--bg-main);
+
   --color-surface: var(--bg-surface);
+
   --color-surface-hover: var(--bg-surface-hover);
+
   --color-surface-active: var(--bg-surface-active);
+
   --color-border: var(--border-glass);
-  
+
+
+
   --color-text-main: var(--text-main);
+
   --color-text-muted: var(--text-muted);
 
+
+
   --animate-slide-up: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
   --animate-fade-in: fadeIn 0.3s ease-out forwards;
+
   --animate-scale-in: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  
+
+
+
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+
+    from {
+
+      opacity: 0;
+
+      transform: translateY(20px);
+
+    }
+
+
+
+    to {
+
+      opacity: 1;
+
+      transform: translateY(0);
+
+    }
+
   }
+
+
+
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+
+    from {
+
+      opacity: 0;
+
+    }
+
+
+
+    to {
+
+      opacity: 1;
+
+    }
+
   }
+
+
+
   @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+
+    from {
+
+      opacity: 0;
+
+      transform: scale(0.95);
+
+    }
+
+
+
+    to {
+
+      opacity: 1;
+
+      transform: scale(1);
+
+    }
+
   }
+
 }
+
+
 
 body {
+
   -webkit-tap-highlight-color: transparent;
+
   user-select: none;
+
   font-family: var(--font-sans);
+
   background-color: var(--color-background);
+
   color: var(--color-text-main);
+
   padding-top: env(safe-area-inset-top);
+
   padding-bottom: env(safe-area-inset-bottom);
+
   transition: background-color 0.3s ease, color 0.3s ease;
+
 }
+
+
 
 /* Light / Dark Mode Variables */
+
 :root {
-  /* Default is Dark Mode */
-  --bg-main: #0D0D0D;
+
+  /* Default is Dark Midnight Mode with Copper Accents */
+
+  --bg-main: #141115;
+
   --bg-surface: rgba(28, 28, 30, 0.6);
-  --bg-surface-hover: rgba(255, 255, 255, 0.06);
-  --bg-surface-active: rgba(255, 255, 255, 0.1);
+
+  --bg-surface-hover: rgba(141, 99, 70, 0.2);
+
+  --bg-surface-active: rgba(141, 99, 70, 0.35);
+
   --border-glass: rgba(255, 255, 255, 0.1);
+
+  --border-copper: rgba(141, 99, 70, 0.4);
+
   --text-main: #ffffff;
-  --text-muted: #9ca3af;
-  --text-gold: rgba(253, 230, 138, 0.7); /* amber-200/70 */
+
+  --text-muted: rgba(255, 255, 255, 0.6);
+
+  --text-copper: #E8C5A8;
+
+  --text-gold: rgba(253, 230, 138, 0.7);
+
 }
+
+
 
 html.light {
+
   /* Premium Glass Light Mode */
-  --bg-main: #f1f5f9;
+
+  --bg-main: #f5f0ec;
+
   --bg-surface: rgba(255, 255, 255, 0.85);
-  --bg-surface-hover: rgba(255, 255, 255, 1);
-  --bg-surface-active: rgba(255, 255, 255, 0.95);
-  --border-glass: rgba(15, 23, 42, 0.08);
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --text-gold: #b45309; /* amber-700 */
+
+  --bg-surface-hover: rgba(141, 99, 70, 0.1);
+
+  --bg-surface-active: rgba(141, 99, 70, 0.2);
+
+  --border-glass: rgba(141, 99, 70, 0.15);
+
+  --border-copper: rgba(141, 99, 70, 0.35);
+
+  --text-main: #1c1410;
+
+  --text-muted: #7c6d66;
+
+  --text-copper: #8D6346;
+
+  --text-gold: #b45309;
+
 }
 
-.field { @apply w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text-main)] outline-none focus:border-brand-blue/50 focus:shadow-md transition-all duration-300; }
-.glass-panel { @apply bg-[var(--color-surface)] backdrop-blur-2xl border border-[var(--color-border)] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-xl; }
+
+
+.field {
+
+  @apply w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text-main)] outline-none focus:border-[#8D6346] focus:shadow-[0_0_12px_rgba(141,99,70,0.3)] transition-all duration-300;
+
+}
+
+
+
+.glass-panel {
+
+  @apply bg-[var(--color-surface)] backdrop-blur-2xl border border-[var(--color-border)] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-xl;
+
+}
+
+
+
+.liquidglass {
+
+  background: hsl(0 0% 0% / 0.1);
+
+  -webkit-backdrop-filter: url(#glass-filter-_r_b_) saturate(1.2);
+
+  backdrop-filter: url(#glass-filter-_r_b_) saturate(1.2);
+
+  box-shadow: inset 0 0 2px 1px lab(100% 0 0 / .35), inset 0 0 10px 4px lab(100% 0 0 / .15), inset 0 4px 16px lab(5.32203% 1.61424 -5.88284 / .0509804), inset 0 8px 24px lab(5.32203% 1.61424 -5.88284 / .0509804), inset 0 6px 56px lab(5.32203% 1.61424 -5.88284 / .0509804);
+
+}

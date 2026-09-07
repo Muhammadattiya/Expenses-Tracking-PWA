@@ -132,23 +132,78 @@ exports.getPlanById = async (req, res, next) => {
 // Update a draft plan (manual overrides)
 exports.updateDraftPlan = async (req, res, next) => {
   try {
-    const { name, categories, availableBudget, period, startDate: bodyStartDate, endDate: bodyEndDate, isRecurring, groupAsMaster } = req.body;
+    const { name, categories, availableBudget, period, startDate: bodyStartDate, endDate: bodyEndDate, isRecurring, groupAsMaster, account } = req.body;
     
     const plan = await SmartBudgetPlan.findOne({ _id: req.params.id, user: req.user.id });
     if (!plan) return res.status(404).json({ message: 'Plan not found' });
     
     if (plan.status === 'confirmed') {
-      if (name) {
-        plan.name = name;
-        await plan.save();
-        await plan.populate('categories.category', 'name icon type color');
-        return res.json(plan);
-      } else {
-        return res.status(400).json({ message: 'Cannot update a confirmed plan except for the name' });
-      }
-    }
+      const Budget = require('../models/Budget');
+      
+      // Update plan properties
+      if (name) plan.name = name;
+      if (account !== undefined) plan.account = account; // Account might be null to clear
+      
+      let newCategories = categories || plan.categories;
+      plan.categories = newCategories;
 
+      if (availableBudget !== undefined) plan.availableBudget = availableBudget;
+      
+      await plan.save();
+
+      // Sync sub-budgets
+      if (categories) {
+        // Find existing budgets for this plan
+        const existingBudgets = await Budget.find({ smartBudgetPlan: plan._id, user: req.user.id });
+        const existingCategoryIds = existingBudgets.map(b => b.category.toString());
+        
+        const newCategoryIds = newCategories.map(c => typeof c.category === 'object' ? c.category._id.toString() : c.category.toString());
+
+        // 1. Delete budgets that were removed
+        const toDelete = existingBudgets.filter(b => !newCategoryIds.includes(b.category.toString()));
+        for (let b of toDelete) {
+          await Budget.findByIdAndDelete(b._id);
+        }
+
+        // 2. Update existing or create new
+        for (let item of newCategories) {
+          const categoryId = typeof item.category === 'object' ? item.category._id : item.category;
+          const existingBudget = existingBudgets.find(b => b.category.toString() === categoryId.toString());
+
+          if (existingBudget) {
+            existingBudget.amount = item.suggestedAmount;
+            if (account !== undefined) existingBudget.account = account;
+            await existingBudget.save();
+          } else {
+            const newBudget = new Budget({
+              user: req.user.id,
+              category: categoryId,
+              amount: item.suggestedAmount,
+              period: plan.period,
+              startDate: plan.startDate,
+              endDate: plan.endDate,
+              isActive: true,
+              carryOver: false,
+              isRecurring: plan.isRecurring,
+              smartBudgetPlan: plan._id,
+              account: account !== undefined ? account : plan.account
+            });
+            await newBudget.save();
+          }
+        }
+      } else if (account !== undefined) {
+        // Just update accounts if categories weren't sent
+        await Budget.updateMany(
+          { smartBudgetPlan: plan._id, user: req.user.id },
+          { account: account }
+        );
+      }
+
+      await plan.populate('categories.category', 'name icon type color');
+      return res.json(plan);
+    }
     if (name) plan.name = name;
+    if (account !== undefined) plan.account = account;
     if (categories) plan.categories = categories;
     if (availableBudget !== undefined) plan.availableBudget = availableBudget;
     if (isRecurring !== undefined) plan.isRecurring = isRecurring;

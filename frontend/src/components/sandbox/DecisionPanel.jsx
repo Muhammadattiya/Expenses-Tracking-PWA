@@ -6,7 +6,7 @@ export default function DecisionPanel({ decision, insights }) {
 
   const getScoreColor = (score) => {
     if (score >= 80) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30 shadow-[0_8px_32px_rgba(52,211,153,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-emerald-400/40 border-l-emerald-400/30';
-    if (score >= 50) return 'text-brand-blue bg-brand-blue/10 border-brand-blue/30 shadow-[0_8px_32px_rgba(0,122,255,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-brand-blue/40 border-l-brand-blue/30';
+    if (score >= 50) return 'text-[#8D6346] bg-[#8D6346]/10 border-[#8D6346]/30 shadow-[0_8px_32px_rgba(0,122,255,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-[#8D6346]/40 border-l-[#8D6346]/30';
     if (score >= 30) return 'text-amber-400 bg-amber-400/10 border-amber-400/30 shadow-[0_8px_32px_rgba(251,191,36,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-amber-400/40 border-l-amber-400/30';
     return 'text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_8px_32px_rgba(244,63,94,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-rose-400/40 border-l-rose-400/30';
   };
@@ -70,8 +70,8 @@ export default function DecisionPanel({ decision, insights }) {
         {/* Cash Impact */}
         <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
-             <DollarSign className="w-4 h-4 text-brand-blue" />
-             <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Cash Impact</span>
+             <DollarSign className="w-4 h-4 text-[#8D6346]" />
+             <span className="text-xs text-white/50 uppercase tracking-wider">Cash Impact</span>
           </div>
           <p className={`text-2xl font-black tabular-nums ${decision.cashImpact >= 0 ? 'text-brand-green' : 'text-brand-red'}`}>
              {decision.cashImpact > 0 ? '+' : ''}{decision.cashImpact}%
@@ -81,8 +81,8 @@ export default function DecisionPanel({ decision, insights }) {
         {/* Liquidity Score */}
         <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
-             <Activity className="w-4 h-4 text-brand-blue" />
-             <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Liquidity Score</span>
+             <Activity className="w-4 h-4 text-[#8D6346]" />
+             <span className="text-xs text-white/50 uppercase tracking-wider">Liquidity Score</span>
           </div>
           <p className="text-2xl font-black text-white tabular-nums">{decision.liquidityScore} / 100</p>
         </div>
@@ -90,17 +90,17 @@ export default function DecisionPanel({ decision, insights }) {
         {/* Emergency Coverage */}
         <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
-             <ShieldCheck className="w-4 h-4 text-brand-blue" />
-             <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Emergency Cover</span>
+             <ShieldCheck className="w-4 h-4 text-[#8D6346]" />
+             <span className="text-xs text-white/50 uppercase tracking-wider">Emergency Cover</span>
           </div>
-          <p className="text-2xl font-black text-white tabular-nums">{decision.emergencyCoverageMonths} <span className="text-sm font-medium text-[var(--color-text-muted)]">Months</span></p>
+          <p className="text-2xl font-black text-white tabular-nums">{decision.emergencyCoverageMonths} <span className="text-sm font-medium text-white/50">Months</span></p>
         </div>
 
         {/* Budget Stability */}
         <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-3">
-             <PieChart className="w-4 h-4 text-brand-blue" />
-             <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Budget Stability</span>
+             <PieChart className="w-4 h-4 text-[#8D6346]" />
+             <span className="text-xs text-white/50 uppercase tracking-wider">Budget Stability</span>
           </div>
           <p className={`text-lg font-black ${decision.budgetStability === 'Stable' ? 'text-brand-green' : (decision.budgetStability === 'Warning' ? 'text-amber-400' : 'text-brand-red')}`}>
              {decision.budgetStability}

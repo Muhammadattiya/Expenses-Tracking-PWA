@@ -44,3 +44,12 @@ exports.markAsPaid = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+exports.ignoreBill = async (req, res) => {
+  try {
+    const data = await billService.ignoreBill(req.user.id, req.params.id);
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};

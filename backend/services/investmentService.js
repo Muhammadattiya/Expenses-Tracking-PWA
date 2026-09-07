@@ -1,21 +1,67 @@
 const Investment = require('../models/Investment');
 const Account = require('../models/Account');
+const User = require('../models/User');
 const AppError = require('../utils/AppError');
 const transactionService = require('./transactionService');
 
-const getGoldPrice = async () => {
-  if (!process.env.GOLD_API_KEY) throw new AppError('Gold price service is not configured.', 503);
+const getGoldPrice = async (userId) => {
+  if (!userId) throw new AppError('User ID is required.', 400);
+  
+  const user = await User.findById(userId);
+  if (!user) throw new AppError('User not found.', 404);
+
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+  
+  let { date, count, lastPrice } = user.goldApiLimit || {};
+
+  if (date !== todayStr) {
+    date = todayStr;
+    count = 0;
+  }
+
+  // Rate limit: Max 5 times per day
+  if (count >= 5) {
+    if (lastPrice) {
+      return lastPrice; // Return cached price if limit reached
+    }
+    throw new AppError('Daily limit for fetching gold price reached (5/5). Please try again tomorrow.', 429);
+  }
+
+  if (!process.env.GOLD_API_KEY) {
+    if (lastPrice) return lastPrice;
+    throw new AppError('Gold price service is not configured.', 503);
+  }
+  
   const apiKey = encodeURIComponent(process.env.GOLD_API_KEY);
-  const getPrice = async (symbol) => {
-    const response = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`);
-    const data = await response.json();
-    const price = Number(data.price);
-    if (!response.ok || !Number.isFinite(price)) throw new AppError(data.message || `Unable to retrieve ${symbol}.`, 502);
-    return price;
-  };
-  const [goldPerOunceUsd, usdToEgp] = await Promise.all([getPrice('XAU/USD'), getPrice('USD/EGP')]);
-  const perGram24 = (goldPerOunceUsd / 31.1034768) * usdToEgp;
-  return { currency: 'EGP', usdToEgp, perGram24, perGram21: perGram24 * (21 / 24), updatedAt: new Date() };
+  
+  try {
+    const getPrice = async (symbol) => {
+      const response = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`);
+      const data = await response.json();
+      const price = Number(data.price);
+      if (!response.ok || !Number.isFinite(price)) throw new AppError(data.message || `Unable to retrieve ${symbol}.`, 502);
+      return price;
+    };
+    
+    const [goldPerOunceUsd, usdToEgp] = await Promise.all([getPrice('XAU/USD'), getPrice('USD/EGP')]);
+    const perGram24 = (goldPerOunceUsd / 31.1034768) * usdToEgp;
+    const newPrice = { currency: 'EGP', usdToEgp, perGram24, perGram21: perGram24 * (21 / 24), updatedAt: now };
+
+    user.goldApiLimit = {
+      date: todayStr,
+      count: count + 1,
+      lastPrice: newPrice
+    };
+    await user.save();
+
+    return newPrice;
+  } catch (error) {
+    if (lastPrice) {
+      return lastPrice;
+    }
+    throw error;
+  }
 };
 
 const list = (userId) => Investment.find({ user: userId }).sort({ purchasedAt: -1 }).lean();

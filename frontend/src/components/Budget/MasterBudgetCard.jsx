@@ -16,9 +16,9 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
   const isOverBudget = safeSpent > safeAmount;
   const remaining = Math.max(safeAmount - safeSpent, 0);
 
-  let stateColor = 'bg-brand-blue text-brand-blue';
-  let stateBorder = 'border-brand-blue/30';
-  let stateBg = 'bg-brand-blue/10';
+  let stateColor = 'bg-[#8D6346] text-[#8D6346]';
+  let stateBorder = 'border-[#8D6346]/30';
+  let stateBg = 'bg-[#8D6346]/10';
   let RiskIcon = Icons.CheckCircle;
 
   if (utilization >= 100) {
@@ -43,7 +43,7 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
-      className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 relative overflow-hidden group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/20 hover:scale-[1.01]'}`}
+      className={`bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6 relative overflow-hidden group transition-all duration-500 h-full flex flex-col justify-between ${isExpanded ? stateBorder : 'hover:border-white/20 hover:scale-[1.01]'}`}
     >
       <div
         className="cursor-pointer relative z-10 flex-1 flex flex-col justify-between"
@@ -70,14 +70,14 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); onEditPlan?.(plan); }}
-              className="w-8 h-8 rounded-full bg-white/5 shadow-inner flex items-center justify-center text-white/50 hover:bg-brand-blue/20 hover:text-brand-blue transition-colors border border-white/5"
+              className="w-8 h-8 rounded-full bg-white/5 shadow-inner flex items-center justify-center text-white/50 hover:bg-[#8D6346]/20 hover:text-[#8D6346] transition-colors border border-white/5"
             >
               <Icons.Edit2 size={14} />
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); onDeletePlan?.(plan); }}
-              className="w-8 h-8 rounded-full bg-white/5 shadow-inner flex items-center justify-center text-white/50 hover:bg-red-500/20 hover:text-red-500 transition-colors border border-white/5"
+              className="w-8 h-8 rounded-full bg-red-500/10 shadow-inner flex items-center justify-center text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-white/5"
             >
               <Icons.Trash2 size={14} />
             </motion.button>
@@ -114,7 +114,7 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
               className={`h-full rounded-full transition-colors duration-500 shadow-[inset_0_1px_rgba(255,255,255,0.2)] flex items-center justify-end px-2 ${utilization >= 100 ? 'bg-gradient-to-r from-red-600 to-red-400' :
                 utilization >= 85 ? 'bg-gradient-to-r from-orange-600 to-orange-400' :
                   utilization >= 70 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
-                    'bg-gradient-to-r from-blue-600 to-blue-400'
+                    'bg-gradient-to-r from-[#8D6346] to-[#E8C5A8]/80'
                 }`}
             >
               {progress > 15 && (
@@ -146,8 +146,8 @@ export default function MasterBudgetCard({ plan, budgets, spentData, onEdit, onD
             <div className="pt-6 space-y-4 border-t border-white/10">
               {budgets.map((budget, idx) => {
                 const mappedCategory = typeof budget.category === 'object'
-                  ? (budget.category || { name: t('nav.category', 'Category') })
-                  : (categories.find(c => c._id === budget.category) || { name: t('nav.category', 'Category') });
+                  ? (budget.category || { name: t('nav.category') })
+                  : (categories.find(c => c._id === budget.category) || { name: t('nav.category') });
 
                 const fullBudget = { ...budget, category: mappedCategory };
 

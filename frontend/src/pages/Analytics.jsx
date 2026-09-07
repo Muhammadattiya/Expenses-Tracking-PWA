@@ -9,6 +9,7 @@ import { budgetService } from '../services/budgetService';
 import { getBills } from '../api/bills';
 import { getRecurringTransactions } from '../api/recurringTransactions';
 import { getReceivables } from '../api/receivables';
+import { getIncomeProfiles } from '../api/incomeProfiles';
 import { getCurrentUser } from '../api/auth';
 import { Loader2, Download, Filter, Search, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +52,7 @@ export default function Analytics() {
   const [budgets, setBudgets] = useState([]);
   const [bills, setBills] = useState([]);
   const [recurring, setRecurring] = useState([]);
+  const [incomeProfiles, setIncomeProfiles] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
   const [allReceivables, setAllReceivables] = useState([]);
@@ -75,7 +77,7 @@ export default function Analytics() {
       }
 
       if (!currentFilters.initialized) {
-        const type = prefs.budgetPeriod === 'weekly' ? 'this_week' : 'this_month';
+        const type = prefs.trackingPeriod === 'weekly' ? 'this_week' : 'this_month';
         const bounds = getFilterBounds(type, prefs);
         if (bounds) {
           currentFilters = { ...currentFilters, from: bounds.from, to: bounds.to, filterType: type, initialized: true };
@@ -93,6 +95,7 @@ export default function Analytics() {
         budgetsRes, 
         billsRes, 
         recurringRes,
+        incomeProfilesRes,
         allTx,
         receivablesData
       ] = await Promise.all([
@@ -104,6 +107,7 @@ export default function Analytics() {
         budgetService.getBudgets().catch(() => []),
         getBills().catch(() => []),
         getRecurringTransactions().catch(() => []),
+        getIncomeProfiles().catch(() => []),
         getTransactions().catch(() => []),
         getReceivables().catch(() => [])
       ]);
@@ -142,11 +146,12 @@ export default function Analytics() {
       setDebts(debtsRes?.debts || []);
       setAllDebtTransactions(debtsRes?.transactions || []);
       setInvestments(investmentsWithCurrentValue);
+      setIncomeProfiles(incomeProfilesRes || []);
 
       // Calculate budget spent
       const now = new Date();
-      const prefMonthStart = userPrefs?.budgetStartDayMonthly ?? 1;
-      const prefWeekStart = userPrefs?.budgetStartDayWeekly ?? 6;
+      const prefMonthStart = userPrefs?.trackingStartDayMonthly ?? 1;
+      const prefWeekStart = userPrefs?.trackingStartDayWeekly ?? 6;
       
       const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
@@ -242,32 +247,39 @@ export default function Analytics() {
   const isAssetsTab = activeTab === 'assets';
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-      className="p-4 pt-8 space-y-8 pb-24 max-w-7xl mx-auto"
-    >
-      
+    <>
+      {/* Fixed Background covering the viewport */}
+      <div className="fixed inset-0 -z-10 bg-[#100E11] overflow-hidden pointer-events-none">
+        <div className="absolute top-[-50px] left-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-40 blur-[120px] rounded-full" />
+        <div className="absolute top-[30%] right-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-30 blur-[140px] rounded-full" />
+        <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#8D6346] opacity-30 blur-[150px] rounded-full" />
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+        className="pt-8 space-y-8 max-w-7xl mx-auto min-h-screen relative z-0"
+      >
       {/* Header & Global Actions */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <p className="text-brand-blue text-xs font-bold tracking-widest uppercase mb-1 drop-shadow-sm">{t('analytics.tabs.overview', 'Overview')}</p>
-          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">{t('analytics.title', 'Reports & Analytics')}</h1>
+          <p className="text-[#8D6346] text-xs font-bold tracking-widest uppercase mb-1 drop-shadow-sm">{t('analytics.tabs.overview')}</p>
+          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">{t('analytics.title')}</h1>
         </div>
         <div className="flex items-center gap-3">
           {!isAssetsTab && (
             <motion.button 
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowFilters(!showFilters)} 
-              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${showFilters ? 'bg-brand-blue text-white shadow-brand-blue/20' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
+              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${showFilters ? 'bg-[#8D6346] text-white shadow-[#8D6346]/20' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
             >
               <Filter className="w-4 h-4" />
-              <span>{showFilters ? t('analytics.hideFilters', 'Hide Filters') : t('analytics.filterResults', 'Filter Results')}</span>
+              <span>{showFilters ? t('analytics.hideFilters') : t('analytics.filterResults')}</span>
             </motion.button>
           )}
           
-          <motion.button whileTap={{ scale: 0.95 }} onClick={exportReport} className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-3 rounded-2xl text-sm font-bold transition-colors shadow-lg shadow-brand-blue/20">
+          <motion.button whileTap={{ scale: 0.95 }} onClick={exportReport} className="flex items-center gap-2 bg-[#8D6346] hover:bg-[#8D6346]/90 text-white px-5 py-3 rounded-2xl text-sm font-bold transition-colors shadow-lg shadow-[#8D6346]/20">
             <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('analytics.export', 'Export JSON')}</span>
+            <span className="hidden sm:inline">{t('analytics.export')}</span>
           </motion.button>
         </div>
       </header>
@@ -275,7 +287,7 @@ export default function Analytics() {
       {/* Control Panel (Filters) */}
       {!isAssetsTab && (
         <div className={`transition-all duration-500 overflow-hidden ${showFilters ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-4 md:p-6 rounded-[2.5rem]">
+          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-4 md:p-6 rounded-[2rem]">
           <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
            <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
              <DateFilterChips filters={filters} setFilters={setFilters} userPrefs={userPrefs} />
@@ -285,12 +297,12 @@ export default function Analytics() {
               <div className="w-full md:w-48 z-20">
                 <CustomSelect
                   options={[
-                    { value: '', label: t('analytics.allAccounts', 'All Accounts'), icon: 'Globe', color: '#ffffff' },
+                    { value: '', label: t('analytics.allAccounts'), icon: 'Globe', color: '#ffffff' },
                     ...accounts.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
                   ]}
                   value={filters.account}
                   onChange={(val) => setFilters({ ...filters, account: val })}
-                  placeholder={t('analytics.allAccounts', 'All Accounts')}
+                  placeholder={t('analytics.allAccounts')}
                   type="account"
                 />
               </div>
@@ -298,12 +310,12 @@ export default function Analytics() {
               <div className="w-full md:w-48 z-10">
                 <CustomSelect
                   options={[
-                    { value: '', label: t('analytics.allCategories', 'All Categories'), icon: 'Layers', color: '#ffffff' },
+                    { value: '', label: t('analytics.allCategories'), icon: 'Layers', color: '#ffffff' },
                     ...categories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon, color: cat.color }))
                   ]}
                   value={filters.category}
                   onChange={(val) => setFilters({ ...filters, category: val })}
-                  placeholder={t('analytics.allCategories', 'All Categories')}
+                  placeholder={t('analytics.allCategories')}
                 />
               </div>
 
@@ -312,8 +324,8 @@ export default function Analytics() {
                   <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
                   <input 
                     type="text" 
-                    placeholder={t('analytics.searchPlaceholder', 'Search...')}
-                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 px-4 pr-10 text-sm text-[var(--color-text-main)] outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/50 transition-all"
+                    placeholder={t('analytics.searchPlaceholder')}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 px-4 pr-10 text-sm text-[var(--color-text-main)] outline-none focus:border-[#8D6346] focus:ring-1 focus:ring-[#8D6346]/50 transition-all"
                     value={filters.search} 
                     onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                   />
@@ -347,6 +359,7 @@ export default function Analytics() {
                   debts={debts} 
                   bills={bills}
                   recurring={recurring}
+                  incomeProfiles={incomeProfiles}
                   filters={filters}
                   allTransactions={allTransactions}
                   allDebtTransactions={allDebtTransactions}
@@ -376,5 +389,6 @@ export default function Analytics() {
       </div>
 
     </motion.div>
+    </>
   );
 }

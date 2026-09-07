@@ -24,3 +24,8 @@ export const payBill = async (id, transactionId) => {
   const response = await api.post(`/bills/${id}/pay`, { transactionId });
   return response.data;
 };
+
+export const ignoreBill = async (id) => {
+  const response = await api.post(`/bills/${id}/ignore`);
+  return response.data;
+};

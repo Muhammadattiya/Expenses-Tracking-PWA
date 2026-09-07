@@ -29,7 +29,7 @@ const transactionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['completed', 'pending_review', 'needs_manual_review'],
+    enum: ['completed'],
     default: 'completed'
   },
   source: {
@@ -42,6 +42,11 @@ const transactionSchema = new mongoose.Schema({
   },
   rawSms: {
     type: String
+  },
+  normalizedMerchant: {
+    type: String,
+    index: true,
+    sparse: true
   },
   smsHash: {
     type: String,
@@ -99,7 +104,8 @@ transactionSchema.index({ user: 1, date: -1 });
 transactionSchema.index({ user: 1, type: 1, date: -1 });
 transactionSchema.index({ user: 1, account: 1, date: -1 });
 transactionSchema.index({ user: 1, category: 1, date: -1 });
+transactionSchema.index({ user: 1, normalizedMerchant: 1, category: 1 });
 transactionSchema.index({ user: 1, smsHash: 1 }, { sparse: true });
-transactionSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+transactionSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

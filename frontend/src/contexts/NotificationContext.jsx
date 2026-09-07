@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { X, CheckCircle2, AlertCircle, Info, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const NotificationContext = createContext(null);
 
@@ -46,20 +47,25 @@ export const NotificationProvider = ({ children }) => {
       {children}
       
       {/* Toasts Container */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-3 w-full max-w-sm px-4 pointer-events-none">
-        {toasts.map((toast) => (
-          <Toast
-            key={toast.id}
-            toast={toast}
-            onClose={() => removeToast(toast.id)}
-          />
-        ))}
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-[90%] md:max-w-sm px-4 pointer-events-none">
+        <div className="relative w-full">
+          <AnimatePresence>
+            {toasts.map((toast, index) => (
+              <Toast
+                key={toast.id}
+                toast={toast}
+                index={toasts.length - 1 - index}
+                onClose={() => removeToast(toast.id)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
     </NotificationContext.Provider>
   );
 };
 
-const Toast = ({ toast, onClose }) => {
+const Toast = ({ toast, index, onClose }) => {
   const { id, message, type, duration } = toast;
 
   useEffect(() => {
@@ -78,38 +84,39 @@ const Toast = ({ toast, onClose }) => {
       case 'error':
         return <AlertCircle className="w-5 h-5 text-red-400" />;
       case 'push':
-        return <Bell className="w-5 h-5 text-brand-blue" />;
-      default:
-        return <Info className="w-5 h-5 text-brand-blue" />;
-    }
-  };
-
-  const getBgClass = () => {
-    switch (type) {
-      case 'success':
-        return 'bg-[var(--color-surface)]/90 border-brand-green/20 shadow-[0_4px_20px_rgba(52,199,89,0.15)]';
-      case 'error':
-        return 'bg-[var(--color-surface)]/90 border-brand-red/20 shadow-[0_4px_20px_rgba(255,59,48,0.15)]';
       case 'info':
       default:
-        return 'bg-[var(--color-surface)]/90 border-brand-blue/20 shadow-[0_4px_20px_rgba(0,122,255,0.15)]';
+        return <Info className="w-5 h-5 text-[#8D6346]" />;
     }
   };
 
   return (
-    <div className={`pointer-events-auto flex items-center gap-3 p-4 rounded-2xl border backdrop-blur-xl animate-fade-in w-full transition-all duration-300 ${getBgClass()}`}>
-      <div className="shrink-0 p-2 bg-white/5 rounded-full">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -50, scale: 0.95 }}
+      animate={{ 
+        opacity: 1 - index * 0.15, 
+        y: index * 12, 
+        scale: 1 - index * 0.05,
+        zIndex: 100 - index
+      }}
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+      transition={{ type: "spring", bounce: 0.4, duration: 0.6 }}
+      className="pointer-events-auto absolute top-0 w-full liquidglass flex items-center gap-3 p-4 rounded-3xl border border-white/10"
+    >
+      <div className="shrink-0 p-2 bg-white/15 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)]">
         {getIcon()}
       </div>
-      <p className="flex-1 text-sm font-semibold text-white leading-relaxed">
+      <p className="flex-1 text-sm font-semibold text-white/90 leading-relaxed drop-shadow-sm">
         {message}
       </p>
-      <button
+      <motion.button
+        whileTap={{ scale: 0.9 }}
         onClick={onClose}
-        className="shrink-0 p-2 text-[var(--color-text-muted)] hover:text-white hover:bg-white/10 rounded-full transition-colors"
+        className="shrink-0 p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors"
       >
         <X className="w-4 h-4" />
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 };

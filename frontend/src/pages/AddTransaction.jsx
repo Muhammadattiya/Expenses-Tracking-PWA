@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell, Calculator } from "lucide-react";
+import { motion } from "framer-motion";
 
 import { getAccounts } from "../api/accounts";
 import { getCategories } from "../api/categories";
@@ -13,6 +14,7 @@ import CalculatorModal from "../components/modals/CalculatorModal";
 import { payBill } from "../api/bills";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import SplashScreen from "../components/SplashScreen";
 
 const AddTransaction = () => {
   // الحالات (States) الأساسية
@@ -122,14 +124,14 @@ const AddTransaction = () => {
 
     if (type === 'transfer') {
       if (!fromAccount || !toAccount) {
-        showToast(t('addTransaction.selectAccounts', 'يرجى تحديد الحسابات المعنية.'), 'warning');
+        showToast(t('addTransaction.selectAccounts'), 'warning');
         return;
       }
       payload.from_account = fromAccount;
       payload.to_account = toAccount;
     } else {
       if (!account || !category) {
-        showToast(t('addTransaction.selectAccountAndCategory', 'يرجى تحديد الحساب والفئة.'), 'warning');
+        showToast(t('addTransaction.selectAccountAndCategory'), 'warning');
         return;
       }
       payload.account = account;
@@ -174,68 +176,86 @@ const AddTransaction = () => {
         reminderDaysBefore: 1
       });
 
-      showToast(t('addTransaction.successMsg', 'تم تسجيل المعاملة بنجاح!'), 'success');
+      showToast(t('addTransaction.successMsg'), 'success');
       
       if (billId) {
         navigate('/bills');
       }
     } catch (error) {
       console.error('❌ خطأ في حفظ المعاملة:', error);
-      showToast(error.response?.data?.message || t('addTransaction.errorMsg', 'حدث خطأ أثناء حفظ المعاملة.'), 'error');
+      showToast(error.response?.data?.message || t('addTransaction.errorMsg'), 'error');
     }
   };
 
   // شاشة تحميل بسيطة لو البيانات لسه بتيجي من السيرفر
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   return (
-    <div className="p-4 pt-8 animate-fade-in">
-      <h2 className="text-2xl font-bold mb-8 text-center tracking-wide text-[var(--color-text-main)]">
-        {t('addTransaction.title', 'إضافة معاملة')}
-      </h2>
-
-      {/* Segmented Control */}
-      <div className="flex bg-black/20 p-1.5 rounded-[1.5rem] mb-10 border border-white/5 shadow-inner">
-        <button
-          type="button"
-          onClick={() => setType('expense')}
-          className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${type === 'expense' ? 'bg-brand-red text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(255,59,48,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-            }`}
-        >
-          <ArrowUp className="h-4 w-4" /> {t('addTransaction.expense', 'مصروف')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setType('income')}
-          className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${type === 'income' ? 'bg-brand-green text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(52,199,89,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-            }`}
-        >
-          <ArrowDown className="h-4 w-4" /> {t('addTransaction.income', 'دخل')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setType('transfer')}
-          className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${type === 'transfer' ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-            }`}
-        >
-          <Repeat className="h-4 w-4" /> {t('addTransaction.transfer', 'تحويل')}
-        </button>
+    <div className="w-full h-full flex flex-col overflow-hidden relative select-none bg-[#141115]">
+      {/* Ambient Copper Background exactly like Settings & Dashboard */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
+        <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
       </div>
 
-      {/* Form Container */}
-      <form onSubmit={handleSubmit} className="space-y-6 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]">
+      {/* Top Segmented Control (Expense / Income / Transfer) */}
+      <div className="px-5 pt-[clamp(8px,1.5vh,16px)] pb-[clamp(4px,1vh,10px)] shrink-0 z-20">
+        <div className="flex liquidglass border border-white/15 p-1 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.3)] relative max-w-[340px] mx-auto w-full">
+          {[
+            { key: 'expense', label: t('addTransaction.expense'), color: '#FF5555', shadow: 'rgba(255,85,85,0.45)' },
+            { key: 'income', label: t('addTransaction.income'), color: '#34C759', shadow: 'rgba(52,199,89,0.45)' },
+            { key: 'transfer', label: t('addTransaction.transfer'), color: '#007AFF', shadow: 'rgba(0,122,255,0.45)' }
+          ].map((tab) => {
+            const isActive = type === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setType(tab.key)}
+                className="relative flex-1 py-[clamp(4px,0.7vh,7px)] rounded-full text-[clamp(12px,1.6vh,14px)] font-semibold transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTypePill"
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      backgroundColor: tab.color,
+                      boxShadow: `0 2px 14px ${tab.shadow}`
+                    }}
+                    transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                  />
+                )}
+                <span className={`relative z-20 ${isActive ? 'text-white' : 'text-white/60 hover:text-white'}`}>
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        {/* Massive Amount Input */}
-        <div className="mb-2 flex flex-col items-center justify-center py-4 border-b border-white/5 relative">
-          <label className="text-xs text-[var(--color-text-muted)] font-bold mb-2 uppercase tracking-widest">{t('addTransaction.amount', 'المبلغ')}</label>
-          <div className="flex items-center justify-center gap-3 w-full relative">
-            <div className="flex items-end gap-2 max-w-[220px]">
+      {/* Main Liquid Glass Container */}
+      <div className="w-full flex-1 min-h-0 liquidglass rounded-t-[36px] border-t border-white/15 shadow-[0_-12px_40px_rgba(0,0,0,0.4)] px-[clamp(16px,4vw,24px)] pt-[clamp(8px,1.5vh,16px)] pb-[clamp(76px,10.2vh,90px)] flex flex-col overflow-hidden relative z-10">
+        
+        {/* Form Fields Area with justify-between across the entire viewport */}
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col justify-between w-full">
+          
+          {/* 1. Amount Section */}
+          <div className="flex flex-col items-center justify-center shrink-0">
+            <label className="text-[clamp(13px,1.8vh,16px)] font-medium text-white/70 tracking-wide mb-0.5 text-center">
+              {t('addTransaction.amount')}
+            </label>
+            <div className="flex items-center justify-center gap-3 relative w-full h-[clamp(42px,5.5vh,58px)]">
+              <button 
+                type="button"
+                onClick={() => setShowCalculator(true)}
+                className="absolute start-1 w-[clamp(30px,4vh,38px)] h-[clamp(30px,4vh,38px)] rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+                aria-label={t('common.calculator')}
+              >
+                <Calculator className="w-[clamp(16px,2vh,20px)] h-[clamp(16px,2vh,20px)]" />
+              </button>
               <input
                 type="number"
                 inputMode="decimal"
@@ -243,175 +263,167 @@ const AddTransaction = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="bg-transparent text-center text-6xl font-bold text-[var(--color-text-main)] focus:outline-none w-full placeholder-gray-800 transition-colors"
-                style={{ caretColor: type === 'expense' ? '#FF3B30' : type === 'income' ? '#34C759' : '#007AFF' }}
+                className="bg-transparent text-center text-[clamp(38px,5.2vh,56px)] font-bold text-white focus:outline-none w-[auto] min-w-[60px] max-w-[220px] placeholder-white/25 tracking-tight leading-none h-full tabular-nums"
+                style={{ caretColor: type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF' }}
               />
-              <span className="text-xl text-[var(--color-text-muted)] font-medium mb-2">{t('nav.currency', 'ج.م')}</span>
+              <span className="text-[clamp(15px,2vh,19px)] text-white/85 font-semibold self-end mb-1">
+                {t('nav.currency')}
+              </span>
             </div>
-            
-            <button 
-              type="button"
-              onClick={() => setShowCalculator(true)}
-              className="absolute left-0 p-3 bg-white/5 hover:bg-white/10 active:bg-white/20 rounded-2xl text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
-            >
-              <Calculator size={24} />
-            </button>
+            <div className="w-[85%] max-w-[260px] h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent mx-auto mt-[clamp(2px,0.6vh,6px)]" />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.description', 'الوصف')}</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t('addTransaction.descPlaceholder', 'مثال: غداء، تحويل لكاش...')}
-            className="field"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.date', 'التاريخ')}</label>
-          <div className="flex bg-black/20 p-1.5 rounded-[1.2rem] border border-white/5 shadow-inner">
-            <button
-              type="button"
-              onClick={() => setDate(todayStr)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${isToday ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-                }`}
-            >
-              {t('addTransaction.today', 'اليوم')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDate(yesterdayStr)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${isYesterday ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-                }`}
-            >
-              {t('addTransaction.yesterday', 'أمس')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsDatePickerOpen(true)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${isCustom ? 'bg-brand-blue text-[var(--color-text-main)] shadow-[0_4px_12px_rgba(0,122,255,0.3)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
-                }`}
-            >
-              {isCustom ? date : t('addTransaction.customDate', 'تاريخ')}
-            </button>
-          </div>
-        </div>
-
-        {type === 'transfer' ? (
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-brand-blue mb-2 ml-1 tracking-wide">{t('addTransaction.fromAccount', 'من حساب')}</label>
-              <CustomSelect
-                value={fromAccount}
-                onChange={setFromAccount}
-                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                placeholder={t('addTransaction.fromAccountPlaceholder', 'اختر حساب التحويل')}
-              />
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-brand-green mb-2 ml-1 tracking-wide">{t('addTransaction.toAccount', 'إلى حساب')}</label>
-              <CustomSelect
-                value={toAccount}
-                onChange={setToAccount}
-                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                placeholder={t('addTransaction.toAccountPlaceholder', 'اختر حساب الاستلام')}
-              />
+          {/* 2. Date Segmented Control */}
+          <div className="shrink-0">
+            <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1">
+              {t('addTransaction.date')}
+            </label>
+            <div className="flex bg-[#2A2325]/75 border border-white/10 p-0.5 rounded-full shadow-inner relative h-[clamp(32px,4vh,40px)] items-center">
+              {[
+                { key: 'today', label: t('addTransaction.today'), active: isToday, onClick: () => setDate(todayStr) },
+                { key: 'yesterday', label: t('addTransaction.yesterday'), active: isYesterday, onClick: () => setDate(yesterdayStr) },
+                { key: 'custom', label: isCustom ? date : t('addTransaction.customDate'), active: isCustom, onClick: () => setIsDatePickerOpen(true) }
+              ].map((tab) => {
+                const activeColor = type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF';
+                const activeShadow = type === 'expense' ? 'rgba(255,85,85,0.45)' : type === 'income' ? 'rgba(52,199,89,0.45)' : 'rgba(0,122,255,0.45)';
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={tab.onClick}
+                    className="relative flex-1 h-full rounded-full text-[clamp(11px,1.4vh,13px)] font-medium transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
+                  >
+                    {tab.active && (
+                      <motion.div
+                        layoutId="activeDatePill"
+                        className="absolute inset-0 rounded-full"
+                        style={{
+                          backgroundColor: activeColor,
+                          boxShadow: `0 2px 10px ${activeShadow}`
+                        }}
+                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                      />
+                    )}
+                    <span className={`relative z-20 truncate px-1 ${tab.active ? 'text-white font-semibold' : 'text-white/60 hover:text-white'}`}>
+                      {tab.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        ) : (
-          <>
-            <div>
-              <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.account', 'الحساب')}</label>
-              <CustomSelect
-                value={account}
-                onChange={setAccount}
-                options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                placeholder={t('addTransaction.accountPlaceholder', 'اختر الحساب...')}
-              />
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-2 ml-1 tracking-wide">{t('addTransaction.category', 'الفئة')}</label>
-              <CustomSelect
-                value={category}
-                onChange={setCategory}
-                options={categories[type].map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon }))}
-                placeholder={t('addTransaction.categoryPlaceholder', 'اختر الفئة...')}
-              />
-            </div>
-          </>
-        )}
+          {/* 3. Description Input */}
+          <div className="shrink-0">
+            <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1">
+              {t('addTransaction.description')}
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t('addTransaction.descPlaceholder')}
+              className="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-[#342B2E]/90 shadow-inner transition-all hover:bg-[#342B2E]/80"
+            />
+          </div>
 
-        {/* Recurring Settings (Modern UI) */}
-        <div className="pt-4">
-          {recurringSettings.repeatType === 'never' ? (
-            <button
-              type="button"
-              onClick={() => setIsRecurringModalOpen(true)}
-              className="w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-brand-blue/30 rounded-2xl bg-brand-blue/5 hover:bg-brand-blue/10 hover:border-brand-blue/50 transition-all duration-300 group"
-            >
-              <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue mb-2 group-hover:scale-110 transition-transform">
-                <Repeat className="w-5 h-5" />
+          {/* 4 & 5. Accounts & Category */}
+          {type === 'transfer' ? (
+            <>
+              <div className="shrink-0">
+                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                  {t('addTransaction.fromAccount')}
+                </label>
+                <CustomSelect
+                  value={fromAccount}
+                  onChange={setFromAccount}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                  placeholder={t('addTransaction.fromAccountPlaceholder')}
+                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                />
               </div>
-              <span className="text-sm font-bold text-brand-blue">{t('recurring.addBtn', 'إضافة كمعاملة متكررة')}</span>
-              <span className="text-xs text-[var(--color-text-muted)] mt-1 text-center">{t('recurring.automate', 'أتمتة هذه المعاملة لتتكرر تلقائياً')}</span>
-            </button>
+              <div className="shrink-0">
+                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                  {t('addTransaction.toAccount')}
+                </label>
+                <CustomSelect
+                  value={toAccount}
+                  onChange={setToAccount}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                  placeholder={t('addTransaction.toAccountPlaceholder')}
+                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                />
+              </div>
+            </>
           ) : (
-            <div className="w-full rounded-2xl bg-gradient-to-br from-brand-blue/20 to-blue-600/10 border border-brand-blue/30 p-4 shadow-[0_0_15px_rgba(0,122,255,0.1)] relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 rounded-full blur-3xl -z-10" />
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-brand-blue text-white flex items-center justify-center shadow-lg shadow-brand-blue/30">
-                    <Repeat className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-[var(--color-text-main)]">{t('recurring.settings', 'إعدادات التكرار')}</h4>
-                    <p className="text-xs text-brand-blue font-semibold mt-0.5">
-                      {t(`recurring.${recurringSettings.repeatType}`, recurringSettings.repeatType)} 
-                      {recurringSettings.interval > 1 && ` (x${recurringSettings.interval})`}
-                    </p>
-                  </div>
+            <>
+              <div className="shrink-0">
+                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                  {t('addTransaction.account')}
+                </label>
+                <CustomSelect
+                  value={account}
+                  onChange={setAccount}
+                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                  placeholder={t('addTransaction.accountPlaceholder')}
+                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                />
+              </div>
+
+              <div className="shrink-0">
+                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                  {t('addTransaction.category')}
+                </label>
+                <CustomSelect
+                  value={category}
+                  onChange={setCategory}
+                  options={categories[type] ? categories[type].map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon })) : []}
+                  placeholder={t('addTransaction.categoryPlaceholder')}
+                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                />
+              </div>
+            </>
+          )}
+
+          {/* 6. Recurring Settings Button */}
+          <div className="shrink-0">
+            {recurringSettings.repeatType === 'never' ? (
+              <button
+                type="button"
+                onClick={() => setIsRecurringModalOpen(true)}
+                className="w-full h-[clamp(34px,4.4vh,44px)] flex items-center justify-center gap-2.5 border border-dashed border-white/20 hover:border-white/40 rounded-[40px] bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-200 active:scale-[0.98]"
+              >
+                <Repeat className="w-[clamp(13px,1.8vh,16px)] h-[clamp(13px,1.8vh,16px)] text-white/60" />
+                <span className="text-[clamp(11px,1.4vh,13px)] font-medium text-white/75">{t('recurring.addBtn')}</span>
+              </button>
+            ) : (
+              <div className="w-full h-[clamp(34px,4.4vh,44px)] flex items-center justify-between px-4 border border-dashed border-[#8D6346] rounded-[40px] bg-[#8D6346]/20 transition-all duration-200">
+                <div className="flex items-center gap-2">
+                  <Repeat className="w-4 h-4 text-[#E8C5A8]" />
+                  <span className="text-[clamp(11px,1.4vh,13px)] font-medium text-[#E8C5A8]">{t('recurring.settings')}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsRecurringModalOpen(true)}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold text-[var(--color-text-main)] transition-colors"
+                  className="px-3 py-1 bg-[#8D6346] hover:bg-[#734e35] rounded-full text-[11px] font-medium text-white transition-colors"
                 >
-                  {t('recurring.edit', 'تعديل')}
+                  {t('recurring.edit')}
                 </button>
               </div>
-              <div className="flex gap-2 mt-3">
-                {recurringSettings.reminderEnabled && (
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/20 text-yellow-500 rounded-lg text-[10px] font-bold">
-                    <Bell className="w-3 h-3" /> {t('recurring.reminderOn', 'تذكير مُفعل')}
-                  </span>
-                )}
-                {!recurringSettings.neverEnds && (
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 bg-brand-red/20 text-brand-red rounded-lg text-[10px] font-bold">
-                    {t('recurring.endsLater', 'ينتهي لاحقاً')}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <button
-          type="submit"
-          className={`w-full flex items-center justify-center gap-2 py-4 mt-8 rounded-2xl font-bold text-lg shadow-xl transition-all duration-300 active:scale-95 ${type === 'expense' ? 'bg-brand-red hover:bg-red-600 text-[var(--color-text-main)]' :
-              type === 'income' ? 'bg-brand-green hover:bg-green-600 text-[var(--color-text-main)]' :
-                'bg-brand-blue hover:bg-blue-600 text-[var(--color-text-main)]'
-            }`}
-        >
-          <CheckCircle2 className="h-6 w-6" />
-          {t('addTransaction.submit', 'تأكيد وحفظ')}
-        </button>
-      </form>
-
+          {/* 7. Confirm & Save Button */}
+          <div className="shrink-0">
+            <button
+              type="submit"
+              className="w-full h-[clamp(40px,5.2vh,50px)] rounded-[40px] font-semibold text-[clamp(14px,1.8vh,15px)] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
+            >
+              {t('addTransaction.submit')}
+            </button>
+          </div>
+        </form>
+      </div>
       {isDatePickerOpen && (
         <CustomDatePicker
           value={date}
@@ -420,21 +432,20 @@ const AddTransaction = () => {
         />
       )}
 
-      <RecurringSettingsModal 
-        isOpen={isRecurringModalOpen}
-        onClose={() => setIsRecurringModalOpen(false)}
-        initialSettings={recurringSettings}
-        onSave={setRecurringSettings}
-      />
+      {isRecurringModalOpen && (
+        <RecurringSettingsModal
+          isOpen={isRecurringModalOpen}
+          onClose={() => setIsRecurringModalOpen(false)}
+          settings={recurringSettings}
+          onSave={setRecurringSettings}
+        />
+      )}
 
-      <CalculatorModal 
-        isOpen={showCalculator} 
-        onClose={() => setShowCalculator(false)} 
+      <CalculatorModal
+        isOpen={showCalculator}
+        onClose={() => setShowCalculator(false)}
         initialValue={amount}
-        onSave={(result) => {
-          setAmount(result);
-          setShowCalculator(false);
-        }}
+        onSave={setAmount}
       />
     </div>
   );
