@@ -82,7 +82,7 @@ function extractType(text) {
    return 'expense';
 }
 
-function extractIntent(text) {
+function extractIntent(text, options = { fallbackPrefix: false }) {
    const normText = normalizeArabic(text);
    const francoText = transliterateFranco(text);
    const scores = {};
@@ -104,6 +104,28 @@ function extractIntent(text) {
    for (const [id, score] of Object.entries(scores)) {
       if (score > maxScore) { maxScore = score; bestIntent = id; }
    }
+
+   // Semantic Fallback for truncated/concatenated merchants
+   if (!bestIntent && options.fallbackPrefix) {
+      for (const intent of INTENTS) {
+         let matches = 0;
+         for (const kw of intent.keywords) {
+            if (kw.length < 4) continue; // Safety control
+            const normKw = normalizeArabic(kw);
+            const isEng = /^[a-z0-9]/i.test(normKw);
+            const rightBoundary = isEng ? '\\b' : '(?:$|\\s|[\\-\\*\\.,_])';
+            const regex = new RegExp(`(?:^|\\s|[\\-\\*\\.,_]|[بفلك]|لل)${normKw}${rightBoundary}`, 'gi');
+            const count1 = (normText.match(regex) || []).length;
+            const count2 = (francoText.match(regex) || []).length;
+            matches += Math.max(count1, count2);
+         }
+         if (matches > 0) scores[intent.id] = (scores[intent.id] || 0) + matches;
+      }
+      for (const [id, score] of Object.entries(scores)) {
+         if (score > maxScore) { maxScore = score; bestIntent = id; }
+      }
+   }
+
    return bestIntent;
 }
 

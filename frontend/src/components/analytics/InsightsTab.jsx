@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getForecast, getSurvival } from '../../api/forecast';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, AlertCircle, CheckCircle2, Zap, CalendarDays, Wallet, BrainCircuit, ArrowRight, Lightbulb, FlaskConical, Info } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export default function InsightsTab({ money, filters }) {
   const { t, lang } = useLanguage();
@@ -16,6 +17,7 @@ export default function InsightsTab({ money, filters }) {
   const [days, setDays] = useState(30);
   const [selectedProfileId, setSelectedProfileId] = useState('');
   const paydayCardRef = React.useRef(null);
+  const [activeSubTab, setActiveSubTab] = useState('forecast');
 
   useEffect(() => {
     let isMounted = true;
@@ -85,13 +87,13 @@ export default function InsightsTab({ money, filters }) {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl text-center">
         <Activity className="w-16 h-16 text-brand-blue mb-4 opacity-50" />
-        <h3 className="text-2xl font-bold text-white mb-2">{t('analytics.insights.emptyStateTitle', 'No Forecast Available')}</h3>
-        <p className="text-[var(--color-text-muted)] max-w-md mb-6">{t('analytics.insights.emptyStateDesc', 'We need more data to accurately predict your financial future.')}</p>
+        <h3 className="text-2xl font-bold text-white mb-2">{t('analytics.insights.emptyStateTitle')}</h3>
+        <p className="text-[var(--color-text-muted)] max-w-md mb-6">{t('analytics.insights.emptyStateDesc')}</p>
         <button 
           onClick={() => navigate('/add-transaction')}
           className="bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-brand-blue/20"
         >
-          {t('analytics.insights.addTransactionsBtn', 'Add Transactions')}
+          {t('analytics.insights.addTransactionsBtn')}
         </button>
       </div>
     );
@@ -107,7 +109,7 @@ export default function InsightsTab({ money, filters }) {
           
           {data.events && data.events.length > 0 && (
             <div className="space-y-2 mt-2 pt-2 border-t border-white/10">
-              <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">{t('analytics.insights.upcomingEvents', 'Upcoming Events')}</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">{t('analytics.insights.upcomingEvents')}</p>
               {data.events.map((e, idx) => (
                 <div key={idx} className="flex items-center justify-between gap-4">
                   <span className="text-xs text-white/90 truncate max-w-[120px]">{e.title || 'Event'}</span>
@@ -157,21 +159,61 @@ export default function InsightsTab({ money, filters }) {
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       
-      {/* Future Balance Hero Card */}
-      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 rounded-[2.5rem] relative overflow-hidden group">
-        <div className={`absolute -right-20 -top-20 w-64 h-64 rounded-full blur-3xl opacity-20 transition-colors duration-700 ${isTrendPositive ? 'bg-brand-green' : 'bg-brand-red'}`} />
+      {/* Sub-Tab Navigation */}
+        <div className="flex bg-black/40 p-1.5 rounded-2xl mb-8 relative z-10 w-full max-w-md mx-auto border border-white/5">
+          <button
+            onClick={() => setActiveSubTab('forecast')}
+            className={`relative flex-1 py-2.5 px-4 rounded-xl text-xs md:text-sm font-bold transition-all z-10 ${
+              activeSubTab === 'forecast' 
+                ? 'text-[#8D6346]' 
+                : 'text-[var(--color-text-muted)] hover:text-white'
+            }`}
+          >
+            {activeSubTab === 'forecast' && (
+              <motion.div
+                layoutId="insightsSubTabs"
+                className="absolute inset-0 bg-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30 rounded-xl"
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className="relative z-10">{t('analytics.insights.futureBalance')}</span>
+          </button>
+          <button
+            onClick={() => setActiveSubTab('payday')}
+            className={`relative flex-1 py-2.5 px-4 rounded-xl text-xs md:text-sm font-bold transition-all z-10 ${
+              activeSubTab === 'payday' 
+                ? 'text-[#8D6346]' 
+                : 'text-[var(--color-text-muted)] hover:text-white'
+            }`}
+          >
+            {activeSubTab === 'payday' && (
+              <motion.div
+                layoutId="insightsSubTabs"
+                className="absolute inset-0 bg-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30 rounded-xl"
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className="relative z-10">{t('analytics.insights.paydaySurvival')}</span>
+          </button>
+        </div>
+
+      {activeSubTab === 'forecast' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Future Balance Hero Card */}
+          <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-8 rounded-[2.5rem] relative overflow-hidden group">
+        <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full blur-3xl opacity-20 bg-[#8D6346]" />
         
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <BrainCircuit className="w-5 h-5 text-brand-blue" />
-              <p className="text-xs font-bold tracking-widest uppercase text-brand-blue">{t('analytics.insights.futureBalance', 'Future Balance')} ({days} {t('analytics.insights.days', 'Days')})</p>
+              <BrainCircuit className="w-5 h-5 text-[#8D6346]" />
+              <p className="text-xs font-bold tracking-widest uppercase text-[#8D6346]">{t('analytics.insights.futureBalance')} ({days} {t('analytics.insights.days')})</p>
             </div>
             <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter tabular-nums mb-2">
               {money(forecast.finalBalance)}
             </h2>
             <div className="flex items-center gap-3 mt-4">
-               <span className="text-sm text-white/50">{t('analytics.insights.currentBalance', 'Current Balance')}: {money(forecast.currentBalance)}</span>
+               <span className="text-sm text-white/50">{t('analytics.insights.currentBalance')}: {money(forecast.currentBalance)}</span>
                <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${isTrendPositive ? 'bg-brand-green/20 text-brand-green' : 'bg-brand-red/20 text-brand-red'}`}>
                  {isTrendPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                  {isTrendPositive ? '+' : ''}{money(trendDifference)}
@@ -185,7 +227,7 @@ export default function InsightsTab({ money, filters }) {
               <button
                 key={d}
                 onClick={() => setDays(d)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${days === d ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' : 'text-[var(--color-text-muted)] hover:text-white hover:bg-white/5'}`}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${days === d ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' : 'text-[var(--color-text-muted)] hover:text-white hover:bg-white/5'}`}
               >
                 {d}D
               </button>
@@ -195,7 +237,7 @@ export default function InsightsTab({ money, filters }) {
       </section>
 
       {/* Forecast Chart */}
-      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] relative overflow-hidden">
+      <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-6 rounded-[2.5rem] relative overflow-hidden">
         <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={forecast.dailyForecast} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
@@ -233,10 +275,10 @@ export default function InsightsTab({ money, filters }) {
 
               {/* Render Event Dots */}
               {forecast.dailyForecast.map((entry, index) => {
-                 if (entry.events && entry.events.length > 0) {
+                   if (entry.events && entry.events.length > 0) {
                    const hasPositive = entry.events.some(e => e.amount >= 0);
                    const hasNegative = entry.events.some(e => e.amount < 0);
-                   let color = '#3b82f6'; // Mixed
+                   let color = '#8D6346'; // Mixed
                    if (hasPositive && !hasNegative) color = '#10b981';
                    if (!hasPositive && hasNegative) color = '#f43f5e';
                    
@@ -264,17 +306,17 @@ export default function InsightsTab({ money, filters }) {
         {/* Statistics Grid */}
         <div className="lg:col-span-2 grid grid-cols-2 gap-4">
           <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors">
-             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.highestBalance', 'Highest Balance')}</p>
+             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.highestBalance')}</p>
              <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.maxBalance)}</p>
              <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.highestForecastDay).toLocaleDateString()}</p>
           </div>
           <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors">
-             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.lowestBalance', 'Lowest Balance')}</p>
+             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.lowestBalance')}</p>
              <p className={`text-2xl font-black tabular-nums tracking-tight ${forecast.minBalance < 0 ? 'text-brand-red' : 'text-white'}`}>{money(forecast.minBalance)}</p>
              <p className="text-[10px] text-white/40 mt-1">{new Date(forecast.lowestForecastDay).toLocaleDateString()}</p>
           </div>
           <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors">
-             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.averageBalance', 'Average Balance')}</p>
+             <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)] mb-1">{t('analytics.insights.averageBalance')}</p>
              <p className="text-2xl font-black text-white tabular-nums tracking-tight">{money(forecast.averageBalance)}</p>
           </div>
           <div className="bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-colors relative overflow-hidden">
@@ -288,10 +330,10 @@ export default function InsightsTab({ money, filters }) {
         </div>
 
         {/* AI Insights List */}
-        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-indigo-500/30 border-l-indigo-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] flex flex-col gap-4">
+        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-6 rounded-[2.5rem] flex flex-col gap-4">
            <div className="flex items-center gap-2 mb-2">
-             <Lightbulb className="w-5 h-5 text-indigo-400" />
-             <h3 className="font-bold text-white tracking-wide">{t('analytics.insights.forecastInsights', 'Forecast Insights')}</h3>
+             <Lightbulb className="w-5 h-5 text-[#8D6346]" />
+             <h3 className="font-bold text-white tracking-wide">{t('analytics.insights.forecastInsights')}</h3>
            </div>
            
            <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -315,89 +357,97 @@ export default function InsightsTab({ money, filters }) {
                );
              })}
            </div>
-        </div>
-
+         </div>
       </div>
+      </div>
+      )}
 
-      {/* Payday Survival Card */}
-      {survival && (
+      {activeSubTab === 'payday' && (
+        <div className="animate-fade-in">
+          {/* Payday Survival Card */}
+          {survival && (
         survival.hasIncomeProfile === true ? (
-          <section ref={paydayCardRef} className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 rounded-[2.5rem] relative overflow-hidden group ${getRiskColor(survival.risk)}`}>
-            {/* Top Header & Switcher */}
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 border-b border-white/10 pb-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3.5 rounded-2xl bg-black/20 backdrop-blur-md">
-                  {getRiskIcon(survival.risk)}
+          <div ref={paydayCardRef} className="space-y-6">
+            {/* Top Header Card */}
+            <section className={`bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-8 rounded-[2.5rem] relative overflow-hidden group ${getRiskColor(survival.risk)}`}>
+              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3.5 rounded-2xl bg-black/20 backdrop-blur-md border border-white/5">
+                    {getRiskIcon(survival.risk)}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold tracking-wide mb-1">
+                      Payday Survival Prediction
+                    </h2>
+                    <p className="text-3xl font-black tabular-nums tracking-tight">
+                      Risk Level: {survival.risk}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold tracking-wide mb-1">
-                    Payday Survival Prediction
-                  </h2>
-                  <p className="text-3xl font-black tabular-nums tracking-tight">
-                    Risk Level: {survival.risk}
-                  </p>
-                </div>
+                
+                {/* Profile Switcher */}
+                {survival.availableProfiles && survival.availableProfiles.length > 0 && (
+                  <div className="flex items-center gap-3 bg-black/20 px-4 py-3 rounded-2xl backdrop-blur-md border border-white/5">
+                    <span className="text-xs uppercase tracking-widest opacity-70">Tracking:</span>
+                    <select 
+                      className="bg-transparent text-white font-bold text-sm outline-none cursor-pointer"
+                      value={survival.selectedProfileId}
+                      onChange={(e) => setSelectedProfileId(e.target.value)}
+                    >
+                      {survival.availableProfiles.map(p => (
+                        <option key={p.id} value={p.id} className="text-black bg-white">{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
-              
-              {/* Profile Switcher */}
-              {survival.availableProfiles && survival.availableProfiles.length > 0 && (
-                <div className="flex items-center gap-3 bg-black/20 px-4 py-3 rounded-2xl backdrop-blur-md">
-                  <span className="text-xs uppercase tracking-widest opacity-70">Tracking:</span>
-                  <select 
-                    className="bg-transparent text-white font-bold text-sm outline-none cursor-pointer"
-                    value={survival.selectedProfileId}
-                    onChange={(e) => setSelectedProfileId(e.target.value)}
-                  >
-                    {survival.availableProfiles.map(p => (
-                      <option key={p.id} value={p.id} className="text-black bg-white">{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
+            </section>
 
             {/* Transparency Board */}
-            <div className="relative z-10 bg-black/10 shadow-inner p-5 rounded-[2.5rem] border border-white/5 mb-8">
-              <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-4 flex items-center gap-2">
+            <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-6 md:p-8 rounded-[2.5rem] relative overflow-hidden group">
+              <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-4 flex items-center gap-2">
                  <Info className="w-4 h-4" /> Transparency Board (Isolated Account)
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div>
-                  <p className="text-[10px] uppercase opacity-50">Profile</p>
-                  <p className="font-bold text-sm truncate">{survival.incomeName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase opacity-50">Account</p>
-                  <p className="font-bold text-sm truncate">{survival.availableProfiles?.find(p => p.id === survival.selectedProfileId)?.accountName || 'Unknown'}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase opacity-50">Frequency</p>
-                  <p className="font-bold text-sm capitalize">{survival.availableProfiles?.find(p => p.id === survival.selectedProfileId)?.frequency || 'Unknown'}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase opacity-50">Next Income</p>
-                  <p className="font-bold text-sm">{new Date(survival.nextIncomeDate).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase opacity-50">Amount</p>
-                  <p className="font-bold text-sm tabular-nums text-brand-green">{money(survival.incomeAmount)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase opacity-50">Current Balance</p>
-                  <p className="font-bold text-sm tabular-nums">{money(survival.currentBalance)}</p>
+              <div className="bg-black/10 shadow-inner p-6 rounded-[2.5rem] border border-white/5">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                  <div>
+                    <p className="text-[10px] uppercase opacity-50">Profile</p>
+                    <p className="font-bold text-sm truncate">{survival.incomeName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase opacity-50">Account</p>
+                    <p className="font-bold text-sm truncate">{survival.availableProfiles?.find(p => p.id === survival.selectedProfileId)?.accountName || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase opacity-50">Frequency</p>
+                    <p className="font-bold text-sm capitalize">{survival.availableProfiles?.find(p => p.id === survival.selectedProfileId)?.frequency || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase opacity-50">Next Income</p>
+                    <p className="font-bold text-sm">{new Date(survival.nextIncomeDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase opacity-50">Amount</p>
+                    <p className="font-bold text-sm tabular-nums text-brand-green">{money(survival.incomeAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase opacity-50">Current Balance</p>
+                    <p className="font-bold text-sm tabular-nums">{money(survival.currentBalance)}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
             {/* Details Grid */}
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
-               {/* Left Column: Explanations */}
-               <div className="space-y-6">
-                 <div>
-                    <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-3 flex items-center gap-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+               {/* Left Column: Explanations & Safe Days */}
+               <div className="lg:col-span-2 space-y-6">
+                 {/* Extra Safe Days */}
+                 <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-6 md:p-8 rounded-[2.5rem]">
+                    <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-4 flex items-center gap-2">
                        <CalendarDays className="w-4 h-4" /> Extra Safe Days
                     </h3>
-                    <div className="bg-black/10 p-5 rounded-2xl border border-white/5">
+                    <div className="bg-black/10 p-6 rounded-[2.5rem] border border-white/5 shadow-inner">
                        {survival.runOutDate ? (
                          <p className="text-lg font-medium leading-relaxed">
                            Your balance is expected to run out on <span className="font-black">{new Date(survival.runOutDate).toLocaleDateString()}</span>, which is <span className="font-black text-rose-300">{(survival.daysUntilIncome || 0) - (survival.remainingSurvivalDays || 0)} days before</span> your next income.
@@ -407,76 +457,111 @@ export default function InsightsTab({ money, filters }) {
                            Your balance is expected to last <span className="font-black text-brand-green">{survival.financialBuffer} extra days</span> after covering all projected expenses before payday.
                          </p>
                        )}
-                       <p className="text-[10px] text-white/50 mt-4 italic border-t border-white/5 pt-3">
+                       <p className="text-[10px] text-white/50 mt-4 italic border-t border-white/5 pt-4">
                          * Extra Safe Days = Remaining Balance Before Next Income / Expected Daily Variable Spending
                        </p>
                     </div>
-                 </div>
+                 </section>
 
-                 {survival.explanations?.length > 0 && (
-                   <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-3 flex items-center gap-2">
-                         <BrainCircuit className="w-4 h-4" /> Why is my risk {survival.risk}?
-                      </h3>
-                      <div className="space-y-3">
-                        {survival.explanations.map((exp, idx) => (
-                           <div key={idx} className="flex items-start gap-3 bg-black/10 p-4 rounded-xl border border-white/5">
-                              <Info className="w-5 h-5 shrink-0 opacity-60 mt-0.5" />
-                              <p className="text-sm font-medium leading-relaxed">{exp}</p>
-                           </div>
-                        ))}
-                      </div>
-                   </div>
-                 )}
-                 
-                 {survival.actionableInsights?.length > 0 && (
-                   <div>
-                      <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-3 text-brand-green flex items-center gap-2">
-                         <Lightbulb className="w-4 h-4" /> Actionable Insights
-                      </h3>
-                      <div className="space-y-3">
-                        {survival.actionableInsights.map((insight, idx) => (
-                           <div key={idx} className="flex items-start gap-3 bg-brand-green/10 p-4 rounded-xl border border-brand-green/20">
-                              <TrendingUp className="w-5 h-5 shrink-0 text-brand-green mt-0.5" />
-                              <p className="text-sm font-medium leading-relaxed text-brand-green">{insight}</p>
-                           </div>
-                        ))}
-                      </div>
-                   </div>
-                 )}
-               </div>
-
-               {/* Right Column: Timeline */}
-               <div>
-                 <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-4 flex items-center gap-2">
-                    <Activity className="w-4 h-4" /> Financial Timeline
-                 </h3>
-                 <div className="bg-black/10 shadow-inner p-6 rounded-[2.5rem] border border-white/5 h-full">
-                    <div className="relative border-l-2 border-white/10 ml-4 space-y-8 py-2">
-                      {survival.timeline?.map((step, idx) => (
-                        <div key={idx} className="relative pl-8">
-                           <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-black ${
-                             step.type === 'start' ? 'bg-brand-blue' :
-                             step.type === 'end' ? 'bg-brand-green' :
-                             step.type === 'danger' ? 'bg-rose-500 animate-pulse' :
-                             'bg-white/50'
-                           }`} />
-                           <div className="flex flex-col">
-                             <span className={`text-sm font-bold uppercase tracking-wider ${
-                                step.type === 'danger' ? 'text-rose-400' : 'text-white/80'
-                             }`}>{step.label}</span>
-                             {step.amount && <span className="text-xl font-black tabular-nums mt-1">{money(step.amount)}</span>}
-                             {step.date && <span className="text-sm opacity-60 mt-1">{new Date(step.date).toLocaleDateString()}</span>}
+                 {/* Insights and Explanations */}
+                 {(survival.explanations?.length > 0 || survival.actionableInsights?.length > 0) && (
+                   <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-6 md:p-8 rounded-[2.5rem] space-y-8">
+                      {survival.explanations?.length > 0 && (
+                        <div>
+                           <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-4 flex items-center gap-2">
+                              <BrainCircuit className="w-4 h-4" /> Risk Analysis
+                           </h3>
+                           <div className="flex flex-wrap gap-4 w-full">
+                             {survival.explanations.map((exp, idx) => (
+                                <div key={idx} className="flex-1 min-w-[240px] flex items-start gap-4 p-4 rounded-[1.5rem] bg-white/5 border border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all hover:-translate-y-1 hover:bg-white/10">
+                                   <div className="p-2.5 rounded-xl bg-black/20 shadow-inner shrink-0">
+                                      <Info className="w-5 h-5 text-white/70" />
+                                   </div>
+                                   <p className="text-sm font-medium leading-relaxed text-white/90 pt-1">{exp}</p>
+                                </div>
+                             ))}
                            </div>
                         </div>
-                      ))}
-                    </div>
-                 </div>
+                      )}
+                      
+                      {survival.actionableInsights?.length > 0 && (
+                        <div>
+                           <h3 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-4 text-brand-green flex items-center gap-2">
+                              <Lightbulb className="w-4 h-4" /> Actionable Insights
+                           </h3>
+                           <div className="flex flex-wrap gap-4 w-full">
+                             {survival.actionableInsights.map((insight, idx) => (
+                                <div key={idx} className="flex-1 min-w-[240px] flex items-start gap-4 p-4 rounded-[1.5rem] bg-brand-green/10 border border-brand-green/20 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all hover:-translate-y-1 hover:bg-brand-green/15">
+                                   <div className="p-2.5 rounded-xl bg-brand-green/20 shadow-inner shrink-0">
+                                      <TrendingUp className="w-5 h-5 text-brand-green" />
+                                   </div>
+                                   <p className="text-sm font-medium leading-relaxed text-brand-green pt-1">{insight}</p>
+                                </div>
+                             ))}
+                           </div>
+                        </div>
+                      )}
+                   </section>
+                 )}
+               </div>
+
+               {/* Right Column: Balance Descent Chart */}
+               <div className="lg:col-span-1">
+                 <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-6 md:p-8 rounded-[2.5rem] h-full flex flex-col">
+                   <h3 className="text-sm font-bold uppercase tracking-widest opacity-70 mb-6 flex items-center gap-2">
+                      <Activity className="w-4 h-4" /> Balance Descent to Payday
+                   </h3>
+                   <div className="bg-black/10 shadow-inner p-4 rounded-[2.5rem] border border-white/5 flex-1 relative min-h-[300px]">
+                      {survival.chartData && survival.chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={survival.chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={survival.risk === 'High Risk' ? '#F43F5E' : '#8D6346'} stopOpacity={0.4}/>
+                                <stop offset="95%" stopColor={survival.risk === 'High Risk' ? '#F43F5E' : '#8D6346'} stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                            <XAxis 
+                              dataKey="date" 
+                              stroke="rgba(255,255,255,0.2)" 
+                              tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 10}} 
+                              tickFormatter={(val) => new Date(val).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' })}
+                              tickMargin={10}
+                            />
+                            <YAxis 
+                              stroke="rgba(255,255,255,0.2)" 
+                              tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 10}}
+                              tickFormatter={(val) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { notation: 'compact' }).format(val)}
+                              domain={['auto', 'auto']}
+                            />
+                            <RechartsTooltip 
+                              contentStyle={{ backgroundColor: 'rgba(28,24,25,0.95)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
+                              itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                              labelFormatter={(label) => new Date(label).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              formatter={(value) => [money(value), 'Balance']}
+                            />
+                            <ReferenceLine y={0} stroke="#F43F5E" strokeDasharray="3 3" strokeWidth={1} />
+                            <Area 
+                              type="monotone" 
+                              dataKey="balance" 
+                              stroke={survival.risk === 'High Risk' ? '#F43F5E' : '#8D6346'} 
+                              strokeWidth={3} 
+                              fillOpacity={1} 
+                              fill="url(#colorBalance)" 
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-white/40 text-sm">No data available</div>
+                      )}
+                   </div>
+                 </section>
                </div>
             </div>
-          </section>
+          </div>
         ) : (
-          <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-8 rounded-[2.5rem] relative overflow-hidden group">
+          <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/5 shadow-xl p-8 rounded-[2.5rem] relative overflow-hidden group">
              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
                    <div className="flex items-center gap-3 mb-2">
@@ -499,35 +584,8 @@ export default function InsightsTab({ money, filters }) {
           </section>
         )
       )}
-
-      {/* Sandbox Entry Point */}
-      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-purple-500/30 border-l-purple-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] relative overflow-hidden group mt-6">
-        <div className="absolute -right-10 -top-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl group-hover:bg-purple-500/30 transition-colors duration-700" />
-        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors duration-700" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-purple-500/20 rounded-xl text-purple-400">
-                <FlaskConical className="w-5 h-5" />
-              </div>
-              <h2 className="text-xl font-bold text-[var(--color-text-main)] tracking-wide">Financial Sandbox</h2>
-            </div>
-            <p className="text-sm text-[var(--color-text-muted)] leading-relaxed max-w-2xl">
-              Want to see how a big purchase, a salary increase, or a new debt would affect your finances? 
-              Test "What-if" scenarios safely in our isolated sandbox without affecting your real data.
-            </p>
-          </div>
-          
-          <button 
-            onClick={() => navigate('/sandbox')}
-            className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-8 py-3.5 rounded-2xl text-sm font-bold transition-all shadow-lg hover:shadow-purple-500/25 hover:-translate-y-1"
-          >
-            Launch Sandbox
-            <ArrowRight className="w-4 h-4" />
-          </button>
         </div>
-      </section>
+      )}
 
     </div>
   );

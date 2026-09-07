@@ -31,7 +31,7 @@ export const getFilterBounds = (type, userPrefs = {}) => {
   }
 
   if (type === 'this_week' || type === 'last_week') {
-    const prefWeekStart = userPrefs?.budgetStartDayWeekly !== undefined ? userPrefs.budgetStartDayWeekly : 6;
+    const prefWeekStart = userPrefs?.trackingStartDayWeekly !== undefined ? userPrefs.trackingStartDayWeekly : 6;
     const getWeekBounds = (dateObj) => {
       let day = dateObj.getDay();
       let diff = day >= prefWeekStart ? day - prefWeekStart : 7 - (prefWeekStart - day);
@@ -55,7 +55,7 @@ export const getFilterBounds = (type, userPrefs = {}) => {
   } 
   
   if (type === 'this_month' || type === 'last_month') {
-    const prefMonthStart = userPrefs?.budgetStartDayMonthly || 1;
+    const prefMonthStart = userPrefs?.trackingStartDayMonthly || 1;
     const getMonthBounds = (dateObj) => {
       let start = new Date(dateObj);
       const lastDayOfCurrentMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
@@ -119,44 +119,44 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
             onClick={() => handleQuickFilter('today')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('today')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.today', 'Today')}
+            {t('analytics.filters.today')}
           </button>
           <button 
             type="button"
             onClick={() => handleQuickFilter('yesterday')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('yesterday')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.yesterday', 'Yesterday')}
+            {t('analytics.filters.yesterday')}
           </button>
           <button 
             type="button"
             onClick={() => handleQuickFilter('this_week')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('this_week')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.thisWeek', 'This Week')}
+            {t('analytics.filters.thisWeek')}
           </button>
           <button 
             type="button"
             onClick={() => handleQuickFilter('last_week')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('last_week')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.lastWeek', 'Last Week')}
+            {t('analytics.filters.lastWeek')}
           </button>
           
           <button 
@@ -164,22 +164,22 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
             onClick={() => handleQuickFilter('this_month')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('this_month')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.thisMonth', 'This Month')}
+            {t('analytics.filters.thisMonth')}
           </button>
           <button 
             type="button"
             onClick={() => handleQuickFilter('last_month')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('last_month')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.lastMonth', 'Last Month')}
+            {t('analytics.filters.lastMonth')}
           </button>
 
           <button 
@@ -187,22 +187,22 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
             onClick={() => handleQuickFilter('year')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('year')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.thisYear', 'This Year')}
+            {t('analytics.filters.thisYear')}
           </button>
           <button 
             type="button"
             onClick={() => handleQuickFilter('all')}
             className={`flex-1 xl:flex-none px-4 py-2.5 rounded-2xl text-[11px] font-bold transition-all duration-300 hover:-translate-y-0.5 ${
               checkActive('all')
-                ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                ? 'bg-[#8D6346]/20 text-[#8D6346] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/30' 
                 : 'bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--color-text-main)]'
             }`}
           >
-            {t('analytics.filters.allTime', 'All Time')}
+            {t('analytics.filters.allTime')}
           </button>
           <button 
             type="button"
@@ -230,7 +230,7 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
                 setFilters({ ...filters, from: '', filterType: 'custom' });
               }
             }}
-            title={t('analytics.fromDate', 'From Date')}
+            title={t('analytics.fromDate')}
           />
           <span className="text-[var(--color-text-muted)] text-xs font-bold px-1">-</span>
           <input 
@@ -247,7 +247,7 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
                 setFilters({ ...filters, to: '', filterType: 'custom' });
               }
             }}
-            title={t('analytics.toDate', 'To Date')}
+            title={t('analytics.toDate')}
           />
           <button 
             onClick={() => setShowCustom(false)}

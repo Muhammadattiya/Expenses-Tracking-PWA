@@ -79,7 +79,7 @@ const buildTransactionFilter = (userId, query) => {
     filter.type = query.type;
   }
   if (query.status) {
-    if (!['completed', 'pending_review', 'needs_manual_review'].includes(query.status)) {
+    if (!['completed'].includes(query.status)) {
       throw new AppError('Invalid transaction status filter.', 400);
     }
     filter.status = query.status;
@@ -147,21 +147,35 @@ const validateReferences = async (userId, data) => {
     return;
   }
 
-  const [account, category] = await Promise.all([
-    Account.findOne({ _id: data.account, user: userId }),
-    Category.findOne({ _id: data.category, user: userId }),
-  ]);
-  if (!account) throw new Error("Account not found.");
-  if (!category) throw new Error("Category not found.");
+  if (data.account !== undefined) {
+    const account = await Account.findOne({ _id: data.account, user: userId });
+    if (!account) throw new Error("Account not found.");
+  }
+
+  if (data.category !== undefined && data.category !== null) {
+    const category = await Category.findOne({ _id: data.category, user: userId });
+    if (!category) throw new Error("Category not found.");
+  }
 };
 
-const createTransaction = async (userId, data) => {
-  const normalizedData = { ...data };
-  if (normalizedData.title !== undefined) {
-    normalizedData.title = String(normalizedData.title).trim();
+// Whitelist allowed fields to prevent mass assignment
+const TRANSACTION_ALLOWED_KEYS = ['title', 'amount', 'type', 'date', 'status', 'account', 'category', 'from_account', 'to_account', 'investment', 'idempotencyKey'];
+const pickTransactionFields = (data) => {
+  const safe = {};
+  for (const key of TRANSACTION_ALLOWED_KEYS) {
+    if (data[key] !== undefined) safe[key] = data[key];
   }
-  await validateReferences(userId, normalizedData);
-  const transaction = await Transaction.create({ ...normalizedData, user: userId });
+  return safe;
+};
+
+const createTransaction = async (userId, data, opts = {}) => {
+  // Internal callers (SMS parser, shortcuts) can pass trusted fields via opts.trusted
+  const safeData = opts.trusted ? { ...data } : pickTransactionFields(data);
+  if (safeData.title !== undefined) {
+    safeData.title = String(safeData.title).trim();
+  }
+  await validateReferences(userId, safeData);
+  const transaction = await Transaction.create({ ...safeData, user: userId });
 
   const populated = await Transaction.findById(transaction._id)
     .populate("account")
@@ -180,12 +194,17 @@ const createTransaction = async (userId, data) => {
 };
 
 const updateTransaction = async (userId, id, data) => {
-  const normalizedData = { ...data };
-  if (normalizedData.title !== undefined) {
-    normalizedData.title = String(normalizedData.title).trim();
+  const safeData = pickTransactionFields(data);
+  if (safeData.title !== undefined) {
+    safeData.title = String(safeData.title).trim();
   }
-  await validateReferences(userId, normalizedData);
-  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, normalizedData, {
+  await validateReferences(userId, safeData);
+  
+  // Capture original transaction to detect manual review of SMS shortcuts
+  const originalTx = await Transaction.findOne({ _id: id, user: userId }).lean();
+  if (!originalTx) throw new Error("Transaction not found.");
+
+  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, safeData, {
     returnDocument: 'after',
     runValidators: true,
   })
@@ -195,6 +214,18 @@ const updateTransaction = async (userId, id, data) => {
     .populate("to_account");
 
   if (!transaction) throw new Error("Transaction not found.");
+  
+  // Merchant Learning Hook: If resolving an unknown SMS transaction
+  if (
+    !originalTx.category && 
+    transaction.category &&
+    ['sms_shortcut', 'apple_shortcut'].includes(originalTx.source)
+  ) {
+    const { learnFromUser } = require('./merchantLearningService');
+    // Use originalTx.title (the raw merchant from SMS parser)
+    learnFromUser(userId, originalTx.title, transaction.category._id || transaction.category)
+      .catch(err => console.error('[ERROR] merchant learning failed:', err));
+  }
   
   if (transaction.type === 'expense') {
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));

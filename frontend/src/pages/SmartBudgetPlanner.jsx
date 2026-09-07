@@ -243,30 +243,54 @@ export default function SmartBudgetPlanner() {
   const remainingTotal = Number(availableBudget) - allocatedTotal;
 
   // Rendering Helpers
+  const BackIcon = language === 'ar' ? ArrowRight : ArrowLeft;
+
   const renderStepIcon = (num) => {
-    const active = step >= num;
+    const isCurrent = step === num;
+    const isPast = step > num;
+    
+    let stateClasses = 'text-white/30 border border-transparent liquidglass';
+    if (isCurrent || isPast) {
+      stateClasses = 'text-white bg-[#8D6346]/90 backdrop-blur-md border border-white/30 shadow-[0_0_15px_rgba(141,99,70,0.6)] shadow-inner';
+    }
+
     return (
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${active ? 'bg-brand-blue text-white' : 'bg-white/10 text-white/50'}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${stateClasses}`}>
         {num}
       </div>
     );
   };
 
   return (
-    <div className="pb-20 pt-6 px-4 max-w-lg mx-auto min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
-          <Target className="text-brand-blue" />
-          {t('smartBudget.title')}
-        </h1>
-        <p className="text-white/50 text-sm">{t('smartBudget.subtitle')}</p>
+    <div className="pb-20 pt-6 px-4 max-w-lg mx-auto min-h-screen relative">
+      <div className="fixed inset-0 -z-10 bg-[#100E11] overflow-hidden">
+        <div className="absolute top-[-50px] left-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-40 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-[30%] right-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-30 blur-[140px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#8D6346] opacity-30 blur-[150px] rounded-full pointer-events-none" />
+      </div>
+      <div className="mb-8 flex items-center gap-4">
+        {step === 1 && (
+          <button 
+            onClick={() => navigate('/budgets')} 
+            className="w-12 h-12 shrink-0 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors text-white"
+          >
+            <BackIcon size={24} />
+          </button>
+        )}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 flex items-center gap-2">
+            <Target className="text-[#8D6346]" />
+            {t('smartBudget.title')}
+          </h1>
+          <p className="text-white/50 text-xs sm:text-sm">{t('smartBudget.subtitle')}</p>
+        </div>
       </div>
 
       {/* Progress */}
       <div className="flex items-center justify-between mb-8 relative">
-        <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/10 -z-10 -translate-y-1/2 rounded-full overflow-hidden">
+        <div className="absolute top-1/2 left-0 right-0 h-1.5 liquidglass border border-white/5 shadow-inner -z-10 -translate-y-1/2 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-brand-blue transition-all duration-300"
+            className="h-full bg-[#8D6346]/80 transition-all duration-300"
             style={{ width: `${((step - 1) / 3) * 100}%` }}
           />
         </div>
@@ -297,7 +321,7 @@ export default function SmartBudgetPlanner() {
                   type="number"
                   value={availableBudget}
                   onChange={e => setAvailableBudget(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-2xl font-bold outline-none focus:border-brand-blue transition-colors"
+                  className="w-full liquidglass bg-white/5 border border-white/10 rounded-xl p-4 text-white text-2xl font-bold outline-none focus:border-[#8D6346] transition-colors"
                   placeholder="0.00"
                 />
               </div>
@@ -308,7 +332,7 @@ export default function SmartBudgetPlanner() {
                   type="text"
                   value={plannerName}
                   onChange={e => setPlannerName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-blue transition-colors"
+                  className="w-full liquidglass bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#8D6346] transition-colors"
                   placeholder={t('smartBudget.namePlaceholder')}
                 />
               </div>
@@ -318,7 +342,7 @@ export default function SmartBudgetPlanner() {
                 <select 
                   value={period}
                   onChange={e => setPeriod(e.target.value)}
-                  className="w-full bg-[#1c1c1e] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-blue transition-colors"
+                  className="w-full liquidglass bg-[#1c1c1e] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#8D6346] transition-colors"
                 >
                   <option value="monthly">{t('budgets.monthly')}</option>
                   <option value="weekly">{t('budgets.weekly')}</option>
@@ -334,7 +358,7 @@ export default function SmartBudgetPlanner() {
                       type="date"
                       value={startDate}
                       onChange={e => setStartDate(e.target.value)}
-                      className="w-full bg-[#1c1c1e] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-blue transition-colors [color-scheme:dark]"
+                      className="w-full liquidglass bg-[#1c1c1e] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#8D6346] transition-colors [color-scheme:dark]"
                     />
                   </div>
                   <div>
@@ -343,7 +367,7 @@ export default function SmartBudgetPlanner() {
                       type="date"
                       value={endDate}
                       onChange={e => setEndDate(e.target.value)}
-                      className="w-full bg-[#1c1c1e] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-blue transition-colors [color-scheme:dark]"
+                      className="w-full liquidglass bg-[#1c1c1e] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-[#8D6346] transition-colors [color-scheme:dark]"
                     />
                   </div>
                 </div>
@@ -361,7 +385,7 @@ export default function SmartBudgetPlanner() {
                     checked={isRecurring}
                     onChange={(e) => setIsRecurring(e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue"></div>
+                  <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
                 </label>
               </div>
 
@@ -377,7 +401,7 @@ export default function SmartBudgetPlanner() {
                     checked={groupAsMaster}
                     onChange={(e) => setGroupAsMaster(e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue"></div>
+                  <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
                 </label>
               </div>
             </div>
@@ -410,9 +434,9 @@ export default function SmartBudgetPlanner() {
                         setSelectedCategoryIds(prev => [...prev, cat._id]);
                       }
                     }}
-                    className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${isSelected ? 'bg-brand-blue/20 border-brand-blue' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                    className={`liquidglass flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${isSelected ? '!bg-[#8D6346]/40 border-[#8D6346]' : '!bg-transparent border-white/10 hover:!bg-white/10'}`}
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${cat.color}20`, color: cat.color }}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all" style={{ backgroundColor: isSelected ? cat.color : `${cat.color}20`, color: isSelected ? '#fff' : cat.color, boxShadow: isSelected ? `0 0 10px ${cat.color}80` : 'none' }}>
                       {React.createElement(getIconComponent(cat.icon), { size: 16 })}
                     </div>
                     <span className="text-white text-sm font-medium">{cat.name}</span>
@@ -440,7 +464,7 @@ export default function SmartBudgetPlanner() {
               {selectedCategoryIds.map(id => {
                 const cat = categories.find(c => c._id === id);
                 return (
-                  <div key={id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+                  <div key={id} className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: `${cat.color}20`, color: cat.color }}>
                         {React.createElement(getIconComponent(cat.icon), { size: 20 })}
@@ -451,7 +475,7 @@ export default function SmartBudgetPlanner() {
                     <select
                       value={priorities[id]}
                       onChange={(e) => setPriorities(prev => ({...prev, [id]: e.target.value}))}
-                      className="bg-[#1c1c1e] text-white border border-white/10 rounded-lg px-3 py-2 text-sm outline-none"
+                      className="liquidglass !bg-transparent text-white rounded-lg px-3 py-2 text-sm outline-none cursor-pointer"
                     >
                       <option value="High">{t('smartBudget.priorityHigh')}</option>
                       <option value="Medium">{t('smartBudget.priorityMedium')}</option>
@@ -477,29 +501,29 @@ export default function SmartBudgetPlanner() {
               <p className="text-white/50 text-sm mb-4">{t('smartBudget.step4Desc')}</p>
             </div>
 
-            <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden flex flex-col shadow-lg">
+            <div className="bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[2rem] border border-white/10 overflow-hidden flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
               <div className="p-5 border-b border-white/5 bg-white/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#8D6346]/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
                 <p className="text-white/50 text-xs mb-1 uppercase tracking-wider font-bold">{t('smartBudget.availableBudget')}</p>
                 <p className="text-white font-black text-3xl tracking-tight">{Number(availableBudget).toLocaleString()} <span className="text-sm font-medium text-white/40">{t('nav.currency')}</span></p>
               </div>
               <div className="grid grid-cols-2 divide-x divide-white/5 rtl:divide-x-reverse">
                 <div className="p-4">
                   <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1 font-bold">{t('smartBudget.allocatedAmount')}</p>
-                  <p className="text-brand-blue font-bold text-xl">{allocatedTotal.toLocaleString()}</p>
+                  <p className="text-[#8D6346] font-bold text-xl">{allocatedTotal.toLocaleString()}</p>
                 </div>
                 <div className="p-4">
-                  <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1 font-bold">{t('smartBudget.remainingAmount', 'المبلغ المتبقي')}</p>
+                  <p className="text-white/50 text-[10px] uppercase tracking-wider mb-1 font-bold">{t('smartBudget.remainingAmount')}</p>
                   <p className={`font-bold text-xl ${remainingTotal < 0 ? 'text-red-400' : remainingTotal > 0 ? 'text-green-400' : 'text-white'}`}>{remainingTotal.toLocaleString()}</p>
                 </div>
               </div>
               <div className="h-1.5 w-full bg-black/40">
-                <div className={`h-full transition-all duration-500 rounded-r-full ${remainingTotal < 0 ? 'bg-red-500' : 'bg-brand-blue'}`} style={{ width: `${Math.min(100, (allocatedTotal / Number(availableBudget)) * 100)}%` }} />
+                <div className={`h-full transition-all duration-500 rounded-r-full ${remainingTotal < 0 ? 'bg-red-500' : 'bg-[#8D6346]'}`} style={{ width: `${Math.min(100, (allocatedTotal / Number(availableBudget)) * 100)}%` }} />
               </div>
             </div>
 
             {isLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-brand-blue w-8 h-8" /></div>
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#8D6346] w-8 h-8" /></div>
             ) : (
               <div className="space-y-4 pb-6">
                 {distribution.map(d => {
@@ -510,7 +534,7 @@ export default function SmartBudgetPlanner() {
                   const hasRecommendation = recommendation !== undefined && recommendation !== d.suggestedAmount;
                   
                   return (
-                    <div key={d.category} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 transition-all hover:bg-white/10">
+                    <div key={d.category} className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-5 flex flex-col gap-4 transition-all hover:border-white/20">
                       
                       <div className="flex items-center justify-between">
                          <div className="flex items-center gap-3">
@@ -525,27 +549,27 @@ export default function SmartBudgetPlanner() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-black/20 rounded-xl p-3 border border-white/5 relative group">
-                          <label className="text-[10px] text-white/50 uppercase tracking-wider font-bold block mb-1.5">{t('smartBudget.suggestedAmount', 'المبلغ')}</label>
+                        <div className="liquidglass rounded-xl p-3 relative group">
+                          <label className="text-[10px] text-white/50 uppercase tracking-wider font-bold block mb-1.5">{t('smartBudget.suggestedAmount')}</label>
                           <div className="flex items-center gap-2">
                             <input 
                               type="number"
                               value={d.suggestedAmount}
                               onChange={(e) => handleAmountChange(d.category, e.target.value)}
-                              className="bg-transparent text-white w-full text-lg font-black outline-none focus:text-brand-blue transition-colors"
+                              className="bg-transparent text-white w-full text-lg font-black outline-none focus:text-[#8D6346] transition-colors"
                             />
                             <span className="text-white/30 text-xs font-bold">{t('nav.currency')}</span>
                           </div>
                         </div>
 
-                        <div className="bg-black/20 rounded-xl p-3 border border-white/5 relative group">
-                          <label className="text-[10px] text-white/50 uppercase tracking-wider font-bold block mb-1.5">{t('smartBudget.percentage', 'النسبة المئوية')}</label>
+                        <div className="liquidglass rounded-xl p-3 relative group">
+                          <label className="text-[10px] text-white/50 uppercase tracking-wider font-bold block mb-1.5">{t('smartBudget.percentage')}</label>
                           <div className="flex items-center gap-2">
                             <input 
                               type="number"
                               value={percentage}
                               onChange={(e) => handlePercentageChange(d.category, e.target.value)}
-                              className="bg-transparent text-white w-full text-lg font-black outline-none focus:text-brand-blue transition-colors"
+                              className="bg-transparent text-white w-full text-lg font-black outline-none focus:text-[#8D6346] transition-colors"
                             />
                             <span className="text-white/30 text-xs font-bold">%</span>
                           </div>
@@ -560,10 +584,10 @@ export default function SmartBudgetPlanner() {
                         {d.basedOn && (
                           <div className="bg-black/20 rounded-lg p-2.5 border border-white/5 w-max max-w-full mt-1">
                             <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold mb-1">
-                              {t('budgets.confidenceLabel', 'This recommendation is based on:')}
+                              {t('budgets.confidenceLabel')}
                             </p>
-                            <p className="text-xs font-medium text-blue-200">
-                              {t('budgets.confidenceStats', '{{months}} months • {{transactions}} transactions')
+                            <p className="text-xs font-medium text-[#E8C5A8]">
+                              {t('budgets.confidenceStats')
                                 .replace('{{months}}', d.basedOn.months)
                                 .replace('{{transactions}}', d.basedOn.transactions)}
                             </p>
@@ -571,16 +595,16 @@ export default function SmartBudgetPlanner() {
                         )}
                         
                         {hasRecommendation && (
-                          <div className="bg-brand-blue/10 border border-brand-blue/20 rounded-xl p-3 flex items-center justify-between mt-1">
+                          <div className="bg-[#8D6346]/10 border border-[#8D6346]/20 rounded-xl p-3 flex items-center justify-between mt-1">
                              <div>
-                               <p className="text-[10px] text-brand-blue/70 uppercase tracking-wider font-bold mb-0.5">{t('smartBudget.recommendationTitle', 'توصية مقترحة')}</p>
-                               <p className="text-brand-blue font-bold text-sm">{recommendation.toLocaleString()} {t('nav.currency')}</p>
+                               <p className="text-[10px] text-[#8D6346]/70 uppercase tracking-wider font-bold mb-0.5">{t('smartBudget.recommendationTitle')}</p>
+                               <p className="text-[#8D6346] font-bold text-sm">{recommendation.toLocaleString()} {t('nav.currency')}</p>
                              </div>
                              <button 
                                onClick={() => applyRecommendation(d.category)}
-                               className="px-4 py-1.5 bg-brand-blue text-white text-xs font-bold rounded-lg shadow hover:bg-blue-500 transition-colors"
+                               className="px-4 py-1.5 bg-[#8D6346] text-white text-xs font-bold rounded-lg shadow hover:bg-[#8D6346]/80 transition-colors"
                              >
-                               {t('smartBudget.apply', 'تطبيق')}
+                               {t('smartBudget.apply')}
                              </button>
                           </div>
                         )}
@@ -607,7 +631,7 @@ export default function SmartBudgetPlanner() {
           {step > 1 && (
             <button 
               onClick={() => setStep(s => s - 1)}
-              className="px-6 py-3.5 rounded-xl bg-white/10 text-white font-medium hover:bg-white/20 transition-colors"
+              className="px-6 py-3.5 rounded-full font-medium text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 flex items-center justify-center backdrop-blur-md"
             >
               {t('smartBudget.back')}
             </button>
@@ -616,7 +640,7 @@ export default function SmartBudgetPlanner() {
           {step < 4 ? (
             <button 
               onClick={handleNext}
-              className="flex-1 px-6 py-3.5 rounded-xl bg-brand-blue text-white font-bold hover:bg-blue-500 transition-colors flex justify-center items-center gap-2"
+              className="flex-1 py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
             >
               {t('smartBudget.next')}
               <ArrowRight size={18} className={language === 'ar' ? 'rotate-180' : ''} />
@@ -626,7 +650,7 @@ export default function SmartBudgetPlanner() {
               <button 
                 onClick={handleSaveDraft}
                 disabled={isLoading}
-                className="flex-1 px-4 py-3.5 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
+                className="flex-1 py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 flex items-center justify-center gap-2 backdrop-blur-md disabled:opacity-50"
               >
                 <Save size={18} />
                 <span className="hidden sm:inline">{t('smartBudget.saveDraft')}</span>
@@ -634,7 +658,7 @@ export default function SmartBudgetPlanner() {
               <button 
                 onClick={handleConfirm}
                 disabled={isLoading}
-                className="flex-[2] px-4 py-3.5 rounded-xl bg-brand-blue text-white font-bold hover:bg-blue-500 transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
+                className="flex-[2] py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md disabled:opacity-50 disabled:pointer-events-none"
               >
                 {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
                 {t('smartBudget.confirmPlan')}

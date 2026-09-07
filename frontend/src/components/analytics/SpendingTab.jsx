@@ -1,61 +1,49 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
-import { TrendingDown, Calendar, AlertCircle, ShoppingBag, Zap, Target, Scale } from 'lucide-react';
+import { TrendingDown, Calendar, AlertCircle, ShoppingBag, Zap, PieChart, Scale } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 
-function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'brand-blue', delay = 0 }) {
+function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper', delay = 0 }) {
   const colorMap = {
-    'brand-blue': 'from-blue-500/20 to-cyan-500/5 border-blue-500/20 text-blue-400',
-    'brand-purple': 'from-purple-500/20 to-fuchsia-500/5 border-purple-500/20 text-purple-400',
-    'brand-green': 'from-emerald-500/20 to-teal-500/5 border-emerald-500/20 text-emerald-400',
-    'brand-red': 'from-rose-500/20 to-orange-500/5 border-rose-500/20 text-rose-400',
-    'brand-amber': 'from-amber-500/20 to-yellow-500/5 border-amber-500/20 text-amber-400',
+    'brand-blue': 'text-brand-blue',
+    'brand-purple': 'text-purple-400',
+    'brand-green': 'text-emerald-400',
+    'brand-red': 'text-rose-400',
+    'brand-amber': 'text-amber-400',
+    'copper': 'text-[#E8C5A8]',
+    'emerald': 'text-emerald-400',
+    'rose': 'text-rose-400',
   };
 
-  const glowMap = {
-    'brand-blue': 'bg-blue-500/20',
-    'brand-purple': 'bg-purple-500/20',
-    'brand-green': 'bg-emerald-500/20',
-    'brand-red': 'bg-rose-500/20',
-    'brand-amber': 'bg-amber-500/20',
-  };
+  const textColor = colorMap[color] || (color.startsWith('text-') ? color : 'text-[#E8C5A8]');
 
   return (
-    <motion.section 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', bounce: 0, duration: 0.6, delay }}
-      className={`relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] group transition-all duration-500 hover:scale-[1.02] flex flex-col justify-between`}
-    >
-      <div className={`absolute -right-20 -top-20 w-64 h-64 ${glowMap[color]} rounded-full blur-[50px] group-hover:scale-110 transition-transform duration-700 pointer-events-none`} />
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-inner bg-gradient-to-br ${colorMap[color]} border`}>
-            <Icon className="w-5 h-5" />
-          </div>
-          <h3 className="text-white/70 font-bold tracking-wide text-sm uppercase">{title}</h3>
-        </div>
-        
-        <div className="mt-2">
-          <span className="text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight drop-shadow-md block mb-1">
+    <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500 flex flex-col justify-between min-h-[140px]">
+      <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+        <Icon className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+      </div>
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{title}</p>
+        <div>
+          <p className={`text-xl md:text-3xl font-black tabular-nums tracking-tight ${textColor}`}>
             {value}
-          </span>
+          </p>
           {(subtitle || highlight) && (
-            <p className="text-sm font-medium mt-2 flex items-center gap-2">
-               {highlight && <span className={`px-2 py-0.5 rounded-md bg-white/10 ${colorMap[color].split(' ').pop()} border border-white/5`}>{highlight}</span>}
-               {subtitle && <span className="text-white/50">{subtitle}</span>}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+               {highlight && <span className="text-[10px] md:text-xs font-bold px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[var(--color-text-muted)] uppercase tracking-wider">{highlight}</span>}
+               {subtitle && <span className="text-[10px] md:text-xs text-[var(--color-text-muted)] leading-tight">{subtitle}</span>}
+            </div>
           )}
         </div>
       </div>
-    </motion.section>
+    </div>
   );
 }
 
 export default function SpendingTab({ data, categories, money, allTransactions, filters }) {
   const { t, lang } = useLanguage();
+  const [activeBarIndex, setActiveBarIndex] = useState(null);
 
   const filteredTransactions = useMemo(() => {
     if (!allTransactions) return [];
@@ -127,7 +115,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
     const biggest = filteredTransactions.reduce((max, tx) => tx.amount > max.amount ? tx : max, { amount: 0, title: '' });
     const biggestCat = categories.find(c => c._id === (typeof biggest.category === 'object' ? biggest.category?._id : biggest.category));
     const biggestCatName = biggestCat ? (lang === 'ar' ? (biggestCat.nameAr || biggestCat.name) : (biggestCat.nameEn || biggestCat.name)) : '';
-    const biggestTitle = biggest.amount > 0 ? (biggest.title ? `${biggest.title} (${biggestCatName})` : biggestCatName) : t('analytics.insights.none', 'None');
+    const biggestTitle = biggest.amount > 0 ? (biggest.title ? `${biggest.title} (${biggestCatName})` : biggestCatName) : t('analytics.insights.none');
     
     const catCounts = {};
     const daysArr = [0, 0, 0, 0, 0, 0, 0]; // Sun to Sat
@@ -178,7 +166,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
        const catObj = categories.find(c => c._id === id);
        return {
           id,
-          name: catObj ? (lang === 'ar' ? (catObj.nameAr || catObj.name) : (catObj.nameEn || catObj.name)) : t('analytics.insights.unknownCategory', 'Unknown'),
+          name: catObj ? (lang === 'ar' ? (catObj.nameAr || catObj.name) : (catObj.nameEn || catObj.name)) : t('analytics.insights.unknownCategory'),
           amount: catData.amount,
           count: catData.count,
           avg: catData.amount / catData.count,
@@ -205,7 +193,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
   if (!data || !filteredTransactions) return null;
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-10 relative min-h-screen">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in pb-10 relative min-h-screen">
       
       {/* Background Effect */}
       <div className="absolute inset-0 z-[-1] pointer-events-none rounded-[3rem] overflow-hidden">
@@ -214,42 +202,43 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40" />
       </div>
 
+      <div className="xl:col-span-12 flex flex-col gap-6">
       {/* 1. Main Insight Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         
         <InsightCard 
-          title={t('analytics.insights.totalSpent', 'Total Spent')}
+          title={t('analytics.insights.totalSpent')}
           icon={TrendingDown}
           value={money(totalExpense)}
-          subtitle={`${t('analytics.insights.inPeriod', 'in period of')} ${daysInPeriod} ${t('analytics.insights.days', 'days')}`}
-          color="brand-red"
+          subtitle={`${t('analytics.insights.inPeriod')} ${daysInPeriod} ${t('analytics.insights.days')}`}
+          color="rose"
           delay={0.1}
         />
         
         <InsightCard 
-          title={t('analytics.insights.dailyAverage', 'Daily Avg')}
+          title={t('analytics.insights.dailyAverage')}
           icon={Calendar}
           value={money(dailyAverage)}
-          subtitle={t('analytics.insights.perDay', 'per day')}
-          color="brand-blue"
+          subtitle={t('analytics.insights.perDay')}
+          color="copper"
           delay={0.2}
         />
 
         <InsightCard 
-          title={t('analytics.insights.biggestPurchase', 'Biggest Purchase')}
+          title={t('analytics.insights.biggestPurchase')}
           icon={ShoppingBag}
           value={biggestPurchase.amount > 0 ? money(biggestPurchase.amount) : '---'}
           highlight={biggestPurchase.displayTitle}
-          color="brand-purple"
+          color="rose"
           delay={0.3}
         />
 
         <InsightCard 
-          title={t('analytics.insights.mostFrequent', 'Most Frequent')}
+          title={t('analytics.insights.mostFrequent')}
           icon={Zap}
           value={frequentCategory.name || '---'}
-          subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount', 'transactions')}` : ''}
-          color="brand-amber"
+          subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount')}` : ''}
+          color="copper"
           delay={0.4}
         />
 
@@ -260,22 +249,48 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
         {/* 2. When Do You Spend (Day of Week) */}
         <motion.section 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.5 }}
-          className="lg:col-span-1 relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]"
+          className="lg:col-span-1 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
-           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Calendar className="w-5 h-5 text-brand-blue" /> {t('analytics.insights.whenYouSpend', 'When You Spend')}</h2>
-           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.basedOnDays', 'Based on days of the week')}</p>
+           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#8D6346]" /> {t('analytics.insights.whenYouSpend')}</h2>
+           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.basedOnDays')}</p>
            
-           <div className="mb-4">
-             <div className="flex items-end gap-2">
-               <span className="text-3xl font-black text-brand-blue">{weekendPercentage}%</span>
-               <span className="text-sm text-white/70 font-medium mb-1">{t('analytics.insights.onWeekends', 'on Weekends')}</span>
-             </div>
-             <p className="text-xs text-white/50 mt-1">{weekendPercentage > 50 ? t('analytics.insights.heavyWeekend', 'You spend mostly during weekends.') : t('analytics.insights.heavyWeekday', 'Most of your spending happens on weekdays.')}</p>
+           <div className="mb-4 h-[72px]">
+             {activeBarIndex !== null ? (
+               <motion.div 
+                 key="selected" 
+                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
+                 className="flex flex-col"
+               >
+                 <div className="flex items-end gap-2">
+                   <span className="text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight">{money(dayOfWeekData[activeBarIndex].amount)}</span>
+                   <span className="text-sm text-white/70 font-medium mb-1">{dayOfWeekData[activeBarIndex].name}</span>
+                 </div>
+                 <p className="text-xs text-white/50 mt-1">{t('analytics.insights.spentOnThisDay') || 'Total spent on this day'}</p>
+               </motion.div>
+             ) : (
+               <motion.div 
+                 key="weekend" 
+                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
+                 className="flex flex-col"
+               >
+                 <div className="flex items-end gap-2">
+                   <span className="text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight">{weekendPercentage}%</span>
+                   <span className="text-sm text-white/70 font-medium mb-1">{t('analytics.insights.onWeekends')}</span>
+                 </div>
+                 <p className="text-xs text-white/50 mt-1">{weekendPercentage > 50 ? t('analytics.insights.heavyWeekend') : t('analytics.insights.heavyWeekday')}</p>
+               </motion.div>
+             )}
            </div>
 
            <div className="h-48 w-full mt-4">
              <ResponsiveContainer width="100%" height="100%">
                <BarChart data={dayOfWeekData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                 <defs>
+                   <linearGradient id="weekendCopper" x1="0" y1="0" x2="0" y2="1">
+                     <stop offset="0%" stopColor="#E8C5A8" stopOpacity={0.9} />
+                     <stop offset="100%" stopColor="#8D6346" stopOpacity={0.7} />
+                   </linearGradient>
+                 </defs>
                  <CartesianGrid stroke="#ffffff0a" vertical={false} />
                  <XAxis dataKey="name" stroke="#ffffff50" fontSize={11} tickLine={false} axisLine={false} />
                  <YAxis stroke="#ffffff50" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `${val/1000}k`} />
@@ -284,10 +299,25 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '16px' }}
                    formatter={(value) => [money(value)]}
                  />
-                 <Bar dataKey="amount" radius={[6, 6, 0, 0]} barSize={24}>
-                   {dayOfWeekData.map((entry, index) => (
-                     <Cell key={`cell-${index}`} fill={entry.isWeekend ? '#3b82f6' : '#ffffff20'} />
-                   ))}
+                 <Bar 
+                   dataKey="amount" 
+                   radius={[6, 6, 0, 0]} 
+                   barSize={24}
+                   onClick={(data, index) => setActiveBarIndex(activeBarIndex === index ? null : index)}
+                   cursor="pointer"
+                 >
+                   {dayOfWeekData.map((entry, index) => {
+                     const isSelected = activeBarIndex === index;
+                     const baseFill = '#ffffff20';
+                     const highlightFill = 'url(#weekendCopper)';
+                     return (
+                       <Cell 
+                         key={`cell-${index}`} 
+                         fill={isSelected ? highlightFill : baseFill} 
+                         style={{ transition: 'fill 0.3s ease' }} 
+                       />
+                     );
+                   })}
                  </Bar>
                </BarChart>
              </ResponsiveContainer>
@@ -297,18 +327,18 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
         {/* 3. What Do You Spend On (Category Concentration) */}
         <motion.section 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.6 }}
-          className="lg:col-span-2 relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]"
+          className="lg:col-span-2 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
-           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Target className="w-5 h-5 text-brand-purple" /> {t('analytics.insights.whereMoneyGoes', 'Where Your Money Goes')}</h2>
-           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.categoryBreakdownDesc', 'Deep dive into your categories and average transaction size.')}</p>
+           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><PieChart className="w-5 h-5 text-[#8D6346]" /> {t('analytics.insights.whereMoneyGoes')}</h2>
+           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.categoryBreakdownDesc')}</p>
            
-           <div className="mb-6 p-4 rounded-2xl bg-brand-purple/10 border border-brand-purple/20 flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-brand-purple/20 flex items-center justify-center flex-shrink-0">
-                 <AlertCircle className="w-6 h-6 text-brand-purple" />
+           <div className="mb-6 p-4 rounded-2xl bg-[#8D6346]/10 border border-[#8D6346]/20 flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-[#8D6346]/20 flex items-center justify-center flex-shrink-0">
+                 <AlertCircle className="w-6 h-6 text-[#E8C5A8]" />
               </div>
               <div>
                  <p className="text-sm text-white/80 leading-relaxed">
-                   {t('analytics.insights.top3Rule', 'Your top 3 categories account for')} <strong className="text-brand-purple font-black text-lg mx-1">{top3Percentage}%</strong> {t('analytics.insights.ofTotalSpend', 'of your total spending this period.')}
+                   {t('analytics.insights.top3Rule')} <strong className="text-[#E8C5A8] font-black text-lg mx-1">{top3Percentage}%</strong> {t('analytics.insights.ofTotalSpend')}
                  </p>
               </div>
            </div>
@@ -323,7 +353,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white bg-black/30 border border-white/10">{idx + 1}</span>
                         <div>
                           <span className="font-bold text-white text-sm">{cat.name}</span>
-                          <p className="text-xs text-white/40 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount', 'transactions')} • {t('analytics.insights.avg', 'Avg')}: {money(cat.avg)}</p>
+                          <p className="text-xs text-white/40 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
                         </div>
                      </div>
                      <div className="text-right">
@@ -331,17 +361,23 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                        <span className="text-[11px] text-white/50 font-bold tracking-widest">{percentage}%</span>
                      </div>
                    </div>
-                   <div className="w-full bg-black/30 shadow-inner rounded-full h-1.5 overflow-hidden">
+                   <div className="w-full bg-black/30 shadow-inner rounded-full h-1.5 overflow-hidden border border-white/5">
                      <div 
-                       className="h-full rounded-full transition-all duration-1000 ease-out" 
-                       style={{ width: `${percentage}%`, backgroundColor: cat.color || '#888', boxShadow: `0 0 10px ${cat.color}90` }}
-                     />
+                       className="h-full rounded-full transition-all duration-1000 ease-out relative" 
+                       style={{ 
+                         width: `${percentage}%`, 
+                         background: 'linear-gradient(90deg, #8D6346 0%, #E8C5A8 100%)', 
+                         boxShadow: '0 0 10px rgba(232, 197, 168, 0.4)' 
+                       }}
+                     >
+                       <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-full" />
+                     </div>
                    </div>
                  </div>
                )
              })}
              {topCategories.length === 0 && (
-                <div className="text-center py-10 text-white/40 font-medium tracking-wide">{t('analytics.noData', 'No data available for the selected period')}</div>
+                <div className="text-center py-10 text-white/40 font-medium tracking-wide">{t('analytics.noData')}</div>
              )}
            </div>
 
@@ -350,12 +386,12 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
         {/* 4. Income vs Expense Comparison */}
         <motion.section 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.7 }}
-          className="lg:col-span-3 relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem]"
+          className="lg:col-span-3 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
-           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Scale className="w-5 h-5 text-brand-green" /> {t('analytics.insights.cashflow', 'Income vs Expense')}</h2>
-           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.cashflowDesc', 'Compare your total income against your spending for this period.')}</p>
+           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Scale className="w-5 h-5 text-brand-green" /> {t('analytics.insights.cashflow')}</h2>
+           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.cashflowDesc')}</p>
 
-           <div className="flex flex-col gap-8 max-w-4xl mx-auto w-full">
+           <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
               {(() => {
                  const maxVal = Math.max(incomeVsExpense.income, incomeVsExpense.expense, 1);
                  const incPct = (incomeVsExpense.income / maxVal) * 100;
@@ -364,7 +400,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                    <>
                     <div>
                       <div className="flex justify-between items-end mb-2">
-                        <span className="font-bold text-emerald-400 tracking-wide uppercase text-sm">{t('analytics.insights.income', 'Income')}</span>
+                        <span className="font-bold text-emerald-400 tracking-wide uppercase text-sm">{t('analytics.insights.income')}</span>
                         <span className="font-black text-2xl tabular-nums text-white drop-shadow-sm">{money(incomeVsExpense.income)}</span>
                       </div>
                       <div className="w-full bg-black/30 shadow-inner rounded-full h-4 overflow-hidden border border-white/5">
@@ -374,7 +410,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                     
                     <div>
                       <div className="flex justify-between items-end mb-2">
-                        <span className="font-bold text-rose-400 tracking-wide uppercase text-sm">{t('analytics.insights.expense', 'Expense')}</span>
+                        <span className="font-bold text-rose-400 tracking-wide uppercase text-sm">{t('analytics.insights.expense')}</span>
                         <span className="font-black text-2xl tabular-nums text-white drop-shadow-sm">{money(incomeVsExpense.expense)}</span>
                       </div>
                       <div className="w-full bg-black/30 shadow-inner rounded-full h-4 overflow-hidden border border-white/5">
@@ -389,13 +425,13 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                  <p className="text-sm text-white/80 leading-relaxed">
                    {incomeVsExpense.income >= incomeVsExpense.expense ? (
                       <>
-                        <span className="text-emerald-400 font-bold text-base block mb-1">{t('analytics.insights.saved', 'You saved')} {money(incomeVsExpense.income - incomeVsExpense.expense)}</span>
-                        {incomeVsExpense.income > 0 && <span className="text-white/60 text-xs uppercase tracking-wider">({Math.round(((incomeVsExpense.income - incomeVsExpense.expense)/incomeVsExpense.income)*100)}%) {t('analytics.insights.duringPeriod', 'during this period.')}</span>}
+                        <span className="text-emerald-400 font-bold text-base block mb-1">{t('analytics.insights.saved')} {money(incomeVsExpense.income - incomeVsExpense.expense)}</span>
+                        {incomeVsExpense.income > 0 && <span className="text-white/60 text-xs uppercase tracking-wider">({Math.round(((incomeVsExpense.income - incomeVsExpense.expense)/incomeVsExpense.income)*100)}%) {t('analytics.insights.duringPeriod')}</span>}
                       </>
                    ) : (
                       <>
-                        <span className="text-rose-400 font-bold text-base block mb-1">{t('analytics.insights.overspent', 'You overspent by')} {money(incomeVsExpense.expense - incomeVsExpense.income)}</span>
-                        <span className="text-white/60 text-xs uppercase tracking-wider">{t('analytics.insights.duringPeriod', 'during this period.')}</span>
+                        <span className="text-rose-400 font-bold text-base block mb-1">{t('analytics.insights.overspent')} {money(incomeVsExpense.expense - incomeVsExpense.income)}</span>
+                        <span className="text-white/60 text-xs uppercase tracking-wider">{t('analytics.insights.duringPeriod')}</span>
                       </>
                    )}
                  </p>
@@ -403,6 +439,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
            </div>
         </motion.section>
 
+      </div>
       </div>
     </div>
   );

@@ -25,14 +25,30 @@ export const LanguageProvider = ({ children }) => {
     localStorage.setItem('finova-lang', lang);
   }, [lang]);
 
-  const t = (key, defaultText) => {
+  const t = (key, defaultTextOrVariables, variables) => {
+    let vars = variables;
+    let defText = defaultTextOrVariables;
+    if (typeof defaultTextOrVariables === 'object' && defaultTextOrVariables !== null) {
+      vars = defaultTextOrVariables;
+      defText = undefined;
+    }
+
     const keys = key.split('.');
     let value = dictionaries[lang];
     for (const k of keys) {
-      if (value === undefined) return defaultText || key;
+      if (value === undefined) break;
       value = value[k];
     }
-    return value || defaultText || key;
+    
+    let result = (value !== undefined) ? value : (defText || key);
+
+    if (typeof result === 'string' && vars) {
+      Object.keys(vars).forEach(v => {
+        result = result.replace(new RegExp(`{{${v}}}`, 'g'), vars[v]);
+      });
+    }
+
+    return result;
   };
 
   return (

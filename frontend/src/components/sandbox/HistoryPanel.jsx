@@ -16,12 +16,12 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
   return (
     <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 h-full flex flex-col">
       <div className="flex items-center gap-2 mb-6">
-        <Clock className="w-5 h-5 text-brand-blue" />
-        <h2 className="text-xl font-bold text-[var(--color-text-main)]">History</h2>
+        <Clock className="w-5 h-5 text-[#8D6346]" />
+        <h2 className="text-xl font-bold text-white/90">History</h2>
       </div>
 
       {(!history || history.length === 0) ? (
-        <div className="flex-1 flex items-center justify-center text-[var(--color-text-muted)] text-sm">
+        <div className="flex-1 flex items-center justify-center text-white/50 text-sm">
           No saved simulations yet.
         </div>
       ) : (
@@ -31,7 +31,7 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h4 className="font-bold text-white">{item.title}</h4>
-                  <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
+                  <p className="text-xs text-white/50 uppercase tracking-wider">
                     {item.actions ? `Pipeline (${item.actions.length} actions)` : item.type}
                   </p>
                 </div>
@@ -43,13 +43,13 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-xs text-[var(--color-text-muted)] mb-4 opacity-70">
+              <p className="text-xs text-white/50 mb-4 opacity-70">
                 {new Date(item.createdAt).toLocaleDateString()}
               </p>
               
               <button 
                 onClick={() => onRun(item.actions || [{ type: item.type, payload: item.payload }])}
-                className="w-full py-2.5 bg-white/5 hover:bg-brand-blue border border-white/10 hover:border-brand-blue rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-white transition-all shadow-lg hover:shadow-brand-blue/20"
+                className="w-full py-3 rounded-full font-bold text-[13px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
               >
                 <Play className="w-3.5 h-3.5 fill-current" /> Run Again
               </button>

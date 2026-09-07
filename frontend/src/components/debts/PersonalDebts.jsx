@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, Plus, CheckCircle2, Trash2, Edit2, Wallet, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { User, Plus, CheckCircle2, Trash2, Edit2, Wallet, ArrowDownRight, ArrowUpRight, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ListSkeleton } from '../ui/Skeletons';
 import { getAccounts } from '../../api/accounts';
@@ -23,6 +23,7 @@ export default function PersonalDebts() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [itemToEdit, setItemToEdit] = useState(null);
+  const [filter, setFilter] = useState('all');
   
   // Add Transaction form
   const [activeTxDebt, setActiveTxDebt] = useState(null);
@@ -34,7 +35,7 @@ export default function PersonalDebts() {
       setItems(data.debts);
       setAccounts(accountList);
     } catch {
-      setError(t('debts.loadError', 'Could not load debts.'));
+      setError(t('debts.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +62,7 @@ export default function PersonalDebts() {
       setError('');
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || t('debts.saveError', 'Could not save transaction.'));
+      setError(err.response?.data?.message || t('debts.saveError'));
     }
   };
 
@@ -72,7 +73,7 @@ export default function PersonalDebts() {
       setError('');
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || t('debts.deleteError', 'Could not delete debt.'));
+      setError(err.response?.data?.message || t('debts.deleteError'));
     } finally {
       setDeleteModalOpen(false);
       setItemToDelete(null);
@@ -95,30 +96,30 @@ export default function PersonalDebts() {
     <div className="space-y-6">
       
       {/* Hero Card */}
-      <section className="relative overflow-hidden p-8 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] flex flex-col justify-center items-center text-center group">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/10 to-transparent opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-green/20 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-red/20 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="relative z-10 w-full flex flex-col md:flex-row gap-6 md:gap-12 justify-center items-center">
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2 mb-2 text-[var(--color-text-muted)]">
-              <ArrowDownRight className="w-5 h-5 text-brand-red" />
-              <span className="text-sm font-medium uppercase tracking-wider">{t('debts.iOwe', 'I Owe')}</span>
+      <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 md:p-8 rounded-[2rem] flex flex-col justify-center gap-6 group">
+        <div className="relative z-10 w-full flex flex-col gap-5 max-w-xs mx-auto">
+          {/* I OWE Block */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-[12px] bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
+                 <ArrowDownRight className="w-5 h-5 text-brand-red" />
+              </div>
+              <span className="text-[14px] font-medium text-white/90">{t('debts.iOwe')}</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tabular-nums tracking-tight text-brand-red drop-shadow-md">
+            <h2 className="text-2xl font-bold font-['Exo_2'] tabular-nums tracking-tight text-white drop-shadow-md">
               {money(totalIOwe)}
             </h2>
           </div>
           
-          <div className="hidden md:block w-px h-16 bg-white/10"></div>
-          
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2 mb-2 text-[var(--color-text-muted)]">
-              <ArrowUpRight className="w-5 h-5 text-brand-green" />
-              <span className="text-sm font-medium uppercase tracking-wider">{t('debts.owedToMe', 'Owed To Me')}</span>
+          {/* OWED TO ME Block */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-[12px] bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
+                 <ArrowUpRight className="w-5 h-5 text-brand-green" />
+              </div>
+              <span className="text-[14px] font-medium text-white/90">{t('debts.owedToMe')}</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tabular-nums tracking-tight text-brand-green drop-shadow-md">
+            <h2 className="text-2xl font-bold font-['Exo_2'] tabular-nums tracking-tight text-white drop-shadow-md">
               {money(totalOwedToMe)}
             </h2>
           </div>
@@ -126,15 +127,32 @@ export default function PersonalDebts() {
       </section>
 
       {/* Action Bar */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">{t('debts.personalDebtsList', 'Personal Debts')}</h2>
-        <motion.button 
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 font-bold text-white hover:bg-brand-blue/90 transition-colors shadow-lg shadow-brand-blue/20"
-        >
-          <Plus size={20} /> {t('debts.addDebt', 'Add Debt')}
-        </motion.button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-[17px] font-medium text-white/90">{t('debts.personalDebtsList')}</h2>
+        
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Segmented Control Filter */}
+          <div className="flex bg-black/20 p-1 rounded-full shadow-inner relative flex-1 sm:flex-none">
+            {['all', 'active', 'settled'].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-full text-xs font-bold transition-colors relative z-10 capitalize ${filter === f ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+              >
+                {filter === f && <motion.div layoutId="pdFilter" className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
+                {f === 'all' ? t('debts.all', 'All') : t(`debts.${f}`)}
+              </button>
+            ))}
+          </div>
+
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 rounded-full bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 shadow-inner px-4 py-2 font-medium text-sm text-[#8D6346] hover:bg-[#8D6346]/30 transition-colors whitespace-nowrap"
+          >
+            <Plus size={16} /> <span>{t('debts.addDebt')}</span>
+          </motion.button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-brand-red bg-brand-red/10 p-3 rounded-xl border border-brand-red/20">{error}</p>}
@@ -143,11 +161,34 @@ export default function PersonalDebts() {
       {items.length === 0 ? (
         <div className="text-center py-16 text-[var(--color-text-muted)] flex flex-col items-center bg-black/20 backdrop-blur-[40px] border border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)] rounded-[2.5rem]">
           <Wallet size={48} className="mb-4 opacity-50" />
-          <p>{t('debts.noDebts', 'No personal debts found')}</p>
+          <p>{t('debts.noDebts')}</p>
         </div>
-      ) : (
+      ) : (() => {
+        const filteredItems = items.filter(item => {
+          if (filter === 'all') return true;
+          return item.status === filter;
+        }).sort((a, b) => {
+          if (filter === 'all') {
+            if (a.status === 'active' && b.status === 'settled') return -1;
+            if (a.status === 'settled' && b.status === 'active') return 1;
+          }
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB - dateA;
+        });
+
+        if (filteredItems.length === 0) {
+          return (
+            <div className="text-center py-12 text-white/50 bg-black/20 backdrop-blur-[40px] border border-white/10 rounded-[2.5rem]">
+              <p>{t('debts.noItemsFilter', 'No debts found for this filter.')}</p>
+            </div>
+          );
+        }
+
+        return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
+            const isSettled = item.status === 'settled';
             const isIOwe = item.type === 'i_owe';
             const colorClass = isIOwe ? 'text-brand-red' : 'text-brand-green';
             const bgClass = isIOwe ? 'bg-brand-red/10 border-brand-red/10' : 'bg-brand-green/10 border-brand-green/10';
@@ -157,105 +198,107 @@ export default function PersonalDebts() {
                 key={item._id} 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] p-6 rounded-[2.5rem] flex flex-col group hover:border-white/20 transition-colors h-full ${activeTxDebt === item._id ? 'ring-2 ring-brand-blue/30 shadow-2xl z-10' : ''}`}
+                className={`bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 rounded-[2rem] flex flex-col group h-full transition-all ${activeTxDebt === item._id ? 'ring-1 ring-[#8D6346]/50 shadow-2xl z-10' : ''}`}
               >
                 
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex gap-4 items-center">
-                    <div className={`p-3 rounded-2xl border ${bgClass} ${colorClass}`}>
-                      <User size={24} />
+                    <div className={`w-10 h-10 rounded-[12px] bg-white/5 border border-white/10 flex items-center justify-center shadow-inner ${colorClass}`}>
+                      <User size={20} />
                     </div>
                     <div>
-                      <h2 className="font-bold text-lg text-white">{item.personName}</h2>
-                      <p className={`text-xs font-medium uppercase tracking-wider ${colorClass}`}>
-                        {isIOwe ? t('debts.iOwe', 'I Owe') : t('debts.owedToMe', 'Owed To Me')}
+                      <h2 className="font-semibold font-['Exo_2'] text-[17px] text-white">{item.personName}</h2>
+                      <p className={`text-[12px] font-medium tracking-wide mt-0.5 ${colorClass}`}>
+                        {isIOwe ? t('debts.iOwe') : t('debts.owedToMe')}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setItemToEdit(item); setModalOpen(true); }} className="p-2 transition-opacity text-[var(--color-text-muted)] hover:text-brand-blue bg-white/5 rounded-lg">
-                      <Edit2 size={16}/>
+                    <button onClick={() => { setItemToEdit(item); setModalOpen(true); }} className="w-7 h-7 bg-white/10 hover:bg-white/20 transition-colors rounded-full flex items-center justify-center" aria-label="Edit">
+                      <Edit2 size={12}/>
                     </button>
-                    <button onClick={() => { setItemToDelete(item); setDeleteModalOpen(true); }} className="p-2 transition-opacity text-[var(--color-text-muted)] hover:text-brand-red bg-white/5 rounded-lg">
-                      <Trash2 size={16}/>
+                    <button onClick={() => { setItemToDelete(item); setDeleteModalOpen(true); }} className="w-7 h-7 bg-white/10 hover:bg-white/20 transition-colors rounded-full flex items-center justify-center" aria-label="Delete">
+                      <Trash2 size={12}/>
                     </button>
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center bg-black/10 border border-white/5 rounded-xl px-4 py-2.5 mb-4 shadow-inner">
-                  <span className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold">{t('debts.totalAmount', 'الإجمالي')}</span>
-                  <span className="font-bold text-sm text-white/90">{money(item.initialAmount)}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-black/10 shadow-inner border border-white/5 rounded-xl p-4 flex flex-col justify-center">
-                    <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mb-1">{t('debts.remaining', 'Remaining')}</p>
-                    <p className="font-bold text-xl text-white">{money(item.remainingAmount)}</p>
+                <div className="flex flex-col gap-4 mb-8">
+                  <div className="flex justify-between items-center bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-5 py-3">
+                    <span className="text-[13px] text-white/70">{t('debts.totalAmount')}</span>
+                    <span className="font-semibold font-['Exo_2'] text-[15px] text-white/90">{money(item.initialAmount)}</span>
                   </div>
-                  <div className="bg-black/10 shadow-inner border border-white/5 rounded-xl p-4 flex flex-col justify-center items-center text-center">
-                    {item.status === 'settled' ? (
-                      <>
-                        <CheckCircle2 size={24} className="text-brand-green mb-1" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-brand-green">{t('debts.settled', 'Settled')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-2.5 h-2.5 rounded-full bg-brand-yellow mb-2 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-brand-yellow">{t('debts.active', 'Active')}</span>
-                      </>
-                    )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col justify-center">
+                      <p className="text-[12px] text-white/50 mb-1.5">{t('debts.remaining')}</p>
+                      <p className="font-semibold font-['Exo_2'] text-lg text-white">{money(item.remainingAmount)}</p>
+                    </div>
+                    <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col justify-center">
+                      <p className="text-[12px] text-white/50 mb-1.5">{t('debts.status')}</p>
+                      {item.status === 'settled' ? (
+                        <p className="font-semibold text-[14px] text-white/90 flex items-center gap-1.5">
+                          {t('debts.settled')} <CheckCircle2 className={`w-4 h-4 ${colorClass}`} />
+                        </p>
+                      ) : (
+                        <p className="font-semibold text-[14px] text-white/90 flex items-center gap-1.5">
+                          {t('debts.active')} <Clock className="w-4 h-4 text-orange-500" />
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {item.status !== 'settled' && activeTxDebt !== item._id && (
                   <div className="mt-auto flex gap-3">
-                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'repayment', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-xl bg-brand-blue/10 text-brand-blue font-bold text-sm hover:bg-brand-blue/20 transition-colors">
-                      {t('debts.settle', 'Settle / Repay')}
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'repayment', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[14px] hover:bg-[#8D6346]/30 transition-colors">
+                      {t('debts.settle')}
                     </motion.button>
-                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'loan', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-xl bg-white/5 text-[var(--color-text-main)] font-bold text-sm hover:bg-white/10 hover:text-white transition-colors border border-white/5">
-                      {t('debts.loan', 'Add Loan')}
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setActiveTxDebt(item._id); setTxForm(f => ({ ...f, type: 'loan', account: accounts[0]?._id || '' })); }} className="flex-1 py-3 rounded-[30px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner text-white/90 font-medium text-[14px] hover:bg-white/10 transition-colors">
+                      {t('debts.loan')}
                     </motion.button>
                   </div>
                 )}
 
                 {activeTxDebt === item._id && (
-                  <form onSubmit={submitTransaction} className="mt-auto border-t border-white/5 pt-4 space-y-4 animate-fade-in">
-                    <h3 className="text-sm font-bold text-white">{t('debts.addTransactionTitle', 'Record Payment or Loan')}</h3>
+                  <form onSubmit={submitTransaction} className="mt-auto border-t border-white/10 pt-5 space-y-4 animate-fade-in">
+                    <h3 className="text-[15px] font-medium text-white/90">{t('debts.addTransactionTitle')}</h3>
                     
-                    <div className="flex bg-black/20 shadow-inner p-1 rounded-xl border border-white/5">
-                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'repayment' })} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${txForm.type === 'repayment' ? 'bg-brand-blue text-white shadow-md' : 'text-white/50 hover:text-white'}`}>
-                        {t('debts.repayment', 'Repayment')}
+                    <div className="flex bg-black/20 shadow-inner p-1 rounded-[30px] border border-white/5">
+                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'repayment' })} className={`flex-1 py-2 text-[13px] font-medium rounded-[24px] transition-all ${txForm.type === 'repayment' ? 'bg-[#8D6346]/30 text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>
+                        {t('debts.repayment')}
                       </button>
-                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'loan' })} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${txForm.type === 'loan' ? 'bg-white/20 text-white shadow-md' : 'text-white/50 hover:text-white'}`}>
-                        {t('debts.loan', 'Add Loan')}
+                      <button type="button" onClick={() => setTxForm({ ...txForm, type: 'loan' })} className={`flex-1 py-2 text-[13px] font-medium rounded-[24px] transition-all ${txForm.type === 'loan' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>
+                        {t('debts.loan')}
                       </button>
                     </div>
                     
                     <div className="space-y-3">
                       <input 
                         required 
-                        className="w-full bg-black/30 border border-white/5 rounded-xl p-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50" 
+                        className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none" 
                         type="number" 
                         min="1" 
                         max={txForm.type === 'repayment' ? item.remainingAmount : undefined} 
-                        placeholder={t('debts.amount', 'Amount')} 
+                        placeholder={t('debts.amount')} 
                         value={txForm.amount} 
                         onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })} 
                       />
                       <CustomSelect 
+                        buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-[13px] text-white/90 flex justify-between items-center"
                         value={txForm.account} 
                         onChange={(v) => setTxForm({ ...txForm, account: v })} 
                         options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
-                        placeholder={t('debts.account', 'Account')} 
+                        placeholder={t('debts.account')} 
                       />
                     </div>
                     
                     <div className="flex gap-2">
-                      <motion.button whileTap={{ scale: 0.95 }} type="submit" className="flex-1 py-2.5 rounded-xl bg-brand-green text-black font-bold text-sm hover:bg-brand-green/90 transition-colors">
-                        {t('debts.saveTransaction', 'Save')}
+                      <motion.button whileTap={{ scale: 0.95 }} type="submit" className="flex-1 py-3 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-sm hover:bg-[#8D6346]/30 transition-colors">
+                        {t('debts.saveTransaction')}
                       </motion.button>
-                      <motion.button whileTap={{ scale: 0.95 }} type="button" onClick={() => setActiveTxDebt(null)} className="px-5 py-2.5 rounded-xl bg-white/10 font-bold text-sm text-white hover:bg-white/20 transition-colors">
-                        {t('debts.cancel', 'Cancel')}
+                      <motion.button whileTap={{ scale: 0.95 }} type="button" onClick={() => setActiveTxDebt(null)} className="flex-1 py-3 rounded-[30px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner text-white/90 font-medium text-sm hover:bg-white/10 transition-colors">
+                        {t('debts.cancel')}
                       </motion.button>
                     </div>
                   </form>
@@ -264,7 +307,8 @@ export default function PersonalDebts() {
             );
           })}
         </div>
-      )}
+        );
+      })()}
 
       {/* Modals */}
       <PersonalDebtModal
@@ -286,10 +330,10 @@ export default function PersonalDebts() {
 
       <ConfirmModal
         open={deleteModalOpen}
-        title={t('debts.title', 'Debts & Receivables')}
-        message={t('debts.deleteConfirm', 'Are you sure you want to delete this debt and all its history?')}
-        confirmText={t('receivables.deleteBtn', 'Delete')}
-        cancelText={t('receivables.cancelBtn', 'Cancel')}
+        title={t('debts.title')}
+        message={t('debts.deleteConfirm')}
+        confirmText={t('receivables.deleteBtn')}
+        cancelText={t('receivables.cancelBtn')}
         confirmColor="red"
         onConfirm={confirmDelete}
         onCancel={() => {

@@ -1,39 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { CalendarClock, Plus, CheckCircle2, Pencil, Trash2, CalendarDays, Wallet, Bell, HandCoins } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Receipt, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ListSkeleton } from '../components/ui/Skeletons';
 import { getAccounts } from '../api/accounts';
 import { getCategories } from '../api/categories';
-import { getBills, createBill, updateBill, deleteBill } from '../api/bills';
-import CustomSelect from '../components/ui/CustomSelect';
+import { getBills, createBill, updateBill, deleteBill, ignoreBill } from '../api/bills';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
+import BillCard from '../components/bills/BillCard';
+import BillModal from '../components/modals/BillModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 export default function Bills() {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP' }).format(value || 0);
-  
+  const { showToast } = useNotification();
+
   const [items, setItems] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const [form, setForm] = useState({
-    _id: null,
-    name: '',
-    expectedAmount: '',
-    category: '',
-    account: '',
-    dueDate: new Date().toISOString().split('T')[0],
-    repeat: 'never',
-    reminderEnabled: false,
-    reminderDaysBefore: 1,
-    notificationEnabled: true,
-    notes: ''
-  });
+  const [selectedBill, setSelectedBill] = useState(null);
+  const [billToDelete, setBillToDelete] = useState(null);
+
+  const money = (value) =>
+    new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
+      style: 'currency',
+      currency: 'EGP',
+      maximumFractionDigits: 0
+    }).format(value || 0);
 
   const load = async () => {
     try {
@@ -42,358 +40,279 @@ export default function Bills() {
         getAccounts(),
         getCategories()
       ]);
-      setItems(billsData);
-      setAccounts(accountsData);
-      setCategories(categoriesData.filter(c => c.type === 'expense'));
-      
-      setForm(prev => ({
-        ...prev,
-        account: prev.account || (accountsData.length > 0 ? accountsData[0]._id : ''),
-        category: prev.category || (categoriesData.filter(c => c.type === 'expense').length > 0 ? categoriesData.filter(c => c.type === 'expense')[0]._id : '')
-      }));
-    } catch {
-      setError(t('common.loadError', 'تعذر تحميل البيانات'));
+      setItems(billsData || []);
+      setAccounts(accountsData || []);
+      setCategories((categoriesData || []).filter((c) => c.type === 'expense'));
+    } catch (err) {
+      console.error('Error loading bills:', err);
+      showToast(t('common.loadError'), 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const submit = async (event) => {
-    event.preventDefault();
+  const handleSaveBill = async (billData) => {
     try {
-      const data = {
-        ...form,
-        expectedAmount: Number(form.expectedAmount),
-      };
-      
-      if (form._id) {
-        await updateBill(form._id, data);
+      if (billData._id) {
+        await updateBill(billData._id, billData);
+        showToast(t('bills.updatedSuccess'), 'success');
       } else {
-        await createBill(data);
+        await createBill(billData);
+        showToast(t('bills.createdSuccess'), 'success');
       }
-      
-      closeModal();
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || t('common.saveError', 'تعذر حفظ البيانات'));
+      console.error('Error saving bill:', err);
+      showToast(err.response?.data?.message || t('common.saveError'), 'error');
+      throw err;
     }
   };
 
-  const openModal = (item = null) => {
-    if (item) {
-      setForm({
-        _id: item._id,
-        name: item.name,
-        expectedAmount: item.expectedAmount,
-        category: item.category?._id || item.category,
-        account: item.account?._id || item.account,
-        dueDate: new Date(item.dueDate).toISOString().split('T')[0],
-        repeat: item.repeat || 'never',
-        reminderEnabled: item.reminderEnabled,
-        reminderDaysBefore: item.reminderDaysBefore,
-        notificationEnabled: item.notificationEnabled,
-        notes: item.notes || ''
-      });
-    } else {
-      setForm({
-        _id: null,
-        name: '',
-        expectedAmount: '',
-        category: categories.length > 0 ? categories[0]._id : '',
-        account: accounts.length > 0 ? accounts[0]._id : '',
-        dueDate: new Date().toISOString().split('T')[0],
-        repeat: 'never',
-        reminderEnabled: false,
-        reminderDaysBefore: 1,
-        notificationEnabled: true,
-        notes: ''
-      });
-    }
-    setError('');
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setError('');
-  };
-
-  const deleteItem = async (id) => {
-    if (!window.confirm(t('bills.confirmDelete', 'هل أنت متأكد من حذف هذه الفاتورة؟'))) return;
+  const handleDeleteBill = async (id) => {
     try {
       await deleteBill(id);
+      showToast(t('bills.deletedSuccess'), 'success');
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || t('common.deleteError', 'تعذر الحذف'));
+      console.error('Error deleting bill:', err);
+      showToast(err.response?.data?.message || t('common.deleteError'), 'error');
     }
   };
 
-  const handlePay = (bill) => {
+  const handlePayBill = (bill) => {
     navigate('/add', {
       state: {
         billId: bill._id,
         defaultAmount: bill.expectedAmount,
         defaultName: bill.name,
-        defaultCategory: bill.category?._id,
-        defaultAccount: bill.account?._id
+        defaultCategory: bill.category?._id || bill.category,
+        defaultAccount: bill.account?._id || bill.account
       }
     });
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'paid': return 'text-brand-green bg-brand-green/10 border-brand-green/20';
-      case 'overdue': return 'text-brand-red bg-brand-red/10 border-brand-red/20';
-      case 'due_today': return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
-      default: return 'text-brand-blue bg-brand-blue/10 border-brand-blue/20'; // upcoming
+  const handleIgnoreBill = async (bill) => {
+    try {
+      await ignoreBill(bill._id);
+      showToast(t('bills.ignoredSuccess'), 'success');
+      await load();
+    } catch (err) {
+      console.error('Error ignoring bill:', err);
+      showToast(err.response?.data?.message || t('common.saveError'), 'error');
     }
   };
 
-  const repeatOptions = [
-    { value: 'never', label: t('recurring.never', 'بدون تكرار') },
-    { value: 'weekly', label: t('recurring.weekly', 'أسبوعياً') },
-    { value: 'monthly', label: t('recurring.monthly', 'شهرياً') },
-    { value: 'yearly', label: t('recurring.yearly', 'سنوياً') }
-  ];
+  const openCreateModal = () => {
+    setSelectedBill(null);
+    setIsModalOpen(true);
+  };
 
-  const reminderOptions = [
-    { value: 0, label: t('bills.sameDay', 'نفس اليوم') },
-    { value: 1, label: t('bills.oneDayBefore', 'قبل يوم') },
-    { value: 3, label: t('bills.threeDaysBefore', 'قبل 3 أيام') },
-    { value: 7, label: t('bills.sevenDaysBefore', 'قبل أسبوع') }
-  ];
+  const openEditModal = (bill) => {
+    setSelectedBill(bill);
+    setIsModalOpen(true);
+  };
+
+  // Metrics Calculations
+  const totalBills = items.length;
+  const totalAmount = items.reduce((sum, item) => sum + (item.expectedAmount || 0), 0);
+  const activeItems = items.filter((i) => i.status !== 'paid');
+  const closestBill =
+    activeItems.length > 0
+      ? [...activeItems].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0]
+      : null;
+
+  const closestFormattedDate = closestBill
+    ? new Date(closestBill.dueDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB')
+    : null;
 
   if (isLoading) {
     return (
-      <div className="animate-fade-in p-4 space-y-6">
+      <div className="space-y-6">
         <ListSkeleton count={4} />
       </div>
     );
   }
 
-  const totalBills = items.length;
-  const totalAmount = items.reduce((sum, item) => sum + (item.expectedAmount || 0), 0);
-  const activeItems = items.filter(i => i.status !== 'paid');
-  const closestBill = activeItems.length > 0 
-    ? activeItems.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0]
-    : null;
-
   return (
-    <div className="p-4 pt-8 animate-fade-in pb-24">
-      <header className="flex justify-center items-center mb-8 mt-2">
-        <h1 className="text-2xl font-bold flex gap-3 items-center text-[var(--color-text-main)]">
-          <CalendarClock className="text-brand-blue w-7 h-7" />
-          {t('bills.title', 'الفواتير والمصروفات')}
-        </h1>
-      </header>
+    <div className="animate-fade-in w-full relative min-h-screen pb-32 overflow-x-hidden">
+      {/* Figma Background Effects - Exactly matching Dashboard */}
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115]">
+        <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
+        <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
+      </div>
 
-      {error && <p className="text-sm text-brand-red bg-brand-red/10 p-3 rounded-xl border border-brand-red/20 mb-4">{error}</p>}
+      <div className="px-4 pt-6 space-y-6">
+        {/* Header - Centered */}
+        <header className="flex justify-center items-center pt-1">
+          <h1 className="text-2xl font-bold text-white tracking-wide drop-shadow-sm">
+            {t('bills.title')}
+          </h1>
+        </header>
 
+      {/* 2-Section Authentic Bill Ticket Hero Card */}
       {items.length > 0 && (
-        <div className="mb-6 p-5 rounded-[2rem] bg-gradient-to-br from-brand-blue/20 to-blue-600/10 border border-brand-blue/30 shadow-[0_8px_30px_rgba(0,122,255,0.15)] relative overflow-hidden flex flex-col gap-4 animate-slide-up">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 rounded-full blur-3xl -z-10" />
-          
+        <div className="relative bg-[#221A1C] border border-[#8D6346]/35 rounded-[2.5rem] p-5 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-hidden">
+          {/* Top Subtle Hairline Light Reflection */}
+          <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-[#8D6346]/50 to-transparent pointer-events-none" />
+
+          {/* Section 1: Total Value & Bills Count */}
           <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-xs text-[var(--color-text-muted)] font-bold mb-1">{t('bills.totalBills', 'إجمالي الفواتير')}</span>
-              <div className="text-3xl font-black text-[var(--color-text-main)]">{totalBills}</div>
+            <div>
+              <span className="text-[12px] font-medium text-white/60 block mb-1">
+                {t('bills.totalValue')}
+              </span>
+              <div className="text-[28px] sm:text-[32px] font-black text-white tabular-nums tracking-tight drop-shadow-sm">
+                {money(totalAmount)}
+              </div>
             </div>
-            <div className="w-[1px] h-10 bg-white/10" />
-            <div className="flex flex-col text-left rtl:text-right">
-              <span className="text-xs text-[var(--color-text-muted)] font-bold mb-1">{t('bills.totalValue', 'إجمالي القيمة')}</span>
-              <div className="text-2xl font-black text-brand-blue tracking-tight">{money(totalAmount)}</div>
+
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-[12px] font-semibold text-white/80 tabular-nums shadow-inner">
+              <Receipt size={14} className="text-[#E8C5A8] shrink-0" />
+              <span>{totalBills} {t('bills.noOfBills')}</span>
             </div>
           </div>
 
-          <div className="p-3 bg-black/20 rounded-2xl border border-white/5 flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-400/20 text-orange-400 flex items-center justify-center">
-                <CalendarClock className="w-5 h-5" />
+          {/* Perforated Divider with Circular Notches */}
+          <div className="relative my-4">
+            <div className="absolute -left-8 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#141115] border border-r-[#8D6346]/35 border-t-transparent border-b-transparent border-l-transparent" />
+            <div className="absolute -right-8 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#141115] border border-l-[#8D6346]/35 border-t-transparent border-b-transparent border-r-transparent" />
+            <div className="border-t-2 border-dashed border-white/15 w-full" />
+          </div>
+
+          {/* Section 2: Closest Due Bill */}
+          {closestBill ? (
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#FF9500] shadow-[0_0_8px_rgba(255,149,0,0.7)] animate-pulse shrink-0" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#FF9500]">
+                    {t('bills.closestBill')}
+                  </span>
+                </div>
+                <div className="text-[16px] font-bold text-white truncate drop-shadow-sm">
+                  {closestBill.name}
+                </div>
               </div>
-              <div>
-                <span className="block text-[10px] text-[var(--color-text-muted)] font-bold uppercase tracking-wider">{t('bills.closestBill', 'أقرب فاتورة')}</span>
-                <span className="block text-sm font-bold text-[var(--color-text-main)] truncate max-w-[120px]">
-                  {closestBill ? closestBill.name : t('bills.noUpcoming', 'لا يوجد قريباً')}
-                </span>
+
+              <div className="text-end shrink-0">
+                <div className="flex items-center justify-end gap-1.5 text-[11.5px] text-white/70 font-medium tabular-nums mb-1">
+                  <Calendar size={12} className="text-[#E8C5A8] shrink-0" />
+                  <span>{closestFormattedDate}</span>
+                </div>
+                <div className="text-[17px] font-black text-[#E8C5A8] tabular-nums tracking-tight">
+                  {money(closestBill.expectedAmount)}
+                </div>
               </div>
             </div>
-            {closestBill && (
-              <div className="text-left rtl:text-right">
-                <span className="block text-[10px] text-[var(--color-text-muted)] font-bold mb-0.5">{new Date(closestBill.dueDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
-                <span className="block text-sm font-black text-orange-400">{money(closestBill.expectedAmount)}</span>
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="py-1 text-center text-[12px] text-white/50 font-medium">
+              {t('bills.noUpcoming')}
+            </div>
+          )}
         </div>
       )}
 
+      {/* Bills Content / Empty State */}
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-[var(--color-text-muted)] space-y-5 flex-1">
-          <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center mb-2 shadow-inner border border-white/5">
-            <CalendarClock size={40} className="text-[var(--color-text-muted)]" />
+        <div className="min-h-[50vh] flex flex-col items-center justify-center text-center px-4 my-auto">
+          <div className="w-20 h-20 rounded-full bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#E8C5A8] shadow-[0_8px_32px_rgba(0,0,0,0.3)] mb-5">
+            <Receipt size={36} className="text-[#E8C5A8]" />
           </div>
-          <p className="text-xl font-bold text-[var(--color-text-main)]">{t('bills.noBills', 'لا توجد فواتير مضافة')}</p>
-          <button onClick={() => openModal()} className="text-[var(--color-text-main)] font-bold px-8 py-3.5 rounded-2xl bg-brand-blue hover:bg-blue-600 transition-colors shadow-[0_4px_12px_rgba(0,122,255,0.3)]">
-            {t('bills.addBill', 'إضافة فاتورة جديدة')}
+          <h3 className="text-xl font-bold text-white mb-2 tracking-wide">
+            {t('bills.noBills')}
+          </h3>
+          <p className="text-[13.5px] text-white/50 mb-8 max-w-xs leading-relaxed">
+            {t('bills.emptyDesc')}
+          </p>
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="py-3.5 px-8 rounded-full font-semibold text-[14px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
+          >
+            <Plus size={16} />
+            <span>{t('bills.addBill')}</span>
           </button>
         </div>
       ) : (
         <>
-          <div className="space-y-4">
-            {items.map((item) => (
-              <div key={item._id} className="glass-panel p-5 rounded-[2rem] border border-white/5 shadow-lg relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-blue/5 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110" />
-                
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-bold text-[var(--color-text-main)]">{item.name}</h3>
-                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${getStatusColor(item.status)}`}>
-                        {t(`bills.status.${item.status}`, item.status)}
-                      </span>
-                    </div>
-                    <div className="text-2xl font-black text-brand-blue tracking-tight">
-                      {money(item.expectedAmount)}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-1">
-                    <button onClick={() => openModal(item)} className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition bg-white/5 rounded-xl hover:bg-white/10"><Pencil size={16}/></button>
-                    <button onClick={() => deleteItem(item._id)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-red transition bg-white/5 rounded-xl hover:bg-brand-red/10"><Trash2 size={16}/></button>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs mb-5">
-                  <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-                    <CalendarDays size={14} className="text-[var(--color-text-main)]" />
-                    <span>{new Date(item.dueDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
-                  </div>
-                  {item.repeat !== 'never' && (
-                    <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-                      <HandCoins size={14} className="text-brand-green" />
-                      <span>{t(`recurring.${item.repeat}`, item.repeat)}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-                    <Wallet size={14} className="text-orange-400" />
-                    <span className="truncate max-w-[100px]">{item.account?.name || '-'}</span>
-                  </div>
-                  {item.reminderEnabled && (
-                    <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-                      <Bell size={14} className="text-brand-blue" />
-                      <span>{item.reminderDaysBefore === 0 ? t('bills.sameDay', 'نفس اليوم') : `${item.reminderDaysBefore} d`}</span>
-                    </div>
-                  )}
-                </div>
-
-                {item.status !== 'paid' ? (
-                  <button 
-                    onClick={() => handlePay(item)} 
-                    className="w-full py-3.5 rounded-xl bg-brand-blue/10 text-brand-blue font-bold flex items-center justify-center gap-2 hover:bg-brand-blue hover:text-white transition-all active:scale-95"
-                  >
-                    <CheckCircle2 size={18} />
-                    {t('bills.payNow', 'دفع الآن')}
-                  </button>
-                ) : (
-                  <div className="w-full py-3.5 rounded-xl bg-brand-green/10 text-brand-green font-bold flex items-center justify-center gap-2">
-                    <CheckCircle2 size={18} />
-                    {t('bills.status.paid', 'مدفوعة')}
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* Section Title & Add Action (Only shown when bills exist) */}
+          <div className="flex justify-between items-center px-1">
+            <h2 className="text-[18px] font-bold text-white tracking-wide">
+              {t('bills.billsInfo')}
+            </h2>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/80 hover:text-white transition-all active:scale-95 flex items-center justify-center shadow-sm"
+              title={t('bills.addBill')}
+            >
+              <Plus size={16} />
+            </button>
           </div>
 
-          <button
-            onClick={() => openModal()}
-            className="w-full mt-6 py-4 rounded-2xl bg-[var(--color-surface)] border border-dashed border-white/20 hover:border-brand-blue/50 text-[var(--color-text-muted)] hover:text-brand-blue transition-all flex items-center justify-center gap-2 font-bold"
-          >
-            <Plus size={20} />
-            {t('bills.addBill', 'إضافة فاتورة جديدة')}
-          </button>
+          {/* Bills List */}
+          <div className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {items.map((bill) => (
+                <motion.div
+                  key={bill._id}
+                  layout
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <BillCard
+                    bill={bill}
+                    onEdit={openEditModal}
+                    onDelete={(b) => setBillToDelete(b)}
+                    onPay={handlePayBill}
+                    onIgnore={handleIgnoreBill}
+                    t={t}
+                    lang={lang}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </>
       )}
 
-      {/* Add/Edit Modal using createPortal to prevent BottomNav overlap */}
-      {isModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#1c1c1e] w-full max-w-md rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-              <h2 className="text-xl font-bold text-[var(--color-text-main)]">
-                {form._id ? t('bills.editBill', 'تعديل فاتورة') : t('bills.addBill', 'إضافة فاتورة')}
-              </h2>
-              <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white">
-                ✕
-              </button>
-            </div>
-            
-            <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
-              <form id="billForm" onSubmit={submit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('bills.name', 'اسم الفاتورة')}</label>
-                  <input required className="field" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder={t('bills.name', 'مثال: فاتورة الكهرباء')} />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('bills.amount', 'المبلغ')}</label>
-                    <input required type="number" min="0" className="field" value={form.expectedAmount} onChange={e => setForm({...form, expectedAmount: e.target.value})} placeholder="0" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('bills.dueDate', 'تاريخ الاستحقاق')}</label>
-                    <input required type="date" className="field" value={form.dueDate} onChange={e => setForm({...form, dueDate: e.target.value})} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('addTransaction.category', 'الفئة')}</label>
-                    <CustomSelect value={form.category} onChange={v => setForm({...form, category: v})} options={categories.map(c => ({value: c._id, label: c.name, icon: c.icon}))} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('addTransaction.account', 'الحساب')}</label>
-                    <CustomSelect value={form.account} onChange={v => setForm({...form, account: v})} options={accounts.filter(a => !a.isArchived).map(a => ({value: a._id, label: a.name, icon: a.icon, color: a.color}))} />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('bills.repeat', 'التكرار')}</label>
-                  <CustomSelect value={form.repeat} onChange={v => setForm({...form, repeat: v})} options={repeatOptions} />
-                </div>
-
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-bold text-[var(--color-text-main)]">{t('bills.reminder', 'تفعيل التذكير')}</label>
-                    <button
-                      type="button"
-                      onClick={() => setForm({...form, reminderEnabled: !form.reminderEnabled})}
-                      className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${form.reminderEnabled ? 'bg-brand-blue' : 'bg-gray-600'}`}
-                    >
-                      <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${form.reminderEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-                  
-                  {form.reminderEnabled && (
-                    <div className="animate-fade-in pt-2">
-                      <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1.5 ml-1">{t('bills.reminderDays', 'وقت التذكير')}</label>
-                      <CustomSelect value={form.reminderDaysBefore} onChange={v => setForm({...form, reminderDaysBefore: Number(v)})} options={reminderOptions} />
-                    </div>
-                  )}
-                </div>
-              </form>
-            </div>
-            
-            <div className="p-4 border-t border-white/5 bg-black/20">
-              <button form="billForm" type="submit" className="w-full py-3.5 rounded-xl bg-brand-blue text-white font-bold text-lg hover:bg-blue-600 transition-colors shadow-lg active:scale-95">
-                {t('modals.save', 'حفظ')}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* Bill Create/Edit Modal */}
+      {isModalOpen && (
+        <BillModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveBill}
+          onDelete={handleDeleteBill}
+          bill={selectedBill}
+          accounts={accounts}
+          categories={categories}
+        />
       )}
+
+      {/* Confirm Delete Modal */}
+      {billToDelete && (
+        <ConfirmModal
+          open={Boolean(billToDelete)}
+          title={t('bills.confirmDelete')}
+          message={`${t('bills.confirmDelete')} "${billToDelete.name}"`}
+          confirmText={t('common.delete')}
+          cancelText={t('modals.cancelBtn')}
+          confirmColor="red"
+          onConfirm={() => {
+            const id = billToDelete._id;
+            setBillToDelete(null);
+            handleDeleteBill(id);
+          }}
+          onCancel={() => setBillToDelete(null)}
+        />
+      )}
+      </div>
     </div>
   );
 }

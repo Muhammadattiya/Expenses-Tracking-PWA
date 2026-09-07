@@ -58,8 +58,6 @@ export default function CalculatorModal({ isOpen, onClose, onSave, initialValue 
   const calculateResult = () => {
     if (!expression) return;
     try {
-      // Safe evaluation
-      // eslint-disable-next-line no-new-func
       const result = new Function(`return ${expression}`)();
       if (!isFinite(result) || isNaN(result)) {
         throw new Error('Invalid calculation');
@@ -82,91 +80,117 @@ export default function CalculatorModal({ isOpen, onClose, onSave, initialValue 
     const res = calculateResult();
     if (res !== null) {
       onSave(res);
+      onClose();
     } else if (!expression) {
       onSave('');
+      onClose();
     }
   };
 
-  const btnClass = "bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-2xl font-bold py-4 rounded-2xl transition-colors shadow-inner flex items-center justify-center";
-  const opBtnClass = "bg-brand-blue/20 hover:bg-brand-blue/30 active:bg-brand-blue/40 text-brand-blue text-2xl font-bold py-4 rounded-2xl transition-colors shadow-inner flex items-center justify-center";
+  const btnClass = "bg-white/5 hover:bg-white/10 active:bg-white/20 border border-white/10 text-white text-xl font-bold py-3.5 rounded-2xl transition-all shadow-inner flex items-center justify-center active:scale-95";
+  const opBtnClass = "bg-[#8D6346]/20 hover:bg-[#8D6346]/35 active:bg-[#8D6346]/50 border border-[#8D6346]/30 text-[#E8C5A8] text-xl font-bold py-3.5 rounded-2xl transition-all shadow-inner flex items-center justify-center active:scale-95";
 
   return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div 
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 pointer-events-auto"
+        dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      >
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         />
         
         {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.92, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ type: 'spring', bounce: 0.3, duration: 0.5 }}
-          className="relative w-full max-w-sm bg-black/60 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 rounded-[2.5rem] overflow-hidden"
-          dir={lang === 'ar' ? 'rtl' : 'ltr'}
+          exit={{ opacity: 0, scale: 0.92, y: 15 }}
+          transition={{ type: 'spring', bounce: 0.15, duration: 0.35 }}
+          className="relative w-full max-w-sm liquidglass sm:rounded-[2.5rem] rounded-[2rem] sm:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 z-10 overflow-hidden"
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-white/70 font-bold tracking-wide">{t('calculator.title', 'Calculator')}</h3>
-            <button onClick={onClose} className="p-2 bg-white/5 rounded-full text-white/50 hover:text-white transition-colors">
-              <X size={18} />
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-white font-bold text-[16px] tracking-wide">{t('calculator.title')}</h3>
+            <button 
+              type="button"
+              onClick={onClose} 
+              className="p-1.5 bg-black/20 hover:bg-black/40 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95"
+            >
+              <X size={16} />
             </button>
           </div>
 
           {/* Display */}
-          <div className="bg-black/40 rounded-3xl p-4 mb-6 shadow-inner border border-white/5 flex flex-col items-end min-h-[100px] justify-end overflow-hidden">
-            <div className={`text-4xl md:text-5xl font-black tabular-nums tracking-tight text-right w-full break-all ${error ? 'text-brand-red' : 'text-white'}`}>
-              {error ? t('calculator.error', 'Error') : expression || '0'}
+          <div className="bg-black/30 rounded-2xl p-4 mb-4 shadow-inner border border-white/10 flex flex-col items-end min-h-[85px] justify-end overflow-hidden">
+            <div className={`text-3xl md:text-4xl font-black tabular-nums tracking-tight text-right w-full break-all ${error ? 'text-red-400' : 'text-white'}`}>
+              {error ? t('calculator.error') : expression || '0'}
             </div>
           </div>
 
           {/* Keypad */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-2.5">
             {/* Row 1 */}
-            <button onClick={handleClear} className="bg-brand-red/20 hover:bg-brand-red/30 active:bg-brand-red/40 text-brand-red text-lg font-bold py-4 rounded-2xl transition-colors shadow-inner col-span-2">
-              {t('calculator.clear', 'Clear')}
+            <button 
+              type="button"
+              onClick={handleClear} 
+              className="bg-red-500/15 hover:bg-red-500/25 active:bg-red-500/35 border border-red-500/30 text-red-400 text-sm font-bold py-3.5 rounded-2xl transition-all shadow-inner col-span-2 active:scale-95"
+            >
+              {t('calculator.clear')}
             </button>
-            <button onClick={handleDelete} className="bg-white/5 hover:bg-white/10 active:bg-white/20 text-white/80 py-4 rounded-2xl transition-colors shadow-inner flex items-center justify-center">
-              <Delete size={24} />
+            <button 
+              type="button"
+              onClick={handleDelete} 
+              className="bg-white/5 hover:bg-white/10 active:bg-white/20 border border-white/10 text-white/80 py-3.5 rounded-2xl transition-all shadow-inner flex items-center justify-center active:scale-95"
+            >
+              <Delete size={20} />
             </button>
-            <button onClick={() => handleInput('/')} className={opBtnClass}>÷</button>
+            <button type="button" onClick={() => handleInput('/')} className={opBtnClass}>÷</button>
             
             {/* Row 2 */}
-            <button onClick={() => handleInput('7')} className={btnClass}>7</button>
-            <button onClick={() => handleInput('8')} className={btnClass}>8</button>
-            <button onClick={() => handleInput('9')} className={btnClass}>9</button>
-            <button onClick={() => handleInput('*')} className={opBtnClass}>×</button>
+            <button type="button" onClick={() => handleInput('7')} className={btnClass}>7</button>
+            <button type="button" onClick={() => handleInput('8')} className={btnClass}>8</button>
+            <button type="button" onClick={() => handleInput('9')} className={btnClass}>9</button>
+            <button type="button" onClick={() => handleInput('*')} className={opBtnClass}>×</button>
 
             {/* Row 3 */}
-            <button onClick={() => handleInput('4')} className={btnClass}>4</button>
-            <button onClick={() => handleInput('5')} className={btnClass}>5</button>
-            <button onClick={() => handleInput('6')} className={btnClass}>6</button>
-            <button onClick={() => handleInput('-')} className={opBtnClass}>-</button>
+            <button type="button" onClick={() => handleInput('4')} className={btnClass}>4</button>
+            <button type="button" onClick={() => handleInput('5')} className={btnClass}>5</button>
+            <button type="button" onClick={() => handleInput('6')} className={btnClass}>6</button>
+            <button type="button" onClick={() => handleInput('-')} className={opBtnClass}>-</button>
 
             {/* Row 4 */}
-            <button onClick={() => handleInput('1')} className={btnClass}>1</button>
-            <button onClick={() => handleInput('2')} className={btnClass}>2</button>
-            <button onClick={() => handleInput('3')} className={btnClass}>3</button>
-            <button onClick={() => handleInput('+')} className={opBtnClass}>+</button>
+            <button type="button" onClick={() => handleInput('1')} className={btnClass}>1</button>
+            <button type="button" onClick={() => handleInput('2')} className={btnClass}>2</button>
+            <button type="button" onClick={() => handleInput('3')} className={btnClass}>3</button>
+            <button type="button" onClick={() => handleInput('+')} className={opBtnClass}>+</button>
 
             {/* Row 5 */}
-            <button onClick={() => handleInput('0')} className={`${btnClass} col-span-2`}>0</button>
-            <button onClick={() => handleInput('.')} className={btnClass}>.</button>
-            <button onClick={handleEquals} className="bg-brand-green/20 hover:bg-brand-green/30 active:bg-brand-green/40 text-brand-green text-2xl font-bold py-4 rounded-2xl transition-colors shadow-inner">=</button>
+            <button type="button" onClick={() => handleInput('0')} className={`${btnClass} col-span-2`}>0</button>
+            <button type="button" onClick={() => handleInput('.')} className={btnClass}>.</button>
+            <button 
+              type="button"
+              onClick={handleEquals} 
+              className="bg-[#34C759]/20 hover:bg-[#34C759]/35 active:bg-[#34C759]/50 border border-[#34C759]/40 text-[#34C759] text-xl font-bold py-3.5 rounded-2xl transition-all shadow-inner flex items-center justify-center active:scale-95"
+            >
+              =
+            </button>
           </div>
 
-          <button 
-            onClick={handleDone}
-            className="w-full mt-4 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-lg py-4 rounded-2xl shadow-lg transition-colors active:scale-95"
-          >
-            {t('calculator.done', 'Enter')}
-          </button>
+          {/* Standardized Action Button */}
+          <div className="pt-3">
+            <button 
+              type="button"
+              onClick={handleDone}
+              className="w-full py-3.5 rounded-full font-semibold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
+            >
+              {t('calculator.done')}
+            </button>
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>,

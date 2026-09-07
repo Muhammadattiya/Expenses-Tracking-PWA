@@ -16,7 +16,7 @@ const categorySchema = new mongoose.Schema({
     type: String,
     default: 'Tag'
   },
-  intent: {
+  intentId: {
     type: String,
     default: null
   },

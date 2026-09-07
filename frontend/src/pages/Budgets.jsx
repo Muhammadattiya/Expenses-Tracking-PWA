@@ -10,10 +10,11 @@ import { getCurrentUser } from '../api/auth';
 import MasterBudgetCard from '../components/Budget/MasterBudgetCard';
 import BudgetCard from '../components/Budget/BudgetCard';
 import BudgetModal from '../components/Budget/BudgetModal';
+import MasterBudgetModal from '../components/Budget/MasterBudgetModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import FormModal from '../components/modals/FormModal';
 import CustomSelect from '../components/ui/CustomSelect';
-import { Plus, Target, ArrowRight } from 'lucide-react';
+import { Plus, Target, ArrowRight, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -96,8 +97,8 @@ export default function Budgets() {
     const now = new Date();
     
     // Preferences
-    const prefMonthStart = preferences.budgetStartDayMonthly ?? 1;
-    const prefWeekStart = preferences.budgetStartDayWeekly ?? 6;
+    const prefMonthStart = preferences.trackingStartDayMonthly ?? 1;
+    const prefWeekStart = preferences.trackingStartDayWeekly ?? 6;
     
     // Month bounds
     let monthStart = new Date(now.getFullYear(), now.getMonth(), prefMonthStart);
@@ -218,17 +219,17 @@ export default function Budgets() {
     }
   };
 
-  const handleEditPlan = async () => {
-    if (!planToEdit || !planNameInput.trim()) return;
+  const handleEditPlan = async (planData) => {
+    if (!planToEdit) return;
     try {
-      await smartBudgetService.updateDraftPlan(planToEdit._id, { name: planNameInput.trim() });
-      showToast(t('smartBudget.renameSuccess', 'Plan renamed successfully'), 'success');
+      await smartBudgetService.updateDraftPlan(planToEdit._id, planData);
+      showToast(t('smartBudget.editSuccess'), 'success');
       setIsPlanEditModalOpen(false);
       setPlanToEdit(null);
       loadData();
     } catch (err) {
-      console.error('Failed to rename plan', err);
-      showToast(t('common.error', 'An error occurred'), 'error');
+      console.error('Failed to update plan', err);
+      showToast(t('common.error'), 'error');
     }
   };
 
@@ -236,7 +237,7 @@ export default function Budgets() {
     if (!planToDelete) return;
     try {
       await smartBudgetService.deletePlan(planToDelete._id);
-      showToast(t('smartBudget.deleteSuccess', 'Master Budget deleted'), 'success');
+      showToast(t('smartBudget.deleteSuccess'), 'success');
       setIsPlanConfirmModalOpen(false);
       setPlanToDelete(null);
       loadData();
@@ -284,22 +285,23 @@ export default function Budgets() {
   }, [filteredBudgets, spentData]);
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-7xl mx-auto min-h-screen">
+    <div className="pb-24 pt-6 px-4 max-w-7xl mx-auto min-h-screen relative">
+      <div className="fixed inset-0 -z-10 bg-[#1C1819]" />
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
-            <Target className="text-brand-blue" size={32} />
+            <Target className="text-[#8D6346]" size={32} />
             {t('budgets.title')}
           </h1>
           <p className="text-[var(--color-text-muted)] text-sm">{t('budgets.subtitle')}</p>
         </div>
         <motion.button
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => {
             setBudgetToEdit(null);
             setIsModalOpen(true);
           }}
-          className="bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3.5 rounded-2xl shadow-inner transition-colors flex items-center justify-center gap-2 font-bold border border-brand-blue/20"
+          className="px-6 py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
         >
           <Plus size={20} />
           {t('budgets.addBudget')}
@@ -313,17 +315,17 @@ export default function Budgets() {
           animate={{ opacity: 1, y: 0 }}
           className="relative overflow-hidden p-8 rounded-[2.5rem] bg-black/20 border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] backdrop-blur-[40px] flex flex-col justify-center items-center text-center group mb-8"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/20 to-purple-900/10 opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-brand-blue/30 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#8D6346]/20 to-[#141115]/50 opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#8D6346]/20 rounded-full blur-[100px] pointer-events-none" />
           
           <div className="relative z-10 w-full">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-brand-blue/20 rounded-2xl border border-brand-blue/30 text-brand-blue shadow-inner">
+              <div className="p-3 bg-[#8D6346]/20 rounded-2xl border border-[#8D6346]/30 text-[#8D6346] shadow-inner">
                 <Target size={28} />
               </div>
             </div>
             <p className="text-sm font-medium text-white/50 tracking-wider uppercase mb-2">
-              {t('budgets.totalRemaining', 'Total Remaining')}
+              {t('budgets.totalRemaining')}
             </p>
             <h2 className={`text-4xl md:text-5xl font-bold tabular-nums tracking-tight mb-8 drop-shadow-sm ${
               budgets.reduce((s, b) => s + (b.amount || 0), 0) < budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0) 
@@ -335,12 +337,12 @@ export default function Budgets() {
 
             <div className="flex flex-col md:flex-row justify-center gap-4 w-full max-w-xl mx-auto">
               <div className="flex-1 bg-black/30 border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-xs text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalBudgeted', 'Total Budgeted')}</span>
+                <span className="text-xs text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalBudgeted')}</span>
                 <span className="font-bold text-lg text-white/90 tabular-nums">{budgets.reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()} {t('nav.currency')}</span>
               </div>
               <div className="flex-1 bg-black/30 border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-xs text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalSpent', 'Total Spent')}</span>
-                <span className="font-bold text-lg text-brand-blue tabular-nums">{budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0).toLocaleString()} {t('nav.currency')}</span>
+                <span className="text-xs text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalSpent')}</span>
+                <span className="font-bold text-lg text-[#E8C5A8] tabular-nums">{budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0).toLocaleString()} {t('nav.currency')}</span>
               </div>
             </div>
           </div>
@@ -353,17 +355,40 @@ export default function Budgets() {
         onClick={() => navigate('/budgets/smart-planner')}
         className="relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 mb-8 cursor-pointer group"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/20 to-purple-500/20 opacity-50" />
-        <div className="absolute right-0 top-0 w-32 h-32 bg-brand-blue/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-brand-blue/40 transition-colors" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#8D6346]/20 to-transparent opacity-50" />
+        <div className="absolute right-0 top-0 w-32 h-32 bg-[#8D6346]/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-[#8D6346]/40 transition-colors" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
             <h3 className="text-white/90 font-bold text-lg mb-1 flex items-center gap-2 drop-shadow-sm">
-              <Target className="text-brand-blue" size={20} />
-              {t('smartBudget.entryButton', 'Smart Planner')}
+              <Target className="text-[#8D6346]" size={20} />
+              {t('smartBudget.entryButton')}
             </h3>
-            <p className="text-white/50 text-sm">{t('smartBudget.entryDesc', 'Let us distribute your budget for you')}</p>
+            <p className="text-white/50 text-sm">{t('smartBudget.entryDesc')}</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-brand-blue/20 border border-brand-blue/30 shadow-inner flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
+          <div className="w-12 h-12 rounded-2xl bg-[#8D6346]/20 border border-[#8D6346]/30 shadow-inner flex items-center justify-center text-[#8D6346] group-hover:scale-110 transition-transform">
+            <ArrowRight size={24} className={lang === 'ar' ? 'rotate-180' : ''} />
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div 
+        whileTap={{ scale: 0.98 }}
+        onClick={() => navigate('/sandbox')}
+        className="relative overflow-hidden liquidglass rounded-[2.5rem] p-6 mb-8 cursor-pointer group"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-[#8D6346]/20 to-transparent opacity-50" />
+        <div className="absolute right-0 top-0 w-32 h-32 bg-[#8D6346]/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-[#8D6346]/40 transition-colors" />
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h3 className="text-white/90 font-bold text-lg mb-1 flex items-center gap-2 drop-shadow-sm">
+              <FlaskConical className="text-[#8D6346]" size={20} />
+              Financial Sandbox
+            </h3>
+            <p className="text-white/50 text-sm max-w-[90%]">
+              Test "What-if" scenarios safely without affecting your real data.
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-[#8D6346]/20 border border-[#8D6346]/30 shadow-inner flex items-center justify-center text-[#8D6346] group-hover:scale-110 transition-transform shrink-0">
             <ArrowRight size={24} className={lang === 'ar' ? 'rotate-180' : ''} />
           </div>
         </div>
@@ -371,7 +396,7 @@ export default function Budgets() {
 
       {!isLoading && draftPlans.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-white/90 font-bold mb-4 drop-shadow-sm">{t('smartBudget.drafts', 'Recent Drafts')}</h2>
+          <h2 className="text-white/90 font-bold mb-4 drop-shadow-sm">{t('smartBudget.drafts')}</h2>
           <div className="space-y-3">
             {draftPlans.map(draft => (
               <div 
@@ -379,17 +404,17 @@ export default function Budgets() {
                 className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5 flex items-center justify-between"
               >
                 <div>
-                  <h3 className="text-white/90 font-bold text-lg drop-shadow-sm">{draft.name || t('smartBudget.untitledDraft', 'Untitled Draft')}</h3>
+                  <h3 className="text-white/90 font-bold text-lg drop-shadow-sm">{draft.name || t('smartBudget.untitledDraft')}</h3>
                   <p className="text-white/50 text-sm mt-1 tabular-nums">
-                    {draft.availableBudget?.toLocaleString()} {t('nav.currency')} • {draft.categories?.length || 0} {t('smartBudget.categories', 'categories')}
+                    {draft.availableBudget?.toLocaleString()} {t('nav.currency')} • {draft.categories?.length || 0} {t('smartBudget.categories')}
                   </p>
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => navigate('/budgets/smart-planner', { state: { draftPlan: draft } })}
-                  className="px-5 py-2.5 bg-brand-blue/10 border border-brand-blue/20 hover:bg-brand-blue hover:text-white text-brand-blue rounded-xl text-sm font-bold transition-colors shadow-inner"
+                  className="px-5 py-2.5 bg-[#8D6346]/10 border border-[#8D6346]/20 hover:bg-[#8D6346] hover:text-white text-[#8D6346] rounded-xl text-sm font-bold transition-colors shadow-inner"
                 >
-                  {t('smartBudget.resume', 'Resume')}
+                  {t('smartBudget.resume')}
                 </motion.button>
               </div>
             ))}
@@ -444,22 +469,22 @@ export default function Budgets() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-16 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] mt-8"
+          className="text-center py-16 mt-8 flex flex-col items-center"
         >
-          <div className="w-20 h-20 bg-black/30 shadow-inner border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Target className="w-10 h-10 text-brand-blue/80" />
+          <div className="w-20 h-20 bg-white/5 shadow-inner border border-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Target className="w-10 h-10 text-[#8D6346]/80" />
           </div>
           <h3 className="text-xl font-bold text-white/90 mb-2 drop-shadow-sm">{t('budgets.noBudgets')}</h3>
           <p className="text-white/50 mb-8 max-w-[80%] mx-auto text-sm leading-relaxed">
             {t('budgets.emptyDesc')}
           </p>
           <motion.button
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               setBudgetToEdit(null);
               setIsModalOpen(true);
             }}
-            className="px-8 py-4 bg-brand-blue/10 border border-brand-blue/20 hover:bg-brand-blue text-brand-blue hover:text-white rounded-2xl transition-colors font-bold inline-flex items-center gap-2 shadow-inner"
+            className="px-8 py-3.5 w-fit mx-auto rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
           >
             <Plus size={20} />
             {t('budgets.addBudget')}
@@ -488,7 +513,7 @@ export default function Budgets() {
                 const budget = item.budget;
                 const mappedCategory = typeof budget.category === 'object' 
                   ? budget.category 
-                  : categories.find(c => c._id === budget.category) || { name: t('nav.category', 'Category') };
+                  : categories.find(c => c._id === budget.category) || { name: t('nav.category') };
                   
                 const fullBudget = { ...budget, category: mappedCategory };
                 
@@ -517,47 +542,36 @@ export default function Budgets() {
           onSave={handleSaveBudget}
           budgetToEdit={budgetToEdit}
           categories={categories}
-          defaultPeriod={userPreferences?.budgetPeriod || 'monthly'}
+          defaultPeriod={userPreferences?.trackingPeriod || 'monthly'}
         />
 
         <ConfirmModal
           open={!!budgetToDelete}
-          title={t('budgets.confirmDelete', 'Delete Budget')}
-          message={t('budgets.deleteConfirmMessage', 'Are you sure you want to delete this budget?')}
-          confirmText={t('settings.deleteBtn', 'Delete')}
-          cancelText={t('settings.cancelBtn', 'Cancel')}
+          title={t('budgets.confirmDelete')}
+          message={t('budgets.deleteConfirmMessage')}
+          confirmText={t('settings.deleteBtn')}
+          cancelText={t('settings.cancelBtn')}
           confirmColor="red"
           onConfirm={handleDeleteBudget}
           onCancel={() => setBudgetToDelete(null)}
         />
 
-        <FormModal
-          open={isPlanEditModalOpen}
-          title={t('smartBudget.renamePlan', 'Rename Master Budget')}
-          onSave={handleEditPlan}
-          onCancel={() => {
+        <MasterBudgetModal
+          isOpen={isPlanEditModalOpen}
+          planToEdit={planToEdit}
+          onClose={() => {
             setIsPlanEditModalOpen(false);
             setPlanToEdit(null);
           }}
-          saveText={t('common.save', 'Save')}
-        >
-          <div className="space-y-4">
-            <input 
-              type="text" 
-              value={planNameInput}
-              onChange={(e) => setPlanNameInput(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-blue"
-              placeholder={t('smartBudget.planNamePlaceholder', 'Enter master budget name')}
-            />
-          </div>
-        </FormModal>
+          onSave={handleEditPlan}
+        />
 
         <ConfirmModal
           open={isPlanConfirmModalOpen}
-          title={t('smartBudget.deletePlanConfirm', 'Delete Master Budget?')}
-          message={t('smartBudget.deletePlanWarning', 'Are you sure you want to delete this Master Budget? All sub-budgets grouped within it will also be permanently deleted. This action cannot be undone.')}
-          confirmText={t('settings.deleteBtn', 'Delete')}
-          cancelText={t('settings.cancelBtn', 'Cancel')}
+          title={t('smartBudget.deletePlanConfirm')}
+          message={t('smartBudget.deletePlanWarning')}
+          confirmText={t('settings.deleteBtn')}
+          cancelText={t('settings.cancelBtn')}
           confirmColor="red"
           onConfirm={handleDeletePlan}
           onCancel={() => {

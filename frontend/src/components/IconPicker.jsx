@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as LucideIcons from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ACCOUNT_ICONS = [
   'Landmark', 'PiggyBank', 'Coins', 'CreditCard', 'Wallet', 'Banknote', 
@@ -18,7 +19,7 @@ const CATEGORY_ICONS = [
   'Train', 'Ship', 'ShoppingBag', 'Truck', 'Wrench', 'Umbrella', 
   'Trophy', 'Ticket', 'Tent', 'Stethoscope', 'Sofa', 'Smile', 
   'Shirt', 'Shield', 'Briefcase', 'GraduationCap', 'Activity', 'Anchor', 
-  'Aperture', 'Archive', 'Armchair', 'Baby', 'BaggageClaim', 'Bandage', 'Bath', 
+  'Aperture', 'Archive', 'Armchair', 'Baby', 'Users', 'UsersRound', 'BaggageClaim', 'Bandage', 'Bath', 
   'Battery', 'Bed', 'BedDouble', 'Beer', 'Bell', 'BicepsFlexed', 'Bike', 
   'Bone', 'BoomBox', 'Bot', 'Bowling', 'Brain', 'Cake', 'Calendar', 'Camera', 
   'CarTaxiFront', 'Cat', 'Church', 'Cigarette', 'Clapperboard', 'Clipboard', 'Cloud', 
@@ -68,6 +69,7 @@ const ALL_COLORS = [
 ];
 
 const IconPicker = ({ selectedIcon, onSelect, type = 'category', colorClass = "text-white", selectedColor, onColorSelect }) => {
+  const { t } = useLanguage();
   const iconsList = type === 'account' ? ACCOUNT_ICONS : CATEGORY_ICONS;
   const [showPicker, setShowPicker] = useState(false);
   const popoverRef = useRef(null);
@@ -89,7 +91,7 @@ const IconPicker = ({ selectedIcon, onSelect, type = 'category', colorClass = "t
   return (
     <div className="w-full space-y-4">
       <div>
-        <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">اختر الأيقونة</label>
+        <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.chooseIcon') || 'Choose Icon'}</label>
         <div className="grid grid-cols-6 gap-2 max-h-36 overflow-y-auto p-2 bg-black/30 border border-white/10 rounded-xl custom-scrollbar">
         {Array.from(new Set(iconsList)).map((iconName) => {
           const IconComponent = LucideIcons[iconName];
@@ -118,7 +120,7 @@ const IconPicker = ({ selectedIcon, onSelect, type = 'category', colorClass = "t
       
       {type === 'account' && onColorSelect && (
         <div>
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">اختر اللون</label>
+          <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{t('settings.chooseColor') || 'Choose Color'}</label>
           <div className="flex flex-wrap items-center gap-2 p-2 bg-black/30 border border-white/10 rounded-xl">
             {ACCOUNT_COLORS.map(color => (
               <button

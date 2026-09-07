@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HandCoins, Plus, CheckCircle2, Pencil, Trash2, Users } from 'lucide-react';
+import { HandCoins, Plus, CheckCircle2, Pencil, Trash2, Users, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ListSkeleton } from '../ui/Skeletons';
 import { getAccounts } from '../../api/accounts';
@@ -23,6 +23,11 @@ export default function GroupExpenses() {
   
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [filter, setFilter] = useState('all');
+  
+  const getGroupExpenseStatus = (item) => {
+    return item.participants.every(p => (p.owedAmount - p.paidAmount) <= 0) ? 'settled' : 'active';
+  };
   
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -34,7 +39,7 @@ export default function GroupExpenses() {
       setAccounts(accountList);
       setCategories(categoryList.filter(c => c.type === 'expense'));
     } catch {
-      setError(t('receivables.loadError', 'تعذر تحميل المبالغ المستحقة.'));
+      setError(t('receivables.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +65,7 @@ export default function GroupExpenses() {
       setError('');
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || t('receivables.paymentError', 'تعذر تسجيل السداد.'));
+      setError(err.response?.data?.message || t('receivables.paymentError'));
     }
   };
 
@@ -81,7 +86,7 @@ export default function GroupExpenses() {
       setError('');
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || t('receivables.deleteError', 'تعذر حذف المبلغ المستحق.'));
+      setError(err.response?.data?.message || t('receivables.deleteError'));
     } finally {
       setDeleteModalOpen(false);
       setItemToDelete(null);
@@ -109,51 +114,66 @@ export default function GroupExpenses() {
     <div className="space-y-6">
       
       {/* Hero Card */}
-      <section className="relative overflow-hidden p-8 bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] flex flex-col justify-center items-center text-center group">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/20 to-purple-900/10 opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-brand-blue/30 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="relative z-10 w-full">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-brand-blue/20 rounded-2xl border border-brand-blue/30 text-brand-blue">
-              <Users size={28} />
-            </div>
+      <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 md:p-8 rounded-[2rem] flex flex-col justify-center items-center text-center group">
+        <div className="relative z-10 w-full flex flex-col items-center">
+          <div className="w-12 h-12 rounded-[14px] bg-[#8D6346]/20 border border-[#8D6346]/30 text-[#8D6346] flex items-center justify-center mb-4 shadow-inner">
+            <Users size={24} />
           </div>
-          <p className="text-sm font-medium text-[var(--color-text-muted)] tracking-wider uppercase mb-2">
-            {t('debts.totalOwedToMe', 'Total Owed to Me from Groups')}
+          
+          <p className="text-[15px] font-medium text-white/90 mb-1">
+            {t('debts.totalOwedToMe')}
           </p>
-          <h2 className="text-4xl md:text-5xl font-bold tabular-nums tracking-tight text-white mb-8 drop-shadow-md">
+          <h2 className="text-3xl md:text-[32px] font-bold font-['Exo_2'] tabular-nums tracking-tight text-white mb-6 drop-shadow-md">
             {money(totalOwedToMe)}
           </h2>
 
-          <div className="flex flex-col md:flex-row justify-center gap-4 w-full max-w-xl mx-auto">
-            <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
-              <span className="text-xs text-[var(--color-text-muted)] mb-1">{t('debts.totalIPaid', 'Total I Paid')}</span>
-              <span className="font-bold text-lg text-white">{money(totalIPaid)}</span>
+          <div className="w-full max-w-xs space-y-4">
+            <div className="flex flex-col items-center">
+              <span className="text-[13px] text-white/80 mb-2">{t('debts.totalIPaid')}</span>
+              <div className="w-full bg-[#1A261E] border border-brand-green/30 rounded-[30px] py-2.5 flex items-center justify-center shadow-inner">
+                <span className="font-medium text-[15px] text-brand-green">{money(totalIPaid)}</span>
+              </div>
             </div>
-            <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
-              <span className="text-xs text-[var(--color-text-muted)] mb-1">{t('debts.totalMyShare', 'Total My Share')}</span>
-              <span className="font-bold text-lg text-brand-red">{money(totalMyShare)}</span>
+            
+            <div className="flex flex-col items-center">
+              <span className="text-[13px] text-white/80 mb-2">{t('debts.totalMyShare')}</span>
+              <div className="w-full bg-[#2A1717] border border-brand-red/30 rounded-[30px] py-2.5 flex items-center justify-center shadow-inner">
+                <span className="font-medium text-[15px] text-brand-red">{money(totalMyShare)}</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 shadow-inner p-4 text-sm text-[var(--color-text-main)] leading-relaxed rounded-2xl flex items-start gap-3">
-        <div className="p-2 bg-brand-blue/20 text-brand-blue rounded-lg shrink-0"><Users size={20} /></div>
-        <span dangerouslySetInnerHTML={{__html: t('receivables.infoText', 'المبلغ الذي دفعته سيتم خصمه بالكامل، ولكن <strong>نصيبك الفعلي فقط</strong> سيُسجل كمصروف (الفرق بين ما دفعته، ما استلمته، وما على أصدقائك). المدفوعات المستلمة تعتبر تسوية للحساب بدون التأثير على التقارير.')}} />
-      </div>
+
 
       {/* Action Bar */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">{t('debts.groupExpensesList', 'Group Expenses')}</h2>
-        <motion.button 
-          whileTap={{ scale: 0.95 }}
-          onClick={() => { setEditingItem(null); setModalOpen(true); }}
-          className="flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 font-bold text-white hover:bg-brand-blue/90 transition-colors shadow-lg shadow-brand-blue/20"
-        >
-          <Plus size={20} /> {t('receivables.addTitle', 'Add Group Expense')}
-        </motion.button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-[17px] font-medium text-white/90">{t('debts.groupExpensesList')}</h2>
+        
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Segmented Control Filter */}
+          <div className="flex bg-black/20 p-1 rounded-full shadow-inner relative flex-1 sm:flex-none">
+            {['all', 'active', 'settled'].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-full text-xs font-bold transition-colors relative z-10 capitalize ${filter === f ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+              >
+                {filter === f && <motion.div layoutId="geFilter" className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
+                {f === 'all' ? t('debts.all', 'All') : t(`debts.${f}`)}
+              </button>
+            ))}
+          </div>
+
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => { setEditingItem(null); setModalOpen(true); }}
+            className="flex items-center justify-center gap-1.5 rounded-full bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 shadow-inner px-4 py-2 font-medium text-sm text-[#8D6346] hover:bg-[#8D6346]/30 transition-colors whitespace-nowrap"
+          >
+            <Plus size={16} /> <span>{t('receivables.addTitle')}</span>
+          </motion.button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-brand-red bg-brand-red/10 p-3 rounded-xl border border-brand-red/20">{error}</p>}
@@ -162,111 +182,160 @@ export default function GroupExpenses() {
       {items.length === 0 ? (
         <div className="text-center py-16 text-[var(--color-text-muted)] flex flex-col items-center bg-black/20 backdrop-blur-[40px] border border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)] rounded-[2.5rem]">
           <Users size={48} className="mb-4 opacity-50" />
-          <p>{t('receivables.noItems', 'No group expenses found')}</p>
+          <p>{t('receivables.noItems')}</p>
         </div>
-      ) : (
+      ) : (() => {
+        const filteredItems = items.filter(item => {
+          if (filter === 'all') return true;
+          return getGroupExpenseStatus(item) === filter;
+        }).sort((a, b) => {
+          if (filter === 'all') {
+            const aStatus = getGroupExpenseStatus(a);
+            const bStatus = getGroupExpenseStatus(b);
+            if (aStatus === 'active' && bStatus === 'settled') return -1;
+            if (aStatus === 'settled' && bStatus === 'active') return 1;
+          }
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB - dateA;
+        });
+
+        if (filteredItems.length === 0) {
+          return (
+            <div className="text-center py-12 text-white/50 bg-black/20 backdrop-blur-[40px] border border-white/10 rounded-[2.5rem]">
+              <p>{t('debts.noItemsFilter', 'No debts found for this filter.')}</p>
+            </div>
+          );
+        }
+
+        return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
+            const isSettled = getGroupExpenseStatus(item) === 'settled';
             const actualShare = item.paidAmount - (item.receivedAmount || 0) - item.participants.reduce((s, p) => s + p.owedAmount, 0);
             return (
               <motion.section 
                 key={item._id} 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] p-6 rounded-[2.5rem] flex flex-col group hover:border-white/20 transition-colors h-full"
+                className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 rounded-[2rem] flex flex-col group h-full transition-all"
               >
                 
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="font-bold flex gap-2 items-center text-lg text-white">
-                    <div className="p-2 bg-brand-blue/20 rounded-xl text-brand-blue">
-                      <HandCoins size={20} />
+                <div className="flex justify-between items-center mb-5">
+                  <h2 className="font-semibold font-['Exo_2'] flex gap-3 items-center text-[18px] text-white flex-wrap">
+                    <div className="w-8 h-8 rounded-[10px] bg-[#8D6346]/20 border border-[#8D6346]/30 text-[#8D6346] shadow-inner flex items-center justify-center shrink-0">
+                      <HandCoins size={16} />
                     </div>
-                    {item.title}
+                    <span>{item.title}</span>
+                    {isSettled ? (
+                      <span className="mx-2 text-[11px] px-2.5 py-0.5 rounded-full bg-black/20 text-white/90 border border-white/5 flex items-center gap-1 shadow-inner">
+                        {t('debts.settled')} <CheckCircle2 className="w-3 h-3 text-brand-green" />
+                      </span>
+                    ) : (
+                      <span className="mx-2 text-[11px] px-2.5 py-0.5 rounded-full bg-black/20 text-white/90 border border-white/5 flex items-center gap-1 shadow-inner">
+                        {t('debts.active')} <Clock className="w-3 h-3 text-orange-500" />
+                      </span>
+                    )}
                   </h2>
-                  <div className="flex gap-1 transition-opacity">
-                    <button onClick={() => editItem(item)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-blue transition bg-white/5 rounded-lg"><Pencil size={16}/></button>
-                    <button onClick={() => deleteItem(item)} className="p-2 text-[var(--color-text-muted)] hover:text-brand-red transition bg-white/5 rounded-lg"><Trash2 size={16}/></button>
+                  <div className="flex gap-2">
+                    <button onClick={() => editItem(item)} className="w-7 h-7 bg-white/10 hover:bg-white/20 transition-colors rounded-full flex items-center justify-center" aria-label="Edit">
+                      <Pencil size={12} className="text-white/70" />
+                    </button>
+                    <button onClick={() => deleteItem(item)} className="w-7 h-7 bg-white/10 hover:bg-white/20 transition-colors rounded-full flex items-center justify-center" aria-label="Delete">
+                      <Trash2 size={12} className="text-white/70" />
+                    </button>
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-2 text-xs mb-6">
-                  <span className="bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg text-[var(--color-text-main)] font-medium">
-                    {t('receivables.iPaid', 'دفعت')} {money(item.paidAmount)}
+                <div className="flex flex-col gap-2.5 mb-8">
+                  <span className="w-fit bg-white/10 border border-white/5 px-3 py-1.5 rounded-[30px] text-white/90 text-[13px] font-medium shadow-inner">
+                    {t('receivables.iPaid')} {money(item.paidAmount)}
                   </span>
                   {item.receivedAmount > 0 && (
-                    <span className="bg-brand-green/10 border border-brand-green/20 px-2.5 py-1.5 rounded-lg text-brand-green font-medium">
-                      {t('receivables.iReceived', 'استلمت')} {money(item.receivedAmount)} {t('receivables.immediately', 'فورا')}
+                    <span className="w-fit bg-[#1A261E] border border-brand-green/30 px-3 py-1.5 rounded-[30px] text-brand-green text-[13px] font-medium shadow-inner">
+                      {t('receivables.iReceived')} {money(item.receivedAmount)}
                     </span>
                   )}
                   {actualShare > 0 && (
-                    <span className="flex items-center gap-1.5 bg-brand-red/10 border border-brand-red/20 px-2.5 py-1.5 rounded-lg text-brand-red font-medium">
-                      <span>{t('receivables.myShare', 'نصيبك:')} {money(actualShare)}</span>
-                      {item.expenseCategory && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-brand-red/50 mx-0.5"></span>
-                          <span className="text-[10px] bg-brand-red/20 px-1.5 py-0.5 rounded">{item.expenseCategory.name}</span>
-                        </>
-                      )}
+                    <span className="w-fit bg-[#2A1717] border border-brand-red/30 px-3 py-1.5 rounded-[30px] text-brand-red text-[13px] font-medium shadow-inner">
+                      {t('receivables.myShare')} {money(actualShare)}
                     </span>
                   )}
                 </div>
 
-                <div className="mt-auto space-y-4">
-                  <h3 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{t('receivables.friendsOwes', 'مستحقات الأصدقاء')}</h3>
-                  {item.participants.map((participant) => {
-                    const left = participant.owedAmount - participant.paidAmount;
-                    const values = payment[participant._id] || {};
-                    
-                    return (
-                      <div key={participant._id} className="border-t border-white/5 pt-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-white">{participant.name}</span>
-                            <span className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                              {t('receivables.paidPart', 'المدفوع:')} {money(participant.paidAmount)} / {t('receivables.remainingPart', 'المتبقي:')} <strong className="text-white font-medium">{money(left)}</strong>
-                            </span>
-                          </div>
-                          {left <= 0 && <CheckCircle2 className="text-brand-green" size={20} />}
-                        </div>
-
-                        {left > 0 && (
-                          <div className="mt-2 flex flex-col gap-2">
-                            <div className="flex gap-2">
-                              <input 
-                                className="w-1/3 bg-black/30 border border-white/5 rounded-xl p-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50" 
-                                type="number" 
-                                max={left} 
-                                placeholder={t('receivables.amount', 'المبلغ')} 
-                                value={values.amount || ''} 
-                                onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, amount: e.target.value } })} 
-                              />
-                              <div className="flex-1">
-                                <CustomSelect 
-                                  value={values.account || ''} 
-                                  onChange={(v) => setPayment({ ...payment, [participant._id]: { ...values, account: v } })} 
-                                  options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
-                                  placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} 
-                                />
-                              </div>
+                <div className="mt-auto">
+                  <div className="border-b border-white/20 pb-2 mb-4">
+                    <h3 className="text-[15px] font-medium text-white/90">{t('receivables.friendsOwes')}</h3>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {item.participants.map((participant) => {
+                      const left = participant.owedAmount - participant.paidAmount;
+                      const values = payment[participant._id] || {};
+                      
+                      return (
+                        <div key={participant._id} className="flex flex-col gap-2.5">
+                          <div className="flex justify-between items-center">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-white text-[15px]">{participant.name}</span>
+                              <span className="text-[12px] text-brand-red mt-0.5">
+                                {t('receivables.paidPart')} {money(participant.paidAmount)} / {t('receivables.remainingPart')} {money(left)}
+                              </span>
                             </div>
-                            <motion.button 
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => pay(item, participant)} 
-                              className="w-full rounded-xl bg-brand-green/10 text-brand-green border border-brand-green/20 font-bold py-2 text-sm hover:bg-brand-green/20 transition-colors"
-                            >
-                              {t('receivables.collect', 'تحصيل المبلغ')}
-                            </motion.button>
+                            {left <= 0 && <div className="w-5 h-5 rounded-full bg-brand-green/20 flex items-center justify-center border border-brand-green/50"><CheckCircle2 className="text-brand-green w-3 h-3" /></div>}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+
+                          {left > 0 && (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex gap-2">
+                                <input 
+                                  className="w-1/2 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2 text-sm text-white/70 placeholder-white/40 focus:outline-none" 
+                                  type="number" 
+                                  max={left} 
+                                  placeholder={t('receivables.amount')} 
+                                  value={values.amount || ''} 
+                                  onChange={(e) => setPayment({ ...payment, [participant._id]: { ...values, amount: e.target.value } })} 
+                                />
+                                <div className="w-1/2">
+                                  <CustomSelect 
+                                    buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-[13px] text-white/70 flex justify-between items-center"
+                                    value={values.account || ''} 
+                                    onChange={(v) => setPayment({ ...payment, [participant._id]: { ...values, account: v } })} 
+                                    options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
+                                    placeholder={t('receivables.receivingAccount')} 
+                                  />
+                                </div>
+                              </div>
+                              <motion.button 
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => pay(item, participant)} 
+                                className="w-full rounded-[30px] bg-[rgba(141,99,70,0.15)] backdrop-blur-[10px] border border-[rgba(141,99,70,0.3)] shadow-inner font-medium text-white/90 py-2.5 text-[14px] hover:bg-[rgba(141,99,70,0.25)] transition-colors mt-1"
+                              >
+                                {t('receivables.collect')}
+                              </motion.button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </motion.section>
             );
           })}
         </div>
-      )}
+        );
+      })()}
+
+      {/* Disclaimer Box */}
+      <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 rounded-[30px] flex items-start gap-4">
+        <div className="w-10 h-10 rounded-[10px] bg-[#8D6346]/20 border border-[#8D6346]/30 text-[#8D6346] flex items-center justify-center shrink-0">
+          <Users size={18} />
+        </div>
+        <p className="text-[14px] text-white/80 leading-relaxed font-medium">
+          {t('receivables.infoTextPart1')}<strong className="text-white">{t('receivables.infoTextHighlight')}</strong>{t('receivables.infoTextPart2')}
+        </p>
+      </div>
 
       {/* Modals */}
       <GroupExpenseModal 
@@ -280,10 +349,10 @@ export default function GroupExpenses() {
 
       <ConfirmModal
         open={deleteModalOpen}
-        title={t('receivables.deleteDebtTitle', 'حذف المبلغ المستحق')}
-        message={t('receivables.confirmDelete', 'هل أنت متأكد من حذف هذا المبلغ المستحق؟ سيتم التراجع عن المعاملات المرتبطة به.')}
-        confirmText={t('receivables.deleteBtn', 'حذف')}
-        cancelText={t('receivables.cancelBtn', 'إلغاء')}
+        title={t('receivables.deleteDebtTitle')}
+        message={t('receivables.confirmDelete')}
+        confirmText={t('receivables.deleteBtn')}
+        cancelText={t('receivables.cancelBtn')}
         confirmColor="red"
         onConfirm={confirmDelete}
         onCancel={() => {

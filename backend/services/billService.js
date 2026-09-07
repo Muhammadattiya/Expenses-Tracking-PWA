@@ -1,7 +1,10 @@
 const Bill = require('../models/Bill');
 
 exports.getBills = async (userId) => {
-  return await Bill.find({ user: userId }).sort({ dueDate: 1 });
+  return await Bill.find({ user: userId })
+    .populate('category', 'name icon color')
+    .populate('account', 'name icon color')
+    .sort({ dueDate: 1 });
 };
 
 exports.createBill = async (userId, data) => {
@@ -56,6 +59,30 @@ exports.markAsPaid = async (userId, id, transactionId) => {
     bill.transactionId = undefined; 
   } else {
     bill.status = 'paid';
+  }
+  
+  await bill.save();
+  return bill;
+};
+
+exports.ignoreBill = async (userId, id) => {
+  const bill = await Bill.findOne({ _id: id, user: userId });
+  if (!bill) throw new Error('Bill not found');
+
+  if (bill.repeat !== 'never') {
+    let nextDate = new Date(bill.dueDate);
+    if (bill.repeat === 'weekly') {
+      nextDate.setDate(nextDate.getDate() + 7);
+    } else if (bill.repeat === 'monthly') {
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    } else if (bill.repeat === 'yearly') {
+      nextDate.setFullYear(nextDate.getFullYear() + 1);
+    }
+    bill.dueDate = nextDate;
+    bill.status = calculateBillStatus(nextDate);
+  } else {
+    // For one-time bills, ignoring means hiding it from active bills
+    bill.isActive = false;
   }
   
   await bill.save();

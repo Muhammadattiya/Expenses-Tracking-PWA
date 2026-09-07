@@ -65,7 +65,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
       await onSave(data);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || err.message || t('receivables.saveError', 'تعذر حفظ المبلغ المستحق.'));
+      setError(err.response?.data?.message || err.message || t('receivables.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -77,16 +77,18 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
       <div className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity" onClick={onClose} />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg bg-[#111] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
+      <div className="relative w-full max-w-lg bg-[#1C1819]/80 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Subtle Top Inner Edge Highlight */}
+        <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
         {/* Header */}
-        <div className="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#111]/80 backdrop-blur-xl z-10">
+        <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-transparent z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-brand-blue/20 rounded-xl text-brand-blue">
+            <div className="p-2.5 bg-[#8D6346]/20 rounded-xl text-[#8D6346] shadow-inner">
               <Users className="w-5 h-5" />
             </div>
             <h2 className="text-xl font-bold text-white tracking-wide">
-              {form._id ? t('receivables.editTitle', 'تعديل مبلغ مستحق') : t('receivables.addTitle', 'إضافة مبلغ مستحق')}
+              {form._id ? t('receivables.editTitle') : t('receivables.addTitle')}
             </h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-[var(--color-text-muted)] transition-colors">
@@ -105,26 +107,26 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
 
           <form id="group-expense-form" onSubmit={submit} className="space-y-6">
             
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text-muted)] px-1">{t('receivables.outingName', 'اسم الخروجة أو الفاتورة')}</label>
+            <div className="space-y-1.5 pt-2">
+              <label className="text-sm font-medium text-white/70 px-1">{t('receivables.outingName')}</label>
               <input 
-                className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all" 
                 required 
-                placeholder={t('receivables.outingName', 'اسم الخروجة أو الفاتورة')} 
+                placeholder={t('receivables.outingName')} 
                 value={form.title} 
                 onChange={(e) => setForm({ ...form, title: e.target.value })} 
               />
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <label className="text-sm font-medium text-[var(--color-text-main)] px-1">{t('receivables.totalPaid', 'ما دفعته الإجمالي')}</label>
+            <div className="space-y-4 pt-4 border-t border-white/10">
+              <label className="text-sm font-medium text-white/90 px-1">{t('receivables.totalPaid')}</label>
               <div className="grid grid-cols-2 gap-3">
                 <input 
-                  className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all" 
                   required 
                   type="number" 
                   min="1" 
-                  placeholder={t('receivables.paidAmount', 'المبلغ اللي دفعته')} 
+                  placeholder={t('receivables.paidAmount')} 
                   value={form.paidAmount} 
                   onChange={(e) => setForm({ ...form, paidAmount: e.target.value })} 
                 />
@@ -132,20 +134,20 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                   value={form.paidFrom} 
                   onChange={(v) => setForm({ ...form, paidFrom: v })} 
                   options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
-                  placeholder={t('receivables.selectAccount', 'اختر الحساب')} 
+                  placeholder={t('receivables.selectAccount')} 
                 />
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <label className="text-sm font-medium text-[var(--color-text-main)] px-1">{t('receivables.receivedImmediately', 'ما استلمته فورا (اختياري)')}</label>
+            <div className="space-y-4 pt-4 border-t border-white/10">
+              <label className="text-sm font-medium text-white/90 px-1">{t('receivables.receivedImmediately')}</label>
               <div className="grid grid-cols-2 gap-3">
                 <input 
-                  className="w-full bg-black/30 border border-white/5 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all" 
                   type="number" 
                   min="0" 
                   max={form.paidAmount || undefined} 
-                  placeholder={t('receivables.amountReceived', 'المبلغ اللي وصلك')} 
+                  placeholder={t('receivables.amountReceived')} 
                   value={form.receivedAmount} 
                   onChange={(e) => setForm({ ...form, receivedAmount: e.target.value })} 
                 />
@@ -153,58 +155,58 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                   value={form.receivedTo} 
                   onChange={(v) => setForm({ ...form, receivedTo: v })} 
                   options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
-                  placeholder={t('receivables.receivingAccount', 'الحساب المستلم')} 
+                  placeholder={t('receivables.receivingAccount')} 
                 />
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <label className="text-sm font-medium text-[var(--color-text-main)] px-1">{t('receivables.friendsOwes', 'مستحقات الأصدقاء')}</label>
+            <div className="space-y-4 pt-4 border-t border-white/10">
+              <label className="text-sm font-medium text-white/90 px-1">{t('receivables.friendsOwes')}</label>
               {form.participants.map((participant, index) => (
                 <div className="flex gap-2 items-center" key={index}>
                   <div className="grid grid-cols-2 gap-3 flex-1">
                     <input 
-                      className="w-full bg-black/30 border border-white/5 rounded-2xl p-3 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all" 
                       required 
-                      placeholder={t('receivables.personName', 'اسم الشخص')} 
+                      placeholder={t('receivables.personName')} 
                       value={participant.name} 
                       onChange={(e) => setForm({ ...form, participants: form.participants.map((p, i) => i === index ? { ...p, name: e.target.value } : p) })} 
                     />
                     <input 
-                      className="w-full bg-black/30 border border-white/5 rounded-2xl p-3 text-white placeholder-white/30 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/50 transition-all" 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all" 
                       required 
                       type="number" 
                       min="1" 
-                      placeholder={t('receivables.amountOwed', 'مستحق عليه')} 
+                      placeholder={t('receivables.amountOwed')} 
                       value={participant.owedAmount} 
                       onChange={(e) => setForm({ ...form, participants: form.participants.map((p, i) => i === index ? { ...p, owedAmount: e.target.value } : p) })} 
                     />
                   </div>
                   {form.participants.length > 1 && (
-                    <button type="button" onClick={() => removeParticipant(index)} className="p-3 bg-brand-red/10 text-brand-red rounded-xl hover:bg-brand-red/20 transition">
+                    <button type="button" onClick={() => removeParticipant(index)} className="p-3 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition border border-red-500/20 shadow-sm">
                       <Trash2 size={20} />
                     </button>
                   )}
                 </div>
               ))}
-              <button type="button" onClick={addParticipant} className="text-sm font-medium text-brand-blue hover:text-brand-blue/80 transition-colors">
-                {t('receivables.addPerson', '+ إضافة شخص آخر')}
+              <button type="button" onClick={addParticipant} className="text-sm font-medium text-[#E8C5A8] hover:text-white transition-colors flex items-center gap-1.5 ml-1">
+                {t('receivables.addPerson')}
               </button>
             </div>
             
-            <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-[1.5rem] p-5 mt-2 space-y-4">
+            <div className="bg-[#8D6346]/5 border border-[#8D6346]/20 rounded-[1.5rem] p-5 mt-2 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[var(--color-text-main)] font-medium">{t('receivables.yourShare', 'نصيبك من المصروف (سيُسجل في التقارير):')}</span>
-                <span className="font-bold text-brand-blue text-xl tracking-wide">{money(netExpense)}</span>
+                <span className="text-sm text-white/80 font-medium">{t('receivables.yourShare')}</span>
+                <span className="font-bold text-[#8D6346] text-xl tracking-wide tabular-nums">{money(netExpense)}</span>
               </div>
               
-              <div className="border-t border-brand-blue/10 pt-4">
-                <label className="text-sm font-medium text-[var(--color-text-main)] block mb-2 px-1">{t('receivables.expenseCategory', 'فئة المصروف (لنصيبك)')}</label>
+              <div className="border-t border-[#8D6346]/20 pt-4">
+                <label className="text-sm font-medium text-white/90 block mb-2 px-1">{t('receivables.expenseCategory')}</label>
                 <CustomSelect 
                   value={form.expenseCategory} 
                   onChange={(v) => setForm({ ...form, expenseCategory: v })} 
                   options={categories.map(c => ({ value: c._id, label: c.name, icon: c.icon, color: c.color }))} 
-                  placeholder={t('receivables.selectCategory', 'اختر الفئة')} 
+                  placeholder={t('receivables.selectCategory')} 
                 />
               </div>
             </div>
@@ -213,19 +215,19 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-white/5 bg-[#111]/80 backdrop-blur-xl">
+        <div className="p-6 border-t border-white/10 bg-transparent">
           <button 
             type="submit"
             form="group-expense-form"
             disabled={isSubmitting}
-            className="w-full rounded-2xl bg-brand-blue py-4 font-bold text-[var(--color-text-main)] hover:bg-brand-blue/90 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-lg shadow-brand-blue/20"
+            className="w-full py-4 rounded-full font-bold text-[14px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md disabled:opacity-50 disabled:pointer-events-none"
           >
             {isSubmitting ? (
               <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             ) : (
               <Plus className="w-5 h-5" />
             )}
-            {form._id ? t('receivables.saveChanges', 'حفظ التعديلات') : t('receivables.recordPaymentBtn', 'تسجيل الدفعة')}
+            <span>{form._id ? t('receivables.saveChanges') : t('receivables.recordPaymentBtn')}</span>
           </button>
         </div>
 

@@ -38,6 +38,11 @@ const smartBudgetPlanSchema = new mongoose.Schema({
     type: String,
     default: 'Smart Budget Plan'
   },
+  account: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
+    required: false
+  },
   period: {
     type: String,
     enum: ['weekly', 'monthly', 'custom'],

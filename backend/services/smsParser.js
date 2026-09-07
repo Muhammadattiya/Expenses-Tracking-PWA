@@ -217,13 +217,12 @@ const BANK_PATTERNS = [
       const amountMatch = text.match(/تم استلام مبلغ\s*([\d.]+)\s*جنيه/i);
       const merchantMatch = text.match(/بإسم\s+([A-Za-z\s]+)\s+على/i) || text.match(/من\s+(\d+)\s+المسجل/i);
       const refMatch = text.match(/رقم العملية:\s+(\d+)/i);
-      const walletMatch = text.match(/على رقم محفظتك\s+(\d+)/i);
       if (!amountMatch) return null;
       return {
         amount: parseFloat(amountMatch[1]),
         type: 'income',
         merchant: merchantMatch ? merchantMatch[1].trim() : 'Vodafone Cash',
-        cardLast4: walletMatch ? walletMatch[1].slice(-4) : null,
+        cardLast4: null,
         referenceNumber: refMatch ? refMatch[1] : null
       };
     }
@@ -332,32 +331,67 @@ const BANK_PATTERNS = [
   }
 ];
 
+const normalizeArabicNumerals = (text) => {
+  if (!text) return '';
+  const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return text.split('').map(c => {
+    const index = arabicNumbers.indexOf(c);
+    return index !== -1 ? index : c;
+  }).join('');
+};
+
 /**
- * Fallback to extract card last 4 digits from various patterns
+ * Robust extraction of the card or account last 4 digits.
+ * Applies priority rules and protections against false positives.
  * @param {string} smsText 
  * @returns {string|null}
  */
-const extractCardFallback = (smsText) => {
-  // 1. Account number ending in XXXX
-  let m = smsText.match(/ending\s*(?:in\s+|with\s+)?(\d{4})/i);
-  if (m) return m[1];
+const extractCardLast4 = (smsText) => {
+  if (!smsText) return null;
   
-  // 2. Arabic ending in XXXX
-  m = smsText.match(/المنته.*?بـ?\s*(\d{4})/i);
-  if (m) return m[1];
+  // Normalize Arabic-Indic digits
+  const text = normalizeArabicNumerals(smsText);
 
-  // 3. Account/Wallet with full number
-  m = smsText.match(/(?:حسابك|حساب رقم|رقم|محفظتك|بطاقة|بطاقتكم)[^\d]*(\d{11,16})/i);
-  if (m) return m[1].slice(-4);
+  // 1. High Confidence: Explicit prefixes
+  let match;
+  
+  // "ending in 9596", "ending with 9596"
+  match = text.match(/ending\s*(?:in|with)\s*(\d{4,16})(?:\s|$|\.|,)/i);
+  if (match) return match[1].slice(-4);
 
-  // 4. Card directly
-  m = smsText.match(/card\s*(\d{4})/i);
-  if (m) return m[1];
+  // "حساب رقم xxx6201" or "حسابك 100001269596" or "حسابك رقم 100001269596"
+  match = text.match(/حساب(?:ك)?\s*(?:رقم)?\s*(?:[xX*\s-]*?)(\d{4,16})(?:\s|$|\.|,)/i);
+  if (match) return match[1].slice(-4);
 
-  // 5. Masked numbers xxx1234 or ***1234
-  m = smsText.match(/(?:x|\*){2,}(\d{4})/i);
-  if (m) return m[1];
+  // "بطاقة ... رقم 2513" or "بطاقة بنك مصر ***6614"
+  match = text.match(/بطاقة\s*(?:[^\d]{0,30}?)\s*(?:رقم)?\s*(?:[xX*\s-]*?)(\d{4,16})(?:\s|$|\.|,)/i);
+  if (match) return match[1].slice(-4);
 
+  // "المنتهية بـ 1984"
+  match = text.match(/المنتهي(?:ة)?\s*بـ?\s*(\d{4,16})(?:\s|$|\.|,)/i);
+  if (match) return match[1].slice(-4);
+  
+  // "اخر 4 ارقام 1234"
+  match = text.match(/(?:اخر 4 ارقام|آخر أربعة أرقام)\s*(\d{4})/i);
+  if (match) return match[1];
+
+  // English "card ****1234" or "account ****1234"
+  match = text.match(/(?:card|account)(?:\s+(?:no\.?|number))?\s+(?:[^\d]{0,20}?)\s*(?:[xX*\s-]*?)(\d{4,16})(?:\s|$|\.|,)/i);
+  if (match) return match[1].slice(-4);
+
+  // 2. Medium Confidence: Masked formats
+  // Must be directly preceded by at least two x, X, or * (e.g. ****1984, xx1984)
+  const maskedRegex = /(?:[xX*]{2,}[\s-]*|x{2,}X*[\s-]*|X{2,}x*[\s-]*)(\d{4})(?:\s|$|\.|,)/gi;
+  let maskedMatch;
+  while ((maskedMatch = maskedRegex.exec(text)) !== null) {
+    const preContext = text.slice(Math.max(0, maskedMatch.index - 20), maskedMatch.index);
+    // Protect against masked reference numbers or IDs
+    if (!/(?:Ref|رقم مرجعي|مرجع|Process|Transaction|Operation|عملية)/i.test(preContext)) {
+      return maskedMatch[1];
+    }
+  }
+
+  // No generic fallback to prevent false positives with amounts, phones, or IDs.
   return null;
 };
 
@@ -394,6 +428,9 @@ const parseSms = (smsText) => {
     if (pattern.match.test(smsText)) {
       const extracted = pattern.extract(smsText);
       if (extracted) {
+        if (!extracted.cardLast4) {
+          extracted.cardLast4 = extractCardLast4(smsText);
+        }
         return {
           ...extracted,
           rawSms: smsText,
@@ -415,7 +452,7 @@ const parseSms = (smsText) => {
       type = 'income';
     }
 
-    const cardLast4 = extractCardFallback(smsText);
+    const cardLast4 = extractCardLast4(smsText);
     
     // Guess merchant from SMS text roughly if possible
     let merchant = 'Unrecognized SMS';

@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import SplashScreen from './components/SplashScreen';
 import Layout from './components/Layout';
 import AuthGate from './components/AuthGate';
+import AuthLayout from './components/AuthLayout';
 import PWABadge from './components/PWABadge';
 import { Analytics } from '@vercel/analytics/react';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -22,18 +23,32 @@ const Bills = lazy(() => import('./pages/Bills'));
 const Budgets = lazy(() => import('./pages/Budgets'));
 const SmartBudgetPlanner = lazy(() => import('./pages/SmartBudgetPlanner'));
 const Sandbox = lazy(() => import('./pages/Sandbox'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+
+const Welcome = lazy(() => import('./pages/Welcome'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
 
 function App() {
   return (
-    <AuthGate>
-      <LanguageProvider>
-        <ThemeProvider>
-          <NotificationProvider>
-            <BrowserRouter>
-              <PWABadge />
-              <Analytics />
-              <Suspense fallback={<SplashScreen />}>
-                <Routes>
+    <LanguageProvider>
+      <ThemeProvider>
+        <NotificationProvider>
+          <BrowserRouter>
+            <PWABadge />
+            <Analytics />
+            <Suspense fallback={<SplashScreen />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/welcome" element={<Welcome />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                </Route>
+
+                {/* Protected Routes */}
+                <Route element={<AuthGate />}>
+                  <Route path="/onboarding" element={<Onboarding />} />
                   <Route element={<Layout />}>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/add" element={<AddTransaction />} />
@@ -47,13 +62,13 @@ function App() {
                     <Route path="/budgets/smart-planner" element={<SmartBudgetPlanner />} />
                     <Route path="/sandbox" element={<Sandbox />} />
                   </Route>
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </NotificationProvider>
-        </ThemeProvider>
-      </LanguageProvider>
-    </AuthGate>
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </NotificationProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

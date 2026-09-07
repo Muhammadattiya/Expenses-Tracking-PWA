@@ -5,7 +5,8 @@ const Category = require('../models/Category');
 const Transaction = require('../models/Transaction');
 const { parseSms } = require('../services/smsParser');
 const notificationService = require('../services/notificationService');
-const { extractIntent } = require('../services/quickAdd/nlpParser');
+const { resolveMerchantIntent } = require('../services/merchantIntelligence/merchantClassificationResolver');
+const { normalizeMerchantToken } = require('../services/merchantIntelligence/merchantNormalizer');
 const { resolveCategory } = require('../services/quickAdd/intentResolver');
 
 // Redact sensitive PII from raw SMS before storage
@@ -60,11 +61,12 @@ exports.handleSmsWebhook = async (req, res) => {
       }
     }
     
-    // Guess Intent and Category using NLP on the merchant text
+    // Guess Intent and Category using Merchant Intelligence Pipeline
     let categoryId = null;
     let inferredIntent = null;
     if (parsedData.merchant && parsedData.merchant !== 'Unrecognized SMS') {
-      inferredIntent = extractIntent(parsedData.merchant);
+      inferredIntent = await resolveMerchantIntent(parsedData.merchant, user._id);
+      
       if (inferredIntent) {
         const resolvedCategory = await resolveCategory(user._id, inferredIntent, parsedData.type);
         if (resolvedCategory) {
@@ -76,16 +78,18 @@ exports.handleSmsWebhook = async (req, res) => {
     const newTx = await Transaction.create({
       user: user._id,
       title: parsedData.merchant || 'معاملة SMS (تحتاج مراجعة)',
+      normalizedMerchant: parsedData.merchant ? normalizeMerchantToken(parsedData.merchant) : null,
       amount: parsedData.amount,
       type: parsedData.type,
       account: accountId,
       category: categoryId,
-      status: 'needs_manual_review',
       source: 'sms_shortcut',
       referenceNumber: parsedData.referenceNumber,
       rawSms: redactSensitiveInfo(smsText),
       smsHash: smsHash
     });
+
+    console.log(`[SMS Webhook] merchant="${newTx.title}" cardLast4="${parsedData.cardLast4}" accountMatched=${!!accountId}`);
 
     // Fire push notification if subscriptions exist
     try {
@@ -99,7 +103,7 @@ exports.handleSmsWebhook = async (req, res) => {
       console.error('Error sending push for SMS webhook', pushErr);
     }
 
-    res.status(200).json({ message: 'Transaction saved', id: newTx._id, status: 'needs_manual_review' });
+    res.status(200).json({ message: 'Transaction saved', id: newTx._id });
 
   } catch (error) {
     console.error('[ERROR] SMS Webhook:', error.message);
