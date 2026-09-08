@@ -89,7 +89,7 @@ const AddTransaction = () => {
           const otherAcc = accountsData.find(a => a._id !== defaultAcc._id) || defaultAcc;
           setToAccount(otherAcc._id);
         }
-        
+
         // تعيين فئة افتراضية لو مش جاية من الفاتورة
         if (!location.state?.defaultCategory && groupedCategories.expense.length > 0) {
           setCategory(groupedCategories.expense[0]._id);
@@ -177,7 +177,7 @@ const AddTransaction = () => {
       });
 
       showToast(t('addTransaction.successMsg'), 'success');
-      
+
       if (billId) {
         navigate('/bills');
       }
@@ -202,7 +202,7 @@ const AddTransaction = () => {
 
       {/* Top Segmented Control (Expense / Income / Transfer) */}
       <div className="px-5 pt-[clamp(8px,1.5vh,16px)] pb-[clamp(4px,1vh,10px)] shrink-0 z-20">
-        <div className="flex liquidglass border border-white/15 p-1 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.3)] relative max-w-[340px] mx-auto w-full">
+        <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative max-w-[340px] mx-auto w-full">
           {[
             { key: 'expense', label: t('addTransaction.expense'), color: '#FF5555', shadow: 'rgba(255,85,85,0.45)' },
             { key: 'income', label: t('addTransaction.income'), color: '#34C759', shadow: 'rgba(52,199,89,0.45)' },
@@ -214,7 +214,7 @@ const AddTransaction = () => {
                 key={tab.key}
                 type="button"
                 onClick={() => setType(tab.key)}
-                className="relative flex-1 py-[clamp(4px,0.7vh,7px)] rounded-full text-[clamp(12px,1.6vh,14px)] font-semibold transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
+                className="relative flex-1 py-[clamp(6px,1vh,10px)] rounded-full text-[clamp(14px,2vh,16px)] font-semibold transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
               >
                 {isActive && (
                   <motion.div
@@ -236,22 +236,22 @@ const AddTransaction = () => {
         </div>
       </div>
 
-      {/* Main Liquid Glass Container */}
-      <div className="w-full flex-1 min-h-0 liquidglass rounded-t-[36px] border-t border-white/15 shadow-[0_-12px_40px_rgba(0,0,0,0.4)] px-[clamp(16px,4vw,24px)] pt-[clamp(8px,1.5vh,16px)] pb-[clamp(76px,10.2vh,90px)] flex flex-col overflow-hidden relative z-10">
-        
+      {/* Main Glass Container */}
+      <div className="w-full flex-1 min-h-0 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-t-[36px] border-t border-white/10 px-[clamp(16px,4vw,24px)] pt-[clamp(8px,1.5vh,16px)] pb-[clamp(76px,10.2vh,90px)] flex flex-col overflow-hidden relative z-10">
+
         {/* Form Fields Area with justify-between across the entire viewport */}
         <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col justify-between w-full">
-          
+
           {/* 1. Amount Section */}
           <div className="flex flex-col items-center justify-center shrink-0">
-            <label className="text-[clamp(13px,1.8vh,16px)] font-medium text-white/70 tracking-wide mb-0.5 text-center">
+            <label className="text-[clamp(15px,2vh,18px)] font-medium text-white/70 tracking-wide mb-0.5 text-center">
               {t('addTransaction.amount')}
             </label>
-            <div className="flex items-center justify-center gap-3 relative w-full h-[clamp(42px,5.5vh,58px)]">
-              <button 
+            <div className="flex items-center justify-center gap-3 relative w-full h-[clamp(50px,7vh,70px)]">
+              <button
                 type="button"
                 onClick={() => setShowCalculator(true)}
-                className="absolute start-1 w-[clamp(30px,4vh,38px)] h-[clamp(30px,4vh,38px)] rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+                className="absolute start-1 w-[clamp(36px,5vh,44px)] h-[clamp(36px,5vh,44px)] rounded-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner text-white/60 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all active:scale-95"
                 aria-label={t('common.calculator')}
               >
                 <Calculator className="w-[clamp(16px,2vh,20px)] h-[clamp(16px,2vh,20px)]" />
@@ -263,7 +263,7 @@ const AddTransaction = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="bg-transparent text-center text-[clamp(38px,5.2vh,56px)] font-bold text-white focus:outline-none w-[auto] min-w-[60px] max-w-[220px] placeholder-white/25 tracking-tight leading-none h-full tabular-nums"
+                className="bg-transparent text-center text-[clamp(48px,7vh,68px)] font-bold text-white focus:outline-none w-[auto] min-w-[80px] max-w-[260px] placeholder-white/25 tracking-tight leading-none h-full tabular-nums"
                 style={{ caretColor: type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF' }}
               />
               <span className="text-[clamp(15px,2vh,19px)] text-white/85 font-semibold self-end mb-1">
@@ -275,10 +275,10 @@ const AddTransaction = () => {
 
           {/* 2. Date Segmented Control */}
           <div className="shrink-0">
-            <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1">
+            <label className="block text-[clamp(13px,1.8vh,15px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1">
               {t('addTransaction.date')}
             </label>
-            <div className="flex bg-[#2A2325]/75 border border-white/10 p-0.5 rounded-full shadow-inner relative h-[clamp(32px,4vh,40px)] items-center">
+            <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative h-[clamp(40px,5.5vh,48px)] items-center">
               {[
                 { key: 'today', label: t('addTransaction.today'), active: isToday, onClick: () => setDate(todayStr) },
                 { key: 'yesterday', label: t('addTransaction.yesterday'), active: isYesterday, onClick: () => setDate(yesterdayStr) },
@@ -291,7 +291,7 @@ const AddTransaction = () => {
                     key={tab.key}
                     type="button"
                     onClick={tab.onClick}
-                    className="relative flex-1 h-full rounded-full text-[clamp(11px,1.4vh,13px)] font-medium transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
+                    className="relative flex-1 h-full rounded-full text-[clamp(13px,1.8vh,15px)] font-medium transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
                   >
                     {tab.active && (
                       <motion.div
@@ -315,7 +315,7 @@ const AddTransaction = () => {
 
           {/* 3. Description Input */}
           <div className="shrink-0">
-            <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1">
+            <label className="block text-[clamp(13px,1.8vh,15px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1">
               {t('addTransaction.description')}
             </label>
             <input
@@ -323,7 +323,7 @@ const AddTransaction = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('addTransaction.descPlaceholder')}
-              className="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-[#342B2E]/90 shadow-inner transition-all hover:bg-[#342B2E]/80"
+              className="w-full h-[clamp(44px,6vh,54px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[40px] px-4 text-[clamp(14px,2vh,16px)] text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
             />
           </div>
 
@@ -331,7 +331,7 @@ const AddTransaction = () => {
           {type === 'transfer' ? (
             <>
               <div className="shrink-0">
-                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                <label className="block text-[clamp(13px,1.8vh,15px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
                   {t('addTransaction.fromAccount')}
                 </label>
                 <CustomSelect
@@ -339,11 +339,11 @@ const AddTransaction = () => {
                   onChange={setFromAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.fromAccountPlaceholder')}
-                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[clamp(44px,6vh,54px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[40px] px-4 text-[clamp(14px,2vh,16px)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
               <div className="shrink-0">
-                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                <label className="block text-[clamp(13px,1.8vh,15px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
                   {t('addTransaction.toAccount')}
                 </label>
                 <CustomSelect
@@ -351,14 +351,14 @@ const AddTransaction = () => {
                   onChange={setToAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.toAccountPlaceholder')}
-                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[clamp(44px,6vh,54px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[40px] px-4 text-[clamp(14px,2vh,16px)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
             </>
           ) : (
             <>
               <div className="shrink-0">
-                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                <label className="block text-[clamp(13px,1.8vh,15px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
                   {t('addTransaction.account')}
                 </label>
                 <CustomSelect
@@ -366,12 +366,12 @@ const AddTransaction = () => {
                   onChange={setAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.accountPlaceholder')}
-                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[clamp(44px,6vh,54px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[40px] px-4 text-[clamp(14px,2vh,16px)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
 
               <div className="shrink-0">
-                <label className="block text-[clamp(11px,1.5vh,13px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
+                <label className="block text-[clamp(13px,1.8vh,15px)] font-medium text-white/75 mb-[clamp(2px,0.4vh,4px)] px-1 truncate">
                   {t('addTransaction.category')}
                 </label>
                 <CustomSelect
@@ -379,7 +379,7 @@ const AddTransaction = () => {
                   onChange={setCategory}
                   options={categories[type] ? categories[type].map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon })) : []}
                   placeholder={t('addTransaction.categoryPlaceholder')}
-                  buttonClassName="w-full h-[clamp(34px,4.5vh,44px)] bg-[#2A2325]/75 border border-white/10 rounded-[40px] px-4 text-[clamp(12px,1.5vh,13px)] font-medium text-white flex items-center justify-between shadow-inner transition-all hover:bg-[#342B2E]/80 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[clamp(44px,6vh,54px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[40px] px-4 text-[clamp(14px,2vh,16px)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
             </>
@@ -391,21 +391,21 @@ const AddTransaction = () => {
               <button
                 type="button"
                 onClick={() => setIsRecurringModalOpen(true)}
-                className="w-full h-[clamp(34px,4.4vh,44px)] flex items-center justify-center gap-2.5 border border-dashed border-white/20 hover:border-white/40 rounded-[40px] bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-200 active:scale-[0.98]"
+                className="w-full h-[clamp(44px,6vh,54px)] flex items-center justify-center gap-2.5 border border-dashed border-white/10 hover:border-white/20 rounded-[40px] bg-black/20 backdrop-blur-[10px] shadow-inner transition-all duration-200 active:scale-[0.98]"
               >
-                <Repeat className="w-[clamp(13px,1.8vh,16px)] h-[clamp(13px,1.8vh,16px)] text-white/60" />
-                <span className="text-[clamp(11px,1.4vh,13px)] font-medium text-white/75">{t('recurring.addBtn')}</span>
+                <Repeat className="w-[clamp(16px,2.2vh,20px)] h-[clamp(16px,2.2vh,20px)] text-white/60" />
+                <span className="text-[clamp(13px,1.8vh,15px)] font-medium text-white/75">{t('recurring.addBtn')}</span>
               </button>
             ) : (
-              <div className="w-full h-[clamp(34px,4.4vh,44px)] flex items-center justify-between px-4 border border-dashed border-[#8D6346] rounded-[40px] bg-[#8D6346]/20 transition-all duration-200">
+              <div className="w-full h-[clamp(44px,6vh,54px)] flex items-center justify-between px-4 border border-dashed border-[#8D6346]/40 rounded-[40px] bg-[#8D6346]/10 backdrop-blur-[10px] shadow-inner transition-all duration-200">
                 <div className="flex items-center gap-2">
-                  <Repeat className="w-4 h-4 text-[#E8C5A8]" />
-                  <span className="text-[clamp(11px,1.4vh,13px)] font-medium text-[#E8C5A8]">{t('recurring.settings')}</span>
+                  <Repeat className="w-5 h-5 text-[#E8C5A8]" />
+                  <span className="text-[clamp(13px,1.8vh,15px)] font-medium text-[#E8C5A8]">{t('recurring.settings')}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsRecurringModalOpen(true)}
-                  className="px-3 py-1 bg-[#8D6346] hover:bg-[#734e35] rounded-full text-[11px] font-medium text-white transition-colors"
+                  className="px-4 py-1.5 bg-[#8D6346] hover:bg-[#734e35] rounded-full text-[13px] font-medium text-white transition-colors"
                 >
                   {t('recurring.edit')}
                 </button>
@@ -415,12 +415,13 @@ const AddTransaction = () => {
 
           {/* 7. Confirm & Save Button */}
           <div className="shrink-0">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               type="submit"
-              className="w-full h-[clamp(40px,5.2vh,50px)] rounded-[40px] font-semibold text-[clamp(14px,1.8vh,15px)] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
+              className="w-full h-[clamp(52px,7vh,62px)] rounded-[40px] font-bold text-[clamp(16px,2.2vh,18px)] text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 hover:bg-[#8D6346]/30 flex items-center justify-center gap-2"
             >
               {t('addTransaction.submit')}
-            </button>
+            </motion.button>
           </div>
         </form>
       </div>

@@ -165,7 +165,7 @@ export default function VoiceMockupStep({ stepData }) {
                   <p className="text-[10px] text-white/60 font-semibold uppercase tracking-wider font-['Exo_2']">
                     {t('onboarding.voiceMockupFound')}
                   </p>
-                  <div className="max-h-[140px] overflow-y-auto flex flex-col gap-2 pr-1" style={{ scrollbarWidth: 'none' }}>
+                  <div className="max-h-[140px] flex flex-col gap-2 pr-1" style={{ scrollbarWidth: 'none' }}>
                     {voiceTransactions.map(([merchant, category, amount, icon], i) => (
                       <div key={i} className="flex items-center gap-3 p-2 rounded-[14px] bg-black/20 border border-white/5">
                         <div className="size-8 rounded-full bg-[rgba(141,99,70,0.3)] flex items-center justify-center text-white/90">
