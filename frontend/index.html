@@ -1,37 +1,50 @@
 <!doctype html>
 <html lang="en" dir="ltr">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#141115" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <title>Finova</title>
-  </head>
-  <body class="bg-[#141115] text-white overflow-x-hidden">
-    <svg class="pointer-events-none opacity-0 -z-50 w-0 h-0 absolute inset-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="glass-filter-_r_b_" color-interpolation-filters="sRGB" x="0%" y="0%" width="100%" height="100%">
-          <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map" href="" />
-          <feDisplacementMap in="SourceGraphic" in2="map" id="redchannel" result="dispRed" scale="-20" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
-          <feColorMatrix in="dispRed" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="red"></feColorMatrix>
-          <feDisplacementMap in="SourceGraphic" in2="map" id="greenchannel" result="dispGreen" scale="-24" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
-          <feColorMatrix in="dispGreen" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="green"></feColorMatrix>
-          <feDisplacementMap in="SourceGraphic" in2="map" id="bluechannel" result="dispBlue" scale="-28" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
-          <feColorMatrix in="dispBlue" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="blue"></feColorMatrix>
-          <feBlend in="red" in2="green" mode="screen" result="rg"></feBlend>
-          <feBlend in="rg" in2="blue" mode="screen" result="output"></feBlend>
-          <feGaussianBlur in="output" stdDeviation="3"></feGaussianBlur>
-        </filter>
-      </defs>
-    </svg>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon-v3.png" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#8D6346" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Exo+2:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <title>Finova</title>
+</head>
+
+<body class="bg-[#141115] text-white overflow-x-hidden">
+  <svg class="pointer-events-none opacity-0 -z-50 w-0 h-0 absolute inset-0" aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="glass-filter-_r_b_" color-interpolation-filters="sRGB" x="0%" y="0%" width="100%" height="100%">
+        <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map" href="" />
+        <feDisplacementMap in="SourceGraphic" in2="map" id="redchannel" result="dispRed" scale="-20"
+          xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+        <feColorMatrix in="dispRed" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="red">
+        </feColorMatrix>
+        <feDisplacementMap in="SourceGraphic" in2="map" id="greenchannel" result="dispGreen" scale="-24"
+          xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+        <feColorMatrix in="dispGreen" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="green">
+        </feColorMatrix>
+        <feDisplacementMap in="SourceGraphic" in2="map" id="bluechannel" result="dispBlue" scale="-28"
+          xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+        <feColorMatrix in="dispBlue" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="blue">
+        </feColorMatrix>
+        <feBlend in="red" in2="green" mode="screen" result="rg"></feBlend>
+        <feBlend in="rg" in2="blue" mode="screen" result="output"></feBlend>
+        <feGaussianBlur in="output" stdDeviation="3"></feGaussianBlur>
+      </filter>
+    </defs>
+  </svg>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>
