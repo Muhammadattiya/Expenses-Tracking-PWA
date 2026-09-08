@@ -13,7 +13,6 @@ export default function PWABadge() {
     onRegistered(r) {
       console.log('SW Registered:', r);
       if (r) {
-        window.__pwa_registration = r;
         // Check for updates every hour
         setInterval(() => {
           r.update();
@@ -147,8 +146,8 @@ export default function PWABadge() {
                 type="button"
                 onClick={async () => {
                   updateServiceWorker(true);
-                  // Force a reload if the SW event doesn't trigger the automatic one
-                  setTimeout(() => window.location.reload(), 1500);
+                  // Force a hard reload if the SW event doesn't trigger the automatic one
+                  setTimeout(() => window.location.reload(true), 1500);
                 }}
                 className="bg-[#8D6346] hover:bg-[#9E7151] active:scale-95 text-white font-semibold text-[12px] px-3.5 py-1.5 rounded-xl shadow-[0_2px_10px_rgba(141,99,70,0.4)] transition-all"
               >

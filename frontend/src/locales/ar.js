@@ -1009,10 +1009,7 @@ export default {
     "installBtn": "تثبيت",
     "updateTitle": "تحديث جديد متاح",
     "updateDesc": "اضغط للتحديث إلى أحدث نسخة",
-    "updateBtn": "تحديث",
-    "pullToRefresh": "اسحب للتحديث",
-    "releaseToRefresh": "أفلت للتحديث",
-    "refreshing": "جاري التحديث..."
+    "updateBtn": "تحديث"
   },
   "calculator": {
     "title": "الحاسبة",

@@ -4,7 +4,6 @@ import InstallPrompt from './InstallPrompt';
 import CategoryClarificationManager from './modals/CategoryClarificationManager';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNetwork } from '../hooks/useNetwork';
-import PullToRefresh from './PullToRefresh';
 
 export default function Layout() {
   const { lang, t } = useLanguage();
@@ -29,9 +28,7 @@ export default function Layout() {
         isAddPage ? "h-full w-full p-0 overflow-hidden max-w-[420px] mx-auto flex flex-col" : 
         "pb-32 px-5 pt-8 w-full max-w-7xl mx-auto min-h-screen animate-fade-in"
       }>
-        <PullToRefresh>
-          <Outlet />
-        </PullToRefresh>
+        <Outlet />
       </main>
       <InstallPrompt />
       <CategoryClarificationManager />
