@@ -7,6 +7,17 @@ import { ExpirationPlugin } from 'workbox-expiration';
 // Precache the manifest (injected by Vite PWA)
 precacheAndRoute(self.__WB_MANIFEST || []);
 
+// ─── ONE-TIME RESCUE PATCH (Expires Sept 15, 2026) ──────────────────────────
+// This forces the SW to take over immediately for users stuck on the old cache 
+// that lacks the update button. After Sept 15, future updates will behave normally
+// and wait for the user to click the "Update" button.
+self.addEventListener('install', () => {
+  if (Date.now() < new Date('2026-09-15T00:00:00Z').getTime()) {
+    self.skipWaiting();
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Setup SPA Navigation fallback so the app works offline
 try {
   const handler = createHandlerBoundToURL('/index.html');
