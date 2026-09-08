@@ -132,16 +132,16 @@ export default function BottomNav() {
           )}
         </AnimatePresence>
 
-        
-        {/* Plus Button */}
+        {/* Plus Button - Ultra Lightweight CSS Animation & Isolated LiquidGlass */}
         <button 
           onClick={() => setFabOpen(!fabOpen)}
           className={`relative w-[48px] h-[48px] rounded-full flex items-center justify-center z-50 text-white group shrink-0`}
         >
+          {/* Static liquidglass layer to prevent filter re-calculation lag */}
           <div className={`absolute inset-0 rounded-full ${liquidGlassClass} group-active:bg-white/10 transition-colors pointer-events-none`} />
-          <motion.div animate={{ rotate: fabOpen ? 45 : 0 }} transition={{ type: 'spring', bounce: 0.3 }} className="relative z-10">
+          <div className={`relative z-10 transition-transform duration-300 ease-in-out ${fabOpen ? 'rotate-45' : 'rotate-0'}`}>
             <Plus size={24} strokeWidth={2.5} />
-          </motion.div>
+          </div>
         </button>
 
         {/* Central Pill Nav */}

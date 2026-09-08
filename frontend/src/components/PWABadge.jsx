@@ -144,7 +144,11 @@ export default function PWABadge() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => updateServiceWorker(true)}
+                onClick={async () => {
+                  updateServiceWorker(true);
+                  // Force a hard reload if the SW event doesn't trigger the automatic one
+                  setTimeout(() => window.location.reload(true), 1500);
+                }}
                 className="bg-[#8D6346] hover:bg-[#9E7151] active:scale-95 text-white font-semibold text-[12px] px-3.5 py-1.5 rounded-xl shadow-[0_2px_10px_rgba(141,99,70,0.4)] transition-all"
               >
                 {t('pwa.updateBtn')}
