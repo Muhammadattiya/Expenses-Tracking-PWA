@@ -12,6 +12,19 @@ export default function PWABadge() {
   } = useRegisterSW({
     onRegistered(r) {
       console.log('SW Registered:', r);
+      if (r) {
+        // Check for updates every hour
+        setInterval(() => {
+          r.update();
+        }, 60 * 60 * 1000);
+
+        // Check for updates when the app comes back to the foreground (very important for mobile)
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            r.update();
+          }
+        });
+      }
     },
     onRegisterError(error) {
       console.log('SW registration error', error);

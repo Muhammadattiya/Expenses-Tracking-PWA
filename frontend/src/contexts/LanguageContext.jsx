@@ -16,7 +16,7 @@ export const useLanguage = () => {
 
 export const LanguageProvider = ({ children }) => {
   const [lang, setLang] = useState(() => {
-    return localStorage.getItem('finova-lang') || 'ar';
+    return localStorage.getItem('finova-lang') || 'en';
   });
 
   useEffect(() => {

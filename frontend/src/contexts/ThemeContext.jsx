@@ -19,8 +19,12 @@ export const ThemeProvider = ({ children }) => {
     const root = document.documentElement;
     if (theme === 'light') {
       root.classList.add('light');
+      // Update mobile status bar notch color for Light Theme
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#8D6346');
     } else {
       root.classList.remove('light');
+      // Update mobile status bar notch color for Dark Theme
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#8D6346');
     }
     localStorage.setItem('finova-theme', theme);
   }, [theme]);

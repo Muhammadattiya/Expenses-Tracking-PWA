@@ -102,6 +102,7 @@ export default function BottomNav() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
                 className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10"
                 onClick={() => setFabOpen(false)}
               />
@@ -109,10 +110,10 @@ export default function BottomNav() {
                 {fabItems.map((item, index) => (
                   <motion.div
                     key={item.path}
-                    initial={{ opacity: 0, y: 20, scale: 0.8, originX: lang === 'ar' ? 1 : 0 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 20, scale: 0.8 }}
-                    transition={{ delay: index * 0.05, type: 'spring', bounce: 0.4 }}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ delay: index * 0.04, duration: 0.2, ease: 'easeOut' }}
                     className="w-full"
                   >
                     <NavLink
