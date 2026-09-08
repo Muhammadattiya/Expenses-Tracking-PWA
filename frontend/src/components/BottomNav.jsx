@@ -118,7 +118,7 @@ export default function BottomNav() {
                   >
                     <NavLink
                       to={item.path}
-                      className={`group flex items-center gap-4 p-3 rounded-[20px] hover:bg-white/10 active:bg-black/40 active:scale-95 transition-all duration-200 ${liquidGlassClass} w-auto inline-flex`}
+                      className={`group flex items-center gap-4 p-3 rounded-[20px] hover:bg-white/10 active:bg-black/40 active:scale-95 transition-all duration-200 bg-[#1C1819]/90 backdrop-blur-xl border border-white/15 shadow-lg w-auto inline-flex`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/40 border border-white/10 group-active:bg-black/60 shadow-inner shrink-0 transition-colors`}>
                         {React.createElement(item.icon, { className: "w-5 h-5 text-[#8D6346]" })}
@@ -134,15 +134,15 @@ export default function BottomNav() {
 
         
         {/* Plus Button */}
-        <motion.button 
-          whileTap={{ scale: 0.9 }}
+        <button 
           onClick={() => setFabOpen(!fabOpen)}
-          className={`relative w-[48px] h-[48px] rounded-full flex items-center justify-center z-50 text-white ${liquidGlassClass} transition-colors hover:bg-white/10 shrink-0`}
+          className={`relative w-[48px] h-[48px] rounded-full flex items-center justify-center z-50 text-white group shrink-0`}
         >
+          <div className={`absolute inset-0 rounded-full ${liquidGlassClass} group-active:bg-white/10 transition-colors pointer-events-none`} />
           <motion.div animate={{ rotate: fabOpen ? 45 : 0 }} transition={{ type: 'spring', bounce: 0.3 }} className="relative z-10">
             <Plus size={24} strokeWidth={2.5} />
           </motion.div>
-        </motion.button>
+        </button>
 
         {/* Central Pill Nav */}
         <div 
@@ -184,8 +184,9 @@ export default function BottomNav() {
         {/* Mic Button - Quick Add Modal */}
         <button 
           onClick={() => setQuickAddOpen(true)}
-          className={`relative w-[48px] h-[48px] rounded-full flex items-center justify-center text-white active:scale-95 transition-transform ${liquidGlassClass} hover:bg-white/10 shrink-0`}
+          className={`relative w-[48px] h-[48px] rounded-full flex items-center justify-center text-white group shrink-0`}
         >
+          <div className={`absolute inset-0 rounded-full ${liquidGlassClass} group-active:bg-white/10 transition-colors pointer-events-none`} />
           <Mic size={20} strokeWidth={2.5} className="relative z-10" />
         </button>
 
