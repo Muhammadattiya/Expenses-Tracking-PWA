@@ -244,7 +244,7 @@ export default function Onboarding() {
                   transition={{ delay: 0.2, duration: 0.5 }}
                   className="w-full flex flex-col items-start px-6 z-20"
                 >
-                  <p dir="ltr" className={`font-['Exo_2'] font-medium tracking-[-0.022em] text-white/90 text-left ${stepData.textFormat === 'block' ? 'text-[32px] leading-[1.1em]' : 'text-[17px] leading-[1.6em]'}`}>
+                  <p dir="auto" className={`font-['Exo_2'] font-medium tracking-[-0.022em] text-white/90 text-start ${stepData.textFormat === 'block' ? 'text-[32px] leading-[1.1em]' : 'text-[17px] leading-[1.6em]'}`}>
                     <span className="font-bold text-white drop-shadow-sm text-[20px] mr-1">{t(stepData.titleKey, stepData.defaultTitle)}</span>
                     {stepData.textFormat === 'inline' ? (
                       <>{t(stepData.descKey, stepData.defaultDesc)}</>
