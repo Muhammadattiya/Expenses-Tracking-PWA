@@ -990,11 +990,14 @@ export default {
   },
   "pwa": {
     "installTitle": "Install App",
-    "installDesc": "Get a faster offline experience",
+    "installDesc": "Get a faster, offline-ready experience",
     "installBtn": "Install",
-    "updateTitle": "New Update Available",
+    "updateTitle": "Update Available",
     "updateDesc": "Tap to update to the latest version",
-    "updateBtn": "Update"
+    "updateBtn": "Update",
+    "pullToRefresh": "Pull to refresh",
+    "releaseToRefresh": "Release to refresh",
+    "refreshing": "Refreshing..."
   },
   "calculator": {
     "title": "Calculator",
