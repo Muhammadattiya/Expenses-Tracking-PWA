@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function PullToRefresh({ children, onRefresh }) {
@@ -15,6 +16,7 @@ export default function PullToRefresh({ children, onRefresh }) {
   const pullProgress = useRef(0);
   
   const { t } = useLanguage();
+  const location = useLocation();
 
   const MAX_PULL = 120;
   const THRESHOLD = 80;
@@ -47,7 +49,21 @@ export default function PullToRefresh({ children, onRefresh }) {
   };
 
   const handleTouchStart = (e) => {
-    if (window.scrollY <= 0 && !isRefreshing) {
+    if (isRefreshing || location.pathname !== '/') return;
+
+    let current = e.target;
+    let isAtTop = window.scrollY <= 0;
+
+    // Traverse up to see if any scrollable parent is not at the top
+    while (current && current !== document.body && current !== document.documentElement) {
+      if (current.scrollTop > 0) {
+        isAtTop = false;
+        break;
+      }
+      current = current.parentNode;
+    }
+
+    if (isAtTop) {
       startY.current = e.touches[0].clientY;
       isPulling.current = true;
       pullProgress.current = 0;

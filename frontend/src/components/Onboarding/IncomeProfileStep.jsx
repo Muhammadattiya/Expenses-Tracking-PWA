@@ -137,7 +137,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
               {t('onboarding.screen3Title')}
             </h2>
 
-            <form onSubmit={handleSave} className="flex-1 flex flex-col px-1 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <form onSubmit={handleSave} className="flex-1 flex flex-col px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               
               <div className="flex flex-col gap-3 pb-4">
                   {/* Income Name */}
