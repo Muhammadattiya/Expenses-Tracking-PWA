@@ -115,7 +115,18 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(self.clients.openWindow(safeUrl));
 });
 
-// Skip waiting for prompt-based updates
+// Rescue mechanism for clients stuck on old versions where the prompt was broken
+self.addEventListener('install', () => {
+  // Force the new service worker to immediately take over, bypassing the waiting state
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  // Force the new service worker to control all open tabs immediately
+  event.waitUntil(self.clients.claim());
+});
+
+// Skip waiting for prompt-based updates (for future versions when the rescue mechanism is removed)
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
