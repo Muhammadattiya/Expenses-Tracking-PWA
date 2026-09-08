@@ -20,11 +20,11 @@ export const ThemeProvider = ({ children }) => {
     if (theme === 'light') {
       root.classList.add('light');
       // Update mobile status bar notch color for Light Theme
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#8D6346');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#ffffff');
     } else {
       root.classList.remove('light');
       // Update mobile status bar notch color for Dark Theme
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#8D6346');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#141115');
     }
     localStorage.setItem('finova-theme', theme);
   }, [theme]);
