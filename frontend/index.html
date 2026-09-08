@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#8D6346" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,6 +31,8 @@
         </filter>
       </defs>
     </svg>
+    <!-- Fixed Copper Notch Area for iOS PWA -->
+    <div style="position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background-color: #8D6346; z-index: 9999; pointer-events: none;"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
