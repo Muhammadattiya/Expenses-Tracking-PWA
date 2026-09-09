@@ -36,6 +36,11 @@ db.version(6).stores({
   debtTransactions: '_id, debtId, user, account, type'
 });
 
+db.version(7).stores({
+  syncQueue: '++id, userId, method, url, data, timestamp'
+});
+
+
 export async function clearOfflineData() {
   await db.transactions.clear();
   await db.accounts.clear();

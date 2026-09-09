@@ -108,7 +108,6 @@ const ShortcutStep = ({ num, text, children }) => (
   </div>
 );
 
-const apiUrl = import.meta.env.VITE_API_URL || 'https://finova-zzr7.onrender.com/api';
 
 const Settings = () => {
   const { showToast } = useNotification();

@@ -6,8 +6,9 @@ const attachCookie = (res, token) => {
   res.cookie('jwt', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
   });
 };
 
@@ -83,11 +84,12 @@ exports.resetOnboarding = async (req, res, next) => {
 exports.logout = async (req, res, next) => {
   try {
     await authService.invalidateAllSessions(req.user.id);
-    res.cookie('jwt', 'loggedout', {
+    res.cookie('jwt', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-      expires: new Date(Date.now() + 10 * 1000)
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+      expires: new Date(0),
+      path: '/'
     });
     res.json({ success: true, message: 'Logged out successfully. All sessions have been invalidated.' });
   } catch (error) { next(error); }

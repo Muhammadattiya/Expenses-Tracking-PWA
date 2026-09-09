@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ErrorMessage from './ui/ErrorMessage';
 import { signInWithGoogle } from '../api/auth';
+import { handleUserSessionTransition } from '../utils/offlineSession';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 
@@ -24,6 +25,7 @@ export default function GoogleLoginButton() {
           try {
             setSignInError('');
             const result = await signInWithGoogle(credential);
+            await handleUserSessionTransition(result.user);
             localStorage.setItem('auth_user', JSON.stringify(result.user));
             // Trigger a hard reload to ensure context providers and state are fresh
             window.location.assign('/'); 
