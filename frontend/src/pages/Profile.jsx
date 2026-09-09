@@ -13,6 +13,7 @@ import AccountManagement from '../components/profile/AccountManagement';
 import CategoryManagement from '../components/profile/CategoryManagement';
 import IncomeAndRecurringManagement from '../components/profile/IncomeAndRecurringManagement';
 import TrackingCycleManagement from '../components/profile/TrackingCycleManagement';
+import { handleLogout } from '../utils/logout';
 
 export default function Profile() {
   const { t, language } = useLanguage();
@@ -99,8 +100,17 @@ export default function Profile() {
     }
   };
 
-  const logout = () => { 
-    window.location.assign('/login');
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const logout = async () => { 
+    if (loggingOut) return;
+    try {
+      setLoggingOut(true);
+      await handleLogout();
+    } catch (err) {
+      setStatus(err.message || t('profile.logoutError') || 'فشل تسجيل الخروج');
+      setLoggingOut(false);
+    }
   };
 
   const isRTL = language === 'ar';
@@ -261,9 +271,10 @@ export default function Profile() {
                 <motion.button 
                   whileTap={{ scale: 0.96 }}
                   onClick={logout} 
-                  className="w-full py-3 rounded-[30px] bg-brand-red/10 backdrop-blur-[10px] border border-brand-red/10 shadow-inner text-brand-red font-medium text-[14px] hover:bg-brand-red/20 transition-colors flex items-center justify-center gap-2"
+                  disabled={loggingOut}
+                  className="w-full py-3 rounded-[30px] bg-brand-red/10 backdrop-blur-[10px] border border-brand-red/10 shadow-inner text-brand-red font-medium text-[14px] hover:bg-brand-red/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={18} className={loggingOut ? "animate-spin" : ""} />
                   <span>{t('profile.logout')}</span>
                 </motion.button>
               </div>

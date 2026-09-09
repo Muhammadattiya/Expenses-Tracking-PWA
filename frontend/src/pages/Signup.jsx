@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { registerUser } from '../api/auth';
+import { handleUserSessionTransition } from '../utils/offlineSession';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import ErrorMessage from '../components/ui/ErrorMessage';
 
@@ -23,6 +24,7 @@ export default function Signup() {
     
     try {
       const result = await registerUser({ name, email, password });
+      await handleUserSessionTransition(result.user);
       localStorage.setItem('auth_user', JSON.stringify(result.user));
       window.location.assign('/'); 
     } catch (err) {

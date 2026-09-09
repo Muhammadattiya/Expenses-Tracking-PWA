@@ -1,5 +1,6 @@
 import api from './axios';
 import { db } from '../db/db';
+import { getActiveUserId } from '../utils/offlineSession';
 
 export const getDebts = async () => {
   try {
@@ -20,9 +21,14 @@ export const getDebts = async () => {
     
     return response.data;
   } catch (error) {
-    if (!error.response && error.message === 'Network Error') {
-      const debts = await db.debts.toArray();
-      const transactions = await db.debtTransactions.toArray();
+    if (!error.response || !navigator.onLine) {
+      const activeUserId = getActiveUserId();
+      const debts = activeUserId 
+        ? await db.debts.where('user').equals(activeUserId).toArray()
+        : await db.debts.toArray();
+      const transactions = activeUserId
+        ? await db.debtTransactions.where('user').equals(activeUserId).toArray()
+        : await db.debtTransactions.toArray();
       return { debts, transactions };
     }
     throw error;

@@ -115,9 +115,17 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(self.clients.openWindow(safeUrl));
 });
 
-// Skip waiting for prompt-based updates
-self.addEventListener('message', (event) => {
+// Service Worker message dispatcher
+self.addEventListener('message', async (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  if (event.data && event.data.type === 'CLEAR_USER_DATA') {
+    try {
+      await caches.delete('api-cache');
+    } catch (e) {
+      console.warn('SW failed to delete api-cache:', e);
+    }
+  }
 });
+
