@@ -118,24 +118,22 @@
 
 
 
+html,
 body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
 
+body {
   -webkit-tap-highlight-color: transparent;
-
   user-select: none;
-
   font-family: var(--font-sans);
-
   background-color: var(--color-background);
-
   color: var(--color-text-main);
-
   padding-top: env(safe-area-inset-top);
-
   padding-bottom: env(safe-area-inset-bottom);
-
   transition: background-color 0.3s ease, color 0.3s ease;
-
 }
 
 /* Global RTL Bidi Fixes */
