@@ -20,17 +20,17 @@ export default defineConfig({
       manifest: {
         name: 'Finova',
         short_name: 'Finova',
-        description: 'مدير المصروفات والاستثمارات الشخصي',
+        description: 'Finova, Personal Finance and Investment Manager',
         theme_color: '#141115',
         background_color: '#141115',
         display: 'standalone',
         orientation: 'portrait',
-        lang: 'ar',
-        dir: 'rtl',
+        lang: 'en',
+        dir: 'ltr',
         icons: [
-          { src: '/favicon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/apple-touch-icon-180x180.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           { src: '/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ],
       },

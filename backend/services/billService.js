@@ -1,4 +1,6 @@
 const Bill = require('../models/Bill');
+const Account = require('../models/Account');
+const Category = require('../models/Category');
 
 exports.getBills = async (userId) => {
   return await Bill.find({ user: userId })
@@ -8,8 +10,25 @@ exports.getBills = async (userId) => {
 };
 
 exports.createBill = async (userId, data) => {
+  const allowedFields = ['name', 'expectedAmount', 'category', 'account', 'notes', 'dueDate', 'repeat', 'reminderEnabled', 'reminderDaysBefore', 'notificationEnabled', 'isActive'];
+  const billData = {};
+  for (const field of allowedFields) {
+    if (data[field] !== undefined) {
+      billData[field] = data[field];
+    }
+  }
+
+  if (billData.account) {
+    const acc = await Account.findOne({ _id: billData.account, user: userId });
+    if (!acc) throw new Error('Invalid account reference');
+  }
+  if (billData.category) {
+    const cat = await Category.findOne({ _id: billData.category, user: userId });
+    if (!cat) throw new Error('Invalid category reference');
+  }
+
   const bill = new Bill({
-    ...data,
+    ...billData,
     user: userId,
   });
 
@@ -24,8 +43,25 @@ exports.updateBill = async (userId, id, data) => {
   const bill = await Bill.findOne({ _id: id, user: userId });
   if (!bill) throw new Error('Bill not found');
 
-  Object.assign(bill, data);
-  if (data.dueDate) {
+  const allowedFields = ['name', 'expectedAmount', 'category', 'account', 'notes', 'dueDate', 'repeat', 'reminderEnabled', 'reminderDaysBefore', 'notificationEnabled', 'isActive'];
+  const updateData = {};
+  for (const field of allowedFields) {
+    if (data[field] !== undefined) {
+      updateData[field] = data[field];
+    }
+  }
+
+  if (updateData.account) {
+    const acc = await Account.findOne({ _id: updateData.account, user: userId });
+    if (!acc) throw new Error('Invalid account reference');
+  }
+  if (updateData.category) {
+    const cat = await Category.findOne({ _id: updateData.category, user: userId });
+    if (!cat) throw new Error('Invalid category reference');
+  }
+
+  Object.assign(bill, updateData);
+  if (updateData.dueDate) {
     bill.status = calculateBillStatus(bill.dueDate);
   }
   await bill.save();

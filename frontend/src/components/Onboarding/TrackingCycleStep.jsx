@@ -180,7 +180,7 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full flex-1 flex flex-col items-center justify-center py-6 overflow-y-auto no-scrollbar"
+        className="w-full flex-1 flex flex-col items-center justify-center py-6 no-scrollbar"
       >
         {/* Large Logo / Illustration Area */}
         <div className="w-full flex justify-center items-center relative shrink-0 mt-8 mb-4">

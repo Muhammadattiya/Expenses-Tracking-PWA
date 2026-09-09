@@ -58,7 +58,46 @@ export default function CalculatorModal({ isOpen, onClose, onSave, initialValue 
   const calculateResult = () => {
     if (!expression) return;
     try {
-      const result = new Function(`return ${expression}`)();
+      const evaluateExpression = (expr) => {
+        const tokens = expr.match(/(\d+\.?\d*)|([\+\-\*\/])/g);
+        if (!tokens) return NaN;
+        
+        if (tokens[0] === '-') {
+          tokens.unshift('0');
+        }
+
+        let i = 0;
+        while (i < tokens.length) {
+          if (tokens[i] === '*' || tokens[i] === '/') {
+            const a = parseFloat(tokens[i - 1]);
+            const b = parseFloat(tokens[i + 1]);
+            if (isNaN(a) || isNaN(b)) return NaN;
+            const res = tokens[i] === '*' ? a * b : a / b;
+            tokens.splice(i - 1, 3, res.toString());
+            i -= 1;
+          } else {
+            i++;
+          }
+        }
+
+        i = 0;
+        while (i < tokens.length) {
+          if (tokens[i] === '+' || tokens[i] === '-') {
+            const a = parseFloat(tokens[i - 1]);
+            const b = parseFloat(tokens[i + 1]);
+            if (isNaN(a) || isNaN(b)) return NaN;
+            const res = tokens[i] === '+' ? a + b : a - b;
+            tokens.splice(i - 1, 3, res.toString());
+            i -= 1;
+          } else {
+            i++;
+          }
+        }
+
+        return parseFloat(tokens[0]);
+      };
+
+      const result = evaluateExpression(expression);
       if (!isFinite(result) || isNaN(result)) {
         throw new Error('Invalid calculation');
       }

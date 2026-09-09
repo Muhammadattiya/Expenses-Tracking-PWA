@@ -1,6 +1,6 @@
 const transactionService = require("../services/transactionService");
 
-const getTransactions = async (req, res) => {
+const getTransactions = async (req, res, next) => {
   try {
     const isPaginatedRequest = req.query.cursor !== undefined || req.query.limit !== undefined;
     const transactions = isPaginatedRequest
@@ -15,7 +15,7 @@ const getTransactions = async (req, res) => {
   }
 };
 
-const createTransaction = async (req, res) => {
+const createTransaction = async (req, res, next) => {
   try {
     const transaction = await transactionService.createTransaction(req.user.id, req.body);
 
@@ -27,7 +27,7 @@ const createTransaction = async (req, res) => {
   }
 };
 
-const updateTransaction = async (req, res) => {
+const updateTransaction = async (req, res, next) => {
   try {
     const transaction = await transactionService.updateTransaction(
       req.user.id, req.params.id,
@@ -42,7 +42,7 @@ const updateTransaction = async (req, res) => {
   }
 };
 
-const deleteTransaction = async (req, res) => {
+const deleteTransaction = async (req, res, next) => {
   try {
     await transactionService.deleteTransaction(req.user.id, req.params.id);
 
@@ -58,7 +58,7 @@ const deleteTransaction = async (req, res) => {
   }
 };
 
-const importTransactions = async (req, res) => {
+const importTransactions = async (req, res, next) => {
   try {
     const result = await transactionService.importTransactions(req.user.id, req.body);
 

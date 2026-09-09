@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     unique: true, 
     sparse: true, 
     index: true,
-    default: () => require('crypto').randomBytes(16).toString('hex')
+    select: false // Hide by default
   },
   shortcutTokenHash: {
     type: String,

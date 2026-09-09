@@ -9,6 +9,49 @@ const { resolveMerchantIntent } = require('../services/merchantIntelligence/merc
 const { normalizeMerchantToken } = require('../services/merchantIntelligence/merchantNormalizer');
 const { resolveCategory } = require('../services/quickAdd/intentResolver');
 
+// Manage SMS Webhook Token (SEC-006)
+exports.generateToken = async (req, res, next) => {
+  try {
+    const rawToken = crypto.randomBytes(16).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.smsWebhookToken = hashedToken;
+    await user.save();
+
+    res.json({ token: rawToken, message: 'Token generated successfully. Please save it now.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.revokeToken = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.smsWebhookToken = undefined;
+    await user.save();
+
+    res.json({ message: 'Token revoked successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getTokenStatus = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('+smsWebhookToken');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ isConnected: !!user.smsWebhookToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Redact sensitive PII from raw SMS before storage
 const redactSensitiveInfo = (text) => {
   return text
@@ -17,7 +60,7 @@ const redactSensitiveInfo = (text) => {
     .replace(/(من|إلى)\s+[\u0600-\u06FF\s*]+(?=\s+رقم مرجعي)/gi, '$1 ***'); // Person names
 };
 
-exports.handleSmsWebhook = async (req, res) => {
+exports.handleSmsWebhook = async (req, res, next) => {
   try {
     const { userToken } = req.params;
     
@@ -33,7 +76,9 @@ exports.handleSmsWebhook = async (req, res) => {
       return res.status(400).json({ message: 'Empty SMS body' });
     }
 
-    const user = await User.findOne({ smsWebhookToken: userToken });
+    // SEC-006: SMS Webhook Token Security (Hash before lookup)
+    const hashedWebhookToken = crypto.createHash('sha256').update(userToken).digest('hex');
+    const user = await User.findOne({ smsWebhookToken: hashedWebhookToken });
     if (!user) {
       return res.status(404).json({ message: 'Invalid webhook token' });
     }
@@ -75,19 +120,27 @@ exports.handleSmsWebhook = async (req, res) => {
       }
     }
 
-    const newTx = await Transaction.create({
-      user: user._id,
-      title: parsedData.merchant || 'معاملة SMS (تحتاج مراجعة)',
-      normalizedMerchant: parsedData.merchant ? normalizeMerchantToken(parsedData.merchant) : null,
-      amount: parsedData.amount,
-      type: parsedData.type,
-      account: accountId,
-      category: categoryId,
-      source: 'sms_shortcut',
-      referenceNumber: parsedData.referenceNumber,
-      rawSms: redactSensitiveInfo(smsText),
-      smsHash: smsHash
-    });
+    let newTx;
+    try {
+      newTx = await Transaction.create({
+        user: user._id,
+        title: parsedData.merchant || 'معاملة SMS (تحتاج مراجعة)',
+        normalizedMerchant: parsedData.merchant ? normalizeMerchantToken(parsedData.merchant) : null,
+        amount: parsedData.amount,
+        type: parsedData.type,
+        account: accountId,
+        category: categoryId,
+        source: 'sms_shortcut',
+        referenceNumber: parsedData.referenceNumber,
+        rawSms: redactSensitiveInfo(smsText),
+        smsHash: smsHash
+      });
+    } catch (createErr) {
+      if (createErr.code === 11000 && createErr.keyPattern && createErr.keyPattern.smsHash) {
+        return res.status(200).json({ message: 'Transaction already exists (deduplicated by index)' });
+      }
+      throw createErr;
+    }
 
     console.log(`[SMS Webhook] merchant="${newTx.title}" cardLast4="${parsedData.cardLast4}" accountMatched=${!!accountId}`);
 
@@ -108,6 +161,6 @@ exports.handleSmsWebhook = async (req, res) => {
   } catch (error) {
     console.error('[ERROR] SMS Webhook:', error.message);
     console.error('[ERROR] Stack:', error.stack);
-    res.status(500).json({ message: 'An error occurred processing the SMS.' });
+    next(error);
   }
 };

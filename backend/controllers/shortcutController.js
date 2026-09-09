@@ -73,7 +73,7 @@ exports.getAccounts = async (req, res, next) => {
     res.json(accountNames);
   } catch (error) {
     console.error('[ERROR] shortcut getAccounts:', error);
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 };
 
@@ -85,7 +85,7 @@ exports.getCategories = async (req, res, next) => {
     res.json(categoryNames);
   } catch (error) {
     console.error('[ERROR] shortcut getCategories:', error);
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 };
 
@@ -178,6 +178,6 @@ exports.createTransaction = async (req, res, next) => {
       return res.status(200).json({ message: 'Transaction already processed (concurrent request)' });
     }
 
-    res.status(500).json({ message: 'Server error during transaction creation' });
+    next(error);
   }
 };

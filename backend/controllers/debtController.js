@@ -1,12 +1,21 @@
 const Debt = require('../models/Debt');
 const DebtTransaction = require('../models/DebtTransaction');
+const Account = require('../models/Account');
 
-exports.createDebt = async (req, res) => {
+exports.createDebt = async (req, res, next) => {
   try {
     const { personName, type, amount, account, date, notes } = req.body;
     
     if (!amount || amount <= 0) {
       return res.status(400).json({ message: 'Amount must be greater than 0' });
+    }
+
+    // SEC-005: Validate Account Ownership
+    if (account) {
+      const accountDoc = await Account.findOne({ _id: account, user: req.user.id });
+      if (!accountDoc) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
     }
 
     const debt = new Debt({
@@ -39,11 +48,11 @@ exports.createDebt = async (req, res) => {
     res.status(201).json({ debt, transaction });
   } catch (err) {
     console.error('[ERROR] createDebt:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 };
 
-exports.getDebts = async (req, res) => {
+exports.getDebts = async (req, res, next) => {
   try {
     const debts = await Debt.find({ user: req.user.id }).sort({ createdAt: -1 });
     const debtIds = debts.map(d => d._id);
@@ -52,11 +61,11 @@ exports.getDebts = async (req, res) => {
     res.json({ debts, transactions });
   } catch (err) {
     console.error('[ERROR] getDebts:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 };
 
-exports.addTransaction = async (req, res) => {
+exports.addTransaction = async (req, res, next) => {
   try {
     const { debtId } = req.params;
     const { amount, type, account, date, notes } = req.body;
@@ -66,6 +75,14 @@ exports.addTransaction = async (req, res) => {
     
     if (amount <= 0) return res.status(400).json({ message: 'Amount must be greater than 0' });
     
+    // SEC-005: Validate Account Ownership
+    if (account) {
+      const accountDoc = await Account.findOne({ _id: account, user: req.user.id });
+      if (!accountDoc) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
+    }
+
     const transaction = new DebtTransaction({
       user: req.user.id,
       debtId,
@@ -99,11 +116,11 @@ exports.addTransaction = async (req, res) => {
     res.status(201).json({ debt, transaction });
   } catch (err) {
     console.error('[ERROR] addTransaction:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 };
 
-exports.deleteDebt = async (req, res) => {
+exports.deleteDebt = async (req, res, next) => {
   try {
     const { debtId } = req.params;
     const debt = await Debt.findOneAndDelete({ _id: debtId, user: req.user.id });
@@ -114,11 +131,11 @@ exports.deleteDebt = async (req, res) => {
     res.json({ message: 'Debt deleted successfully' });
   } catch (err) {
     console.error('[ERROR] deleteDebt:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 };
 
-exports.updateDebt = async (req, res) => {
+exports.updateDebt = async (req, res, next) => {
   try {
     const { debtId } = req.params;
     const { personName, type } = req.body;
@@ -133,6 +150,6 @@ exports.updateDebt = async (req, res) => {
     res.json({ debt });
   } catch (err) {
     console.error('[ERROR] updateDebt:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 };

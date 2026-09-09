@@ -66,7 +66,13 @@ const recurringTransactionSchema = new mongoose.Schema({
   },
   interval: {
     type: Number,
-    default: 1
+    default: 1,
+    min: [1, 'Interval must be at least 1'],
+    max: [365, 'Interval cannot exceed 365'],
+    validate: {
+      validator: Number.isInteger,
+      message: '{VALUE} is not an integer value'
+    }
   },
   startDate: {
     type: Date,

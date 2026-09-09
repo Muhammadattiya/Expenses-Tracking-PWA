@@ -25,7 +25,7 @@ const bgSyncPlugin = new BackgroundSyncPlugin('api-syncQueue', {
 
 // For mutations (POST, PUT, DELETE), use NetworkOnly with background sync
 registerRoute(
-  ({ request, url }) => url.pathname.startsWith('/api/') && ['POST', 'PUT', 'DELETE'].includes(request.method),
+  ({ request, url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/auth/') && ['POST', 'PUT', 'DELETE'].includes(request.method),
   new NetworkOnly({
     plugins: [bgSyncPlugin],
   })
@@ -33,7 +33,7 @@ registerRoute(
 
 // For GET requests to the API, use NetworkFirst so it falls back to cache if offline
 registerRoute(
-  ({ request, url }) => url.pathname.startsWith('/api/') && request.method === 'GET',
+  ({ request, url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/auth/') && request.method === 'GET',
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [
@@ -115,9 +115,17 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(self.clients.openWindow(safeUrl));
 });
 
-// Skip waiting for prompt-based updates
-self.addEventListener('message', (event) => {
+// Service Worker message dispatcher
+self.addEventListener('message', async (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  if (event.data && event.data.type === 'CLEAR_USER_DATA') {
+    try {
+      await caches.delete('api-cache');
+    } catch (e) {
+      console.warn('SW failed to delete api-cache:', e);
+    }
+  }
 });
+

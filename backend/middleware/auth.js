@@ -3,7 +3,13 @@ const User = require('../models/User');
 const AppError = require('../utils/AppError');
 
 module.exports = async (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
+  let token;
+  if (req.cookies && req.cookies.jwt) {
+    token = req.cookies.jwt;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.replace('Bearer ', '');
+  }
+
   if (!token) return next(new AppError('Authentication required.', 401));
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
