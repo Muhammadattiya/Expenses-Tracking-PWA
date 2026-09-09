@@ -130,15 +130,15 @@ body {
 }
 
 /* Global RTL Bidi Fixes */
-html[dir="rtl"] p, 
-html[dir="rtl"] span, 
-html[dir="rtl"] h1, 
-html[dir="rtl"] h2, 
-html[dir="rtl"] h3, 
-html[dir="rtl"] h4, 
-html[dir="rtl"] h5, 
-html[dir="rtl"] h6, 
-html[dir="rtl"] label, 
+html[dir="rtl"] p,
+html[dir="rtl"] span,
+html[dir="rtl"] h1,
+html[dir="rtl"] h2,
+html[dir="rtl"] h3,
+html[dir="rtl"] h4,
+html[dir="rtl"] h5,
+html[dir="rtl"] h6,
+html[dir="rtl"] label,
 html[dir="rtl"] li {
   unicode-bidi: plaintext;
 }
@@ -147,6 +147,7 @@ html[dir="rtl"] li {
 html[dir="rtl"] .text-left {
   text-align: right !important;
 }
+
 html[dir="rtl"] .text-right {
   text-align: left !important;
 }
@@ -212,17 +213,31 @@ html.light {
 
 
 .field {
-
-  @apply w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text-main)] outline-none focus:border-[#8D6346] focus:shadow-[0_0_12px_rgba(141,99,70,0.3)] transition-all duration-300;
-
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding: 0.75rem 1rem;
+  color: var(--color-text-main);
+  outline: none;
+  transition: all 300ms;
 }
 
-
+.field:focus {
+  border-color: #8D6346;
+  box-shadow: 0 0 12px rgba(141, 99, 70, 0.3);
+}
 
 .glass-panel {
+  background-color: var(--color-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+}
 
-  @apply bg-[var(--color-surface)] backdrop-blur-2xl border border-[var(--color-border)] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-xl;
-
+.dark .glass-panel {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
 
 
