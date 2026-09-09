@@ -9,19 +9,24 @@ export default function SplashScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#141115] overflow-hidden p-6 select-none"
+      className="fixed inset-0 z-[100] w-full max-w-full h-[100dvh] max-h-[100dvh] flex items-center justify-center bg-[#141115] overflow-hidden overscroll-none touch-none select-none p-6"
     >
       {/* Ambient Theme Background Glows */}
       <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
         <motion.div 
-          animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.55, 0.35] }}
+          animate={{ scale: [1, 1.12, 1], opacity: [0.65, 0.85, 0.65] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] -right-[15%] w-[320px] h-[320px] bg-[#8D6346] rounded-full blur-[120px]" 
+          className="absolute -top-10 -left-10 w-72 h-72 bg-[#8D6346] rounded-full filter blur-[140px]" 
         />
         <motion.div 
-          animate={{ scale: [1.15, 1, 1.15], opacity: [0.3, 0.5, 0.3] }}
+          animate={{ scale: [1.12, 1, 1.12], opacity: [0.65, 0.85, 0.65] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute bottom-[20%] -left-[15%] w-[340px] h-[340px] bg-[#8D6346] rounded-full blur-[130px]" 
+          className="absolute -bottom-16 -right-16 w-80 h-80 bg-[#8D6346] rounded-full filter blur-[150px]" 
+        />
+        <motion.div 
+          animate={{ opacity: [0.4, 0.65, 0.4] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-96 h-56 bg-[#8D6346] rounded-full filter blur-[140px]" 
         />
       </div>
 

@@ -27,7 +27,7 @@ export default function AuthLayout() {
       <div 
         className={`w-full max-w-sm px-5 sm:px-6 relative z-10 flex flex-col items-center ${
           isWelcome 
-            ? 'h-full max-h-[100dvh] pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] justify-between min-h-0 overflow-hidden' 
+            ? 'h-full max-h-[100dvh] pt-[max(1.5rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(3rem,calc(env(safe-area-inset-bottom)+2rem))] justify-between min-h-0 overflow-hidden' 
             : ''
         }`}
       >
