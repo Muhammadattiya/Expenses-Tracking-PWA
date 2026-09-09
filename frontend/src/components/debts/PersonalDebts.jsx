@@ -130,14 +130,14 @@ export default function PersonalDebts() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-[17px] font-medium text-white/90">{t('debts.personalDebtsList')}</h2>
         
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {/* Segmented Control Filter */}
           <div className="flex bg-black/20 p-1 rounded-full shadow-inner relative flex-1 sm:flex-none">
             {['all', 'active', 'settled'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-full text-xs font-bold transition-colors relative z-10 capitalize ${filter === f ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-full text-xs font-bold transition-colors relative z-10 capitalize ${filter === f ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
               >
                 {filter === f && <motion.div layoutId="pdFilter" className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
                 {f === 'all' ? t('debts.all', 'All') : t(`debts.${f}`)}
@@ -148,7 +148,7 @@ export default function PersonalDebts() {
           <motion.button 
             whileTap={{ scale: 0.95 }}
             onClick={() => setModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 rounded-full bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 shadow-inner px-4 py-2 font-medium text-sm text-[#8D6346] hover:bg-[#8D6346]/30 transition-colors whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 rounded-full bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 shadow-inner px-4 py-2 font-medium text-sm text-[#8D6346] hover:bg-[#8D6346]/30 transition-colors whitespace-nowrap shrink-0"
           >
             <Plus size={16} /> <span>{t('debts.addDebt')}</span>
           </motion.button>
