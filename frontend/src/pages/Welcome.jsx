@@ -56,7 +56,7 @@ export default function Welcome() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="w-full max-w-[200px] xs:max-w-[220px] flex flex-col items-stretch gap-3 sm:gap-4 shrink-0 mt-auto pb-2 sm:pb-4 pointer-events-auto"
+        className="w-full max-w-[210px] xs:max-w-[230px] flex flex-col items-stretch gap-3.5 sm:gap-4 shrink-0 pointer-events-auto"
       >
         <div className="flex flex-col gap-3 sm:gap-4">
           <motion.div whileTap={{ scale: 0.95 }} className="w-full">
