@@ -118,6 +118,10 @@
 
 
 
+html {
+  background-color: #141115;
+}
+
 body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;

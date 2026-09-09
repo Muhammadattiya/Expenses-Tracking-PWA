@@ -9,25 +9,12 @@ export default function SplashScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="fixed inset-0 top-0 bottom-0 left-0 right-0 z-[100] w-full min-h-screen flex items-center justify-center bg-[#141115] overflow-hidden overscroll-none touch-none select-none p-6"
+      className="fixed inset-0 z-[100] w-full min-h-screen flex items-center justify-center bg-[#141115] overflow-hidden overscroll-none touch-none select-none p-6"
     >
-      {/* Ambient Theme Background Glows */}
-      <div className="absolute inset-0 top-0 bottom-0 left-0 right-0 pointer-events-none overflow-hidden">
-        <motion.div 
-          animate={{ scale: [1, 1.12, 1], opacity: [0.65, 0.85, 0.65] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-10 -left-10 w-72 h-72 bg-[#8D6346] rounded-full filter blur-[140px]" 
-        />
-        <motion.div 
-          animate={{ scale: [1.12, 1, 1.12], opacity: [0.65, 0.85, 0.65] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute -bottom-16 -right-16 w-80 h-80 bg-[#8D6346] rounded-full filter blur-[150px]" 
-        />
-        <motion.div 
-          animate={{ opacity: [0.45, 0.7, 0.45] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[120%] h-64 bg-[#8D6346] rounded-full filter blur-[140px]" 
-        />
+      {/* Figma Background Effects - Exactly matching Dashboard */}
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115]">
+        <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
+        <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
       </div>
 
       {/* Content Wrapper */}
