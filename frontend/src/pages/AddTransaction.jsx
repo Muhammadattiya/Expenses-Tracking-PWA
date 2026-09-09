@@ -193,7 +193,7 @@ const AddTransaction = () => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden relative select-none bg-[#141115]">
+    <div className="w-full h-full flex flex-col overflow-hidden relative select-none bg-[#141115] overscroll-none">
       {/* Ambient Copper Background exactly like Settings & Dashboard */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
@@ -201,8 +201,8 @@ const AddTransaction = () => {
       </div>
 
       {/* Top Segmented Control (Expense / Income / Transfer) */}
-      <div className="px-4 pt-2.5 pb-1.5 shrink-0 z-20">
-        <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative max-w-[340px] mx-auto w-full h-[38px] sm:h-[42px] items-center">
+      <div className="px-4 pt-2 pb-1 shrink-0 z-20">
+        <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative max-w-[340px] mx-auto w-full h-[38px] sm:h-[40px] items-center">
           {[
             { key: 'expense', label: t('addTransaction.expense'), color: '#FF5555', shadow: 'rgba(255,85,85,0.45)' },
             { key: 'income', label: t('addTransaction.income'), color: '#34C759', shadow: 'rgba(52,199,89,0.45)' },
@@ -237,24 +237,24 @@ const AddTransaction = () => {
       </div>
 
       {/* Main Glass Container */}
-      <div className="w-full flex-1 min-h-0 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-t-[32px] border-t border-white/10 px-4 sm:px-6 pt-2 sm:pt-3 pb-[calc(86px+env(safe-area-inset-bottom,0px))] flex flex-col overflow-hidden relative z-10">
+      <div className="w-full flex-1 min-h-0 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-t-[32px] border-t border-white/10 px-4 sm:px-5 pt-2.5 sm:pt-3 pb-[88px] sm:pb-[94px] flex flex-col overflow-hidden relative z-10">
 
-        {/* Form Fields Area with justify-between across the entire viewport */}
-        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col justify-between w-full">
+        {/* Form Fields Area - Full Height & Width Adaptive Fill */}
+        <form onSubmit={handleSubmit} className="w-full flex-1 min-h-0 flex flex-col justify-between">
 
           {/* 1. Amount Section */}
           <div className="flex flex-col items-center justify-center shrink-0">
-            <label className="text-[12px] sm:text-[13px] font-medium text-white/70 tracking-wide mb-0.5 text-center">
+            <label className="text-[12px] font-medium text-white/70 tracking-wide mb-1 text-center">
               {t('addTransaction.amount')}
             </label>
-            <div className="flex items-center justify-center gap-2.5 relative w-full h-[clamp(44px,5.5vh,54px)]">
+            <div className="flex items-center justify-center gap-2 relative w-full h-[56px] sm:h-[60px]">
               <button
                 type="button"
                 onClick={() => setShowCalculator(true)}
                 className="absolute start-1 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner text-white/60 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all active:scale-95"
                 aria-label={t('common.calculator')}
               >
-                <Calculator className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <Calculator className="w-4 h-4" />
               </button>
               <input
                 type="number"
@@ -263,22 +263,22 @@ const AddTransaction = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="bg-transparent text-center text-[clamp(36px,5.2vh,48px)] font-bold text-white focus:outline-none w-[auto] min-w-[80px] max-w-[240px] placeholder-white/25 tracking-tight leading-none h-full tabular-nums"
+                className="bg-transparent text-center text-[38px] sm:text-[42px] font-bold text-white focus:outline-none w-[auto] min-w-[70px] max-w-[220px] placeholder-white/25 tracking-tight leading-none h-full tabular-nums"
                 style={{ caretColor: type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF' }}
               />
-              <span className="text-[13px] sm:text-[15px] text-white/85 font-semibold self-end mb-1">
+              <span className="text-[13px] sm:text-[14px] text-white/80 font-semibold self-end mb-1">
                 {t('nav.currency')}
               </span>
             </div>
-            <div className="w-[80%] max-w-[240px] h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent mx-auto mt-1" />
+            <div className="w-[60%] max-w-[180px] h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent mx-auto mt-1" />
           </div>
 
           {/* 2. Date Segmented Control */}
           <div className="shrink-0">
-            <label className="block text-[12px] sm:text-[13px] font-medium text-white/75 mb-0.5 px-1">
+            <label className="block text-[12px] font-medium text-white/70 mb-1 px-1">
               {t('addTransaction.date')}
             </label>
-            <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative h-[clamp(36px,4.5vh,42px)] items-center">
+            <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative h-[40px] sm:h-[42px] items-center">
               {[
                 { key: 'today', label: t('addTransaction.today'), active: isToday, onClick: () => setDate(todayStr) },
                 { key: 'yesterday', label: t('addTransaction.yesterday'), active: isYesterday, onClick: () => setDate(yesterdayStr) },
@@ -291,7 +291,7 @@ const AddTransaction = () => {
                     key={tab.key}
                     type="button"
                     onClick={tab.onClick}
-                    className="relative flex-1 h-full rounded-full text-[12px] sm:text-[13px] font-medium transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
+                    className="relative flex-1 h-full rounded-full text-[13px] sm:text-[14px] font-medium transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
                   >
                     {tab.active && (
                       <motion.div
@@ -315,7 +315,7 @@ const AddTransaction = () => {
 
           {/* 3. Description Input */}
           <div className="shrink-0">
-            <label className="block text-[12px] sm:text-[13px] font-medium text-white/75 mb-0.5 px-1">
+            <label className="block text-[12px] font-medium text-white/70 mb-1 px-1">
               {t('addTransaction.description')}
             </label>
             <input
@@ -323,7 +323,7 @@ const AddTransaction = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('addTransaction.descPlaceholder')}
-              className="w-full h-[clamp(38px,4.8vh,46px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 text-[13px] sm:text-[14px] text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
+              className="w-full h-[44px] sm:h-[46px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[14px] sm:text-[14.5px] text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
             />
           </div>
 
@@ -331,7 +331,7 @@ const AddTransaction = () => {
           {type === 'transfer' ? (
             <>
               <div className="shrink-0">
-                <label className="block text-[12px] sm:text-[13px] font-medium text-white/75 mb-0.5 px-1 truncate">
+                <label className="block text-[12px] font-medium text-white/70 mb-1 px-1 truncate">
                   {t('addTransaction.fromAccount')}
                 </label>
                 <CustomSelect
@@ -339,11 +339,11 @@ const AddTransaction = () => {
                   onChange={setFromAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.fromAccountPlaceholder')}
-                  buttonClassName="w-full h-[clamp(38px,4.8vh,46px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 text-[13px] sm:text-[14px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[44px] sm:h-[46px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[14px] sm:text-[14.5px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
               <div className="shrink-0">
-                <label className="block text-[12px] sm:text-[13px] font-medium text-white/75 mb-0.5 px-1 truncate">
+                <label className="block text-[12px] font-medium text-white/70 mb-1 px-1 truncate">
                   {t('addTransaction.toAccount')}
                 </label>
                 <CustomSelect
@@ -351,14 +351,14 @@ const AddTransaction = () => {
                   onChange={setToAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.toAccountPlaceholder')}
-                  buttonClassName="w-full h-[clamp(38px,4.8vh,46px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 text-[13px] sm:text-[14px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[44px] sm:h-[46px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[14px] sm:text-[14.5px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
             </>
           ) : (
             <>
               <div className="shrink-0">
-                <label className="block text-[12px] sm:text-[13px] font-medium text-white/75 mb-0.5 px-1 truncate">
+                <label className="block text-[12px] font-medium text-white/70 mb-1 px-1 truncate">
                   {t('addTransaction.account')}
                 </label>
                 <CustomSelect
@@ -366,12 +366,12 @@ const AddTransaction = () => {
                   onChange={setAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.accountPlaceholder')}
-                  buttonClassName="w-full h-[clamp(38px,4.8vh,46px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 text-[13px] sm:text-[14px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[44px] sm:h-[46px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[14px] sm:text-[14.5px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
 
               <div className="shrink-0">
-                <label className="block text-[12px] sm:text-[13px] font-medium text-white/75 mb-0.5 px-1 truncate">
+                <label className="block text-[12px] font-medium text-white/70 mb-1 px-1 truncate">
                   {t('addTransaction.category')}
                 </label>
                 <CustomSelect
@@ -379,46 +379,45 @@ const AddTransaction = () => {
                   onChange={setCategory}
                   options={categories[type] ? categories[type].map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon })) : []}
                   placeholder={t('addTransaction.categoryPlaceholder')}
-                  buttonClassName="w-full h-[clamp(38px,4.8vh,46px)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 text-[13px] sm:text-[14px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-[44px] sm:h-[46px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[14px] sm:text-[14.5px] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
             </>
           )}
 
-          {/* 6. Recurring Settings Button */}
-          <div className="shrink-0">
+          {/* Lower Action Buttons Group - Unified Pill Design */}
+          <div className="flex flex-col gap-2 shrink-0 mb-1 sm:mb-1.5">
+            {/* 6. Recurring Settings Button */}
             {recurringSettings.repeatType === 'never' ? (
               <button
                 type="button"
                 onClick={() => setIsRecurringModalOpen(true)}
-                className="w-full h-[clamp(36px,4.5vh,44px)] flex items-center justify-center gap-2 border border-dashed border-white/10 hover:border-white/20 rounded-[30px] bg-black/20 backdrop-blur-[10px] shadow-inner transition-all duration-200 active:scale-[0.98]"
+                className="w-full h-[44px] sm:h-[46px] flex items-center justify-center gap-2 border border-dashed border-white/15 hover:border-white/25 rounded-full bg-black/20 backdrop-blur-[10px] shadow-inner transition-all duration-200 active:scale-[0.98]"
               >
                 <Repeat className="w-4 h-4 text-white/60" />
-                <span className="text-[12px] sm:text-[13px] font-medium text-white/75">{t('recurring.addBtn')}</span>
+                <span className="text-[13.5px] sm:text-[14px] font-semibold text-white/75">{t('recurring.addBtn')}</span>
               </button>
             ) : (
-              <div className="w-full h-[clamp(36px,4.5vh,44px)] flex items-center justify-between px-4 border border-dashed border-[#8D6346]/40 rounded-[30px] bg-[#8D6346]/10 backdrop-blur-[10px] shadow-inner transition-all duration-200">
+              <div className="w-full h-[44px] sm:h-[46px] flex items-center justify-between px-4 border border-dashed border-[#8D6346]/40 rounded-full bg-[#8D6346]/10 backdrop-blur-[10px] shadow-inner transition-all duration-200">
                 <div className="flex items-center gap-2">
                   <Repeat className="w-4 h-4 text-[#E8C5A8]" />
-                  <span className="text-[12px] sm:text-[13px] font-medium text-[#E8C5A8]">{t('recurring.settings')}</span>
+                  <span className="text-[13.5px] sm:text-[14px] font-semibold text-[#E8C5A8]">{t('recurring.settings')}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsRecurringModalOpen(true)}
-                  className="px-3 py-1 bg-[#8D6346] hover:bg-[#734e35] rounded-full text-[12px] font-medium text-white transition-colors"
+                  className="px-3.5 py-1 bg-[#8D6346] hover:bg-[#734e35] rounded-full text-[12px] font-medium text-white transition-colors"
                 >
                   {t('recurring.edit')}
                 </button>
               </div>
             )}
-          </div>
 
-          {/* 7. Confirm & Save Button */}
-          <div className="shrink-0">
+            {/* 7. Confirm & Save Button */}
             <motion.button
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.96 }}
               type="submit"
-              className="w-full h-[clamp(44px,5.5vh,50px)] rounded-[30px] font-bold text-[15px] sm:text-[16px] text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 hover:bg-[#8D6346]/30 flex items-center justify-center gap-2"
+              className="w-full h-[46px] sm:h-[48px] rounded-full font-bold text-[15px] sm:text-[16px] text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/25 backdrop-blur-[10px] border border-[#8D6346]/40 hover:bg-[#8D6346]/35 flex items-center justify-center gap-2"
             >
               {t('addTransaction.submit')}
             </motion.button>
