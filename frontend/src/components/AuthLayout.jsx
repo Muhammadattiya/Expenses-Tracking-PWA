@@ -3,9 +3,11 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 export default function AuthLayout() {
   const { language } = useLanguage();
-  const userHint = localStorage.getItem('auth_user');
-    
-  if (userHint) {
+  const location = useLocation();
+  const token = localStorage.getItem('auth_token');
+  const isWelcome = location.pathname === '/welcome';
+  
+  if (token) {
     return <Navigate to="/" replace />;
   }
   
