@@ -105,7 +105,7 @@ transactionSchema.index({ user: 1, type: 1, date: -1 });
 transactionSchema.index({ user: 1, account: 1, date: -1 });
 transactionSchema.index({ user: 1, category: 1, date: -1 });
 transactionSchema.index({ user: 1, normalizedMerchant: 1, category: 1 });
-transactionSchema.index({ user: 1, smsHash: 1 }, { sparse: true });
+transactionSchema.index({ user: 1, smsHash: 1 }, { unique: true, partialFilterExpression: { smsHash: { $type: 'string' } } });
 transactionSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

@@ -7,7 +7,6 @@ export const handleLogout = async () => {
     await logoutUser().catch(console.error);
     
     // 2. Clear localStorage
-    localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
     
     // 3. Clear IndexedDB (offline data)

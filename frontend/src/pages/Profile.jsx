@@ -100,8 +100,7 @@ export default function Profile() {
   };
 
   const logout = () => { 
-    localStorage.removeItem('auth_token'); 
-    window.location.assign('/'); 
+    window.location.assign('/login');
   };
 
   const isRTL = language === 'ar';

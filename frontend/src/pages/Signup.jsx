@@ -23,7 +23,6 @@ export default function Signup() {
     
     try {
       const result = await registerUser({ name, email, password });
-      localStorage.setItem('auth_token', result.token);
       localStorage.setItem('auth_user', JSON.stringify(result.user));
       window.location.assign('/'); 
     } catch (err) {

@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 const errorHandler = require("./middleware/errorHandler");
 
 const transactionsRoutes = require("./routes/transactions");
@@ -43,8 +44,11 @@ app.use(cors({
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Idempotency-Key'], // Fix #5
+  credentials: true, // SEC-008: Allow cookies
   maxAge: 86400,
 }));
+
+app.use(cookieParser());
 
 app.use(compression());
 
@@ -60,7 +64,20 @@ app.use('/api', globalLimiter);
 
 // Auth rate limiting moved to auth routes
 
-app.get('/healthz', (req, res) => {
+const healthLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.get('/healthz', healthLimiter, (req, res) => {
+  req.setTimeout(3000, () => {
+    if (!res.headersSent) {
+      res.status(503).json({ status: 'timeout' });
+    }
+  });
+
   const databaseReady = mongoose.connection.readyState === 1;
   res.status(databaseReady ? 200 : 503).json({
     status: databaseReady ? 'ok' : 'degraded',

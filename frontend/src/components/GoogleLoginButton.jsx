@@ -24,7 +24,6 @@ export default function GoogleLoginButton() {
           try {
             setSignInError('');
             const result = await signInWithGoogle(credential);
-            localStorage.setItem('auth_token', result.token);
             localStorage.setItem('auth_user', JSON.stringify(result.user));
             // Trigger a hard reload to ensure context providers and state are fresh
             window.location.assign('/'); 

@@ -1,5 +1,7 @@
 const Budget = require('../models/Budget');
 const { calculateRecommendation } = require('../services/budgetEngine');
+const Account = require('../models/Account');
+const Category = require('../models/Category');
 
 // Get all budgets for the user
 exports.getBudgets = async (req, res, next) => {
@@ -17,6 +19,20 @@ exports.getBudgets = async (req, res, next) => {
 exports.createBudget = async (req, res, next) => {
   try {
     const { category, amount, period, account, carryOver, isRecurring } = req.body;
+
+    // SEC-005: Validate Category Ownership
+    const categoryDoc = await Category.findOne({ _id: category, user: req.user.id });
+    if (!categoryDoc) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    // SEC-005: Validate Account Ownership (if provided)
+    if (account) {
+      const accountDoc = await Account.findOne({ _id: account, user: req.user.id });
+      if (!accountDoc) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
+    }
 
     // Check if a budget already exists for this category
     const existing = await Budget.findOne({ user: req.user.id, category, period });
@@ -47,6 +63,14 @@ exports.createBudget = async (req, res, next) => {
 exports.updateBudget = async (req, res, next) => {
   try {
     const { amount, period, isActive, account, carryOver, isRecurring } = req.body;
+
+    // SEC-005: Validate Account Ownership (if provided)
+    if (account) {
+      const accountDoc = await Account.findOne({ _id: account, user: req.user.id });
+      if (!accountDoc) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
+    }
     
     const budget = await Budget.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },

@@ -172,6 +172,7 @@ class ForecastEngine {
            this.incrementDateByRepeat(currentDate, b.repeat);
         }
 
+        let safetyCounter = 0;
         while (currentDate <= endDate && b.repeat !== 'never') {
           events.push({
             date: currentDate.toISOString().split('T')[0],
@@ -180,6 +181,9 @@ class ForecastEngine {
             type: 'bill'
           });
           this.incrementDateByRepeat(currentDate, b.repeat);
+          
+          safetyCounter++;
+          if (safetyCounter > 1000) break;
         }
       }
     }
@@ -189,6 +193,7 @@ class ForecastEngine {
       let currentDate = new Date(r.nextExecutionDate);
       currentDate.setHours(0,0,0,0);
       
+      let safetyCounter = 0;
       while (currentDate <= endDate) {
         if (currentDate >= today) {
           let amount = r.amount;
@@ -214,7 +219,14 @@ class ForecastEngine {
           }
         }
 
-        this.incrementDateByRecurring(currentDate, r.repeatType, r.interval || 1);
+        let parsedInterval = parseInt(r.interval, 10);
+        if (isNaN(parsedInterval) || parsedInterval <= 0) {
+          parsedInterval = 1;
+        }
+        this.incrementDateByRecurring(currentDate, r.repeatType, parsedInterval);
+        
+        safetyCounter++;
+        if (safetyCounter > 1000) break;
       }
     }
 
