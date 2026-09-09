@@ -25,7 +25,7 @@ const bgSyncPlugin = new BackgroundSyncPlugin('api-syncQueue', {
 
 // For mutations (POST, PUT, DELETE), use NetworkOnly with background sync
 registerRoute(
-  ({ request, url }) => url.pathname.startsWith('/api/') && ['POST', 'PUT', 'DELETE'].includes(request.method),
+  ({ request, url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/auth/') && ['POST', 'PUT', 'DELETE'].includes(request.method),
   new NetworkOnly({
     plugins: [bgSyncPlugin],
   })
@@ -33,7 +33,7 @@ registerRoute(
 
 // For GET requests to the API, use NetworkFirst so it falls back to cache if offline
 registerRoute(
-  ({ request, url }) => url.pathname.startsWith('/api/') && request.method === 'GET',
+  ({ request, url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/auth/') && request.method === 'GET',
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [
