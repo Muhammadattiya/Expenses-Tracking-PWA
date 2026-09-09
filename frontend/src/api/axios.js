@@ -7,6 +7,7 @@ const api = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
+    withCredentials: true,
     timeout: 15000, // 15 seconds timeout
 });
 
@@ -20,8 +21,6 @@ axiosRetry(api, {
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 

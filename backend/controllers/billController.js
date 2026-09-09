@@ -1,55 +1,55 @@
 const billService = require('../services/billService');
 
-exports.getBills = async (req, res) => {
+exports.getBills = async (req, res, next) => {
   try {
     const data = await billService.getBills(req.user.id);
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.createBill = async (req, res) => {
+exports.createBill = async (req, res, next) => {
   try {
     const data = await billService.createBill(req.user.id, req.body);
     res.status(201).json(data);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.updateBill = async (req, res) => {
+exports.updateBill = async (req, res, next) => {
   try {
     const data = await billService.updateBill(req.user.id, req.params.id, req.body);
     res.status(200).json(data);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.deleteBill = async (req, res) => {
+exports.deleteBill = async (req, res, next) => {
   try {
     await billService.deleteBill(req.user.id, req.params.id);
     res.status(200).json({ message: 'Deleted successfully' });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.markAsPaid = async (req, res) => {
+exports.markAsPaid = async (req, res, next) => {
   try {
     const data = await billService.markAsPaid(req.user.id, req.params.id, req.body.transactionId);
     res.status(200).json(data);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.ignoreBill = async (req, res) => {
+exports.ignoreBill = async (req, res, next) => {
   try {
     const data = await billService.ignoreBill(req.user.id, req.params.id);
     res.status(200).json(data);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };

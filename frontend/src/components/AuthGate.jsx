@@ -11,18 +11,12 @@ export default function AuthGate() {
   useEffect(() => {
     const minLoadTime = new Promise(resolve => setTimeout(resolve, 2000));
     
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      minLoadTime.then(() => setLoading(false));
-      return;
-    }
-    
+    // Always attempt to fetch the user (cookie will be sent automatically)
     const fetchUser = getCurrentUser().then(u => {
       setUser(u);
       localStorage.setItem('auth_user', JSON.stringify(u));
     }).catch((err) => {
       if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-        localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
       } else {
         const cachedUser = localStorage.getItem('auth_user');

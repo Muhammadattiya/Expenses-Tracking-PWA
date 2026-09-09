@@ -23,12 +23,13 @@ async function runTests() {
     await Transaction.deleteMany({});
 
     // 2. Create User
+    const hashedTestToken = crypto.createHash('sha256').update(TEST_TOKEN).digest('hex');
     const user = new User({
       name: 'Test User',
       email: 'test@finova.com',
       password: 'password123',
       googleId: 'test-google-id-123',
-      smsWebhookToken: TEST_TOKEN
+      smsWebhookToken: hashedTestToken
     });
     await user.save();
 

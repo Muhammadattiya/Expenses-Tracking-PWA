@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const requireAuth = require('../middleware/auth');
 const shortcutAuth = require('../middleware/shortcutAuth');
 const shortcutController = require('../controllers/shortcutController');
+const smsWebhookController = require('../controllers/smsWebhookController');
 
 // Fix #2: Dedicated, tight rate limiter for shortcut API endpoints
 // Keyed by token hash (not IP) since mobile IPs change frequently
@@ -27,6 +28,11 @@ const shortcutLimiter = rateLimit({
 router.get('/shortcut/token-status', requireAuth, shortcutController.getTokenStatus);
 router.post('/shortcut/token', requireAuth, shortcutController.generateToken);
 router.delete('/shortcut/token', requireAuth, shortcutController.revokeToken);
+
+// SMS Webhook Token Endpoints (SEC-006)
+router.get('/sms/token-status', requireAuth, smsWebhookController.getTokenStatus);
+router.post('/sms/token', requireAuth, smsWebhookController.generateToken);
+router.delete('/sms/token', requireAuth, smsWebhookController.revokeToken);
 
 // Shortcut API endpoints (require shortcut token + dedicated rate limiter)
 // Used by the Apple Shortcuts app

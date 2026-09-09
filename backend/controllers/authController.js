@@ -2,14 +2,38 @@ const authService = require('../services/authService');
 const User = require('../models/User');
 const crypto = require('crypto');
 
+const attachCookie = (res, token) => {
+  res.cookie('jwt', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+};
+
 exports.googleSignIn = async (req, res, next) => {
-  try { res.json(await authService.googleSignIn(req.body.credential)); } catch (error) { next(error); }
+  try { 
+    const result = await authService.googleSignIn(req.body.credential); 
+    attachCookie(res, result.token);
+    const { token, ...safeResult } = result;
+    res.json(safeResult); 
+  } catch (error) { next(error); }
 };
 exports.register = async (req, res, next) => {
-  try { res.status(201).json(await authService.register(req.body)); } catch (error) { next(error); }
+  try { 
+    const result = await authService.register(req.body); 
+    attachCookie(res, result.token);
+    const { token, ...safeResult } = result;
+    res.status(201).json(safeResult); 
+  } catch (error) { next(error); }
 };
 exports.login = async (req, res, next) => {
-  try { res.json(await authService.login(req.body)); } catch (error) { next(error); }
+  try { 
+    const result = await authService.login(req.body); 
+    attachCookie(res, result.token);
+    const { token, ...safeResult } = result;
+    res.json(safeResult); 
+  } catch (error) { next(error); }
 };
 exports.me = async (req, res, next) => {
   try { res.json(await User.findById(req.user.id).select('-__v')); } catch (error) { next(error); }
@@ -59,6 +83,12 @@ exports.resetOnboarding = async (req, res, next) => {
 exports.logout = async (req, res, next) => {
   try {
     await authService.invalidateAllSessions(req.user.id);
+    res.cookie('jwt', 'loggedout', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      expires: new Date(Date.now() + 10 * 1000)
+    });
     res.json({ success: true, message: 'Logged out successfully. All sessions have been invalidated.' });
   } catch (error) { next(error); }
 };
@@ -66,6 +96,8 @@ exports.logout = async (req, res, next) => {
 exports.changePassword = async (req, res, next) => {
   try {
     const result = await authService.changePassword(req.user.id, req.body);
-    res.json(result);
+    attachCookie(res, result.token);
+    const { token, ...safeResult } = result;
+    res.json(safeResult);
   } catch (error) { next(error); }
 };

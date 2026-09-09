@@ -46,7 +46,10 @@ import { getCategories } from "../api/categories";
 import { subscribeToNotifications, sendNotification } from "../api/notifications";
 
 import { getCurrentUser, deleteAllUserData } from "../api/auth";
-import { getShortcutTokenStatus, generateShortcutToken, revokeShortcutToken } from "../api/integrations";
+import { 
+  getShortcutTokenStatus, generateShortcutToken, revokeShortcutToken,
+  getSmsTokenStatus, generateSmsToken, revokeSmsToken 
+} from "../api/integrations";
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
@@ -119,6 +122,7 @@ const Settings = () => {
   const [isWiping, setIsWiping] = useState(false);
 
   // SMS Webhook State
+  const [smsConnected, setSmsConnected] = useState(false);
   const [smsToken, setSmsToken] = useState(null);
   const [copiedToken, setCopiedToken] = useState(false);
 
@@ -182,8 +186,14 @@ const Settings = () => {
 
       // Fetch user data
       const user = await getCurrentUser();
-      setSmsToken(user.smsWebhookToken || null);
       
+      try {
+        const smsStatus = await getSmsTokenStatus();
+        setSmsConnected(smsStatus.isConnected);
+      } catch (e) {
+        console.error('Failed to get sms token status', e);
+      }
+
       try {
         const tokenStatus = await getShortcutTokenStatus();
         setShortcutConnected(tokenStatus.isConnected);
@@ -494,6 +504,9 @@ const Settings = () => {
             {smsToken ? (
               <div className="flex flex-col gap-6">
                 <div className="bg-black/30 p-5 rounded-[24px] border border-white/10 relative shadow-inner">
+                  <div className="flex items-center justify-between text-emerald-400 font-medium text-sm mb-3">
+                    <span className="flex items-center gap-2"><CheckCircle2 size={18} /> {t('appleShortcuts.tokenGenerated')}</span>
+                  </div>
                   <label className="text-sm font-bold text-white/90 flex items-center gap-2 mb-3">
                     <Link2 className="w-5 h-5 text-[#8D6346]" />
                     {t('settings.webhookUrlLabel')}
@@ -512,7 +525,10 @@ const Settings = () => {
                       onClick={() => {
                         navigator.clipboard.writeText(`https://finova-zzr7.onrender.com/api/sms/webhook/${smsToken}`);
                         setCopiedToken(true);
-                        setTimeout(() => setCopiedToken(false), 2000);
+                        setTimeout(() => {
+                          setCopiedToken(false);
+                          setSmsToken(null);
+                        }, 2000);
                       }}
                       className={`p-3 rounded-xl transition-colors flex-shrink-0 border border-transparent ${copiedToken ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-[#8D6346]'}`}
                     >
@@ -523,7 +539,7 @@ const Settings = () => {
                   <div className="mt-5 flex gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl shadow-inner">
                     <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-orange-400/90 leading-relaxed font-medium">
-                      {t('settings.webhookWarning')}
+                      {t('settings.webhookWarning')} {t('appleShortcuts.tokenWarning')}
                     </p>
                   </div>
                 </div>
@@ -548,8 +564,49 @@ const Settings = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex justify-center p-12 bg-black/20 rounded-[24px] border border-white/5 shadow-inner">
-                <Loader2 className="w-8 h-8 animate-spin text-[#8D6346]" />
+              <div className="flex flex-col gap-3">
+                <div className={`px-4 py-2 mb-2 rounded-full text-xs font-semibold border inline-flex items-center gap-2 self-start ${smsConnected ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 border-white/20 text-white/50'}`}>
+                  <span className={`w-2 h-2 rounded-full ${smsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`} />
+                  {smsConnected ? t('appleShortcuts.statusConnected') : t('appleShortcuts.statusDisconnected')}
+                </div>
+                {smsConnected ? (
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={async () => {
+                      if (window.confirm(t('appleShortcuts.revokeWarning'))) {
+                        try {
+                          await revokeSmsToken();
+                          setSmsConnected(false);
+                          setSmsToken(null);
+                          showToast(t('settings.revokedSuccessfully'), 'success');
+                        } catch(e) {
+                          showToast(t('addTransaction.errorMsg'), 'error');
+                        }
+                      }
+                    }}
+                    className="w-full py-3.5 bg-red-500/10 text-red-400 border border-red-500/20 font-semibold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 size={18} />
+                    {t('appleShortcuts.revokeToken')}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={async () => {
+                      try {
+                        const res = await generateSmsToken();
+                        setSmsToken(res.token);
+                        setSmsConnected(true);
+                      } catch (error) {
+                        showToast(t('common.error'), 'error');
+                      }
+                    }}
+                    className="w-full py-3.5 bg-[#8D6346]/20 hover:bg-[#8D6346]/30 text-white font-semibold border border-[#8D6346]/30 rounded-xl transition-all flex items-center justify-center gap-2 shadow-inner"
+                  >
+                    <Command size={18} />
+                    {t('appleShortcuts.generateToken')}
+                  </motion.button>
+                )}
               </div>
             )}
           </div>

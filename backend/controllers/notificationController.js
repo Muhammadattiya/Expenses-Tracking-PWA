@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const Subscription = require('../models/Subscription');
 const notificationService = require('../services/notificationService');
 
-const subscribe = async (req, res) => {
+const subscribe = async (req, res, next) => {
   try {
     const subscription = req.body;
     
@@ -24,11 +24,11 @@ const subscribe = async (req, res) => {
     res.status(201).json({ message: 'Subscribed successfully.' });
   } catch (error) {
     console.error('[ERROR] subscribe:', error.message);
-    res.status(500).json({ message: 'Failed to save subscription.' });
+    next(error);
   }
 };
 
-const sendNotification = async (req, res) => {
+const sendNotification = async (req, res, next) => {
   try {
     const { title, body, url } = req.body;
     
@@ -48,7 +48,7 @@ const sendNotification = async (req, res) => {
     res.status(200).json({ message: 'Notification sent successfully.' });
   } catch (error) {
     console.error('[ERROR] sendNotification:', error.message);
-    res.status(500).json({ message: 'Failed to send notification.' });
+    next(error);
   }
 };
 
@@ -67,7 +67,7 @@ const isValidApiKey = (provided) => {
   }
 };
 
-const broadcastNotification = async (req, res) => {
+const broadcastNotification = async (req, res, next) => {
   try {
     const apiKey = req.headers['x-api-key'];
     if (!isValidApiKey(apiKey)) {
@@ -101,7 +101,7 @@ const broadcastNotification = async (req, res) => {
     });
   } catch (error) {
     console.error('[ERROR] broadcastNotification:', error.message);
-    res.status(500).json({ message: 'Failed to broadcast notification.' });
+    next(error);
   }
 };
 

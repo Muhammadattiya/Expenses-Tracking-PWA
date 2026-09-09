@@ -3,7 +3,7 @@ const intentResolver = require('../services/quickAdd/intentResolver');
 const transactionService = require('../services/transactionService');
 const { migrateCategoryIntents } = require('../services/quickAdd/categoryMigration');
 
-const parseTransactions = async (req, res) => {
+const parseTransactions = async (req, res, next) => {
   try {
     const { text } = req.body;
     if (!text || typeof text !== 'string') return res.status(400).json({ message: "Text is required" });
@@ -35,11 +35,11 @@ const parseTransactions = async (req, res) => {
     res.status(200).json(resolvedCandidates);
   } catch (error) {
     console.error("QuickAdd Parse Error:", error);
-    res.status(500).json({ message: "حدث خطأ أثناء معالجة النص." });
+    next(error);
   }
 };
 
-const confirmTransactions = async (req, res) => {
+const confirmTransactions = async (req, res, next) => {
   try {
     const { transactions } = req.body;
     if (!Array.isArray(transactions)) return res.status(400).json({ message: "Transactions array is required" });
@@ -113,17 +113,16 @@ const confirmTransactions = async (req, res) => {
     
     res.status(201).json({ success: true, count: results.length, transactions: results });
   } catch (error) {
-    console.error("QuickAdd Confirm Error:", error);
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-const triggerMigration = async (req, res) => {
+const triggerMigration = async (req, res, next) => {
    try {
      const migratedCount = await migrateCategoryIntents(req.user.id);
      res.status(200).json({ success: true, migratedCount });
    } catch (error) {
-     res.status(500).json({ message: error.message });
+     next(error);
    }
 };
 

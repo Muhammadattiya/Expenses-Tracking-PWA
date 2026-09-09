@@ -22,7 +22,6 @@ export default function Login() {
     
     try {
       const result = await loginUser({ email, password });
-      localStorage.setItem('auth_token', result.token);
       localStorage.setItem('auth_user', JSON.stringify(result.user));
       window.location.assign('/'); 
     } catch (err) {

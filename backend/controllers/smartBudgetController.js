@@ -1,6 +1,8 @@
 const SmartBudgetPlan = require('../models/SmartBudgetPlan');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
+const Category = require('../models/Category');
+const Account = require('../models/Account');
 const { calculateDistribution, confirmPlanToBudgets } = require('../services/smartBudgetEngine');
 const { getBudgetPeriodDates } = require('../services/budgetEngine');
 const { sendPushNotification } = require('../services/cronJobs');
@@ -24,7 +26,25 @@ exports.generatePlan = async (req, res, next) => {
 // Save a draft plan to the database
 exports.saveDraftPlan = async (req, res, next) => {
   try {
-    const { name, period, availableBudget, categories, startDate: bodyStartDate, endDate: bodyEndDate, isRecurring, groupAsMaster } = req.body;
+    const { name, period, availableBudget, categories, startDate: bodyStartDate, endDate: bodyEndDate, isRecurring, groupAsMaster, account } = req.body;
+
+    // SEC-005: Validate Category Ownership
+    if (categories && Array.isArray(categories)) {
+      const categoryIds = categories.map(c => typeof c.category === 'object' ? c.category._id : c.category);
+      const uniqueCategoryIds = [...new Set(categoryIds)];
+      const validCategoriesCount = await Category.countDocuments({ _id: { $in: uniqueCategoryIds }, user: req.user.id });
+      if (validCategoriesCount !== uniqueCategoryIds.length) {
+        return res.status(403).json({ message: 'One or more categories do not belong to the user' });
+      }
+    }
+
+    // SEC-005: Validate Account Ownership (if provided)
+    if (account) {
+      const accountDoc = await Account.findOne({ _id: account, user: req.user.id });
+      if (!accountDoc) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
+    }
 
     const user = await User.findById(req.user.id);
     const prefs = user.preferences || {};
@@ -134,6 +154,24 @@ exports.updateDraftPlan = async (req, res, next) => {
   try {
     const { name, categories, availableBudget, period, startDate: bodyStartDate, endDate: bodyEndDate, isRecurring, groupAsMaster, account } = req.body;
     
+    // SEC-005: Validate Category Ownership
+    if (categories && Array.isArray(categories)) {
+      const categoryIds = categories.map(c => typeof c.category === 'object' ? c.category._id : c.category);
+      const uniqueCategoryIds = [...new Set(categoryIds)];
+      const validCategoriesCount = await Category.countDocuments({ _id: { $in: uniqueCategoryIds }, user: req.user.id });
+      if (validCategoriesCount !== uniqueCategoryIds.length) {
+        return res.status(403).json({ message: 'One or more categories do not belong to the user' });
+      }
+    }
+
+    // SEC-005: Validate Account Ownership (if provided)
+    if (account) {
+      const accountDoc = await Account.findOne({ _id: account, user: req.user.id });
+      if (!accountDoc) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
+    }
+
     const plan = await SmartBudgetPlan.findOne({ _id: req.params.id, user: req.user.id });
     if (!plan) return res.status(404).json({ message: 'Plan not found' });
     
