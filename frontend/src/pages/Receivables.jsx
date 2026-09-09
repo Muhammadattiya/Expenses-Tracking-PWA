@@ -5,18 +5,23 @@ import GroupExpenses from '../components/debts/GroupExpenses';
 import PersonalDebts from '../components/debts/PersonalDebts';
 
 export default function Receivables() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('group'); // 'group' | 'personal'
+  const isRTL = language === 'ar';
 
   return (
     <motion.div 
-      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-      className="p-4 pt-8 space-y-8 pb-24 max-w-7xl mx-auto"
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -15 }} 
+      transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+      className="w-full space-y-8 pb-24 max-w-7xl mx-auto"
     >
-      {/* Ambient Copper Background exactly like Dashboard */}
-      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115]">
-        <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
-        <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
+      {/* Background Glowing Ellipses (Matching Onboarding theme) */}
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#100E11] overflow-hidden">
+        <div className="absolute top-[-50px] left-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-40 blur-[120px] rounded-full" />
+        <div className="absolute top-[30%] right-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-30 blur-[140px] rounded-full" />
+        <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#8D6346] opacity-30 blur-[150px] rounded-full" />
       </div>
       <header className="mb-6 flex flex-col gap-1">
         <h1 className="text-[24px] font-['Exo_2'] font-semibold tracking-tight text-white/90 drop-shadow-sm">
@@ -29,7 +34,7 @@ export default function Receivables() {
 
       {/* Tabs */}
       <div className="flex justify-center mb-6">
-        <div className="flex p-1 liquidglass !bg-[#8D6346]/15 rounded-[30px] w-fit">
+        <div className="flex p-1 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] w-fit">
           {['group', 'personal'].map((tab) => (
             <button
               key={tab}
@@ -39,7 +44,7 @@ export default function Receivables() {
               {activeTab === tab && (
                 <motion.div
                   layoutId="receivablesTab"
-                  className="absolute inset-0 bg-white/10 border border-white/5 rounded-[24px] shadow-sm"
+                  className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-[24px] shadow-sm"
                   transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                 />
               )}
