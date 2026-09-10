@@ -24,9 +24,8 @@ export default function Layout() {
         </div>
       )}
 
-      {/* Main content container */}
       <main className={
-        isAddPage ? "h-full w-full p-0 overflow-hidden max-w-[420px] mx-auto flex flex-col" : 
+        isAddPage ? "h-full w-full p-0 max-w-[420px] mx-auto flex flex-col" : 
         "pb-32 px-5 pt-8 w-full max-w-7xl mx-auto min-h-screen animate-fade-in"
       }>
         <PullToRefresh>
