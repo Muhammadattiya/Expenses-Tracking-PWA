@@ -146,7 +146,7 @@ export default function PullToRefresh({ children, onRefresh }) {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full min-h-screen"
+      className="relative w-full h-full"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

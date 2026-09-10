@@ -193,7 +193,7 @@ const AddTransaction = () => {
   }
 
   return (
-    <div 
+    <div
       className="w-full h-full flex flex-col overflow-hidden relative select-none bg-[#141115] overscroll-none"
       style={{
         '--space-label': '0.375rem',
