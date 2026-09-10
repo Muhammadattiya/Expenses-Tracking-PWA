@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "agy-delegate": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/agy-delegate/SKILL.md",
+      "computedHash": "a2cafbd49cb90f4ed61616bef711a08ad2371ccd3bae47fcee6588530e3e8182"
+    },
+    "codex-delegate": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/codex-delegate/SKILL.md",
+      "computedHash": "7ab13b6af60de5ea6e9e0605a6d964629cf1bb1926ee06d9ecc8066e18799c6b"
+    },
+    "delegate-setup": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/delegate-setup/SKILL.md",
+      "computedHash": "ffdc998edffa50e4d3e942af0a5697f6619d86b5e92b2175539ecca69225843d"
+    },
+    "kimi-delegate": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/kimi-delegate/SKILL.md",
+      "computedHash": "861853004c7bbfda6edb6bf75011436716e5c5f737aec94fa25ec315370064db"
+    },
+    "opencode-delegate": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/opencode-delegate/SKILL.md",
+      "computedHash": "42468ef235a0e2c1a0ae3cc7ab290e25f35db14621a57bb40351ac311aff5a95"
+    },
+    "pi-delegate": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pi-delegate/SKILL.md",
+      "computedHash": "71654e553c854eebf0763c538b0ec16ee19115ade752318a07a9fc967bd27fc6"
+    }
+  }
+}

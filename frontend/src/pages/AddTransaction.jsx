@@ -62,6 +62,19 @@ const AddTransaction = () => {
   });
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
 
+  // إزالة الـ scroll تماماً من الصفحة للحفاظ على احتواء كل العناصر وثباتها داخل الشاشة
+  useEffect(() => {
+    const origHtmlOverflow = document.documentElement.style.overflow;
+    const origBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.documentElement.style.overflow = origHtmlOverflow;
+      document.body.style.overflow = origBodyOverflow;
+    };
+  }, []);
+
   // جلب البيانات من الباك إند أول ما الصفحة تفتح
   useEffect(() => {
     const fetchFormData = async () => {
@@ -112,14 +125,6 @@ const AddTransaction = () => {
     }
   }, [location, navigate]);
 
-  useEffect(() => {
-    // Zero out body paddingBottom on AddTransaction to let glass container reach the absolute bottom edge
-    const originalPaddingBottom = document.body.style.paddingBottom;
-    document.body.style.paddingBottom = '0px';
-    return () => {
-      document.body.style.paddingBottom = originalPaddingBottom;
-    };
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -202,27 +207,17 @@ const AddTransaction = () => {
   }
 
   return (
-    <div
-      className="w-full h-full flex flex-col relative select-none bg-[#141115] overscroll-none"
-      style={{
-        '--space-label': '0.375rem',
-        '--space-field': 'clamp(0.625rem, 1.8vh, 1rem)',
-        '--space-action-gap': 'clamp(0.5rem, 1.2vh, 0.625rem)',
-        '--control-height': 'clamp(2.625rem, 5vh, 2.875rem)',
-        '--input-height-hero': 'clamp(3rem, 6vh, 3.5rem)',
-        '--pill-height': 'clamp(2.375rem, 4.4vh, 2.625rem)',
-        '--btn-height-primary': 'clamp(2.75rem, 5.4vh, 3.125rem)',
-      }}
-    >
-      {/* Ambient Copper Background exactly like Settings & Dashboard */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
-        <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
+    <div className="w-full max-w-lg mx-auto select-none flex flex-col gap-2.5 sm:gap-3.5 h-[calc(100dvh-2rem)]">
+      {/* Ambient Copper Background with rich glow showing through the transparent glass */}
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115] overflow-hidden">
+        <div className="absolute top-[20px] left-[-90px] w-[340px] h-[340px] bg-[#8D6346] rounded-full blur-[140px] opacity-45" />
+        <div className="absolute top-[300px] right-[-80px] w-[300px] h-[300px] bg-[#8D6346] rounded-full blur-[140px] opacity-40" />
+        <div className="absolute bottom-[-60px] left-1/2 -translate-x-1/2 w-[380px] h-[280px] bg-[#8D6346] rounded-full blur-[140px] opacity-40" />
       </div>
 
       {/* Top Segmented Control (Expense / Income / Transfer) */}
-      <div className="px-4 pt-[max(0.625rem,env(safe-area-inset-top))] pb-1.5 shrink-0 z-20">
-        <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative max-w-[340px] mx-auto w-full h-[var(--pill-height)] items-center">
+      <div className="w-full shrink-0">
+        <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative w-full h-11 sm:h-12 items-center">
           {[
             { key: 'expense', label: t('addTransaction.expense'), color: '#FF5555', shadow: 'rgba(255,85,85,0.45)' },
             { key: 'income', label: t('addTransaction.income'), color: '#34C759', shadow: 'rgba(52,199,89,0.45)' },
@@ -234,7 +229,7 @@ const AddTransaction = () => {
                 key={tab.key}
                 type="button"
                 onClick={() => setType(tab.key)}
-                className="relative flex-1 h-full rounded-full text-[clamp(0.75rem,2vw,0.875rem)] font-semibold transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
+                className="relative flex-1 h-full rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
               >
                 {isActive && (
                   <motion.div
@@ -256,22 +251,22 @@ const AddTransaction = () => {
         </div>
       </div>
 
-      {/* Main Glass Container */}
-      <div className="w-full flex-1 min-h-0 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-t-[28px] sm:rounded-t-[32px] border-t border-white/10 px-4 sm:px-5 pt-3 sm:pt-4 pb-[calc(5.25rem+max(0.75rem,env(safe-area-inset-bottom)))] flex flex-col overflow-hidden relative z-10">
-
-        {/* Form Fields Area - Balanced Vertical Rhythm */}
-        <form onSubmit={handleSubmit} className="w-full flex-1 min-h-0 flex flex-col justify-between max-h-[620px] my-auto">
-
+      {/* Glass Container reaching 100% full width of the screen regardless of dimensions - Transparent glass allowing theme colors to show through */}
+      <form 
+        onSubmit={handleSubmit} 
+        className="w-screen relative left-1/2 -translate-x-1/2 pt-4 pb-24 sm:pt-5 sm:pb-28 rounded-t-[28px] sm:rounded-t-[36px] rounded-b-none bg-black/10 backdrop-blur-xl border-t border-white/15 shadow-[0_-2px_16px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.12)] flex flex-col flex-1 -mb-32 overflow-x-hidden"
+      >
+        <div className="w-full max-w-lg mx-auto px-5 sm:px-6 flex flex-col gap-3.5 sm:gap-4.5 flex-1">
           {/* 1. Amount Section */}
-          <div className="flex flex-col items-center justify-center shrink-0">
-            <label className="text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium text-white/70 tracking-wide mb-[var(--space-label)] text-center">
+          <div className="flex flex-col items-center justify-center w-full py-1 sm:py-2">
+            <label className="text-xs sm:text-sm font-medium text-white/70 tracking-wide mb-1.5 text-center">
               {t('addTransaction.amount')}
             </label>
-            <div className="flex items-center justify-center gap-2 relative w-full h-[var(--input-height-hero)]">
+            <div className="flex items-center justify-center gap-2 relative w-full">
               <button
                 type="button"
                 onClick={() => setShowCalculator(true)}
-                className="absolute start-1.5 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner text-white/60 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all active:scale-95"
+                className="absolute start-1 sm:start-3 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner text-white/60 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all active:scale-95"
                 aria-label={t('common.calculator')}
               >
                 <Calculator className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -283,22 +278,22 @@ const AddTransaction = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="bg-transparent text-center text-[clamp(2.125rem,5.2vh,2.625rem)] font-bold text-white focus:outline-none w-[auto] min-w-[70px] max-w-[220px] placeholder-white/25 tracking-tight leading-none h-full tabular-nums"
+                className="bg-transparent text-center text-5xl sm:text-6xl font-extrabold text-white focus:outline-none w-full max-w-[65%] placeholder-white/25 tracking-tight leading-none py-1.5 tabular-nums"
                 style={{ caretColor: type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF' }}
               />
-              <span className="text-[clamp(0.8125rem,2vh,0.875rem)] text-white/80 font-semibold self-end pb-2">
+              <span className="text-sm sm:text-base text-white/80 font-bold self-end pb-2 sm:pb-2.5">
                 {t('nav.currency')}
               </span>
             </div>
-            <div className="w-36 h-[1.5px] bg-gradient-to-r from-transparent via-[#8D6346]/40 to-transparent mx-auto mt-1" />
+            <div className="w-2/5 max-w-[160px] min-w-[80px] h-[2px] bg-gradient-to-r from-transparent via-[#8D6346]/50 to-transparent mx-auto mt-1.5" />
           </div>
 
           {/* 2. Date Segmented Control */}
-          <div className="shrink-0">
-            <label className="block text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium text-white/70 mb-[var(--space-label)] px-1">
+          <div className="w-full">
+            <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1">
               {t('addTransaction.date')}
             </label>
-            <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative h-[var(--pill-height)] items-center">
+            <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 sm:p-1.5 rounded-full shadow-inner relative h-11 sm:h-12 items-center">
               {[
                 { key: 'today', label: t('addTransaction.today'), active: isToday, onClick: () => setDate(todayStr) },
                 { key: 'yesterday', label: t('addTransaction.yesterday'), active: isYesterday, onClick: () => setDate(yesterdayStr) },
@@ -311,7 +306,7 @@ const AddTransaction = () => {
                     key={tab.key}
                     type="button"
                     onClick={tab.onClick}
-                    className="relative flex-1 h-full rounded-full text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
+                    className="relative flex-1 h-full rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
                   >
                     {tab.active && (
                       <motion.div
@@ -334,8 +329,8 @@ const AddTransaction = () => {
           </div>
 
           {/* 3. Description Input */}
-          <div className="shrink-0">
-            <label className="block text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium text-white/70 mb-[var(--space-label)] px-1">
+          <div className="w-full">
+            <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1">
               {t('addTransaction.description')}
             </label>
             <input
@@ -343,15 +338,15 @@ const AddTransaction = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('addTransaction.descPlaceholder')}
-              className="w-full h-[var(--control-height)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[clamp(0.8125rem,1.9vh,0.875rem)] text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
+              className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
             />
           </div>
 
           {/* 4 & 5. Accounts & Category */}
           {type === 'transfer' ? (
-            <>
-              <div className="shrink-0">
-                <label className="block text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium text-white/70 mb-[var(--space-label)] px-1 truncate">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4.5 w-full">
+              <div className="w-full">
+                <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.fromAccount')}
                 </label>
                 <CustomSelect
@@ -359,11 +354,11 @@ const AddTransaction = () => {
                   onChange={setFromAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.fromAccountPlaceholder')}
-                  buttonClassName="w-full h-[var(--control-height)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[clamp(0.8125rem,1.9vh,0.875rem)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
-              <div className="shrink-0">
-                <label className="block text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium text-white/70 mb-[var(--space-label)] px-1 truncate">
+              <div className="w-full">
+                <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.toAccount')}
                 </label>
                 <CustomSelect
@@ -371,14 +366,14 @@ const AddTransaction = () => {
                   onChange={setToAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.toAccountPlaceholder')}
-                  buttonClassName="w-full h-[var(--control-height)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[clamp(0.8125rem,1.9vh,0.875rem)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="shrink-0">
-                <label className="block text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium text-white/70 mb-[var(--space-label)] px-1 truncate">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4.5 w-full">
+              <div className="w-full">
+                <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.account')}
                 </label>
                 <CustomSelect
@@ -386,12 +381,12 @@ const AddTransaction = () => {
                   onChange={setAccount}
                   options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
                   placeholder={t('addTransaction.accountPlaceholder')}
-                  buttonClassName="w-full h-[var(--control-height)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[clamp(0.8125rem,1.9vh,0.875rem)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
 
-              <div className="shrink-0">
-                <label className="block text-[clamp(0.75rem,1.8vh,0.8125rem)] font-medium text-white/70 mb-[var(--space-label)] px-1 truncate">
+              <div className="w-full">
+                <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.category')}
                 </label>
                 <CustomSelect
@@ -399,51 +394,50 @@ const AddTransaction = () => {
                   onChange={setCategory}
                   options={categories[type] ? categories[type].map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon })) : []}
                   placeholder={t('addTransaction.categoryPlaceholder')}
-                  buttonClassName="w-full h-[var(--control-height)] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4 text-[clamp(0.8125rem,1.9vh,0.875rem)] font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
+                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
                 />
               </div>
-            </>
+            </div>
           )}
 
-          {/* Lower Action Buttons Group - Unified Pill Design */}
-          <div className="flex flex-col gap-[var(--space-action-gap)] shrink-0">
-            {/* 6. Recurring Settings Button */}
+          {/* 6. Recurring Settings Button */}
+          <div className="w-full mt-[22px] sm:mt-[26px]">
             {recurringSettings.repeatType === 'never' ? (
               <button
                 type="button"
                 onClick={() => setIsRecurringModalOpen(true)}
-                className="w-full h-[var(--pill-height)] flex items-center justify-center gap-2 border border-dashed border-white/15 hover:border-white/25 rounded-full bg-black/20 backdrop-blur-[10px] shadow-inner transition-all duration-200 active:scale-[0.98]"
+                className="w-full h-11 sm:h-12 flex items-center justify-center gap-2 border border-dashed border-white/15 hover:border-white/25 rounded-full bg-black/20 backdrop-blur-[10px] shadow-inner transition-all duration-200 active:scale-[0.98]"
               >
-                <Repeat className="w-3.5 h-3.5 text-white/60" />
-                <span className="text-[clamp(0.8125rem,1.9vh,0.875rem)] font-semibold text-white/75">{t('recurring.addBtn')}</span>
+                <Repeat className="w-4 h-4 text-white/60" />
+                <span className="text-sm sm:text-base font-semibold text-white/75">{t('recurring.addBtn')}</span>
               </button>
             ) : (
-              <div className="w-full h-[var(--pill-height)] flex items-center justify-between px-4 border border-dashed border-[#8D6346]/40 rounded-full bg-[#8D6346]/10 backdrop-blur-[10px] shadow-inner transition-all duration-200">
+              <div className="w-full h-11 sm:h-12 flex items-center justify-between px-4 border border-dashed border-[#8D6346]/40 rounded-full bg-[#8D6346]/10 backdrop-blur-[10px] shadow-inner transition-all duration-200">
                 <div className="flex items-center gap-2">
-                  <Repeat className="w-3.5 h-3.5 text-[#E8C5A8]" />
-                  <span className="text-[clamp(0.8125rem,1.9vh,0.875rem)] font-semibold text-[#E8C5A8]">{t('recurring.settings')}</span>
+                  <Repeat className="w-4 h-4 text-[#E8C5A8]" />
+                  <span className="text-sm sm:text-base font-semibold text-[#E8C5A8]">{t('recurring.settings')}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsRecurringModalOpen(true)}
-                  className="px-3 py-1 bg-[#8D6346] hover:bg-[#734e35] rounded-full text-xs font-medium text-white transition-colors"
+                  className="px-3.5 py-1.5 bg-[#8D6346] hover:bg-[#734e35] rounded-full text-xs sm:text-sm font-medium text-white transition-colors"
                 >
                   {t('recurring.edit')}
                 </button>
               </div>
             )}
-
-            {/* 7. Confirm & Save Button */}
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              type="submit"
-              className="w-full h-[var(--btn-height-primary)] rounded-full font-bold text-[clamp(0.875rem,2vh,1rem)] text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/25 backdrop-blur-[10px] border border-[#8D6346]/40 hover:bg-[#8D6346]/35 flex items-center justify-center gap-2 active:bg-[#8D6346]/45"
-            >
-              {t('addTransaction.submit')}
-            </motion.button>
           </div>
-        </form>
-      </div>
+
+          {/* 7. Confirm & Save Button */}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            className="w-full h-13 sm:h-14 rounded-full font-bold text-base sm:text-lg text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/30 backdrop-blur-[10px] border border-[#8D6346]/50 hover:bg-[#8D6346]/45 flex items-center justify-center gap-2 active:bg-[#8D6346]/55 mt-[22px] sm:mt-[26px]"
+          >
+            {t('addTransaction.submit')}
+          </motion.button>
+        </div>
+      </form>
       {isDatePickerOpen && (
         <CustomDatePicker
           value={date}
