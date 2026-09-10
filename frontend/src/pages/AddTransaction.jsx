@@ -194,15 +194,15 @@ const AddTransaction = () => {
 
   return (
     <div 
-      className="w-full h-full flex flex-col overflow-hidden relative select-none bg-[#141115] overscroll-none"
+      className="w-full h-full flex flex-col overflow-hidden relative select-none bg-[#141115]"
       style={{
         '--space-label': '0.375rem',
-        '--space-field': 'clamp(0.625rem, 1.8vh, 1rem)',
-        '--space-action-gap': 'clamp(0.5rem, 1.2vh, 0.625rem)',
-        '--control-height': 'clamp(2.625rem, 5vh, 2.875rem)',
-        '--input-height-hero': 'clamp(3rem, 6vh, 3.5rem)',
-        '--pill-height': 'clamp(2.375rem, 4.4vh, 2.625rem)',
-        '--btn-height-primary': 'clamp(2.75rem, 5.4vh, 3.125rem)',
+        '--space-field': 'clamp(0.5rem, 1.5vh, 0.875rem)',
+        '--space-action-gap': 'clamp(0.375rem, 1vh, 0.5rem)',
+        '--control-height': 'clamp(2.375rem, 4.8vh, 2.75rem)',
+        '--input-height-hero': 'clamp(2.75rem, 5.5vh, 3.25rem)',
+        '--pill-height': 'clamp(2.25rem, 4.2vh, 2.5rem)',
+        '--btn-height-primary': 'clamp(2.5rem, 5vh, 3rem)',
       }}
     >
       {/* Ambient Copper Background exactly like Settings & Dashboard */}
@@ -251,7 +251,7 @@ const AddTransaction = () => {
       <div className="w-full flex-1 min-h-0 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-t-[28px] sm:rounded-t-[32px] border-t border-white/10 px-4 sm:px-5 pt-3 sm:pt-4 pb-[calc(5.25rem+max(0.75rem,env(safe-area-inset-bottom)))] flex flex-col overflow-hidden relative z-10">
 
         {/* Form Fields Area - Balanced Vertical Rhythm */}
-        <form onSubmit={handleSubmit} className="w-full flex-1 min-h-0 flex flex-col justify-between max-h-[620px] my-auto">
+        <form onSubmit={handleSubmit} className="w-full flex-1 min-h-0 flex flex-col justify-between">
 
           {/* 1. Amount Section */}
           <div className="flex flex-col items-center justify-center shrink-0">
