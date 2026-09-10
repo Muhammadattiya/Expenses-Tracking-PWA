@@ -112,6 +112,15 @@ const AddTransaction = () => {
     }
   }, [location, navigate]);
 
+  useEffect(() => {
+    // Zero out body paddingBottom on AddTransaction to let glass container reach the absolute bottom edge
+    const originalPaddingBottom = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = '0px';
+    return () => {
+      document.body.style.paddingBottom = originalPaddingBottom;
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 

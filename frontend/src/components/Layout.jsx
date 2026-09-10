@@ -15,7 +15,7 @@ export default function Layout() {
   const isDashboardPage = location.pathname === '/';
 
   return (
-    <div className={`${isAddPage ? 'fixed top-0 left-0 right-0 h-[100dvh] w-full z-0 overflow-hidden' : 'relative min-h-screen'} bg-[var(--color-background)] text-[var(--color-text-main)] font-sans selection:bg-brand-blue/30`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`${isAddPage ? 'fixed inset-0 w-full z-0 overflow-hidden' : 'relative min-h-screen'} bg-[var(--color-background)] text-[var(--color-text-main)] font-sans selection:bg-brand-blue/30`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Offline Banner */}
       {!isOnline && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-orange-500/90 backdrop-blur-md text-white text-xs text-center py-1.5 shadow-md flex items-center justify-center gap-2 font-medium">
