@@ -112,6 +112,15 @@ const AddTransaction = () => {
     }
   }, [location, navigate]);
 
+  useEffect(() => {
+    // Zero out body paddingBottom on AddTransaction to let glass container reach the absolute bottom edge
+    const originalPaddingBottom = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = '0px';
+    return () => {
+      document.body.style.paddingBottom = originalPaddingBottom;
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -194,7 +203,7 @@ const AddTransaction = () => {
 
   return (
     <div
-      className="w-full h-full flex flex-col overflow-hidden relative select-none bg-[#141115] overscroll-none"
+      className="w-full h-full flex flex-col relative select-none bg-[#141115] overscroll-none"
       style={{
         '--space-label': '0.375rem',
         '--space-field': 'clamp(0.625rem, 1.8vh, 1rem)',
