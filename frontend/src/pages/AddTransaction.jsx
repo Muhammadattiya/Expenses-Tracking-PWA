@@ -248,7 +248,7 @@ const AddTransaction = () => {
       </div>
 
       {/* Main Glass Container */}
-      <div className="w-full flex-1 min-h-0 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-t-[28px] sm:rounded-t-[32px] border-t border-white/10 px-4 sm:px-5 pt-3 sm:pt-4 pb-[calc(10.25rem+max(0.75rem,env(safe-area-inset-bottom)))] -mb-20 flex flex-col overflow-hidden relative z-10">
+      <div className="w-full flex-1 min-h-0 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-t-[28px] sm:rounded-t-[32px] border-t border-white/10 px-4 sm:px-5 pt-3 sm:pt-4 pb-[calc(5.25rem+max(0.75rem,env(safe-area-inset-bottom)))] flex flex-col overflow-hidden relative z-10">
 
         {/* Form Fields Area - Balanced Vertical Rhythm */}
         <form onSubmit={handleSubmit} className="w-full flex-1 min-h-0 flex flex-col justify-between max-h-[620px] my-auto">
