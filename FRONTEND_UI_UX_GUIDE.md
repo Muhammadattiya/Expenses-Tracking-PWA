@@ -18,11 +18,13 @@ Welcome to the Finova project! This guide is designed to help UI/UX and Frontend
 
 ## 🎨 Design Philosophy & Aesthetic Guidelines
 
-The current design system is heavily inspired by Apple's design language, utilizing a premium **"Liquid Glass"** aesthetic. While you are encouraged to improve the UI, keep the following principles in mind if you wish to maintain the current premium feel:
+The design system uses **Copper Brown (`#8D6346`)** with ambient light glow as the core visual identity, modeled directly from the **Dashboard** and **Debts** screens. Keep the following principles in mind:
 
-1. **Liquid Glass Containers**: 
-   - We use deep, reflective backgrounds. 
-   - Current standard pattern: `bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem]`.
+1. **Ambient Copper & Pure CSS Glass Containers**: 
+   - Deep obsidian canvas (`#141115` on Dashboard, `#100E11` on Debts) with `#8D6346` radial blur spheres (`w-[233px-295px] blur-[120px] opacity-30` to `opacity-60`).
+   - Pure CSS glassmorphism only: NO SVG displacement or chromatic aberration filters (`#glass-filter-_r_b_` is discontinued).
+   - Standard Debts Hero card pattern: `bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem]`.
+   - Standard Dashboard Visa card pattern: `bg-black/20 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.2)] rounded-[30px]`.
 2. **Fluid Motion & Micro-Interactions**:
    - Always use `<AnimatePresence mode="wait">` for page transitions.
    - Standard page transition: `initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ type: 'spring', bounce: 0, duration: 0.4 }}`.
