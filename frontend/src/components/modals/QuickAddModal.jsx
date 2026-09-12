@@ -85,6 +85,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   };
   
   const handleConfirm = async () => {
+    if (isProcessing) return;
     const invalid = candidates.find(c => {
        if (!c.amount) return true;
        if (c.type === 'transfer') {

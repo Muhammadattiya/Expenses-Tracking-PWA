@@ -277,7 +277,13 @@ export default {
     "paid": "Paid",
     "paydaySurvival": "Payday Survival",
     "riskHigh": "High Risk",
-    "all": "All"
+    "all": "All",
+    "gain": "Gain",
+    "loss": "Loss",
+    "transactionHistory": "Transaction History",
+    "addAccount": "Add Account +",
+    "thisWk": "This Wk",
+    "thisMo": "This Mo"
   },
   "addTransaction": {
     "title": "Add Transaction",
@@ -1031,12 +1037,12 @@ export default {
     "investments": "Investments"
   },
   "transactions": {
-    "uncategorized": "بدون تصنيف",
+    "uncategorized": "Uncategorized",
     "settlementPaid": "Settlement (Paid)",
     "settlementReceived": "Settlement (Received)",
-    "deletedAccount": "حساب محذوف",
-    "noAccount": "بدون حساب",
-    "needsReview": "تحتاج مراجعة"
+    "deletedAccount": "Deleted Account",
+    "noAccount": "No Account",
+    "needsReview": "Needs Review"
   },
   "weekdays": {
     "sunday": "Sunday",

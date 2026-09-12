@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
 
+const { authLimiter } = require('./rateLimiter');
+
 module.exports = async (req, res, next) => {
   let token;
   if (req.cookies && req.cookies.jwt) {
@@ -22,7 +24,7 @@ module.exports = async (req, res, next) => {
     }
 
     req.user = decoded;
-    return next();
+    return authLimiter(req, res, next);
   } catch (err) {
     if (err instanceof AppError) return next(err);
     return next(new AppError('Your session has expired. Please sign in again.', 401));

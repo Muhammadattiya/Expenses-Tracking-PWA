@@ -1,7 +1,6 @@
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { StaleWhileRevalidate, NetworkFirst, NetworkOnly } from 'workbox-strategies';
-import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { StaleWhileRevalidate, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 
 // Precache the manifest (injected by Vite PWA)
@@ -18,22 +17,17 @@ try {
   console.log('NavigationRoute fallback error:', e);
 }
 
-// Background Sync for failed POST/PUT/DELETE requests
-const bgSyncPlugin = new BackgroundSyncPlugin('api-syncQueue', {
-  maxRetentionTime: 24 * 60, // Retry for max of 24 Hours (specified in minutes)
-});
-
-// For mutations (POST, PUT, DELETE), use NetworkOnly with background sync
-registerRoute(
-  ({ request, url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/auth/') && ['POST', 'PUT', 'DELETE'].includes(request.method),
-  new NetworkOnly({
-    plugins: [bgSyncPlugin],
-  })
-);
-
 // For GET requests to the API, use NetworkFirst so it falls back to cache if offline
+// Exclude financial state endpoints as Dexie is the authoritative local source
+const excludeFromCache = ['/api/transactions', '/api/accounts', '/api/categories', '/api/forecast'];
+
 registerRoute(
-  ({ request, url }) => url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/auth/') && request.method === 'GET',
+  ({ request, url }) => {
+    return url.pathname.startsWith('/api/') && 
+           !url.pathname.startsWith('/api/auth/') && 
+           request.method === 'GET' &&
+           !excludeFromCache.some(path => url.pathname.startsWith(path));
+  },
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [

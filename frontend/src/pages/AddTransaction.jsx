@@ -50,6 +50,7 @@ const AddTransaction = () => {
   const billId = location.state?.billId || null;
 
   // إعدادات التكرار (Recurring)
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurringSettings, setRecurringSettings] = useState({
     repeatType: 'never',
     interval: 1,
@@ -126,8 +127,19 @@ const AddTransaction = () => {
   }, [location, navigate]);
 
 
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    if (newType === 'transfer') return;
+    const availableCategories = categories[newType] || [];
+    const isCategoryValid = availableCategories.some(c => c._id === category);
+    if (!isCategoryValid && availableCategories.length > 0) {
+      setCategory(availableCategories[0]._id);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     const payload = {
       type,
@@ -152,6 +164,7 @@ const AddTransaction = () => {
       payload.category = category;
     }
 
+    setIsSubmitting(true);
     try {
       if (recurringSettings.repeatType !== 'never') {
         const recurringPayload = {
@@ -198,6 +211,8 @@ const AddTransaction = () => {
     } catch (error) {
       console.error('❌ خطأ في حفظ المعاملة:', error);
       showToast(error.response?.data?.message || t('addTransaction.errorMsg'), 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -228,7 +243,7 @@ const AddTransaction = () => {
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setType(tab.key)}
+                onClick={() => handleTypeChange(tab.key)}
                 className="relative flex-1 h-full rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 flex items-center justify-center z-10 active:scale-[0.97]"
               >
                 {isActive && (
@@ -432,9 +447,10 @@ const AddTransaction = () => {
           <motion.button
             whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full h-13 sm:h-14 rounded-full font-bold text-base sm:text-lg text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/30 backdrop-blur-[10px] border border-[#8D6346]/50 hover:bg-[#8D6346]/45 flex items-center justify-center gap-2 active:bg-[#8D6346]/55 mt-[22px] sm:mt-[26px]"
+            disabled={isSubmitting}
+            className="w-full h-13 sm:h-14 rounded-full font-bold text-base sm:text-lg text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/30 backdrop-blur-[10px] border border-[#8D6346]/50 hover:bg-[#8D6346]/45 flex items-center justify-center gap-2 active:bg-[#8D6346]/55 mt-[22px] sm:mt-[26px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t('addTransaction.submit')}
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : t('addTransaction.submit')}
           </motion.button>
         </div>
       </form>

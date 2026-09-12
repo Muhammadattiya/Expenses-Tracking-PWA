@@ -63,9 +63,46 @@ const initCronJobs = () => {
 const processBudgetThresholds = async (stats) => {
   try {
     const { checkBudgetThresholds } = require('./budgetEngine');
-    const uniqueUsers = await Subscription.distinct('user');
+    const Budget = require('../models/Budget');
+    const SmartBudgetPlan = require('../models/SmartBudgetPlan');
+
+    // 1. Find users who have budgets that crossed a threshold but haven't been notified
+    const usersToCheck = await Budget.distinct('user', {
+      isActive: true,
+      $expr: {
+        $or: [
+          { $and: [{ $gte: ["$spent", "$amount"] }, { $eq: ["$notificationState.notifiedExceeded", false] }] },
+          { $and: [{ $gte: ["$spent", "$amount"] }, { $eq: ["$notificationState.notified100", false] }] },
+          { $and: [{ $gte: ["$spent", { $multiply: ["$amount", 0.9] }] }, { $eq: ["$notificationState.notified90", false] }] },
+          { $and: [{ $gte: ["$spent", { $multiply: ["$amount", 0.75] }] }, { $eq: ["$notificationState.notified75", false] }] },
+          { $and: [{ $gte: ["$spent", { $multiply: ["$amount", 0.5] }] }, { $eq: ["$notificationState.notified50", false] }] }
+        ]
+      }
+    });
+
+    // 2. Find users with master budgets that crossed a threshold
+    const masterUsersToCheck = await SmartBudgetPlan.distinct('user', {
+      status: 'confirmed',
+      groupAsMaster: true,
+      $expr: {
+        $or: [
+          { $and: [{ $gte: ["$spent", "$availableBudget"] }, { $eq: ["$notificationState.notifiedExceeded", false] }] },
+          { $and: [{ $gte: ["$spent", "$availableBudget"] }, { $eq: ["$notificationState.notified100", false] }] },
+          { $and: [{ $gte: ["$spent", { $multiply: ["$availableBudget", 0.9] }] }, { $eq: ["$notificationState.notified90", false] }] },
+          { $and: [{ $gte: ["$spent", { $multiply: ["$availableBudget", 0.75] }] }, { $eq: ["$notificationState.notified75", false] }] },
+          { $and: [{ $gte: ["$spent", { $multiply: ["$availableBudget", 0.5] }] }, { $eq: ["$notificationState.notified50", false] }] }
+        ]
+      }
+    });
+
+    const uniqueUsers = [...new Set([...usersToCheck, ...masterUsersToCheck].map(id => id.toString()))];
+
     for (let userId of uniqueUsers) {
-      await checkBudgetThresholds(userId, stats);
+      // Only process if user actually has an active push subscription
+      const hasSub = await Subscription.exists({ user: userId });
+      if (hasSub) {
+        await checkBudgetThresholds(userId, stats);
+      }
     }
   } catch (error) {
     console.error('[ERROR] Operation Name: processBudgetThresholds');

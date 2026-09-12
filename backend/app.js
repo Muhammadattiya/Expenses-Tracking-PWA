@@ -53,14 +53,13 @@ app.use(cookieParser());
 app.use(compression());
 
 // ─── Global rate limiting ──────────────────────────────────────────────────────
-const globalLimiter = rateLimit({
+const unauthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
-app.use('/api', globalLimiter);
 
 // Auth rate limiting moved to auth routes
 
@@ -86,7 +85,7 @@ app.get('/healthz', healthLimiter, (req, res) => {
 });
 
 // Mount SMS Webhook route BEFORE global JSON middleware
-app.use('/api/sms/webhook', require('./routes/smsWebhook'));
+app.use('/api/sms/webhook', unauthLimiter, require('./routes/smsWebhook'));
 
 app.use(
   express.json({

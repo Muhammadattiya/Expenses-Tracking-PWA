@@ -19,6 +19,7 @@ router.put("/:id", updateTransaction);
 
 router.delete("/:id", deleteTransaction);
 
-router.post("/import", express.json({ limit: '5mb' }), importTransactions);
+const { importLimiter } = require('../middleware/rateLimiter');
+router.post("/import", importLimiter, express.json({ limit: '5mb' }), importTransactions);
 
 module.exports = router;

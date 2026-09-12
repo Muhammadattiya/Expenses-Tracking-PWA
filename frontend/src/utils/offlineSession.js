@@ -179,7 +179,21 @@ export const handleExplicitLogout = async () => {
   // 3. Clear Workbox Background Sync
   await purgeWorkboxBackgroundSync();
 
-  // 4. Remove localStorage identity markers
+  // 4. Remove localStorage identity markers and user-scoped caches
   localStorage.removeItem(AUTH_USER_KEY);
   localStorage.removeItem(ACTIVE_USER_ID_KEY);
+  
+  // Clear any finova_cache_* keys (e.g., scoped receivables/investments)
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('finova_cache_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch (e) {
+    console.warn('[OfflineSession] Failed to clear finova_cache keys:', e);
+  }
 };

@@ -96,7 +96,7 @@ const register = async ({ name, email, password }) => {
     });
   } catch (err) {
     // Handle race condition: unique index violation on concurrent registration
-    if (err.code === 11000) throw new AppError('Email already in use.', 400);
+    if (err.code === 11000) { console.error('11000 Error in register:', err); throw new AppError('Email already in use.', 400); }
     throw err;
   }
   

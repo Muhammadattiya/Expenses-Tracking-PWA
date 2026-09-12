@@ -21,7 +21,7 @@ const createTransaction = async (req, res, next) => {
 
     res.status(201).json(transaction);
   } catch (error) {
-    res.status(400).json({
+    res.status(error.statusCode || 400).json({
       message: error.message,
     });
   }
@@ -36,7 +36,7 @@ const updateTransaction = async (req, res, next) => {
 
     res.status(200).json(transaction);
   } catch (error) {
-    res.status(400).json({
+    res.status(error.statusCode || 400).json({
       message: error.message,
     });
   }

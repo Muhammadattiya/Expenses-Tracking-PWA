@@ -277,7 +277,13 @@ export default {
     "riskHigh": "High Risk",
     "pendingReview": "غير مصنفة",
     "reviewBtn": "اختر فئة",
-    "all": "All"
+    "all": "All",
+    "gain": "المكسب",
+    "loss": "المصروف",
+    "transactionHistory": "سجل المعاملات",
+    "addAccount": "إضافة حساب +",
+    "thisWk": "هذا الأسبوع",
+    "thisMo": "هذا الشهر"
   },
   "addTransaction": {
     "title": "إضافة معاملة",
@@ -1047,8 +1053,8 @@ export default {
   },
   "transactions": {
     "uncategorized": "بدون تصنيف",
-    "settlementPaid": "Settlement (Paid)",
-    "settlementReceived": "Settlement (Received)",
+    "settlementPaid": "تسوية (مدفوع)",
+    "settlementReceived": "تسوية (مستلم)",
     "deletedAccount": "حساب محذوف",
     "noAccount": "بدون حساب",
     "needsReview": "تحتاج مراجعة"

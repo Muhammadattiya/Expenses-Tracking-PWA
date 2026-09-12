@@ -64,31 +64,6 @@ export default function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[90] flex justify-center pb-8" ref={navRef}>
-      
-      <style>{`
-        .liquidglass {
-          background: hsl(0 0% 0% / 0.1);
-          -webkit-backdrop-filter: url(#glass-filter-_r_b_) saturate(1.2);
-          backdrop-filter: url(#glass-filter-_r_b_) saturate(1.2);
-          box-shadow: inset 0 0 2px 1px lab(100% 0 0 / .35), inset 0 0 10px 4px lab(100% 0 0 / .15), inset 0 4px 16px lab(5.32203% 1.61424 -5.88284 / .0509804), inset 0 8px 24px lab(5.32203% 1.61424 -5.88284 / .0509804), inset 0 6px 56px lab(5.32203% 1.61424 -5.88284 / .0509804);
-        }
-      `}</style>
-      <svg className="pointer-events-none opacity-0 -z-10 w-full h-full absolute inset-0" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="glass-filter-_r_b_" colorInterpolationFilters="sRGB" x="0%" y="0%" width="100%" height="100%">
-            <feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
-            <feDisplacementMap in="SourceGraphic" in2="map" id="redchannel" result="dispRed" scale="-20" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
-            <feColorMatrix in="dispRed" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="red"></feColorMatrix>
-            <feDisplacementMap in="SourceGraphic" in2="map" id="greenchannel" result="dispGreen" scale="-24" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
-            <feColorMatrix in="dispGreen" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="green"></feColorMatrix>
-            <feDisplacementMap in="SourceGraphic" in2="map" id="bluechannel" result="dispBlue" scale="-28" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
-            <feColorMatrix in="dispBlue" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="blue"></feColorMatrix>
-            <feBlend in="red" in2="green" mode="screen" result="rg"></feBlend>
-            <feBlend in="rg" in2="blue" mode="screen" result="output"></feBlend>
-            <feGaussianBlur in="output" stdDeviation="3"></feGaussianBlur>
-          </filter>
-        </defs>
-      </svg>
 
       {/* Main Container EXACTLY matching Figma specs: 328x48, but using Flexbox for perfect RTL support */}
       <div 

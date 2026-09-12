@@ -17,6 +17,10 @@ const budgetSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  spent: {
+    type: Number,
+    default: 0
+  },
   period: {
     type: String,
     enum: ['weekly', 'monthly', 'custom'],
@@ -65,5 +69,6 @@ const budgetSchema = new mongoose.Schema({
 
 // Prevent duplicate active budgets for the same user, category and period
 budgetSchema.index({ user: 1, category: 1, period: 1 }, { unique: true });
+budgetSchema.index({ user: 1, category: 1, isActive: 1, startDate: 1, endDate: 1 });
 
 module.exports = mongoose.model('Budget', budgetSchema);
