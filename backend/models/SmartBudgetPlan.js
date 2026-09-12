@@ -62,6 +62,10 @@ const smartBudgetPlanSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  spent: {
+    type: Number,
+    default: 0
+  },
   notificationState: {
     lastPeriodStart: { type: Date, default: null },
     notified50: { type: Boolean, default: false },
@@ -85,5 +89,7 @@ const smartBudgetPlanSchema = new mongoose.Schema({
     required: true
   }
 }, { timestamps: true });
+
+smartBudgetPlanSchema.index({ user: 1, status: 1, groupAsMaster: 1 });
 
 module.exports = mongoose.model('SmartBudgetPlan', smartBudgetPlanSchema);

@@ -39,10 +39,10 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
         setDate(new Date(transaction.date).toISOString().split('T')[0]);
       }
       setType(transaction.type || "");
-      setAccount(transaction.account?._id || "");
-      setCategory(transaction.category?._id || "");
-      setFromAccount(transaction.from_account?._id || "");
-      setToAccount(transaction.to_account?._id || "");
+      setAccount(transaction.account?._id || (typeof transaction.account === 'string' ? transaction.account : ""));
+      setCategory(transaction.category?._id || (typeof transaction.category === 'string' ? transaction.category : ""));
+      setFromAccount(transaction.from_account?._id || (typeof transaction.from_account === 'string' ? transaction.from_account : ""));
+      setToAccount(transaction.to_account?._id || (typeof transaction.to_account === 'string' ? transaction.to_account : ""));
     }
   }, [open, transaction]);
 
@@ -59,6 +59,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isUpdating) return;
     setIsUpdating(true);
     try {
       const payload = {

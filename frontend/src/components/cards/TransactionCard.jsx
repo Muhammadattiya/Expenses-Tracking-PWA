@@ -4,27 +4,32 @@ import { useLanguage } from "../../contexts/LanguageContext";
 
 const TransactionCard = ({ transaction, onClick }) => {
   const { t, lang } = useLanguage();
+  const accountObj = transaction.account && typeof transaction.account === 'object' ? transaction.account : null;
+  const categoryObj = transaction.category && typeof transaction.category === 'object' ? transaction.category : null;
+  const fromAccountObj = transaction.from_account && typeof transaction.from_account === 'object' ? transaction.from_account : null;
+  const toAccountObj = transaction.to_account && typeof transaction.to_account === 'object' ? transaction.to_account : null;
+
   // Left Icon (Account)
   let LeftIconToRender = Wallet;
-  let leftIconName = transaction.account?.icon;
-  let leftColor = transaction.account?.color || '#3b82f6';
+  let leftIconName = accountObj?.icon;
+  let leftColor = accountObj?.color || '#3b82f6';
   if (transaction.type === "transfer") {
-    leftIconName = transaction.from_account?.icon;
-    leftColor = transaction.from_account?.color || '#3b82f6';
+    leftIconName = fromAccountObj?.icon;
+    leftColor = fromAccountObj?.color || '#3b82f6';
   }
   if (leftIconName) LeftIconToRender = getIconComponent(leftIconName, 'Wallet');
 
   // Right Icon (Category or Destination Account or Investment)
   let RightIconToRender = Tag;
-  let rightIconName = transaction.category?.icon;
+  let rightIconName = categoryObj?.icon;
   let rightColor = transaction.type === "expense" ? '#f87171' : (transaction.type === "income" ? '#4ade80' : '#60a5fa');
   if (transaction.type === "transfer") {
     if (transaction.investment) {
       rightIconName = "TrendingUp";
       rightColor = "#eab308"; // yellow/gold for investments
     } else {
-      rightIconName = transaction.to_account?.icon;
-      rightColor = transaction.to_account?.color || '#3b82f6';
+      rightIconName = toAccountObj?.icon;
+      rightColor = toAccountObj?.color || '#3b82f6';
     }
   }
   if (rightIconName) RightIconToRender = getIconComponent(rightIconName, transaction.type === "transfer" ? 'Wallet' : 'Tag');
@@ -42,7 +47,14 @@ const TransactionCard = ({ transaction, onClick }) => {
       : transaction.type === "income"
       ? "+"
       : "";
-  let displayTitle = transaction.title || (transaction.type === "transfer" ? t('addTransaction.transfer') : transaction.category?.name || t('transactions.uncategorized'));
+  const categoryName = categoryObj
+    ? (lang === 'ar' ? (categoryObj.nameAr || categoryObj.name || categoryObj.nameEn) : (categoryObj.nameEn || categoryObj.name || categoryObj.nameAr))
+    : (typeof transaction.category === 'string' && transaction.category ? transaction.categoryName : null);
+  const accountName = accountObj?.name || (typeof transaction.account === 'string' && transaction.account ? transaction.accountName : null);
+  const fromAccountName = fromAccountObj?.name || (typeof transaction.from_account === 'string' && transaction.from_account ? transaction.fromAccountName : null);
+  const toAccountName = toAccountObj?.name || (typeof transaction.to_account === 'string' && transaction.to_account ? transaction.toAccountName : null);
+
+  let displayTitle = transaction.title || (transaction.type === "transfer" ? t('addTransaction.transfer') : categoryName || t('transactions.uncategorized'));
   
   if (transaction.type === 'settlement' && transaction.title) {
     if (transaction.title.startsWith("تسوية (مدفوع): ")) {
@@ -92,20 +104,20 @@ const TransactionCard = ({ transaction, onClick }) => {
           <p className="text-[12px] text-white/50 mt-1 flex items-center gap-1.5 font-medium">
             {transaction.type === "transfer" ? (
               <span className="flex items-center gap-1">
-                <span>{transaction.from_account?.name || t('transactions.deletedAccount')}</span>
+                <span>{fromAccountName || t('transactions.deletedAccount')}</span>
                 <span className="opacity-50">⟶</span>
                 <span>
-                  {transaction.investment ? t('investments.title') : (transaction.to_account?.name || t('transactions.deletedAccount'))}
+                  {transaction.investment ? t('investments.title') : (toAccountName || t('transactions.deletedAccount'))}
                 </span>
               </span>
             ) : (
               <>
-                <span>{transaction.category?.name || t('transactions.uncategorized')}</span>
+                <span>{categoryName || t('transactions.uncategorized')}</span>
                 <span className="w-1 h-1 rounded-full bg-white/20 inline-block"></span>
-                <span>{transaction.account?.name || t('transactions.noAccount')}</span>
+                <span>{accountName || t('transactions.noAccount')}</span>
               </>
             )}
-            {(!transaction.category && ['income', 'expense'].includes(transaction.type)) && (
+            {(!transaction.category && !categoryName && ['income', 'expense'].includes(transaction.type)) && (
               <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
                 {t('transactions.needsReview')}
               </span>

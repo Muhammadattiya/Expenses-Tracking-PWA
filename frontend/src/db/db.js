@@ -40,6 +40,17 @@ db.version(7).stores({
   syncQueue: '++id, userId, method, url, data, timestamp'
 });
 
+db.version(8).stores({
+  transactions: '_id, userId, date, type, account, from_account, to_account, status, operationId, idempotencyKey, [userId+status], [userId+date]',
+  accounts: '_id, userId, name, type',
+  categories: '_id, userId, name, type',
+  syncQueue: '++id, operationId, userId, localId, idempotencyKey, type, status, createdAt',
+  syncMetadata: 'key, userId'
+}).upgrade(async tx => {
+  // Clear legacy v7 syncQueue records per explicitly accepted F-01 product decision
+  await tx.syncQueue.clear();
+});
+
 
 export async function clearOfflineData() {
   await db.transactions.clear();
@@ -47,9 +58,10 @@ export async function clearOfflineData() {
   await db.categories.clear();
   await db.dashboardSummary.clear();
   await db.syncQueue.clear();
-  await db.bills.clear();
-  await db.recurringTransactions.clear();
-  await db.budgets.clear();
-  await db.debts.clear();
-  await db.debtTransactions.clear();
+  if (db.bills) await db.bills.clear();
+  if (db.recurringTransactions) await db.recurringTransactions.clear();
+  if (db.budgets) await db.budgets.clear();
+  if (db.debts) await db.debts.clear();
+  if (db.debtTransactions) await db.debtTransactions.clear();
+  if (db.syncMetadata) await db.syncMetadata.clear();
 }

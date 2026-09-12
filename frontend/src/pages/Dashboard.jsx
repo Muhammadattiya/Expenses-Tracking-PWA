@@ -17,6 +17,7 @@ import { getSurvival } from "../api/forecast";
 import { getReceivables } from "../api/receivables";
 import { getCurrentUser, resetOnboarding } from "../api/auth";
 import { getInvestments, getGoldPrice } from "../api/investments";
+import { getActiveUserId } from "../utils/offlineSession";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
 import QuickAddModal from "../components/modals/QuickAddModal";
@@ -33,8 +34,22 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
-  const [allReceivables, setAllReceivables] = useState([]);
-  const [investmentsValue, setInvestmentsValue] = useState(0);
+  const [allReceivables, setAllReceivables] = useState(() => {
+    try {
+      const activeUser = getActiveUserId();
+      if (!activeUser) return [];
+      const cached = localStorage.getItem(`finova_cache_receivables_${activeUser}`);
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) { return []; }
+  });
+  const [investmentsValue, setInvestmentsValue] = useState(() => {
+    try {
+      const activeUser = getActiveUserId();
+      if (!activeUser) return 0;
+      const cached = localStorage.getItem(`finova_cache_investments_val_${activeUser}`);
+      return cached ? Number(cached) : 0;
+    } catch (e) { return 0; }
+  });
   const [uncategorizedTransactions, setUncategorizedTransactions] = useState([]);
   const [skippedTransactionIds, setSkippedTransactionIds] = useState(new Set());
   const [accounts, setAccounts] = useState([]);
@@ -129,20 +144,30 @@ const Dashboard = () => {
         getCurrentUser().catch(() => null),
         getDebts().catch(() => ({ debts: [], transactions: [] })),
         getSurvival().catch(() => null),
-        getReceivables().catch(() => []),
+        getReceivables().catch(() => null),
         getCategories().catch(() => []),
-        getInvestments().catch(() => []),
+        getInvestments().catch(() => null),
         getGoldPrice().catch(() => null)
       ]);
 
       setAllTransactions(transactionsData);
       setAccounts(accountsData);
       setCategories(categoriesData || []);
-      setAllDebtTransactions(debtsData.transactions || []);
-      setAllReceivables(receivablesData || []);
+      if (debtsData?.transactions) {
+        setAllDebtTransactions(debtsData.transactions);
+      }
+      if (receivablesData && Array.isArray(receivablesData)) {
+        setAllReceivables(receivablesData);
+        try { 
+          const activeUser = getActiveUserId();
+          if (activeUser) {
+            localStorage.setItem(`finova_cache_receivables_${activeUser}`, JSON.stringify(receivablesData));
+          }
+        } catch(e){}
+      }
       
-      let invValue = 0;
       if (investmentsData && investmentsData.length > 0) {
+        let invValue = 0;
         investmentsData.forEach(inv => {
           if (inv.type === 'gold' && goldPriceData) {
             const currentPrice = inv.karat === 24 ? goldPriceData.perGram24 : goldPriceData.perGram21;
@@ -151,9 +176,17 @@ const Dashboard = () => {
             invValue += Number(inv.quantity) * Number(inv.currentPrice || inv.purchasePrice);
           }
         });
+        setInvestmentsValue(invValue);
+        try { 
+          const activeUser = getActiveUserId();
+          if (activeUser) {
+            localStorage.setItem(`finova_cache_investments_val_${activeUser}`, String(invValue));
+          }
+        } catch(e){}
       }
-      setInvestmentsValue(invValue);
-      setSurvival(survivalData);
+      if (survivalData) {
+        setSurvival(survivalData);
+      }
       if (userData && userData.preferences) {
         setUserPrefs({
           trackingPeriod: userData.preferences.trackingPeriod || 'monthly',
@@ -170,18 +203,51 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
+    const handleDataUpdated = (e) => {
+      // Targeted instant update for local transaction creation
+      if (e?.detail?.action === 'LOCAL_TRANSACTION_CREATED' && e.detail.transaction) {
+        const newTx = e.detail.transaction;
+        setAllTransactions(prev => {
+          const exists = prev.some(t => 
+            t._id === newTx._id || 
+            (newTx.idempotencyKey && t.idempotencyKey === newTx.idempotencyKey)
+          );
+          if (exists) return prev;
+          return [newTx, ...prev];
+        });
+        return;
+      }
+      fetchData();
+    };
+    window.addEventListener('finova-data-updated', handleDataUpdated);
+    return () => window.removeEventListener('finova-data-updated', handleDataUpdated);
   }, []);
 
+  const matchesAcc = (accField, targetId) => {
+    if (!accField || !targetId) return false;
+    return (accField._id || accField).toString() === targetId.toString();
+  };
+
   useEffect(() => {
-    // Separate completed from pending
-    const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');
+    // Separate completed from pending, deduplicating by idempotencyKey to prevent double-counting
+    const seenKeys = new Set();
+    const completedTransactions = [];
+    for (const t of allTransactions) {
+      if (t.status && t.status !== 'completed' && t.status !== 'pending') continue;
+      if (t.idempotencyKey) {
+        if (seenKeys.has(t.idempotencyKey)) continue;
+        seenKeys.add(t.idempotencyKey);
+      }
+      completedTransactions.push(t);
+    }
+
     const pending = allTransactions.filter(t => !t.category && ['income', 'expense'].includes(t.type) && !skippedTransactionIds.has(t._id));
     setUncategorizedTransactions(pending);
 
-    // فلترة المعاملات المكتملة بناءً على الحساب المختار (لكي نحسب الرصيد الإجمالي)
+    // Filter transactions based on selected account
     const filtered = completedTransactions.filter(t => {
       if (selectedAccount === 'all') return true;
-      return (t.account?._id || t.account) === selectedAccount || (t.from_account?._id || t.from_account) === selectedAccount || (t.to_account?._id || t.to_account) === selectedAccount;
+      return matchesAcc(t.account, selectedAccount) || matchesAcc(t.from_account, selectedAccount) || matchesAcc(t.to_account, selectedAccount);
     });
 
     let totalIncome = 0;
@@ -201,61 +267,70 @@ const Dashboard = () => {
     filtered.forEach(t => {
       const tDate = new Date(t.date);
       const isCurrentPeriod = tDate >= periodStart && tDate <= periodEnd;
+      const tAmount = Number(t.amount) || 0;
 
       if (t.type === 'income') {
-        totalIncome += t.amount;
-        if (isCurrentPeriod) currentMonthIncome += t.amount;
+        totalIncome += tAmount;
+        if (isCurrentPeriod) currentMonthIncome += tAmount;
       } else if (t.type === 'expense') {
-        totalExpense += t.amount;
-        if (isCurrentPeriod) currentMonthExpense += t.amount;
+        totalExpense += tAmount;
+        if (isCurrentPeriod) currentMonthExpense += tAmount;
       } else if (t.type === 'transfer') {
         if (selectedAccount !== 'all') {
-          if ((t.to_account?._id || t.to_account) === selectedAccount) {
-            totalIncome += t.amount;
-            if (isCurrentPeriod) currentMonthIncome += t.amount;
+          if (matchesAcc(t.to_account, selectedAccount)) {
+            totalIncome += tAmount;
+            if (isCurrentPeriod) currentMonthIncome += tAmount;
           }
-          if ((t.from_account?._id || t.from_account) === selectedAccount) {
-            totalExpense += t.amount;
-            if (isCurrentPeriod) currentMonthExpense += t.amount;
+          if (matchesAcc(t.from_account, selectedAccount)) {
+            totalExpense += tAmount;
+            if (isCurrentPeriod) currentMonthExpense += tAmount;
           }
         }
       } else if (t.type === 'settlement') {
-        totalSettlements += t.amount;
+        totalSettlements += tAmount;
       }
     });
 
     const getAccountBalance = (account) => {
       if (account.type === 'investment') return investmentsValue;
-      let bal = account.balance_adjustment || 0;
+      let bal = Number(account.balance_adjustment) || 0;
+      const targetId = account._id?.toString();
+
       completedTransactions.forEach(t => {
-        if (t.type === 'income' && (t.account?._id || t.account) === account._id) bal += t.amount;
-        else if (t.type === 'expense' && (t.account?._id || t.account) === account._id) bal -= t.amount;
+        const tAmount = Number(t.amount) || 0;
+        const accMatch = matchesAcc(t.account, targetId);
+        const fromMatch = matchesAcc(t.from_account, targetId);
+        const toMatch = matchesAcc(t.to_account, targetId);
+
+        if (t.type === 'income' && accMatch) bal += tAmount;
+        else if (t.type === 'expense' && accMatch) bal -= tAmount;
         else if (t.type === 'transfer') {
-          if ((t.to_account?._id || t.to_account) === account._id) bal += t.amount;
-          if ((t.from_account?._id || t.from_account) === account._id) bal -= t.amount;
-        } else if (t.type === 'settlement' && (t.account?._id || t.account) === account._id) bal += t.amount;
+          if (toMatch) bal += tAmount;
+          if (fromMatch) bal -= tAmount;
+        } else if (t.type === 'settlement' && accMatch) bal += tAmount;
       });
 
       allDebtTransactions.forEach(dt => {
-        if ((dt.account?._id || dt.account) === account._id) {
+        if (matchesAcc(dt.account, targetId)) {
+          const dtAmount = Number(dt.amount) || 0;
           if (dt.type === 'loan') {
-            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal += dt.amount; // Borrowed money -> got money
-            else bal -= dt.amount; // Lent money -> lost money
+            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal += dtAmount;
+            else bal -= dtAmount;
           } else if (dt.type === 'repayment') {
-            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal -= dt.amount; // Repaid money -> lost money
-            else bal += dt.amount; // Got paid back -> got money
+            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal -= dtAmount;
+            else bal += dtAmount;
           }
         }
       });
 
       allReceivables.forEach(r => {
-        if ((r.paidFrom?._id || r.paidFrom) === account._id) bal -= r.paidAmount;
-        if ((r.receivedTo?._id || r.receivedTo) === account._id) bal += r.receivedAmount;
+        if (matchesAcc(r.paidFrom, targetId)) bal -= (Number(r.paidAmount) || 0);
+        if (matchesAcc(r.receivedTo, targetId)) bal += (Number(r.receivedAmount) || 0);
         if (r.participants) {
           r.participants.forEach(p => {
             if (p.payments) {
               p.payments.forEach(pay => {
-                if ((pay.account?._id || pay.account) === account._id) bal += pay.amount;
+                if (matchesAcc(pay.account, targetId)) bal += (Number(pay.amount) || 0);
               });
             }
           });
@@ -285,13 +360,27 @@ const Dashboard = () => {
   }, [allTransactions, allDebtTransactions, allReceivables, selectedAccount, periodStart, periodEnd, accounts, investmentsValue, skippedTransactionIds]);
 
   const displayedTransactions = useMemo(() => {
-    const completedTransactions = allTransactions.filter(t => !t.status || t.status === 'completed');
-    return completedTransactions.filter(t => {
-      if (selectedAccount !== 'all' && (t.account?._id || t.account) !== selectedAccount && (t.from_account?._id || t.from_account) !== selectedAccount && (t.to_account?._id || t.to_account) !== selectedAccount) {
-        return false;
+    const seenKeys = new Set();
+    const valid = [];
+    for (const t of allTransactions) {
+      if (t.status && t.status !== 'completed' && t.status !== 'pending') continue;
+      if (t.idempotencyKey) {
+        if (seenKeys.has(t.idempotencyKey)) continue;
+        seenKeys.add(t.idempotencyKey);
       }
-      if (selectedCategory !== 'all' && (t.category?._id || t.category) !== selectedCategory) {
-        return false;
+      valid.push(t);
+    }
+
+    return valid.filter(t => {
+      if (selectedAccount !== 'all') {
+        const accMatch = matchesAcc(t.account, selectedAccount);
+        const fromMatch = matchesAcc(t.from_account, selectedAccount);
+        const toMatch = matchesAcc(t.to_account, selectedAccount);
+        if (!accMatch && !fromMatch && !toMatch) return false;
+      }
+      if (selectedCategory !== 'all') {
+        const catId = (t.category?._id || t.category)?.toString();
+        if (catId !== selectedCategory.toString()) return false;
       }
       const tDate = new Date(t.date);
       if (tDate < periodStart || tDate > periodEnd) {
@@ -301,7 +390,7 @@ const Dashboard = () => {
     });
   }, [allTransactions, selectedAccount, selectedCategory, periodStart, periodEnd]);
 
-  const { groupedTransactions, sortedDates, groupCounts } = useMemo(() => {
+  const { groupedTransactions, sortedDates, groupCounts, groupOffsets } = useMemo(() => {
     const getCreationTime = (t) => {
       if (t.createdAt) return new Date(t.createdAt).getTime();
       if (t._id && typeof t._id === 'string' && t._id.length === 24) {
@@ -324,14 +413,15 @@ const Dashboard = () => {
       if (!acc[key]) acc[key] = { items: [], income: 0, expense: 0 };
       
       acc[key].items.push(curr);
+      const cAmount = Number(curr.amount) || 0;
 
-      if (curr.type === 'income') acc[key].income += curr.amount;
-      else if (curr.type === 'expense') acc[key].expense += curr.amount;
+      if (curr.type === 'income') acc[key].income += cAmount;
+      else if (curr.type === 'expense') acc[key].expense += cAmount;
       else if (curr.type === 'transfer' && selectedAccount !== 'all') {
-        if ((curr.to_account?._id || curr.to_account) === selectedAccount) acc[key].income += curr.amount;
-        if ((curr.from_account?._id || curr.from_account) === selectedAccount) acc[key].expense += curr.amount;
+        if (matchesAcc(curr.to_account, selectedAccount)) acc[key].income += cAmount;
+        if (matchesAcc(curr.from_account, selectedAccount)) acc[key].expense += cAmount;
       } else if (curr.type === 'settlement' && selectedAccount !== 'all') {
-        if ((curr.account?._id || curr.account) === selectedAccount) acc[key].income += curr.amount;
+        if (matchesAcc(curr.account, selectedAccount)) acc[key].income += cAmount;
       }
       
       return acc;
@@ -339,9 +429,13 @@ const Dashboard = () => {
     
     const sorted = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
     const counts = sorted.map(date => grouped[date].items.length);
+    const offsets = [0];
+    for (let i = 0; i < counts.length - 1; i++) {
+      offsets.push(offsets[i] + counts[i]);
+    }
     
-    return { groupedTransactions: grouped, sortedDates: sorted, groupCounts: counts };
-  }, [displayedTransactions]);
+    return { groupedTransactions: grouped, sortedDates: sorted, groupCounts: counts, groupOffsets: offsets };
+  }, [displayedTransactions, selectedAccount]);
 
   const handleTransactionClick = (transaction) => {
     setSelectedTransaction(transaction);
@@ -432,7 +526,7 @@ const Dashboard = () => {
                   onClick={() => navigate('/add?tab=account')}
                   className="w-full h-[220px] md:h-[260px] lg:h-[300px] max-w-[340px] md:max-w-[400px] lg:max-w-[460px] mx-auto rounded-[20px] border-2 border-dashed border-[#8D6346] bg-[#8D6346]/10 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
                 >
-                  <p className="text-[#E2EF8B] text-lg lg:text-xl font-medium tracking-wide">Add Account +</p>
+                  <p className="text-[#E2EF8B] text-lg lg:text-xl font-medium tracking-wide">{t('dashboard.addAccount') || 'Add Account +'}</p>
                 </div>
              ) : (
                 <div className="w-full h-[220px] md:h-[260px] lg:h-[300px] max-w-[340px] md:max-w-[400px] lg:max-w-[460px] mx-auto rounded-[30px] p-6 lg:p-8 flex flex-col justify-between liquidglass relative overflow-hidden"
@@ -473,14 +567,14 @@ const Dashboard = () => {
                     {/* Gain */}
                     <div className="flex-1 bg-white/5 rounded-[20px] py-2 px-3 flex flex-col items-center justify-center gap-0.5"
                          style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.1)' }}>
-                      <p className="text-green-400 text-[11px] font-semibold tracking-wider uppercase">Gain <span className="opacity-50 lowercase tracking-normal">({userPrefs.trackingPeriod === 'weekly' ? 'This Wk' : 'This Mo'})</span></p>
-                      <p className="text-white font-medium text-sm tracking-wide tabular-nums">{totals.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} EGP</p>
+                      <p className="text-green-400 text-[11px] font-semibold tracking-wider uppercase">{t('dashboard.gain') || 'Gain'} <span className="opacity-50 lowercase tracking-normal">({userPrefs.trackingPeriod === 'weekly' ? (t('dashboard.thisWk') || 'This Wk') : (t('dashboard.thisMo') || 'This Mo')})</span></p>
+                      <p className="text-white font-medium text-sm tracking-wide tabular-nums">{totals.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}</p>
                     </div>
                     {/* Loss */}
                     <div className="flex-1 bg-white/5 rounded-[20px] py-2 px-3 flex flex-col items-center justify-center gap-0.5"
                          style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.1)' }}>
-                      <p className="text-red-400 text-[11px] font-semibold tracking-wider uppercase">Loss <span className="opacity-50 lowercase tracking-normal">({userPrefs.trackingPeriod === 'weekly' ? 'This Wk' : 'This Mo'})</span></p>
-                      <p className="text-white font-medium text-sm tracking-wide tabular-nums">{totals.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} EGP</p>
+                      <p className="text-red-400 text-[11px] font-semibold tracking-wider uppercase">{t('dashboard.loss') || 'Loss'} <span className="opacity-50 lowercase tracking-normal">({userPrefs.trackingPeriod === 'weekly' ? (t('dashboard.thisWk') || 'This Wk') : (t('dashboard.thisMo') || 'This Mo')})</span></p>
+                      <p className="text-white font-medium text-sm tracking-wide tabular-nums">{totals.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}</p>
                     </div>
                   </div>
                 </div>
@@ -509,8 +603,8 @@ const Dashboard = () => {
                             survival.risk === 'Low Risk' ? 'rgba(59, 130, 246, 0.3)' : 
                             survival.risk === 'Medium Risk' ? 'rgba(245, 158, 11, 0.3)' : 
                             'rgba(255, 0, 0, 0.3)',
-               backdropFilter: 'url(#glass-filter-_r_b_) saturate(1.2)',
-               WebkitBackdropFilter: 'url(#glass-filter-_r_b_) saturate(1.2)',
+               backdropFilter: 'blur(32px) saturate(1.4)',
+               WebkitBackdropFilter: 'blur(32px) saturate(1.4)',
                boxShadow: 'inset 0 0 2px 1px lab(100% 0 0 / .35), inset 0 0 10px 4px lab(100% 0 0 / .15), inset 0 4px 16px lab(5.32203% 1.61424 -5.88284 / .0509804), 0 4px 16px rgba(0,0,0,0.3)'
              }}
            >
@@ -611,7 +705,7 @@ const Dashboard = () => {
 
         {/* Transactions List */}
         <div className="w-full">
-           <h2 className="text-white font-extrabold text-[22px] mb-4 pl-2 drop-shadow-md">Transaction History</h2>
+           <h2 className="text-white font-extrabold text-[22px] mb-4 pl-2 drop-shadow-md">{t('dashboard.transactionHistory') || 'Transaction History'}</h2>
            {displayedTransactions.length === 0 ? (
              <div className="text-center text-white/50 py-12 bg-white/5 rounded-[2rem] font-medium flex flex-col items-center gap-3">
                <p>{t('dashboard.noTransactions')}</p>
@@ -644,16 +738,16 @@ const Dashboard = () => {
                            <div className="flex items-center gap-1.5 liquidglass border border-white/5 rounded-full px-3 py-1"
                                 style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.2)' }}>
                              <LucideIcons.TrendingUp className="w-4 h-4 text-green-400" />
-                             <span className="text-green-400 font-bold text-[13px] tabular-nums">{groupStats.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} EGP</span>
-                             <span className="text-green-400/90 font-medium text-[13px] ml-0.5">Gain</span>
+                             <span className="text-green-400 font-bold text-[13px] tabular-nums">{groupStats.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}</span>
+                             <span className="text-green-400/90 font-medium text-[13px] ml-0.5">{t('dashboard.gain') || 'Gain'}</span>
                            </div>
                          )}
                          {groupStats.expense > 0 && (
                            <div className="flex items-center gap-1.5 liquidglass border border-white/5 rounded-full px-3 py-1"
                                 style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.2)' }}>
                              <LucideIcons.TrendingDown className="w-4 h-4 text-red-400" />
-                             <span className="text-red-400 font-bold text-[13px] tabular-nums">{groupStats.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} EGP</span>
-                             <span className="text-red-400/90 font-medium text-[13px] ml-0.5">Loss</span>
+                             <span className="text-red-400 font-bold text-[13px] tabular-nums">{groupStats.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}</span>
+                             <span className="text-red-400/90 font-medium text-[13px] ml-0.5">{t('dashboard.loss') || 'Loss'}</span>
                            </div>
                          )}
                        </div>
@@ -664,8 +758,7 @@ const Dashboard = () => {
                itemContent={(index, groupIndex) => {
                  const dateKey = sortedDates[groupIndex];
                  const transactionsForGroup = groupedTransactions[dateKey].items;
-                 let offset = 0;
-                 for(let i=0; i<groupIndex; i++) offset += groupCounts[i];
+                 const offset = groupOffsets ? groupOffsets[groupIndex] || 0 : 0;
                  const itemIndexInGroup = index - offset;
                  const transaction = transactionsForGroup[itemIndexInGroup];
                  

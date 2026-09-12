@@ -94,12 +94,18 @@ export default function AccountManagement({ onBack }) {
     if (account.type === 'investment') return investmentsValue;
     let balance = account.balance_adjustment || 0;
     transactions.forEach(t => {
-      if (t.type === 'income' && t.account?._id === account._id) balance += t.amount;
-      else if (t.type === 'expense' && t.account?._id === account._id) balance -= t.amount;
+      const amt = Number(t.amount) || 0;
+      const tAccId = (t.account?._id || t.account)?.toString();
+      const tFromId = (t.from_account?._id || t.from_account)?.toString();
+      const tToId = (t.to_account?._id || t.to_account)?.toString();
+      const accId = account._id?.toString();
+
+      if (t.type === 'income' && tAccId === accId) balance += amt;
+      else if (t.type === 'expense' && tAccId === accId) balance -= amt;
       else if (t.type === 'transfer') {
-        if (t.to_account?._id === account._id) balance += t.amount;
-        if (t.from_account?._id === account._id) balance -= t.amount;
-      } else if (t.type === 'settlement' && t.account?._id === account._id) balance += t.amount;
+        if (tToId === accId) balance += amt;
+        if (tFromId === accId) balance -= amt;
+      } else if (t.type === 'settlement' && tAccId === accId) balance += amt;
     });
 
     allDebtTransactions.forEach(dt => {

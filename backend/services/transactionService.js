@@ -1,9 +1,40 @@
+
+const mongoose = require('mongoose');
 const Transaction = require("../models/Transaction");
 const Account = require("../models/Account");
 const Category = require("../models/Category");
 const AppError = require('../utils/AppError');
 const { checkBudgetThresholds } = require("./budgetEngine");
 const { adoptLegacyData } = require('./legacyDataService');
+
+const withRetry = async (fn, maxRetries = 5) => {
+  let attempt = 0;
+  const initialDelay = 25;
+  const maxDelay = 400;
+
+  while (true) {
+    try {
+      return await fn();
+    } catch (err) {
+      attempt++;
+
+      const isWriteConflict = err.code === 112 || (typeof err.message === 'string' && err.message.includes('Write conflict'));
+      const isTransient = typeof err.hasErrorLabel === 'function' && (
+        err.hasErrorLabel('TransientTransactionError') ||
+        err.hasErrorLabel('UnknownTransactionCommitResult')
+      );
+      const isDuplicateKey = err.code === 11000 || (typeof err.message === 'string' && /E11000/i.test(err.message));
+
+      if (!isDuplicateKey && (isWriteConflict || isTransient) && attempt < maxRetries) {
+        const backoff = Math.min(maxDelay, initialDelay * Math.pow(2, attempt - 1));
+        const delay = Math.floor(Math.random() * backoff);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+};
 
 const POPULATE_TRANSACTION_REFERENCES = [
   { path: 'account', select: 'name type icon color' },
@@ -21,6 +52,7 @@ const getTransactions = async (userId) => {
     .populate('from_account')
     .populate('to_account')
     .sort({ date: -1, createdAt: -1 })
+    .limit(500)
     .lean();
 };
 
@@ -130,7 +162,7 @@ const validateReferences = async (userId, data) => {
   if (data.type === "transfer") {
     const fromAccount = await Account.findOne({ _id: data.from_account, user: userId });
     if (!fromAccount) throw new Error("Source account not found.");
-    
+
     if (data.investment) {
       // Transfer to investment
       return;
@@ -147,18 +179,82 @@ const validateReferences = async (userId, data) => {
     return;
   }
 
+  const validations = [];
   if (data.account !== undefined) {
-    const account = await Account.findOne({ _id: data.account, user: userId });
-    if (!account) throw new Error("Account not found.");
+    validations.push(
+      Account.findOne({ _id: data.account, user: userId }).then(account => {
+        if (!account) throw new Error("Account not found.");
+      })
+    );
   }
 
   if (data.category !== undefined && data.category !== null) {
-    const category = await Category.findOne({ _id: data.category, user: userId });
-    if (!category) throw new Error("Category not found.");
+    validations.push(
+      Category.findOne({ _id: data.category, user: userId }).then(category => {
+        if (!category) throw new Error("Category not found.");
+      })
+    );
+  }
+
+  if (validations.length > 0) {
+    await Promise.all(validations);
   }
 };
 
 // Whitelist allowed fields to prevent mass assignment
+const updateBudgetIncrementally = async (userId, tx, multiplier, session) => {
+  if (tx.type !== 'expense') return;
+
+  const Budget = require('../models/Budget');
+  const SmartBudgetPlan = require('../models/SmartBudgetPlan');
+
+  const txAmount = Number(tx.amount) || 0;
+  if (txAmount === 0 || !multiplier) return;
+
+  const categoryId = tx.category?._id || tx.category;
+  if (!categoryId) return;
+
+  const txDate = tx.date ? new Date(tx.date) : new Date();
+
+  const accountOr = [
+    { account: { $exists: false } },
+    { account: null }
+  ];
+  if (tx.account) accountOr.push({ account: tx.account?._id || tx.account });
+  if (tx.from_account) accountOr.push({ account: tx.from_account?._id || tx.from_account });
+
+  await Budget.updateMany({
+    user: userId,
+    category: categoryId,
+    isActive: true,
+    startDate: { $lte: txDate },
+    endDate: { $gte: txDate },
+    $or: accountOr
+  }, {
+    $inc: { spent: txAmount * multiplier }
+  }, { session });
+
+  // Only update SmartBudgetPlan if an active confirmed master plan exists
+  const hasMasterPlan = await SmartBudgetPlan.exists({
+    user: userId,
+    status: 'confirmed',
+    groupAsMaster: true
+  }).session(session);
+
+  if (hasMasterPlan) {
+    await SmartBudgetPlan.updateMany({
+      user: userId,
+      status: 'confirmed',
+      groupAsMaster: true,
+      'categories.category': categoryId,
+      startDate: { $lte: txDate },
+      endDate: { $gte: txDate }
+    }, {
+      $inc: { spent: txAmount * multiplier }
+    }, { session });
+  }
+};
+
 const TRANSACTION_ALLOWED_KEYS = ['title', 'amount', 'type', 'date', 'status', 'account', 'category', 'from_account', 'to_account', 'investment', 'idempotencyKey'];
 const pickTransactionFields = (data) => {
   const safe = {};
@@ -168,25 +264,133 @@ const pickTransactionFields = (data) => {
   return safe;
 };
 
+const isPayloadMatch = (existingTx, safeData) => {
+  const typeMatch = existingTx.type === safeData.type;
+  const amountMatch = Number(existingTx.amount) === Number(safeData.amount);
+
+  const existingAcc = (existingTx.account?._id || existingTx.account)?.toString() || null;
+  const reqAcc = safeData.account ? safeData.account.toString() : null;
+  const accountMatch = existingAcc === reqAcc;
+
+  const existingFrom = (existingTx.from_account?._id || existingTx.from_account)?.toString() || null;
+  const reqFrom = safeData.from_account ? safeData.from_account.toString() : null;
+  const fromAccountMatch = existingFrom === reqFrom;
+
+  const existingTo = (existingTx.to_account?._id || existingTx.to_account)?.toString() || null;
+  const reqTo = safeData.to_account ? safeData.to_account.toString() : null;
+  const toAccountMatch = existingTo === reqTo;
+
+  const existingCat = (existingTx.category?._id || existingTx.category)?.toString() || null;
+  const reqCat = safeData.category ? safeData.category.toString() : null;
+  const categoryMatch = existingCat === reqCat;
+
+  return typeMatch && amountMatch && accountMatch && fromAccountMatch && toAccountMatch && categoryMatch;
+};
+
 const createTransaction = async (userId, data, opts = {}) => {
-  // Internal callers (SMS parser, shortcuts) can pass trusted fields via opts.trusted
   const safeData = opts.trusted ? { ...data } : pickTransactionFields(data);
-  if (safeData.title !== undefined) {
-    safeData.title = String(safeData.title).trim();
-  }
+  if (safeData.title !== undefined) safeData.title = String(safeData.title).trim();
   await validateReferences(userId, safeData);
-  const transaction = await Transaction.create({ ...safeData, user: userId });
 
-  const populated = await Transaction.findById(transaction._id)
-    .populate("account")
-    .populate("category")
-    .populate("from_account")
-    .populate("to_account");
+  if (safeData.type === 'expense' && safeData.category) {
+    const Budget = require('../models/Budget');
+    const txDate = safeData.date ? new Date(safeData.date) : new Date();
+    const needsSync = await Budget.exists({
+      user: userId,
+      category: safeData.category,
+      isActive: true,
+      $or: [
+        { endDate: { $lt: txDate } },
+        { startDate: { $gt: txDate } },
+        { spent: { $exists: false } }
+      ]
+    });
+    if (needsSync) {
+      const { syncBudgetPeriods } = require('./budgetEngine');
+      await syncBudgetPeriods(userId);
+    }
+  }
 
-  if (populated.type === 'expense') {
+  if (safeData.idempotencyKey) {
+    const existingTx = await Transaction.findOne({ user: userId, idempotencyKey: safeData.idempotencyKey })
+      .populate('account category from_account to_account')
+      .lean();
+    if (existingTx) {
+      if (isPayloadMatch(existingTx, safeData)) {
+        return existingTx;
+      } else {
+        throw new AppError('Idempotency conflict: payload does not match original request', 409);
+      }
+    }
+  }
+
+  let createdTx = null;
+  let isIdempotencyHit = false;
+
+  try {
+    await withRetry(async () => {
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          if (typeof opts.onAttempt === 'function') opts.onAttempt();
+          try {
+            const [doc] = await Transaction.create([{
+              user: userId,
+              ...safeData,
+              source: safeData.source || 'manual'
+            }], { session });
+
+            if (doc.type === 'expense') {
+              await updateBudgetIncrementally(userId, doc, 1, session);
+            }
+            createdTx = doc;
+          } catch (err) {
+            if (typeof opts.onError === 'function') opts.onError(err);
+            throw err;
+          }
+        });
+      } finally {
+        await session.endSession();
+      }
+    });
+  } catch (err) {
+    const isDupKey = err.code === 11000 || (typeof err.message === 'string' && /E11000/i.test(err.message));
+    if (isDupKey && safeData.idempotencyKey) {
+      isIdempotencyHit = true;
+    } else {
+      throw err;
+    }
+  }
+
+  if (isIdempotencyHit) {
+    let winningTx = null;
+    for (let poll = 0; poll < 10; poll++) {
+      winningTx = await Transaction.findOne({ user: userId, idempotencyKey: safeData.idempotencyKey })
+        .populate('account category from_account to_account')
+        .lean();
+      if (winningTx) break;
+      await new Promise(r => setTimeout(r, 20));
+    }
+
+    if (!winningTx) {
+      throw new AppError('Idempotency conflict: transaction is being processed, please retry', 409);
+    }
+
+    if (isPayloadMatch(winningTx, safeData)) {
+      return winningTx;
+    } else {
+      throw new AppError('Idempotency conflict: payload does not match original request', 409);
+    }
+  }
+
+  const populated = await Transaction.findById(createdTx._id)
+    .populate('account category from_account to_account');
+
+  if (populated && populated.type === 'expense') {
+    const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
-  
+
   const { checkPaydaySurvivalRisk } = require('./cronJobs');
   checkPaydaySurvivalRisk(userId).catch(err => console.error('[ERROR] checkPaydaySurvivalRisk:', err));
 
@@ -195,58 +399,129 @@ const createTransaction = async (userId, data, opts = {}) => {
 
 const updateTransaction = async (userId, id, data) => {
   const safeData = pickTransactionFields(data);
-  if (safeData.title !== undefined) {
-    safeData.title = String(safeData.title).trim();
-  }
+  if (safeData.title !== undefined) safeData.title = String(safeData.title).trim();
   await validateReferences(userId, safeData);
-  
-  // Capture original transaction to detect manual review of SMS shortcuts
-  const originalTx = await Transaction.findOne({ _id: id, user: userId }).lean();
-  if (!originalTx) throw new Error("Transaction not found.");
 
-  const transaction = await Transaction.findOneAndUpdate({ _id: id, user: userId }, safeData, {
-    returnDocument: 'after',
-    runValidators: true,
-  })
-    .populate("account")
-    .populate("category")
-    .populate("from_account")
-    .populate("to_account");
+  if (safeData.type === 'expense' && safeData.category) {
+    const Budget = require('../models/Budget');
+    const txDate = safeData.date ? new Date(safeData.date) : new Date();
+    const needsSync = await Budget.exists({
+      user: userId,
+      category: safeData.category,
+      isActive: true,
+      $or: [
+        { endDate: { $lt: txDate } },
+        { startDate: { $gt: txDate } },
+        { spent: { $exists: false } }
+      ]
+    });
+    if (needsSync) {
+      const { syncBudgetPeriods } = require('./budgetEngine');
+      await syncBudgetPeriods(userId);
+    }
+  }
 
-  if (!transaction) throw new Error("Transaction not found.");
-  
-  // Merchant Learning Hook: If resolving an unknown SMS transaction
+  let updatedTx = null;
+  let originalTx = null;
+
+  await withRetry(async () => {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        originalTx = await Transaction.findOne({ _id: id, user: userId }).session(session).lean();
+        if (!originalTx) {
+          const err = new AppError("Transaction not found.", 404);
+          throw err;
+        }
+
+        updatedTx = await Transaction.findOneAndUpdate(
+          { _id: id, user: userId },
+          safeData,
+          { returnDocument: 'after', runValidators: true, session }
+        )
+          .populate("account")
+          .populate("category")
+          .populate("from_account")
+          .populate("to_account");
+
+        const origIsExpense = originalTx.type === 'expense';
+        const newIsExpense = updatedTx.type === 'expense';
+
+        const origCat = (originalTx.category?._id || originalTx.category)?.toString() || null;
+        const newCat = (updatedTx.category?._id || updatedTx.category)?.toString() || null;
+
+        const origAcc = (originalTx.account?._id || originalTx.account)?.toString() || null;
+        const newAcc = (updatedTx.account?._id || updatedTx.account)?.toString() || null;
+
+        const origDate = new Date(originalTx.date).getTime();
+        const newDate = new Date(updatedTx.date).getTime();
+
+        if (origIsExpense && newIsExpense && origCat === newCat && origAcc === newAcc && origDate === newDate) {
+          const delta = Number(updatedTx.amount) - Number(originalTx.amount);
+          if (delta !== 0) {
+            await updateBudgetIncrementally(userId, { ...updatedTx.toObject(), amount: Math.abs(delta) }, delta > 0 ? 1 : -1, session);
+          }
+        } else {
+          if (origIsExpense) {
+            await updateBudgetIncrementally(userId, originalTx, -1, session);
+          }
+          if (newIsExpense) {
+            await updateBudgetIncrementally(userId, updatedTx, 1, session);
+          }
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+  });
+
   if (
-    !originalTx.category && 
-    transaction.category &&
+    !originalTx.category &&
+    updatedTx.category &&
     ['sms_shortcut', 'apple_shortcut'].includes(originalTx.source)
   ) {
     const { learnFromUser } = require('./merchantLearningService');
-    // Use originalTx.title (the raw merchant from SMS parser)
-    learnFromUser(userId, originalTx.title, transaction.category._id || transaction.category)
+    learnFromUser(userId, originalTx.title, updatedTx.category._id || updatedTx.category)
       .catch(err => console.error('[ERROR] merchant learning failed:', err));
   }
-  
-  if (transaction.type === 'expense') {
+
+  if (originalTx.type === 'expense' || updatedTx.type === 'expense') {
+    const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
 
   const { checkPaydaySurvivalRisk } = require('./cronJobs');
   checkPaydaySurvivalRisk(userId).catch(err => console.error('[ERROR] checkPaydaySurvivalRisk:', err));
 
-  return transaction;
+  return updatedTx;
 };
 
 const deleteTransaction = async (userId, id) => {
-  const transaction = await Transaction.findOne({ _id: id, user: userId });
-  if (!transaction) {
-    const err = new Error("Transaction not found.");
-    err.statusCode = 404;
-    throw err;
-  }
-  await Transaction.deleteOne({ _id: id, user: userId });
-  
-  if (transaction.type === 'expense') {
+  let originalTx = null;
+
+  await withRetry(async () => {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        originalTx = await Transaction.findOne({ _id: id, user: userId }).session(session).lean();
+        if (!originalTx) {
+          const err = new AppError("Transaction not found.", 404);
+          throw err;
+        }
+
+        await Transaction.deleteOne({ _id: id, user: userId }).session(session);
+
+        if (originalTx.type === 'expense') {
+          await updateBudgetIncrementally(userId, originalTx, -1, session);
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+  });
+
+  if (originalTx && originalTx.type === 'expense') {
+    const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
 
@@ -263,10 +538,15 @@ const importTransactions = async (userId, backup) => {
   const transactions = Array.isArray(backup)
     ? backup
     : backup?.transactions || backup?.data?.transactions || backup?.data?.items
-      || backup?.items || backup?.records
-      || Object.values(backup || {}).find(Array.isArray);
+    || backup?.items || backup?.records
+    || Object.values(backup || {}).find(Array.isArray);
+    
   if (!Array.isArray(transactions)) {
-    throw new Error('Invalid backup file: no transactions array was found.');
+    throw new AppError('Invalid backup file: no transactions array was found.', 400);
+  }
+
+  if (transactions.length > 2000) {
+    throw new AppError('Import limit exceeded: Maximum 2000 transactions allowed per import.', 400);
   }
 
   // 2. Build lookup maps from existing DB records
@@ -287,29 +567,6 @@ const importTransactions = async (userId, backup) => {
     return null;
   };
 
-  // Helper: find-or-create account by name
-  const resolveAccount = async (name, typeHint = 'cash') => {
-    if (!name) return null;
-    const key = name.trim().toLowerCase();
-    if (accountByName.has(key)) return accountByName.get(key);
-    const accountType = ['cash', 'bank', 'wallet'].includes(typeHint) ? typeHint : 'cash';
-    const account = await Account.create({ user: userId, name: name.trim(), type: accountType });
-    accountByName.set(key, account);
-    createdAccounts += 1;
-    return account;
-  };
-
-  // Helper: find-or-create category by name + type
-  const resolveCategory = async (name, type) => {
-    if (!name) return null;
-    const key = `${type}:${name.trim().toLowerCase()}`;
-    if (categoryByKey.has(key)) return categoryByKey.get(key);
-    const category = await Category.create({ user: userId, name: name.trim(), type });
-    categoryByKey.set(key, category);
-    createdCategories += 1;
-    return category;
-  };
-
   const normalizeType = (value) => {
     const t = String(value || '').trim().toLowerCase();
     if (['income', 'دخل', 'in'].includes(t)) return 'income';
@@ -322,20 +579,76 @@ const importTransactions = async (userId, backup) => {
   const normalizeAmount = (value) =>
     Number(String(value ?? '').replace(/[,،\s]/g, '').replace(/[^0-9.\-]/g, ''));
 
-  // 3. Pre-create accounts & categories listed in the backup metadata
+  // 3. First pass: Collect all unique missing accounts and categories
+  const accountsToCreate = new Map();
+  const categoriesToCreate = new Map();
+
+  const registerAccount = (name, typeHint) => {
+    if (!name) return;
+    const key = name.trim().toLowerCase();
+    if (!accountByName.has(key) && !accountsToCreate.has(key)) {
+      const accountType = ['cash', 'bank', 'wallet'].includes(typeHint) ? typeHint : 'cash';
+      accountsToCreate.set(key, { name: name.trim(), type: accountType });
+    }
+  };
+
+  const registerCategory = (name, type) => {
+    if (!name) return;
+    const key = `${type}:${name.trim().toLowerCase()}`;
+    if (!categoryByKey.has(key) && !categoriesToCreate.has(key)) {
+      categoriesToCreate.set(key, { name: name.trim(), type });
+    }
+  };
+
+  // Pre-create accounts & categories listed in the backup metadata
   for (const acc of backup?.accounts || []) {
-    const name = extractName(acc, acc?.name);
-    if (name) await resolveAccount(name, acc?.type);
+    registerAccount(extractName(acc, acc?.name), acc?.type);
   }
   for (const cat of backup?.categories || []) {
     const catType = normalizeType(cat?.type);
-    const name = extractName(cat, cat?.name);
-    if (name && (catType === 'income' || catType === 'expense')) {
-      await resolveCategory(name, catType);
+    if (catType === 'income' || catType === 'expense') {
+      registerCategory(extractName(cat, cat?.name), catType);
     }
   }
 
-  // 4. Process each transaction row
+  // Scan all transactions for missing entities
+  for (const source of transactions) {
+    if (!source) continue;
+    const type = normalizeType(source?.type || source?.transactionType || source?.transaction_type || source?.kind);
+    if (!type) continue;
+    
+    if (type === 'transfer') {
+      registerAccount(extractName(source?.from_account, source?.fromAccount, source?.fromAccountName, source?.account, source?.accountName), source?.fromAccountType || source?.accountType);
+      registerAccount(extractName(source?.to_account, source?.toAccount, source?.toAccountName), source?.toAccountType);
+    } else {
+      registerAccount(extractName(source?.account, source?.accountName), source?.accountType);
+    }
+
+    if (type === 'income' || type === 'expense') {
+      registerCategory(extractName(source?.category, source?.categoryName), type);
+    }
+  }
+
+  // 4. Batch insert missing entities
+  if (accountsToCreate.size > 0) {
+    const newAccounts = Array.from(accountsToCreate.values()).map(a => ({ user: userId, name: a.name, type: a.type }));
+    const insertedAccounts = await Account.insertMany(newAccounts);
+    insertedAccounts.forEach(a => accountByName.set(a.name.toLowerCase(), a));
+    createdAccounts += insertedAccounts.length;
+  }
+
+  if (categoriesToCreate.size > 0) {
+    const newCategories = Array.from(categoriesToCreate.values()).map(c => ({ user: userId, name: c.name, type: c.type }));
+    const insertedCategories = await Category.insertMany(newCategories);
+    insertedCategories.forEach(c => categoryByKey.set(`${c.type}:${c.name.toLowerCase()}`, c));
+    createdCategories += insertedCategories.length;
+  }
+
+  // Helper for second pass
+  const getAccount = (name) => name ? accountByName.get(name.trim().toLowerCase()) : null;
+  const getCategory = (name, type) => name ? categoryByKey.get(`${type}:${name.trim().toLowerCase()}`) : null;
+
+  // 5. Process each transaction row
   const inserted = [];
   const skipped = [];
 
@@ -353,10 +666,7 @@ const importTransactions = async (userId, backup) => {
         continue;
       }
 
-      // Category name (could be a string like "Workspace" or an object { name, type })
       const categoryName = extractName(source?.category, source?.categoryName);
-
-      // Title: prefer explicit title fields, then notes, then category name
       const title = String(
         source?.title || source?.description || source?.transaction_name
         || source?.label || source?.notes || source?.note
@@ -370,34 +680,25 @@ const importTransactions = async (userId, backup) => {
       const transaction = { user: userId, title, amount, type, date };
 
       if (type === 'transfer') {
-        // Support: from_account/fromAccount/account (source) + to_account/toAccount (dest)
-        const fromName = extractName(
-          source?.from_account, source?.fromAccount, source?.fromAccountName,
-          source?.account, source?.accountName
-        );
-        const toName = extractName(
-          source?.to_account, source?.toAccount, source?.toAccountName
-        );
+        const fromName = extractName(source?.from_account, source?.fromAccount, source?.fromAccountName, source?.account, source?.accountName);
+        const toName = extractName(source?.to_account, source?.toAccount, source?.toAccountName);
         if (!fromName || !toName) { skipped.push(index + 1); continue; }
 
-        const fromAcc = await resolveAccount(fromName, source?.fromAccountType || source?.accountType);
-        const toAcc = await resolveAccount(toName, source?.toAccountType);
-        transaction.from_account = fromAcc._id;
-        transaction.to_account = toAcc._id;
+        transaction.from_account = getAccount(fromName)?._id;
+        transaction.to_account = getAccount(toName)?._id;
 
       } else if (type === 'settlement') {
         const accName = extractName(source?.account, source?.accountName);
         if (!accName) { skipped.push(index + 1); continue; }
-        transaction.account = (await resolveAccount(accName, source?.accountType))._id;
+        transaction.account = getAccount(accName)?._id;
 
       } else {
-        // income or expense
         const accName = extractName(source?.account, source?.accountName);
         if (!accName) { skipped.push(index + 1); continue; }
-        transaction.account = (await resolveAccount(accName, source?.accountType))._id;
+        transaction.account = getAccount(accName)?._id;
 
         if (!categoryName) { skipped.push(index + 1); continue; }
-        transaction.category = (await resolveCategory(categoryName, type))._id;
+        transaction.category = getCategory(categoryName, type)?._id;
       }
 
       inserted.push(transaction);
@@ -406,7 +707,7 @@ const importTransactions = async (userId, backup) => {
     }
   }
 
-  // 5. Bulk insert all valid transactions
+  // 6. Bulk insert all valid transactions
   if (inserted.length > 0) {
     await Transaction.insertMany(inserted);
   }

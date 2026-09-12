@@ -34,15 +34,70 @@ class ForecastEngine {
     const accountIds = accounts.map(a => a._id.toString());
 
     // 2. Fetch all Transactions to calculate current balance
-    const transactionsFilter = { user: userId };
-    if (accountId) {
+    // 2. Fetch all Transactions to calculate current balance
+    const mongoose = require('mongoose');
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const accountObjectId = accountId ? new mongoose.Types.ObjectId(accountId) : null;
+    
+    const transactionsFilter = { user: userObjectId };
+    if (accountObjectId) {
       transactionsFilter.$or = [
-        { account: accountId },
-        { from_account: accountId },
-        { to_account: accountId }
+        { account: accountObjectId },
+        { from_account: accountObjectId },
+        { to_account: accountObjectId }
       ];
     }
-    const transactions = await Transaction.find(transactionsFilter).lean();
+
+    const [balanceResult] = await Transaction.aggregate([
+      { $match: transactionsFilter },
+      { 
+        $facet: {
+          income_expense_settlement: [
+            { $match: { type: { $in: ['income', 'expense', 'settlement'] } } },
+            { $group: {
+                _id: '$account',
+                total: { $sum: { 
+                  $cond: [
+                    { $eq: ['$type', 'expense'] },
+                    { $multiply: ['$amount', -1] },
+                    '$amount'
+                  ]
+                }}
+            }}
+          ],
+          transfer_out: [
+            { $match: { type: 'transfer' } },
+            { $group: { _id: '$from_account', total: { $sum: { $multiply: ['$amount', -1] } } } }
+          ],
+          transfer_in: [
+            { $match: { type: 'transfer' } },
+            { $group: { _id: '$to_account', total: { $sum: '$amount' } } }
+          ]
+        }
+      }
+    ]);
+
+    const txBalances = new Map();
+    if (balanceResult) {
+       for (const bucket of balanceResult.income_expense_settlement) {
+         if (bucket._id) {
+           const idStr = bucket._id.toString();
+           txBalances.set(idStr, (txBalances.get(idStr) || 0) + bucket.total);
+         }
+       }
+       for (const bucket of balanceResult.transfer_out) {
+         if (bucket._id) {
+           const idStr = bucket._id.toString();
+           txBalances.set(idStr, (txBalances.get(idStr) || 0) + bucket.total);
+         }
+       }
+       for (const bucket of balanceResult.transfer_in) {
+         if (bucket._id) {
+           const idStr = bucket._id.toString();
+           txBalances.set(idStr, (txBalances.get(idStr) || 0) + bucket.total);
+         }
+       }
+    }
 
     // 2.5 Fetch Receivables
     const receivableFilter = { user: userId };
@@ -61,15 +116,7 @@ class ForecastEngine {
       let accBalance = acc.balance_adjustment || 0;
       const accIdStr = acc._id.toString();
       
-      for (const t of transactions) {
-        if (t.type === 'income' && t.account?.toString() === accIdStr) accBalance += t.amount;
-        else if (t.type === 'expense' && t.account?.toString() === accIdStr) accBalance -= t.amount;
-        else if (t.type === 'settlement' && t.account?.toString() === accIdStr) accBalance += t.amount;
-        else if (t.type === 'transfer') {
-          if (t.from_account?.toString() === accIdStr) accBalance -= t.amount;
-          if (t.to_account?.toString() === accIdStr) accBalance += t.amount;
-        }
-      }
+      accBalance += (txBalances.get(accIdStr) || 0);
 
       for (const r of receivables) {
         if (r.paidFrom?.toString() === accIdStr) accBalance -= r.paidAmount;
@@ -94,21 +141,34 @@ class ForecastEngine {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    let sumLast30 = 0;
-    let sumDays31to90 = 0;
-
-    for (const t of transactions) {
-      if (t.type === 'expense' && accountIds.includes(t.account?.toString())) {
-        const tDate = new Date(t.date);
-        if (tDate >= ninetyDaysAgo && tDate <= today) {
-          if (tDate >= thirtyDaysAgo) {
-            sumLast30 += t.amount;
-          } else {
-            sumDays31to90 += t.amount;
+    const accountObjectIds = accountIds.map(id => new mongoose.Types.ObjectId(id));
+    const [spendingResult] = await Transaction.aggregate([
+      { 
+        $match: { 
+          user: userObjectId, 
+          type: 'expense', 
+          account: { $in: accountObjectIds },
+          date: { $gte: ninetyDaysAgo, $lte: today }
+        } 
+      },
+      {
+        $group: {
+          _id: null,
+          sumLast30: {
+            $sum: {
+              $cond: [ { $gte: ['$date', thirtyDaysAgo] }, '$amount', 0 ]
+            }
+          },
+          sumDays31to90: {
+            $sum: {
+              $cond: [ { $lt: ['$date', thirtyDaysAgo] }, '$amount', 0 ]
+            }
           }
         }
       }
-    }
+    ]);
+    const sumLast30 = spendingResult?.sumLast30 || 0;
+    const sumDays31to90 = spendingResult?.sumDays31to90 || 0;
 
     const avgDaily90 = (sumLast30 + sumDays31to90) / 90;
     // Base expected daily spending (includes both fixed and variable)
@@ -231,6 +291,15 @@ class ForecastEngine {
     }
 
     // Process Income Profiles
+    const todayIncomes = await Transaction.find({
+      user: userId,
+      type: 'income',
+      date: { 
+        $gte: new Date(new Date(today).setHours(0,0,0,0)), 
+        $lte: new Date(new Date(today).setHours(23,59,59,999)) 
+      }
+    }).select('amount').lean();
+
     for (const profile of incomeProfiles) {
       let currentDate = new Date(today);
       currentDate.setHours(0,0,0,0);
@@ -257,9 +326,7 @@ class ForecastEngine {
           let skip = false;
           if (currentDate.getTime() === today.getTime()) {
              // Check if user already logged an income today with the same amount
-             const hasTransactionToday = transactions.some(t => 
-                t.type === 'income' && 
-                new Date(t.date).toDateString() === today.toDateString() &&
+             const hasTransactionToday = todayIncomes.some(t => 
                 t.amount === profile.amount
              );
              if (hasTransactionToday) skip = true;
