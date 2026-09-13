@@ -52,8 +52,90 @@ const getTransactions = async (userId) => {
     .populate('from_account')
     .populate('to_account')
     .sort({ date: -1, createdAt: -1 })
-    .limit(500)
     .lean();
+};
+
+const decodeSyncCursor = (cursor) => {
+  try {
+    const decoded = Buffer.from(cursor, 'base64url').toString('utf8');
+    if (!mongoose.Types.ObjectId.isValid(decoded)) {
+      throw new Error('Invalid cursor');
+    }
+    return new mongoose.Types.ObjectId(decoded);
+  } catch {
+    throw new AppError('Invalid sync cursor.', 400);
+  }
+};
+
+const encodeSyncCursor = (id) => Buffer.from(id.toString()).toString('base64url');
+
+const normalizeSyncLimit = (limit) => {
+  if (limit === undefined) return 200;
+  if (!/^\d+$/.test(String(limit))) throw new AppError('Sync limit must be a positive integer.', 400);
+  const parsed = Number(limit);
+  if (parsed < 1 || parsed > 500) throw new AppError('Sync limit must be between 1 and 500.', 400);
+  return parsed;
+};
+
+const getTransactionsSync = async (userId, query = {}) => {
+  const limit = normalizeSyncLimit(query.limit);
+  const filter = { user: userId };
+
+  if (query.cursor) {
+    const cursorId = decodeSyncCursor(query.cursor);
+    filter._id = { $gt: cursorId };
+  }
+
+  let totalCount = undefined;
+  if (!query.cursor) {
+    totalCount = await Transaction.countDocuments({ user: userId });
+  }
+
+  const results = await Transaction.find(filter)
+    .populate(POPULATE_TRANSACTION_REFERENCES)
+    .sort({ _id: 1 })
+    .limit(limit + 1)
+    .lean();
+
+  const hasMore = results.length > limit;
+  const items = hasMore ? results.slice(0, limit) : results;
+
+  return {
+    items,
+    nextCursor: hasMore ? encodeSyncCursor(items.at(-1)._id) : null,
+    hasMore,
+    syncComplete: !hasMore,
+    totalCount,
+  };
+};
+
+const exportTransactions = async (userId) => {
+  const [accounts, categories, transactions] = await Promise.all([
+    Account.find({ user: userId }).select('name type icon color').lean(),
+    Category.find({ user: userId }).select('name type icon color').lean(),
+    Transaction.find({ user: userId })
+      .populate(POPULATE_TRANSACTION_REFERENCES)
+      .sort({ date: -1, _id: -1 })
+      .lean()
+  ]);
+
+  return {
+    formatVersion: 1,
+    exportedAt: new Date().toISOString(),
+    accounts: accounts.map(({ name, type, icon, color }) => ({ name, type, icon, color })),
+    categories: categories.map(({ name, type, icon, color }) => ({ name, type, icon, color })),
+    transactions: transactions.map((t) => ({
+      title: t.title,
+      amount: t.amount,
+      type: t.type,
+      date: t.date,
+      account: t.account ? { name: t.account.name, type: t.account.type } : undefined,
+      category: t.category ? { name: t.category.name, type: t.category.type } : undefined,
+      from_account: t.from_account ? { name: t.from_account.name, type: t.from_account.type } : undefined,
+      to_account: t.to_account ? { name: t.to_account.name, type: t.to_account.type } : undefined,
+      investment: t.investment ? { name: t.investment.name, symbol: t.investment.symbol } : undefined,
+    })),
+  };
 };
 
 const decodeCursor = (cursor) => {
@@ -724,6 +806,8 @@ const importTransactions = async (userId, backup) => {
 module.exports = {
   getTransactions,
   getTransactionPage,
+  getTransactionsSync,
+  exportTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,

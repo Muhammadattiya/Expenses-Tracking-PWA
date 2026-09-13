@@ -100,6 +100,7 @@ investment: {
 }, { timestamps: true });
 
 transactionSchema.index({ user: 1, date: -1 });
+transactionSchema.index({ user: 1, _id: 1 });
 // Add composite indexes for common dashboard filters and aggregation
 transactionSchema.index({ user: 1, type: 1, date: -1 });
 transactionSchema.index({ user: 1, account: 1, date: -1 });

@@ -39,6 +39,7 @@ import {
   getTransactions,
   importTransactions,
   createTransaction,
+  exportTransactionsApi,
 } from "../api/transactions";
 import { getAccounts } from "../api/accounts";
 import { getCategories } from "../api/categories";
@@ -231,27 +232,7 @@ const Settings = () => {
 
   const handleExport = async () => {
     try {
-      const [data, accounts, categories] = await Promise.all([
-        getTransactions(),
-        getAccounts(),
-        getCategories()
-      ]);
-      const backup = {
-        formatVersion: 1,
-        exportedAt: new Date().toISOString(),
-        accounts: accounts.map(({ name, type, icon }) => ({ name, type, icon })),
-        categories: categories.map(({ name, type, icon }) => ({ name, type, icon })),
-        transactions: data.map((transaction) => ({
-          title: transaction.title,
-          amount: transaction.amount,
-          type: transaction.type,
-          date: transaction.date,
-          account: transaction.account ? { name: transaction.account.name, type: transaction.account.type } : undefined,
-          category: transaction.category ? { name: transaction.category.name, type: transaction.category.type } : undefined,
-          from_account: transaction.from_account ? { name: transaction.from_account.name, type: transaction.from_account.type } : undefined,
-          to_account: transaction.to_account ? { name: transaction.to_account.name, type: transaction.to_account.type } : undefined,
-        })),
-      };
+      const backup = await exportTransactionsApi();
 
       const dataStr = JSON.stringify(backup, null, 2);
       const dataBlob = new Blob([dataStr], { type: "application/json" });
