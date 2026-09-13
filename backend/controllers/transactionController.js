@@ -15,6 +15,28 @@ const getTransactions = async (req, res, next) => {
   }
 };
 
+const getTransactionsSync = async (req, res, next) => {
+  try {
+    const result = await transactionService.getTransactionsSync(req.user.id, req.query);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      message: error.message,
+    });
+  }
+};
+
+const exportTransactions = async (req, res, next) => {
+  try {
+    const result = await transactionService.exportTransactions(req.user.id);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      message: error.message,
+    });
+  }
+};
+
 const createTransaction = async (req, res, next) => {
   try {
     const transaction = await transactionService.createTransaction(req.user.id, req.body);
@@ -72,6 +94,8 @@ const importTransactions = async (req, res, next) => {
 
 module.exports = {
   getTransactions,
+  getTransactionsSync,
+  exportTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,

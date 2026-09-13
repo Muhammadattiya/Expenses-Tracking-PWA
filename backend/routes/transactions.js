@@ -5,12 +5,16 @@ router.use(auth);
 
 const {
   getTransactions,
+  getTransactionsSync,
+  exportTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,
   importTransactions,
 } = require("../controllers/transactionController");
 
+router.get("/sync", getTransactionsSync);
+router.get("/export", exportTransactions);
 router.get("/", getTransactions);
 
 router.post("/", createTransaction);
