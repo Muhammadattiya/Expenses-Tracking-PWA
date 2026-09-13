@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic, ShieldCheck, ShieldAlert, AlertTriangle } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
@@ -668,10 +669,15 @@ const Dashboard = () => {
               onClick={() => setCategoryModalOpen(true)}
               className="flex items-center gap-2 px-3 py-2 bg-[rgba(141,99,70,0.3)] backdrop-blur-xl border border-white/10 rounded-[20px] active:scale-95 transition-transform flex-shrink-0"
             >
-              <span className="text-white font-medium text-[12.5px] tracking-wide">
-                {selectedCategory === 'all' ? t('dashboard.allCategories') : (lang === 'ar' ? categories.find(c => c._id === selectedCategory)?.nameAr : categories.find(c => c._id === selectedCategory)?.nameEn) || 'Category'}
+              <span className="text-white font-medium text-[12.5px] tracking-wide max-w-[120px] truncate">
+                {(() => {
+                  if (selectedCategory === 'all') return t('dashboard.allCategories');
+                  const cat = categories.find(c => (c._id || c).toString() === (selectedCategory?._id || selectedCategory)?.toString());
+                  if (!cat) return t('dashboard.allCategories');
+                  return (lang === 'ar' ? (cat.nameAr || cat.name) : (cat.nameEn || cat.name)) || cat.name;
+                })()}
               </span>
-              <ChevronDown className="w-4 h-4 text-white opacity-70" />
+              <ChevronDown className="w-4 h-4 text-white opacity-70 shrink-0" />
             </button>
          </div>
 
@@ -801,84 +807,101 @@ const Dashboard = () => {
       />
 
       {/* Category Bottom Sheet */}
-      {categoryModalOpen && (
-        <div className="fixed inset-0 z-[100] flex flex-col justify-end">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setCategoryModalOpen(false)}></div>
-          <motion.div 
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-            className="relative border-t border-white/10 rounded-t-[40px] p-6 pb-[max(2rem,env(safe-area-inset-bottom))] max-h-[70vh] overflow-y-auto"
-            style={{
-              background: 'linear-gradient(180deg, rgba(40,40,40,0.6) 0%, rgba(20,20,20,0.95) 100%)',
-              backdropFilter: 'blur(40px) saturate(1.5)',
-              WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
-              boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.15), 0 -8px 32px rgba(0,0,0,0.5)'
-            }}
-          >
-             <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 shadow-inner"></div>
-             <h2 className="text-white font-bold text-xl mb-6 text-center tracking-wide">{t('dashboard.allCategories')}</h2>
-             
-             <div className="grid grid-cols-4 gap-y-6 gap-x-4">
-                <div 
-                  onClick={() => { setSelectedCategory('all'); setCategoryModalOpen(false); }}
-                  className={`flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 ${selectedCategory === 'all' ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                >
-                  <div className="relative w-14 h-14 flex items-center justify-center">
-                    {selectedCategory === 'all' && (
-                      <motion.div
-                        layoutId="category-indicator"
-                        className="absolute inset-0 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)]"
-                        style={{ background: 'rgba(255,255,255,0.15)' }}
-                        transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
-                      />
-                    )}
-                    <motion.div 
-                      className="relative z-10 flex items-center justify-center w-full h-full"
-                      animate={{ scale: selectedCategory === 'all' ? 1.25 : 1 }}
-                      transition={{ type: 'spring', bounce: 0.4, duration: 0.4 }}
+      {createPortal(
+        <AnimatePresence>
+          {categoryModalOpen && (
+            <motion.div 
+              key="category-modal-wrapper"
+              className="fixed inset-0 z-[100] flex flex-col justify-end"
+            >
+              <motion.div 
+                key="category-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+                onClick={() => setCategoryModalOpen(false)}
+              />
+              <motion.div 
+                key="category-sheet"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", bounce: 0, duration: 0.35 }}
+                className="relative border-t border-white/10 rounded-t-[40px] p-6 pb-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] max-h-[75vh] overflow-y-auto"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(40,40,40,0.6) 0%, rgba(20,20,20,0.95) 100%)',
+                  backdropFilter: 'blur(40px) saturate(1.5)',
+                  WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+                  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.15), 0 -8px 32px rgba(0,0,0,0.5)'
+                }}
+              >
+                 <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 shadow-inner"></div>
+                 <h2 className="text-white font-bold text-xl mb-6 text-center tracking-wide">{t('dashboard.allCategories')}</h2>
+                 
+                 <div className="grid grid-cols-4 gap-y-6 gap-x-4">
+                    <div 
+                      onClick={() => { setSelectedCategory('all'); setCategoryModalOpen(false); }}
+                      className={`flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 ${selectedCategory === 'all' ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
                     >
-                       <LucideIcons.LayoutGrid className="w-6 h-6 transition-colors duration-300" style={{ color: selectedCategory === 'all' ? '#8D6346' : '#fff' }} />
-                    </motion.div>
-                  </div>
-                  <span className={`text-xs font-medium text-center transition-colors duration-300 ${selectedCategory === 'all' ? 'text-white' : 'text-white/60'}`}>{t('dashboard.all')}</span>
-                </div>
-                
-                {categories.map(cat => {
-                   const IconComponent = LucideIcons[cat.icon] || LucideIcons.Tag;
-                   const isActive = selectedCategory === cat._id;
-                   
-                   return (
-                     <div 
-                       key={cat._id}
-                       onClick={() => { setSelectedCategory(cat._id); setCategoryModalOpen(false); }}
-                       className={`flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                     >
-                       <div className="relative w-14 h-14 flex items-center justify-center">
-                         {isActive && (
-                           <motion.div
-                             layoutId="category-indicator"
-                             className="absolute inset-0 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)]"
-                             style={{ background: 'rgba(255,255,255,0.15)' }}
-                             transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
-                           />
-                         )}
-                         <motion.div 
-                           className="relative z-10 flex items-center justify-center w-full h-full"
-                           animate={{ scale: isActive ? 1.25 : 1 }}
-                           transition={{ type: 'spring', bounce: 0.4, duration: 0.4 }}
+                      <div className="relative w-14 h-14 flex items-center justify-center">
+                        {selectedCategory === 'all' && (
+                          <motion.div
+                            layoutId="category-indicator"
+                            className="absolute inset-0 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)]"
+                            style={{ background: 'rgba(255,255,255,0.15)' }}
+                            transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
+                          />
+                        )}
+                        <motion.div 
+                          className="relative z-10 flex items-center justify-center w-full h-full"
+                          animate={{ scale: selectedCategory === 'all' ? 1.25 : 1 }}
+                          transition={{ type: 'spring', bounce: 0.4, duration: 0.4 }}
+                        >
+                           <LucideIcons.LayoutGrid className="w-6 h-6 transition-colors duration-300" style={{ color: selectedCategory === 'all' ? '#8D6346' : '#fff' }} />
+                        </motion.div>
+                      </div>
+                      <span className={`text-xs font-medium text-center transition-colors duration-300 ${selectedCategory === 'all' ? 'text-white' : 'text-white/60'}`}>{t('dashboard.all')}</span>
+                    </div>
+                    
+                    {categories.map(cat => {
+                       const IconComponent = LucideIcons[cat.icon] || LucideIcons.Tag;
+                       const isActive = (selectedCategory?._id || selectedCategory)?.toString() === (cat._id || cat)?.toString();
+                       
+                       return (
+                         <div 
+                           key={cat._id}
+                           onClick={() => { setSelectedCategory(cat._id); setCategoryModalOpen(false); }}
+                           className={`flex flex-col items-center gap-2 cursor-pointer transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
                          >
-                            <IconComponent className="w-6 h-6 transition-colors duration-300" style={{ color: isActive ? '#8D6346' : '#fff' }} />
-                         </motion.div>
-                       </div>
-                       <span className={`text-xs font-medium text-center line-clamp-1 transition-colors duration-300 ${isActive ? 'text-white' : 'text-white/60'}`}>{lang === 'ar' ? (cat.nameAr || cat.name) : (cat.nameEn || cat.name)}</span>
-                     </div>
-                   )
-                })}
-             </div>
-          </motion.div>
-        </div>
+                           <div className="relative w-14 h-14 flex items-center justify-center">
+                             {isActive && (
+                               <motion.div
+                                 layoutId="category-indicator"
+                                 className="absolute inset-0 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)]"
+                                 style={{ background: 'rgba(255,255,255,0.15)' }}
+                                 transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
+                               />
+                             )}
+                             <motion.div 
+                               className="relative z-10 flex items-center justify-center w-full h-full"
+                               animate={{ scale: isActive ? 1.25 : 1 }}
+                               transition={{ type: 'spring', bounce: 0.4, duration: 0.4 }}
+                             >
+                                <IconComponent className="w-6 h-6 transition-colors duration-300" style={{ color: isActive ? '#8D6346' : '#fff' }} />
+                             </motion.div>
+                           </div>
+                           <span className={`text-xs font-medium text-center line-clamp-1 transition-colors duration-300 ${isActive ? 'text-white' : 'text-white/60'}`}>{lang === 'ar' ? (cat.nameAr || cat.name) : (cat.nameEn || cat.name)}</span>
+                         </div>
+                       )
+                    })}
+                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
     </div>
   );
