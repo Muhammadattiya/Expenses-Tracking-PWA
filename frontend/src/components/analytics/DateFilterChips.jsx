@@ -3,87 +3,61 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Calendar, X } from 'lucide-react';
 
 export const getFilterBounds = (type, userPrefs = {}) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
+  const currentMonth = now.getUTCMonth();
+  const currentDate = now.getUTCDate();
 
   if (type === 'all') return { from: '', to: '' };
 
   if (type === 'today') {
-    const start = new Date(today);
-    const end = new Date(today);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(Date.UTC(currentYear, currentMonth, currentDate, 0, 0, 0, 0));
+    const end = new Date(Date.UTC(currentYear, currentMonth, currentDate, 23, 59, 59, 999));
     return { from: start.toISOString(), to: end.toISOString() };
   }
 
   if (type === 'yesterday') {
-    const start = new Date(today);
-    start.setDate(start.getDate() - 1);
-    const end = new Date(start);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(Date.UTC(currentYear, currentMonth, currentDate - 1, 0, 0, 0, 0));
+    const end = new Date(Date.UTC(currentYear, currentMonth, currentDate - 1, 23, 59, 59, 999));
     return { from: start.toISOString(), to: end.toISOString() };
   }
 
   if (type === 'year') {
-    const start = new Date(today.getFullYear(), 0, 1);
-    const end = new Date(today.getFullYear(), 11, 31);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(Date.UTC(currentYear, 0, 1, 0, 0, 0, 0));
+    const end = new Date(Date.UTC(currentYear, currentMonth, currentDate, 23, 59, 59, 999));
     return { from: start.toISOString(), to: end.toISOString() };
   }
 
   if (type === 'this_week' || type === 'last_week') {
     const prefWeekStart = userPrefs?.trackingStartDayWeekly !== undefined ? userPrefs.trackingStartDayWeekly : 6;
     const getWeekBounds = (dateObj) => {
-      let day = dateObj.getDay();
-      let diff = day >= prefWeekStart ? day - prefWeekStart : 7 - (prefWeekStart - day);
-      let start = new Date(dateObj);
-      start.setDate(start.getDate() - diff);
-      let end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
+      let day = dateObj.getUTCDay();
+      let diff = (day - prefWeekStart + 7) % 7;
+      let start = new Date(Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate() - diff, 0, 0, 0, 0));
+      let end = new Date(Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate() - diff + 6, 23, 59, 59, 999));
       return { start, end };
     };
 
     if (type === 'this_week') {
-      const bounds = getWeekBounds(today);
-      return { from: bounds.start.toISOString(), to: bounds.end.toISOString() };
+      const bounds = getWeekBounds(now);
+      const todayEnd = new Date(Date.UTC(currentYear, currentMonth, currentDate, 23, 59, 59, 999));
+      return { from: bounds.start.toISOString(), to: todayEnd.toISOString() };
     } else if (type === 'last_week') {
-      const lastWeek = new Date(today);
-      lastWeek.setDate(lastWeek.getDate() - 7);
+      const lastWeek = new Date(Date.UTC(currentYear, currentMonth, currentDate - 7));
       const bounds = getWeekBounds(lastWeek);
       return { from: bounds.start.toISOString(), to: bounds.end.toISOString() };
     }
   } 
   
   if (type === 'this_month' || type === 'last_month') {
-    const prefMonthStart = userPrefs?.trackingStartDayMonthly || 1;
-    const getMonthBounds = (dateObj) => {
-      let start = new Date(dateObj);
-      const lastDayOfCurrentMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
-      const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
-
-      if (start.getDate() < actualMonthStartDay) {
-        const lastDayOfPrevMonth = new Date(start.getFullYear(), start.getMonth(), 0).getDate();
-        start = new Date(start.getFullYear(), start.getMonth() - 1, Math.min(prefMonthStart, lastDayOfPrevMonth));
-      } else {
-        start = new Date(start.getFullYear(), start.getMonth(), actualMonthStartDay);
-      }
-
-      let end = new Date(start);
-      end.setMonth(end.getMonth() + 1);
-      end.setDate(end.getDate() - 1);
-      end.setHours(23, 59, 59, 999);
-      return { start, end };
-    };
-
     if (type === 'this_month') {
-      const bounds = getMonthBounds(today);
-      return { from: bounds.start.toISOString(), to: bounds.end.toISOString() };
+      const start = new Date(Date.UTC(currentYear, currentMonth, 1, 0, 0, 0, 0));
+      const end = new Date(Date.UTC(currentYear, currentMonth, currentDate, 23, 59, 59, 999));
+      return { from: start.toISOString(), to: end.toISOString() };
     } else if (type === 'last_month') {
-      const currentBounds = getMonthBounds(today);
-      const prevDate = new Date(currentBounds.start);
-      prevDate.setDate(prevDate.getDate() - 5);
-      const bounds = getMonthBounds(prevDate);
-      return { from: bounds.start.toISOString(), to: bounds.end.toISOString() };
+      const start = new Date(Date.UTC(currentYear, currentMonth - 1, 1, 0, 0, 0, 0));
+      const end = new Date(Date.UTC(currentYear, currentMonth, 0, 23, 59, 59, 999));
+      return { from: start.toISOString(), to: end.toISOString() };
     }
   }
 };
@@ -101,11 +75,11 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
   };
 
   const checkActive = (type) => {
-    if (showCustom) return false;
+    if (showCustom || filters.filterType === 'custom') return false;
+    if (filters.filterType === type) return true;
     const bounds = getFilterBounds(type, userPrefs);
     if (type === 'all') return !filters.from && !filters.to;
     
-    // We only need to check if the dates fall in the same boundaries roughly, or exact match
     return filters.from === bounds.from && filters.to === bounds.to;
   };
 
@@ -223,8 +197,8 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
             onChange={(e) => {
               const val = e.target.value;
               if (val) {
-                const date = new Date(val);
-                date.setHours(0,0,0,0);
+                const [y, m, d] = val.split('-').map(Number);
+                const date = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
                 setFilters({ ...filters, from: date.toISOString(), filterType: 'custom' });
               } else {
                 setFilters({ ...filters, from: '', filterType: 'custom' });
@@ -240,8 +214,8 @@ export default function DateFilterChips({ filters, setFilters, userPrefs }) {
             onChange={(e) => {
               const val = e.target.value;
               if (val) {
-                const date = new Date(val);
-                date.setHours(23,59,59,999);
+                const [y, m, d] = val.split('-').map(Number);
+                const date = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
                 setFilters({ ...filters, to: date.toISOString(), filterType: 'custom' });
               } else {
                 setFilters({ ...filters, to: '', filterType: 'custom' });

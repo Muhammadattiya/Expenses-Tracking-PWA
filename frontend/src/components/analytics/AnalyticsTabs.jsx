@@ -17,7 +17,10 @@ export default function AnalyticsTabs({ activeTab, setActiveTab }) {
 
   return (
     <div className="w-full flex justify-center mt-4 mb-8">
-      <div className="flex gap-2 overflow-x-auto hide-scrollbar relative p-[5px] liquidglass border border-white/5 shadow-inner rounded-[85px] w-full lg:w-auto">
+      <div 
+        className="flex gap-2 overflow-x-auto hide-scrollbar scrollbar-hide no-scrollbar relative p-[5px] liquidglass border border-white/5 shadow-inner rounded-[85px] w-full lg:w-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         {tabs.map((tab) => (
           <button
             key={tab.id}

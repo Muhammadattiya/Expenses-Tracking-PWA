@@ -53,6 +53,7 @@ const initCronJobs = () => {
     await sendDailyReminder();
     await processSmartBudgetReminders();
     await processPaydaySurvivalNotifications();
+    await reconcileStaleAnalytics();
     console.log('[CRON] Daily job finished');
   }, {
     timezone: "Africa/Cairo"
@@ -344,9 +345,31 @@ const processBills = async (stats) => {
                    break;
                  }
              }
+
+             // Ensure payment is preserved in paymentHistory before advancing cycle
+             if (bill.paymentDate) {
+               if (!Array.isArray(bill.paymentHistory)) bill.paymentHistory = [];
+               const alreadySaved = bill.paymentHistory.some(p => 
+                 p.dueDate && new Date(p.dueDate).getTime() === due.getTime()
+               );
+               if (!alreadySaved) {
+                 bill.paymentHistory.push({
+                   paidAt: bill.paymentDate,
+                   dueDate: bill.dueDate,
+                   amount: bill.expectedAmount,
+                   transactionId: bill.transactionId || bill.lastTransactionId || undefined
+                 });
+               }
+               bill.lastPaymentDate = bill.paymentDate;
+             }
+
+             if (bill.transactionId) {
+               bill.lastTransactionId = bill.transactionId;
+               bill.transactionId = undefined;
+             }
+
              bill.dueDate = nextDate;
              bill.status = 'upcoming';
-             bill.transactionId = undefined; 
              await bill.save();
           }
           continue;
@@ -581,8 +604,25 @@ const processIncomeProfiles = async (stats) => {
   } catch (error) {
     console.error('[ERROR] Operation Name: processIncomeProfiles');
     console.error(`[ERROR] message:`, error.message);
-    console.error(`[ERROR] stack trace:`, error.stack);
   }
 };
 
-module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification, processSmartBudgetReminders, processIncomeProfiles, checkPaydaySurvivalRisk };
+const reconcileStaleAnalytics = async () => {
+  try {
+    const UserAnalytics = require('../models/UserAnalytics');
+    const { rebuildUserAnalytics } = require('./analyticsEngine');
+    const staleUsers = await UserAnalytics.find({ needsReconciliation: true, isRebuilding: false }).limit(20);
+    for (const doc of staleUsers) {
+      try {
+        console.log(`[ANALYTICS_RECONCILE] Reconciling drift for user ${doc.user}: ${doc.reconciliationReason}`);
+        await rebuildUserAnalytics(doc.user);
+      } catch (err) {
+        console.error(`[ERROR] Reconciling user ${doc.user}:`, err.message);
+      }
+    }
+  } catch (error) {
+    console.error('[ERROR] Operation Name: reconcileStaleAnalytics', error.message);
+  }
+};
+
+module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification, processSmartBudgetReminders, processIncomeProfiles, checkPaydaySurvivalRisk, reconcileStaleAnalytics };

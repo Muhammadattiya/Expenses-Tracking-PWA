@@ -246,7 +246,9 @@ const validateReferences = async (userId, data) => {
     if (!fromAccount) throw new Error("Source account not found.");
 
     if (data.investment) {
-      // Transfer to investment
+      const Investment = require('../models/Investment');
+      const inv = await Investment.findOne({ _id: data.investment, user: userId });
+      if (!inv) throw new Error("Investment not found.");
       return;
     }
 
@@ -468,6 +470,10 @@ const createTransaction = async (userId, data, opts = {}) => {
   const populated = await Transaction.findById(createdTx._id)
     .populate('account category from_account to_account');
 
+  // Trigger incremental analytics update
+  const { applyTransactionDelta } = require('./analyticsEngine');
+  applyTransactionDelta(userId, createdTx, 1).catch(err => console.error('[ANALYTICS] create delta failed:', err.message));
+
   if (populated && populated.type === 'expense') {
     const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
@@ -567,6 +573,11 @@ const updateTransaction = async (userId, id, data) => {
       .catch(err => console.error('[ERROR] merchant learning failed:', err));
   }
 
+  if (originalTx && updatedTx) {
+    const { applyTransactionUpdate } = require('./analyticsEngine');
+    applyTransactionUpdate(userId, originalTx, updatedTx).catch(err => console.error('[ANALYTICS] update delta failed:', err.message));
+  }
+
   if (originalTx.type === 'expense' || updatedTx.type === 'expense') {
     const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
@@ -601,6 +612,11 @@ const deleteTransaction = async (userId, id) => {
       await session.endSession();
     }
   });
+
+  if (originalTx) {
+    const { applyTransactionDelta } = require('./analyticsEngine');
+    applyTransactionDelta(userId, originalTx, -1).catch(err => console.error('[ANALYTICS] delete delta failed:', err.message));
+  }
 
   if (originalTx && originalTx.type === 'expense') {
     const { checkBudgetThresholds } = require('./budgetEngine');
@@ -792,6 +808,10 @@ const importTransactions = async (userId, backup) => {
   // 6. Bulk insert all valid transactions
   if (inserted.length > 0) {
     await Transaction.insertMany(inserted);
+
+    // Apply incremental analytics deltas in bulk
+    const { applyBulkTransactionDeltas } = require('./analyticsEngine');
+    applyBulkTransactionDeltas(userId, inserted).catch(err => console.error('[ANALYTICS] import deltas failed:', err.message));
   }
 
   return {

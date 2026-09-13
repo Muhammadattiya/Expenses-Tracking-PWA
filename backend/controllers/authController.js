@@ -55,8 +55,19 @@ exports.updatePreferences = async (req, res, next) => {
     for (const key of ALLOWED_PREF_KEYS) {
       if (req.body[key] !== undefined) safePrefs[key] = req.body[key];
     }
+    const previousStartDay = user.preferences?.trackingStartDayWeekly;
     user.preferences = { ...user.preferences, ...safePrefs };
     await user.save();
+
+    if (safePrefs.trackingStartDayWeekly !== undefined && safePrefs.trackingStartDayWeekly !== previousStartDay) {
+      const { rebuildUserAnalytics } = require('../services/analyticsEngine');
+      setImmediate(() => {
+        rebuildUserAnalytics(req.user.id).catch(err => {
+          console.error('[ANALYTICS] Preference change weekly rebuild error:', err.message);
+        });
+      });
+    }
+
     res.json(user);
   } catch (error) { next(error); }
 };

@@ -59,9 +59,24 @@ const billSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Transaction'
   },
+  lastTransactionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Transaction'
+  },
   paymentDate: {
     type: Date
   },
+  lastPaymentDate: {
+    type: Date
+  },
+  paymentHistory: [
+    {
+      paidAt: { type: Date, default: Date.now, required: true },
+      dueDate: { type: Date, required: true },
+      amount: { type: Number, required: true },
+      transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }
+    }
+  ],
   lastNotified: {
     type: Date
   }
@@ -69,5 +84,6 @@ const billSchema = new mongoose.Schema({
 
 billSchema.index({ user: 1, dueDate: 1 });
 billSchema.index({ isActive: 1, status: 1, dueDate: 1 }); // Useful for cron jobs querying unpaid bills
+billSchema.index({ user: 1, 'paymentHistory.paidAt': 1 });
 
 module.exports = mongoose.model('Bill', billSchema);
