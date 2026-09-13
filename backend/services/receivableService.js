@@ -57,7 +57,7 @@ const create = async (userId, data) => {
   const refId = receivable._id.toString();
 
   if (userShare > 0) {
-    await Transaction.create({
+    const createdTx = await Transaction.create({
       user: userId,
       title: `${data.title} (My Share)`,
       amount: userShare,
@@ -68,6 +68,8 @@ const create = async (userId, data) => {
       source: 'system',
       referenceNumber: refId
     });
+    const { applyTransactionDelta } = require('./analyticsEngine');
+    applyTransactionDelta(userId, createdTx, 1).catch(err => console.error('[ANALYTICS] receivable create delta failed:', err.message));
     const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
@@ -148,10 +150,15 @@ const update = async (userId, id, data) => {
   await receivable.save();
 
   const refId = receivable._id.toString();
+  const existingTxs = await Transaction.find({ user: userId, referenceNumber: refId });
   await Transaction.deleteMany({ user: userId, referenceNumber: refId });
+  const { applyTransactionDelta } = require('./analyticsEngine');
+  for (const oldTx of existingTxs) {
+    applyTransactionDelta(userId, oldTx, -1).catch(err => console.error('[ANALYTICS] receivable update delete delta failed:', err.message));
+  }
 
   if (userShare > 0) {
-    await Transaction.create({
+    const createdTx = await Transaction.create({
       user: userId,
       title: `${data.title} (My Share)`,
       amount: userShare,
@@ -162,6 +169,7 @@ const update = async (userId, id, data) => {
       source: 'system',
       referenceNumber: refId
     });
+    applyTransactionDelta(userId, createdTx, 1).catch(err => console.error('[ANALYTICS] receivable update create delta failed:', err.message));
     const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
   }
@@ -197,7 +205,12 @@ const remove = async (userId, id) => {
   if (!receivable) throw new AppError('Receivable not found.', 404);
 
   const refId = receivable._id.toString();
+  const existingTxs = await Transaction.find({ user: userId, referenceNumber: { $regex: `^${refId}` } });
   await Transaction.deleteMany({ user: userId, referenceNumber: { $regex: `^${refId}` } });
+  const { applyTransactionDelta } = require('./analyticsEngine');
+  for (const oldTx of existingTxs) {
+    applyTransactionDelta(userId, oldTx, -1).catch(err => console.error('[ANALYTICS] receivable remove delete delta failed:', err.message));
+  }
   await receivable.deleteOne();
   
   return { success: true };

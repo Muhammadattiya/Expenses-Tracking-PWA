@@ -142,6 +142,13 @@ exports.handleSmsWebhook = async (req, res, next) => {
       throw createErr;
     }
 
+    try {
+      const { applyTransactionDelta } = require('../services/analyticsEngine');
+      applyTransactionDelta(user._id, newTx, 1).catch(err => console.error('[ANALYTICS] smsWebhook delta failed:', err.message));
+    } catch (e) {
+      // Non-fatal
+    }
+
     console.log(`[SMS Webhook] merchant="${newTx.title}" cardLast4="${parsedData.cardLast4}" accountMatched=${!!accountId}`);
 
     // Fire push notification if subscriptions exist

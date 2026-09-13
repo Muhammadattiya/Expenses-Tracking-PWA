@@ -49,9 +49,7 @@ export default function IncomeTab({ data, categories, money, allTransactions, fi
     
     if (filters?.from && filters?.to) {
        const start = new Date(filters.from);
-       start.setHours(0, 0, 0, 0);
        const end = new Date(filters.to);
-       end.setHours(23, 59, 59, 999);
        txs = txs.filter(tx => new Date(tx.date) >= start && new Date(tx.date) <= end);
     }
     if (filters?.account) {

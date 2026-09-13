@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getAnalytics } from '../api/analytics';
 import { getTransactions } from '../api/transactions';
 import { getAccounts } from '../api/accounts';
@@ -61,33 +61,45 @@ export default function Analytics() {
   const [filters, setFilters] = useState({ from: '', to: '', search: '', account: '', category: '', filterType: '', initialized: false });
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const reqIdRef = useRef(0);
+  const staticLoadedRef = useRef(false);
+  const lastLoadedFiltersRef = useRef('');
 
-  // Load everything
-  const loadData = async () => {
-    setIsLoading(true);
+  // Tier 2: Filtered Analytics - lightweight, filter-dependent backend call
+  const loadFilteredAnalytics = async (targetFilters) => {
+    const currentReqId = ++reqIdRef.current;
     try {
-      // 1. Get user preferences first to determine default filter
-      let currentFilters = { ...filters };
-      let prefs = userPrefs;
-      
-      if (!prefs) {
-        const userRes = await getCurrentUser().catch(() => ({}));
-        prefs = userRes?.preferences || {};
-        setUserPrefs(prefs);
+      const analyticsResult = await getAnalytics(targetFilters);
+
+      if (analyticsResult?.monthly) {
+        analyticsResult.monthly = analyticsResult.monthly.map(m => ({
+          ...m,
+          balance: m.income - m.expense
+        }));
       }
 
-      if (!currentFilters.initialized) {
-        const type = prefs.trackingPeriod === 'weekly' ? 'this_week' : 'this_month';
-        const bounds = getFilterBounds(type, prefs);
-        if (bounds) {
-          currentFilters = { ...currentFilters, from: bounds.from, to: bounds.to, filterType: type, initialized: true };
-          setFilters(currentFilters);
-        }
-      }
+      if (currentReqId !== reqIdRef.current) return;
 
-      // Parallel loading for better performance
+      setData(analyticsResult);
+
+      if (analyticsResult?.initializationPending) {
+        setTimeout(() => {
+          if (currentReqId === reqIdRef.current) {
+            loadFilteredAnalytics(targetFilters);
+          }
+        }, 600);
+      }
+    } catch (err) {
+      if (currentReqId === reqIdRef.current) {
+        console.error("Failed to load filtered analytics:", err);
+      }
+    }
+  };
+
+  // Tier 1: Static Data - heavy one-time mount loading (accounts, categories, debts, investments, budgets, transactions, etc.)
+  const loadStaticData = async (prefs) => {
+    try {
       const [
-        analyticsResult, 
         accs, 
         cats, 
         debtsRes, 
@@ -99,10 +111,9 @@ export default function Analytics() {
         allTx,
         receivablesData
       ] = await Promise.all([
-        getAnalytics(currentFilters),
         getAccounts(),
         getCategories(),
-        getDebts().catch(() => ({})), // Catch if endpoint fails offline
+        getDebts().catch(() => ({})),
         getInvestments().catch(() => []),
         budgetService.getBudgets().catch(() => []),
         getBills().catch(() => []),
@@ -122,13 +133,6 @@ export default function Analytics() {
         console.error("Failed to parse cached gold price", e);
       }
 
-      if (analyticsResult.monthly) {
-        analyticsResult.monthly = analyticsResult.monthly.map(m => ({
-          ...m,
-          balance: m.income - m.expense
-        }));
-      }
-      
       const investmentsWithCurrentValue = (invsRes || []).map(inv => {
         let unitValue = inv.purchasePrice;
         if (inv.type === 'gold' && goldPriceRes) {
@@ -140,18 +144,10 @@ export default function Analytics() {
         };
       });
 
-      setData(analyticsResult);
-      setAccounts(accs);
-      setCategories(cats);
-      setDebts(debtsRes?.debts || []);
-      setAllDebtTransactions(debtsRes?.transactions || []);
-      setInvestments(investmentsWithCurrentValue);
-      setIncomeProfiles(incomeProfilesRes || []);
-
-      // Calculate budget spent
+      // Calculate budget spent using allTx and userPrefs
       const now = new Date();
-      const prefMonthStart = userPrefs?.trackingStartDayMonthly ?? 1;
-      const prefWeekStart = userPrefs?.trackingStartDayWeekly ?? 6;
+      const prefMonthStart = prefs?.trackingStartDayMonthly ?? 1;
+      const prefWeekStart = prefs?.trackingStartDayWeekly ?? 6;
       
       const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
@@ -205,25 +201,97 @@ export default function Analytics() {
         return { ...b, spent };
       });
 
+      setAccounts(accs);
+      setCategories(cats);
+      setDebts(debtsRes?.debts || []);
+      setAllDebtTransactions(debtsRes?.transactions || []);
+      setInvestments(investmentsWithCurrentValue);
+      setIncomeProfiles(incomeProfilesRes || []);
       setBudgets(enrichedBudgets);
       setBills(billsRes);
       setRecurring(recurringRes || []);
       setAllTransactions(allTx);
       setAllReceivables(receivablesData || []);
     } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      console.error("Failed to load static analytics data:", err);
     }
   };
 
+  // Mount effect: fetch user preferences, set initial filter, load static data and initial analytics
   useEffect(() => {
-    if (!filters.initialized && !userPrefs) {
-      loadData();
-    } else if (filters.initialized) {
-      loadData();
+    let isMounted = true;
+
+    const initialize = async () => {
+      setIsLoading(true);
+      try {
+        let prefs = userPrefs;
+        if (!prefs) {
+          const userRes = await getCurrentUser().catch(() => ({}));
+          prefs = userRes?.preferences || {};
+          if (isMounted) setUserPrefs(prefs);
+        }
+
+        const type = prefs.trackingPeriod === 'weekly' ? 'this_week' : 'this_month';
+        const bounds = getFilterBounds(type, prefs);
+        const initialFilters = bounds
+          ? { from: bounds.from, to: bounds.to, search: '', account: '', category: '', filterType: type, initialized: true }
+          : { from: '', to: '', search: '', account: '', category: '', filterType: type, initialized: true };
+
+        const filterKey = JSON.stringify({
+          from: initialFilters.from,
+          to: initialFilters.to,
+          search: initialFilters.search,
+          account: initialFilters.account,
+          category: initialFilters.category,
+          filterType: initialFilters.filterType
+        });
+        lastLoadedFiltersRef.current = filterKey;
+
+        if (isMounted) {
+          setFilters(initialFilters);
+        }
+
+        await Promise.all([
+          loadStaticData(prefs),
+          loadFilteredAnalytics(initialFilters)
+        ]);
+        staticLoadedRef.current = true;
+      } catch (err) {
+        console.error("Error during Analytics initialization:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initialize();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Filter change effect: runs only when filters change, skips duplicate/initial fetch
+  useEffect(() => {
+    if (!filters.initialized) return;
+
+    const filterKey = JSON.stringify({
+      from: filters.from,
+      to: filters.to,
+      search: filters.search,
+      account: filters.account,
+      category: filters.category,
+      filterType: filters.filterType
+    });
+
+    if (filterKey === lastLoadedFiltersRef.current) {
+      return;
     }
-  }, [filters.from, filters.to, filters.account, filters.category, filters.search, filters.initialized]);
+
+    lastLoadedFiltersRef.current = filterKey;
+    loadFilteredAnalytics(filters);
+  }, [filters.from, filters.to, filters.account, filters.category, filters.search, filters.filterType, filters.initialized]);
 
   const exportReport = () => { 
     const exportPayload = {
@@ -379,7 +447,7 @@ export default function Analytics() {
                 <AssetsTab investments={investments} money={money} />
             )}
             {activeTab === 'liabilities' && (
-                <LiabilitiesTab debts={debts} bills={bills} filters={filters} money={money} />
+                <LiabilitiesTab debts={debts} bills={bills} filters={filters} money={money} allDebtTransactions={allDebtTransactions} />
             )}
             {activeTab === 'insights' && (
                 <InsightsTab data={data} money={money} filters={filters} />

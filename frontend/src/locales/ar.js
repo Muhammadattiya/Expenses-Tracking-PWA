@@ -551,7 +551,8 @@ export default {
       "savingsRate": "معدل الإدخار",
       "topExpenses": "أعلى المصروفات",
       "fixedIncome": "الدخل الثابت (المرتب)",
-      "netAfterLiabilities": "الصافي بعد الالتزامات",
+      "cashFlow": "التدفق النقدي",
+      "netAfterLiabilities": "التدفق النقدي",
       "allLiabilities": "جميع الالتزامات"
     },
     "title": "التقارير والإحصائيات",
@@ -1035,12 +1036,13 @@ export default {
     "placeholder": "اسأل عن مصاريفك..."
   },
   "overview": {
-    "allLiabilities": "All Liabilities",
-    "due": "Due",
-    "next": "Next",
-    "netWorth": "Net Worth",
-    "fixedIncome": "Fixed Income",
-    "netAfterLiabilities": "Net After Liabilities"
+    "allLiabilities": "جميع الالتزامات",
+    "due": "مستحق",
+    "next": "التالي",
+    "netWorth": "صافي الثروة",
+    "fixedIncome": "الدخل الثابت",
+    "cashFlow": "التدفق النقدي",
+    "netAfterLiabilities": "التدفق النقدي"
   },
   "liabilities": {
     "noDebtsTitle": "No Outstanding Debts",

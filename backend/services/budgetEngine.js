@@ -99,17 +99,11 @@ function getBudgetPeriodDates(budget, userPrefs, now = new Date()) {
     endDate.setDate(endDate.getDate() - 1);
     endDate.setHours(23, 59, 59, 999);
   } else if (period === 'weekly') {
-    // weekly
     const prefWeekStart = userPrefs.trackingStartDayWeekly !== undefined ? userPrefs.trackingStartDayWeekly : 6;
-    let day = now.getDay();
-    let diff = day >= prefWeekStart ? day - prefWeekStart : 7 - (prefWeekStart - day);
-    
-    startDate.setDate(now.getDate() - diff);
-    startDate.setHours(0, 0, 0, 0);
-    
-    endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
-    endDate.setHours(23, 59, 59, 999);
+    const { getWeeklyCycle } = require('../utils/cycleUtils');
+    const cycle = getWeeklyCycle(now, prefWeekStart);
+    startDate = cycle.startDate;
+    endDate = cycle.endDate;
   }
   return { startDate, endDate };
 }

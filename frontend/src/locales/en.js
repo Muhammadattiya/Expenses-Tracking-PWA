@@ -536,7 +536,8 @@ export default {
       "savingsRate": "Savings Rate",
       "topExpenses": "Top Expenses",
       "fixedIncome": "Fixed Income",
-      "netAfterLiabilities": "Net After Liabilities",
+      "cashFlow": "Cash Flow",
+      "netAfterLiabilities": "Cash Flow",
       "allLiabilities": "All Liabilities"
     },
     "title": "Reports & Analytics",
@@ -1025,7 +1026,8 @@ export default {
     "next": "Next",
     "netWorth": "Net Worth",
     "fixedIncome": "Fixed Income",
-    "netAfterLiabilities": "Net After Liabilities"
+    "cashFlow": "Cash Flow",
+    "netAfterLiabilities": "Cash Flow"
   },
   "liabilities": {
     "noDebtsTitle": "No Outstanding Debts",

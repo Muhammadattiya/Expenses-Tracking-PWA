@@ -6,6 +6,9 @@ exports.getBills = async (userId) => {
   return await Bill.find({ user: userId })
     .populate('category', 'name icon color')
     .populate('account', 'name icon color')
+    .populate('transactionId', 'amount date description type')
+    .populate('lastTransactionId', 'amount date description type')
+    .populate('paymentHistory.transactionId', 'amount date description type')
     .sort({ dueDate: 1 });
 };
 
@@ -78,8 +81,28 @@ exports.markAsPaid = async (userId, id, transactionId) => {
   const bill = await Bill.findOne({ _id: id, user: userId });
   if (!bill) throw new Error('Bill not found');
 
-  bill.transactionId = transactionId;
-  bill.paymentDate = new Date();
+  const now = new Date();
+  const currentDueDate = bill.dueDate;
+  const paidAmount = bill.expectedAmount;
+
+  if (!Array.isArray(bill.paymentHistory)) {
+    bill.paymentHistory = [];
+  }
+
+  // Record payment in paymentHistory to preserve it permanently across cycles
+  bill.paymentHistory.push({
+    paidAt: now,
+    dueDate: currentDueDate,
+    amount: paidAmount,
+    transactionId: transactionId || undefined
+  });
+
+  // Preserve latest payment date and transaction references
+  bill.paymentDate = now;
+  bill.lastPaymentDate = now;
+  if (transactionId) {
+    bill.lastTransactionId = transactionId;
+  }
 
   if (bill.repeat !== 'never') {
     let nextDate = new Date(bill.dueDate);
@@ -95,6 +118,7 @@ exports.markAsPaid = async (userId, id, transactionId) => {
     bill.transactionId = undefined; 
   } else {
     bill.status = 'paid';
+    bill.transactionId = transactionId;
   }
   
   await bill.save();

@@ -59,6 +59,19 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return `${window.location.origin}/api`;
+  }
+  return 'https://finova-zzr7.onrender.com/api';
+};
+
+const apiUrl = getApiUrl();
+
 const CopyableURL = ({ url }) => {
   const { showToast } = useNotification();
   const { t } = useLanguage();
@@ -74,11 +87,11 @@ const CopyableURL = ({ url }) => {
   return (
     <div 
       dir="ltr"
-      className="mt-2 flex items-center justify-between gap-2.5 bg-black/50 backdrop-blur-md border border-white/10 rounded-xl p-2.5 shadow-inner hover:border-[#8D6346]/50 transition-colors"
+      className="mt-2 flex items-center justify-between gap-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-xl p-2 sm:p-2.5 shadow-inner hover:border-[#8D6346]/50 transition-colors"
     >
-      <div className="flex items-center gap-2 min-w-0 flex-1 overflow-x-auto scrollbar-hide py-0.5">
+      <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto scrollbar-hide py-0.5">
         <span className="w-1.5 h-1.5 rounded-full bg-[#8D6346] shrink-0" />
-        <code className="text-xs text-[#8D6346] font-mono whitespace-nowrap select-all tracking-tight">{url}</code>
+        <code className="text-[11px] sm:text-xs text-[#8D6346] font-mono whitespace-nowrap select-all tracking-tight">{url}</code>
       </div>
       <motion.button 
         type="button"
@@ -90,20 +103,20 @@ const CopyableURL = ({ url }) => {
             : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/80 hover:text-white'
         }`}
       >
-        {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-        <span>{copied ? (t('common.copied')) : (t('common.copy'))}</span>
+        {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+        <span className="text-[11px] sm:text-xs">{copied ? (t('common.copied')) : (t('common.copy'))}</span>
       </motion.button>
     </div>
   );
 };
 
 const ShortcutStep = ({ num, text, children }) => (
-  <div className="flex items-start gap-3 text-sm text-white/80 leading-relaxed">
-    <div className="shrink-0 w-6 h-6 rounded-lg bg-white/5 border border-white/10 text-[#8D6346] text-xs font-bold flex items-center justify-center tabular-nums shadow-sm mt-0.5">
+  <div className="flex items-start gap-2.5 text-xs sm:text-sm text-white/80 leading-relaxed">
+    <div className="shrink-0 w-5 h-5 rounded-md bg-white/5 border border-white/10 text-[#8D6346] text-[11px] font-bold flex items-center justify-center tabular-nums shadow-sm mt-0.5">
       {num}
     </div>
     <div className="flex-1 min-w-0 space-y-1.5">
-      <div className="text-white/85 text-sm leading-relaxed break-words">{text}</div>
+      <div className="text-white/85 text-xs sm:text-sm leading-relaxed break-words">{text}</div>
       {children}
     </div>
   </div>
@@ -320,7 +333,7 @@ const Settings = () => {
         <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
       </div>
 
-      <div className="relative z-10 grid grid-cols-[3.5rem_1fr_3.5rem] items-center mb-8 h-12">
+      <div className="relative z-10 grid grid-cols-[3rem_1fr_3rem] items-center mb-6 min-h-[3rem]">
         <div className="flex justify-start">
           <motion.button 
             whileTap={{ scale: 0.9 }}
@@ -331,7 +344,9 @@ const Settings = () => {
           </motion.button>
         </div>
 
-        <h2 className="text-3xl font-bold text-center tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-sm flex items-center justify-center">
+        <h2 className={`font-bold text-center tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-sm flex items-center justify-center px-1 ${
+          activeView === 'main' ? 'text-2xl sm:text-3xl' : 'text-base sm:text-lg leading-snug line-clamp-1'
+        }`}>
           {activeView === 'main' && t('nav.settings')}
           {activeView === 'appSettings' && t('settings.appSettings')}
           {activeView === 'data' && t('settings.dataManagement')}
@@ -339,7 +354,7 @@ const Settings = () => {
           {activeView === 'appleShortcuts' && t('appleShortcuts.title')}
         </h2>
 
-        <div></div>
+        <div className="w-10"></div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -496,14 +511,14 @@ const Settings = () => {
                     <input
                       type="text"
                       readOnly
-                      value={`https://finova-zzr7.onrender.com/api/sms/webhook/${smsToken}`}
+                      value={`${apiUrl}/sms/webhook/${smsToken}`}
                       className="flex-1 bg-transparent text-xs sm:text-sm font-mono text-white/80 outline-none px-3 py-2 w-full"
                       style={{ direction: 'ltr' }}
                     />
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={() => {
-                        navigator.clipboard.writeText(`https://finova-zzr7.onrender.com/api/sms/webhook/${smsToken}`);
+                        navigator.clipboard.writeText(`${apiUrl}/sms/webhook/${smsToken}`);
                         setCopiedToken(true);
                         setTimeout(() => {
                           setCopiedToken(false);
@@ -662,118 +677,117 @@ const Settings = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}
           transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-          className="relative z-10 space-y-12 pb-10 px-2 sm:px-4"
+          className="relative z-10 space-y-6 pb-36 px-1 sm:px-2"
         >
-          {/* Header & Status */}
-          <div className="flex flex-col items-center justify-center text-center space-y-3 mb-2">
-            <div className="w-16 h-16 bg-[#8D6346]/15 border border-[#8D6346]/30 rounded-2xl flex items-center justify-center text-[#8D6346] shadow-inner">
-              <Command size={32} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white tracking-tight">
-                {t('appleShortcuts.title')}
-              </h2>
-              <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto mt-1">
+          {/* Status & Token Card */}
+          <div className="relative z-10 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-5 sm:p-6 rounded-[2.5rem] space-y-5 overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#8D6346]/10 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110 pointer-events-none" />
+
+            <div className="flex flex-col items-center justify-center text-center space-y-3">
+              <div className="w-14 h-14 bg-[#8D6346]/15 border border-[#8D6346]/30 rounded-2xl flex items-center justify-center text-[#8D6346] shadow-inner">
+                <Command size={28} />
+              </div>
+              <p className="text-white/70 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto">
                 {t('appleShortcuts.description')}
               </p>
-            </div>
-            <div className={`px-4 py-1.5 rounded-full text-xs font-semibold border inline-flex items-center gap-2 ${shortcutConnected ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 border-white/20 text-white/50'}`}>
-              <span className={`w-2 h-2 rounded-full ${shortcutConnected ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`} />
-              {shortcutConnected ? t('appleShortcuts.statusConnected') : t('appleShortcuts.statusDisconnected')}
-            </div>
-          </div>
-
-          {/* Token Generation / Revocation */}
-          <div className="pt-10 border-t border-white/5">
-            {shortcutToken ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-emerald-400 font-medium text-sm">
-                  <span className="flex items-center gap-2"><CheckCircle2 size={18} /> {t('appleShortcuts.tokenGenerated')}</span>
-                </div>
-                <div dir="ltr" className="bg-[#12121a] border border-white/10 rounded-xl p-4 text-white/50 font-mono text-sm tracking-widest text-center select-none">
-                  ••••••••••••••••••••••••••••••••••••••••
-                </div>
-                <p className="text-amber-400/90 text-xs flex items-start gap-2 leading-relaxed">
-                  <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-400" />
-                  <span>{t('appleShortcuts.tokenWarning')}</span>
-                </p>
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => {
-                    navigator.clipboard.writeText(shortcutToken);
-                    showToast(t('appleShortcuts.tokenCopied'), 'success');
-                    setShortcutToken(null);
-                  }}
-                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(59,130,246,0.3)]"
-                >
-                  <Copy size={18} />
-                  {t('appleShortcuts.copyToken')}
-                </motion.button>
+              <div className={`px-3.5 py-1 rounded-full text-xs font-semibold border inline-flex items-center gap-2 ${shortcutConnected ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-white/10 border-white/20 text-white/50'}`}>
+                <span className={`w-2 h-2 rounded-full ${shortcutConnected ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`} />
+                {shortcutConnected ? t('appleShortcuts.statusConnected') : t('appleShortcuts.statusDisconnected')}
               </div>
-            ) : (
-                <div className="flex flex-col gap-3">
-                {shortcutConnected ? (
+            </div>
+
+            {/* Token Action */}
+            <div className="pt-4 border-t border-white/5">
+              {shortcutToken ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-emerald-400 font-medium text-xs sm:text-sm">
+                    <span className="flex items-center gap-2"><CheckCircle2 size={16} /> {t('appleShortcuts.tokenGenerated')}</span>
+                  </div>
+                  <div dir="ltr" className="bg-[#12121a] border border-white/10 rounded-xl p-3.5 text-white/50 font-mono text-xs tracking-widest text-center select-none overflow-x-auto scrollbar-hide">
+                    ••••••••••••••••••••••••••••••••••••••••
+                  </div>
+                  <p className="text-amber-400/90 text-xs flex items-start gap-2 leading-relaxed">
+                    <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-400" />
+                    <span>{t('appleShortcuts.tokenWarning')}</span>
+                  </p>
                   <motion.button
                     whileTap={{ scale: 0.96 }}
-                    onClick={async () => {
-                      if (window.confirm(t('appleShortcuts.revokeWarning'))) {
-                        try {
-                          await revokeShortcutToken();
-                          setShortcutConnected(false);
-                          setShortcutToken(null);
-                          showToast(t('settings.revokedSuccessfully'), 'success');
-                        } catch(e) {
-                          showToast(t('addTransaction.errorMsg'), 'error');
+                    onClick={() => {
+                      navigator.clipboard.writeText(shortcutToken);
+                      showToast(t('appleShortcuts.tokenCopied'), 'success');
+                      setShortcutToken(null);
+                    }}
+                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(59,130,246,0.3)]"
+                  >
+                    <Copy size={16} />
+                    {t('appleShortcuts.copyToken')}
+                  </motion.button>
+                </div>
+              ) : (
+                <div>
+                  {shortcutConnected ? (
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      onClick={async () => {
+                        if (window.confirm(t('appleShortcuts.revokeWarning'))) {
+                          try {
+                            await revokeShortcutToken();
+                            setShortcutConnected(false);
+                            setShortcutToken(null);
+                            showToast(t('settings.revokedSuccessfully'), 'success');
+                          } catch(e) {
+                            showToast(t('addTransaction.errorMsg'), 'error');
+                          }
                         }
-                      }
-                    }}
-                    className="w-full py-3.5 bg-red-500/10 text-red-400 border border-red-500/20 font-semibold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Trash2 size={18} />
-                    {t('appleShortcuts.revokeToken')}
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    whileTap={{ scale: 0.96 }}
-                    onClick={async () => {
-                      try {
-                        const res = await generateShortcutToken();
-                        setShortcutToken(res.token);
-                        setShortcutConnected(true);
-                      } catch (error) {
-                        showToast(t('common.error'), 'error');
-                      }
-                    }}
-                    className="w-full py-3.5 bg-[#8D6346]/20 hover:bg-[#8D6346]/30 text-white font-semibold border border-[#8D6346]/30 rounded-xl transition-all flex items-center justify-center gap-2 shadow-inner"
-                  >
-                    <Command size={18} />
-                    {t('appleShortcuts.generateToken')}
-                  </motion.button>
-                )}
-              </div>
-            )}
+                      }}
+                      className="w-full py-3.5 bg-red-500/10 text-red-400 border border-red-500/20 text-xs sm:text-sm font-semibold rounded-xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={16} />
+                      {t('appleShortcuts.revokeToken')}
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      onClick={async () => {
+                        try {
+                          const res = await generateShortcutToken();
+                          setShortcutToken(res.token);
+                          setShortcutConnected(true);
+                        } catch (error) {
+                          showToast(t('common.error'), 'error');
+                        }
+                      }}
+                      className="w-full py-3.5 bg-[#8D6346]/20 hover:bg-[#8D6346]/30 text-white text-xs sm:text-sm font-semibold border border-[#8D6346]/30 rounded-xl transition-all flex items-center justify-center gap-2 shadow-inner"
+                    >
+                      <Command size={16} />
+                      {t('appleShortcuts.generateToken')}
+                    </motion.button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Setup Guide */}
-          <div className="space-y-5 pt-10 border-t border-white/5">
-            <div className="flex items-center justify-between pb-4">
-              <h3 className="text-white font-bold flex items-center gap-2 text-base">
-                <Smartphone size={19} className="text-[#8D6346]" />
-                {t('appleShortcuts.setupGuide')}
+          {/* Setup Guide Card */}
+          <div className="relative z-10 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-5 sm:p-6 rounded-[2.5rem] space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-white/5">
+              <h3 className="text-white/95 font-bold flex items-center gap-2 text-sm sm:text-base">
+                <Smartphone size={18} className="text-[#8D6346] shrink-0" />
+                <span>{t('appleShortcuts.setupGuide')}</span>
               </h3>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#8D6346]/15 border border-[#8D6346]/25 text-[#8D6346]">
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#8D6346]/15 border border-[#8D6346]/25 text-[#8D6346] whitespace-nowrap shrink-0">
                 iOS Shortcuts
               </span>
             </div>
 
-            <div className="space-y-6 pt-2">
+            <div className="space-y-6">
               {/* Group 1: Preparation */}
-              <div className="space-y-3.5">
-                <h4 className="text-white/90 font-bold flex items-center gap-2.5 text-sm">
-                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border border-[#8D6346]/30">1</span>
-                  {t('appleShortcuts.group1')}
+              <div className="space-y-3">
+                <h4 className="text-white/90 font-bold flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black border border-[#8D6346]/30 shrink-0">1</span>
+                  <span>{t('appleShortcuts.group1')}</span>
                 </h4>
-                <div className="space-y-3 pt-1 border-s border-white/10 ms-3 ps-5">
+                <div className="space-y-3 pt-1 border-s border-white/10 ms-2.5 ps-3.5 sm:ps-4">
                   <ShortcutStep num={1} text={t('appleShortcuts.step1')} />
                   <ShortcutStep num={2} text={t('appleShortcuts.step2')} />
                   <ShortcutStep num={3} text={t('appleShortcuts.step3')} />
@@ -784,12 +798,12 @@ const Settings = () => {
               </div>
 
               {/* Group 2: Account Selection */}
-              <div className="space-y-3.5">
-                <h4 className="text-white/90 font-bold flex items-center gap-2.5 text-sm">
-                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border border-[#8D6346]/30">2</span>
-                  {t('appleShortcuts.group2')}
+              <div className="space-y-3">
+                <h4 className="text-white/90 font-bold flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black border border-[#8D6346]/30 shrink-0">2</span>
+                  <span>{t('appleShortcuts.group2')}</span>
                 </h4>
-                <div className="space-y-3 pt-1 border-s border-white/10 ms-3 ps-5">
+                <div className="space-y-3 pt-1 border-s border-white/10 ms-2.5 ps-3.5 sm:ps-4">
                   <ShortcutStep num={7} text={t('appleShortcuts.step7')}>
                     <CopyableURL url={`${apiUrl}/integrations/shortcut/accounts`} />
                   </ShortcutStep>
@@ -800,12 +814,12 @@ const Settings = () => {
               </div>
 
               {/* Group 3: Category Selection */}
-              <div className="space-y-3.5">
-                <h4 className="text-white/90 font-bold flex items-center gap-2.5 text-sm">
-                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border border-[#8D6346]/30">3</span>
-                  {t('appleShortcuts.group3')}
+              <div className="space-y-3">
+                <h4 className="text-white/90 font-bold flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black border border-[#8D6346]/30 shrink-0">3</span>
+                  <span>{t('appleShortcuts.group3')}</span>
                 </h4>
-                <div className="space-y-3 pt-1 border-s border-white/10 ms-3 ps-5">
+                <div className="space-y-3 pt-1 border-s border-white/10 ms-2.5 ps-3.5 sm:ps-4">
                   <ShortcutStep num={11} text={t('appleShortcuts.step11')}>
                     <CopyableURL url={`${apiUrl}/integrations/shortcut/categories`} />
                   </ShortcutStep>
@@ -816,12 +830,12 @@ const Settings = () => {
               </div>
 
               {/* Group 4: Saving Transaction */}
-              <div className="space-y-3.5">
-                <h4 className="text-white/90 font-bold flex items-center gap-2.5 text-sm">
-                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border border-[#8D6346]/30">4</span>
-                  {t('appleShortcuts.group4')}
+              <div className="space-y-3">
+                <h4 className="text-white/90 font-bold flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black border border-[#8D6346]/30 shrink-0">4</span>
+                  <span>{t('appleShortcuts.group4')}</span>
                 </h4>
-                <div className="space-y-3 pt-1 border-s border-white/10 ms-3 ps-5">
+                <div className="space-y-3 pt-1 border-s border-white/10 ms-2.5 ps-3.5 sm:ps-4">
                   <ShortcutStep num={15} text={t('appleShortcuts.step15')}>
                     <CopyableURL url={`${apiUrl}/integrations/shortcut/transactions`} />
                   </ShortcutStep>
@@ -837,12 +851,12 @@ const Settings = () => {
               </div>
 
               {/* Group 5: Back Tap Setup */}
-              <div className="space-y-3.5">
-                <h4 className="text-white/90 font-bold flex items-center gap-2.5 text-sm">
-                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border border-[#8D6346]/30">5</span>
-                  {t('appleShortcuts.group5')}
+              <div className="space-y-3">
+                <h4 className="text-white/90 font-bold flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="bg-[#8D6346]/20 text-[#8D6346] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black border border-[#8D6346]/30 shrink-0">5</span>
+                  <span>{t('appleShortcuts.group5')}</span>
                 </h4>
-                <div className="space-y-3 pt-1 ms-3 ps-5">
+                <div className="space-y-3 pt-1 ms-2.5 ps-3.5 sm:ps-4">
                   <ShortcutStep num={24} text={t('appleShortcuts.step24')} />
                   <ShortcutStep num={25} text={t('appleShortcuts.step25')} />
                   <ShortcutStep num={26} text={t('appleShortcuts.step26')} />

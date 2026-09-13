@@ -19,7 +19,7 @@ const incomeProfileSchema = new mongoose.Schema({
   },
   frequency: {
     type: String,
-    enum: ['weekly', 'monthly'],
+    enum: ['daily', 'weekly', 'monthly', 'yearly'],
     required: true
   },
   weekDay: {

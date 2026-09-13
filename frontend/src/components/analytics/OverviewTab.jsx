@@ -104,12 +104,36 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
     return total;
   }, [accounts, accountBalances, investments]);
   
-  // Debts I have to pay (borrowed / i_owe)
-  const totalDebtsToPay = useMemo(() => {
+  // Lifetime debts I have to pay (borrowed / i_owe) - Point-in-time state for Net Worth
+  const lifetimeDebtsToPay = useMemo(() => {
     return (debts || [])
       .filter(d => String(d.type) === 'i_owe' || String(d.debtType) === 'i_owe' || String(d.type) === 'borrowed')
       .reduce((sum, d) => sum + (Number(d.remainingAmount) || 0), 0);
   }, [debts]);
+
+  // Period debts I have to pay (borrowed / i_owe) - Commitment inside the selected period
+  const periodDebtsToPay = useMemo(() => {
+    return (debts || [])
+      .filter(d => String(d.type) === 'i_owe' || String(d.debtType) === 'i_owe' || String(d.type) === 'borrowed')
+      .filter(d => {
+        if (!filters?.from || !filters?.to || filters?.filterType === 'all') {
+          return true;
+        }
+        const fromDate = new Date(filters.from);
+        const toDate = new Date(filters.to);
+        
+        // Find loan transaction date or fallback to d.dueDate or d.createdAt
+        const loanTx = (allDebtTransactions || []).find(dt => 
+          (dt.debtId?._id ? String(dt.debtId._id) : String(dt.debtId)) === String(d._id) && 
+          dt.type === 'loan'
+        );
+        const debtDateRaw = loanTx?.date || d.dueDate || d.createdAt;
+        if (!debtDateRaw) return true;
+        const debtDate = new Date(debtDateRaw);
+        return debtDate >= fromDate && debtDate <= toDate;
+      })
+      .reduce((sum, d) => sum + (Number(d.remainingAmount) || 0), 0);
+  }, [debts, allDebtTransactions, filters]);
 
   const totalInvestments = useMemo(() => {
     return (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
@@ -119,16 +143,11 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
   const calculateOccurrences = (eventDate, frequency, filters) => {
     if (!eventDate) return 0;
     
-    // User requested: For "All Time" (no filters), always show exactly ONE cycle in the overview.
-    if (!filters?.from || !filters?.to) {
-      return 1;
-    }
-
     const start = new Date(eventDate);
-    const fromDate = new Date(filters.from);
-    let toDate = new Date(filters.to);
+    const fromDate = filters?.from ? new Date(filters.from) : new Date(start);
+    let toDate = filters?.to ? new Date(filters.to) : new Date();
     
-    // User requested: Cap future dates to 'today' so "This Year" only counts YTD (Year-to-date)
+    // Cap future dates to 'today' so "This Year" only counts YTD (Year-to-date)
     const today = new Date();
     if (filters?.filterType === 'year' && toDate > today) {
       toDate = today;
@@ -159,18 +178,24 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
     let count = 0;
     let i = 0;
     
-    // Fast forward 'i' if the event started way in the past (to avoid large loops)
     if (start < fromDate) {
       if (frequency === 'daily') i = Math.max(0, Math.floor((fromDate - start) / (1000 * 60 * 60 * 24)));
       else if (frequency === 'weekly') i = Math.max(0, Math.floor((fromDate - start) / (1000 * 60 * 60 * 24 * 7)));
       else if (frequency === 'monthly') i = Math.max(0, (fromDate.getFullYear() - start.getFullYear()) * 12 + (fromDate.getMonth() - start.getMonth()) - 1);
       else if (frequency === 'yearly') i = Math.max(0, fromDate.getFullYear() - start.getFullYear() - 1);
+    } else if (start > toDate) {
+      if (frequency === 'daily') i = Math.floor((fromDate - start) / (1000 * 60 * 60 * 24)) - 1;
+      else if (frequency === 'weekly') i = Math.floor((fromDate - start) / (1000 * 60 * 60 * 24 * 7)) - 1;
+      else if (frequency === 'monthly') i = (fromDate.getFullYear() - start.getFullYear()) * 12 + (fromDate.getMonth() - start.getMonth()) - 1;
+      else if (frequency === 'yearly') i = fromDate.getFullYear() - start.getFullYear() - 1;
     }
 
     while (true) {
       const current = getOccurrence(i);
       if (current > toDate) break;
-      if (current >= fromDate) count++;
+      if (current >= fromDate) {
+        count++;
+      }
       i++;
       if (i > 10000) break; // failsafe
     }
@@ -178,20 +203,102 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
     return count;
   };
 
-  const totalBills = useMemo(() => {
+  const periodBills = useMemo(() => {
+    if (!bills || !bills.length) return 0;
+    if (!filters?.from || !filters?.to || filters?.filterType === 'all') {
+      return (bills || [])
+        .filter(b => b.status !== 'paid' && b.isActive !== false)
+        .reduce((sum, b) => sum + (Number(b.expectedAmount) || 0), 0);
+    }
+
+    const fromDate = new Date(filters.from);
+    const toDate = new Date(filters.to);
+
+    let billFromDate = fromDate;
+    let billToDate = toDate;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const isCurrentPeriod = ['today', 'this_week', 'this_month', 'year'].includes(filters?.filterType) || (filters?.filterType === 'custom' && toDate.getTime() >= todayStart);
+
+    if (filters?.filterType === 'this_month') {
+      billFromDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1, 0, 0, 0, 0);
+      billToDate = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (filters?.filterType === 'this_week') {
+      billToDate = new Date(fromDate.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+    } else if (filters?.filterType === 'year') {
+      billToDate = new Date(fromDate.getFullYear(), 11, 31, 23, 59, 59, 999);
+    } else if (filters?.filterType === 'last_month') {
+      billFromDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1, 0, 0, 0, 0);
+      billToDate = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (filters?.filterType === 'last_week') {
+      billToDate = new Date(fromDate.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+    } else if (filters?.filterType === 'yesterday') {
+      billFromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+      billToDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+    } else if (filters?.filterType === 'today') {
+      billFromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      billToDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    } else if (filters?.filterType === 'custom') {
+      billToDate = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 23, 59, 59, 999);
+    }
+
+    const effectiveBillFilters = { ...filters, from: billFromDate.toISOString(), to: billToDate.toISOString() };
+
     return (bills || [])
-      .filter(b => b.status !== 'paid' || (b.repeat && b.repeat !== 'never'))
+      .filter(b => b.isActive !== false)
       .reduce((sum, b) => {
-        const occurrences = calculateOccurrences(b.dueDate, b.repeat || 'never', filters);
-        return sum + (Number(b.expectedAmount) || 0) * occurrences;
+        const history = Array.isArray(b.paymentHistory) ? b.paymentHistory : [];
+        const payments = history.length > 0
+          ? history
+          : (b.paymentDate ? [{ paidAt: b.paymentDate, dueDate: b.dueDate, amount: b.expectedAmount }] : []);
+
+        if (b.repeat === 'never') {
+          const dueDate = new Date(b.dueDate);
+          const inDueRange = dueDate >= billFromDate && dueDate <= billToDate;
+          const isOverduePast = isCurrentPeriod && (b.status === 'overdue' || (b.status !== 'paid' && dueDate.getTime() < todayStart)) && dueDate < billFromDate;
+          if (!inDueRange && !isOverduePast) return sum;
+
+          return sum + (Number(b.expectedAmount) || 0);
+        } else {
+          const occurrences = calculateOccurrences(b.dueDate, b.repeat || 'never', effectiveBillFilters);
+          let totalCount = occurrences;
+          const paidInRangeCount = payments.filter(p => {
+            const pPaidAt = p.paidAt ? new Date(p.paidAt) : null;
+            return pPaidAt && pPaidAt >= billFromDate && pPaidAt <= billToDate;
+          }).length;
+          totalCount = Math.max(totalCount, paidInRangeCount);
+
+          if (totalCount <= 0) {
+            const isOverduePast = isCurrentPeriod && (b.status === 'overdue' || (b.status !== 'paid' && new Date(b.dueDate).getTime() < todayStart));
+            if (isOverduePast) {
+              return sum + (Number(b.expectedAmount) || 0);
+            }
+            return sum;
+          }
+
+          return sum + (Number(b.expectedAmount) || 0) * totalCount;
+        }
       }, 0);
   }, [bills, filters]);
 
-  // Liabilities = debts I have to pay + bills I have to pay for the active filter period
-  const totalLiabilities = (totalDebtsToPay || 0) + (totalBills || 0);
+  // Total liabilities: debts I have to pay + unpaid bills scoped to the selected period
+  const totalLiabilities = useMemo(() => {
+    if (data?.liabilities?.total !== undefined) {
+      return data.liabilities.total;
+    }
+    return (periodDebtsToPay || 0) + (periodBills || 0);
+  }, [data, periodDebtsToPay, periodBills]);
   
-  // Net Worth = all the balance in all accounts minus liabilities
-  const netWorth = totalAssets - totalLiabilities;
+  // Net Worth = all the balance in all accounts minus current liabilities
+  const currentOverdueOrDueBills = useMemo(() => {
+    const now = new Date();
+    return (bills || [])
+      .filter(b => b.isActive !== false && (b.status === 'overdue' || b.status === 'due_today' || (b.status !== 'paid' && b.dueDate && new Date(b.dueDate) <= now)))
+      .reduce((sum, b) => sum + (Number(b.expectedAmount) || 0), 0);
+  }, [bills]);
+
+  const totalCurrentLiabilities = (lifetimeDebtsToPay || 0) + currentOverdueOrDueBills;
+  const netWorth = totalAssets - totalCurrentLiabilities;
   
   const savings = useMemo(() => {
     let total = 0;
@@ -204,15 +311,77 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
   }, [accounts, accountBalances]);
 
   const fixedIncome = useMemo(() => {
-    return (incomeProfiles || [])
-      .filter(p => p.isActive !== false) // Active by default or explicitly true
-      .reduce((sum, p) => {
-        const occurrences = calculateOccurrences(p.createdAt || new Date(), p.frequency || 'monthly', filters);
-        return sum + (p.amount || 0) * occurrences;
-      }, 0);
-  }, [incomeProfiles, filters]);
+    const active = (incomeProfiles || []).filter(p => p.isActive !== false);
+    if (!active.length) return 0;
 
-  const netAfterLiabilities = fixedIncome - totalLiabilities;
+    const linkedCategoryIds = new Set(
+      active
+        .map(p => (typeof p.category === 'object' ? p.category?._id : p.category))
+        .filter(Boolean)
+        .map(String)
+    );
+
+    if (linkedCategoryIds.size === 0) return 0;
+
+    if (allTransactions && allTransactions.length > 0) {
+      let txs = allTransactions.filter(tx => tx.type === 'income' && (!tx.status || tx.status === 'completed'));
+
+      if (filters?.from && filters?.to && filters?.filterType !== 'all') {
+        const start = new Date(filters.from);
+        const end = new Date(filters.to);
+        txs = txs.filter(tx => {
+          const d = new Date(tx.date);
+          return d >= start && d <= end;
+        });
+      }
+
+      if (filters?.account) {
+        txs = txs.filter(tx => (tx.account?._id || tx.account) === filters.account || (tx.to_account?._id || tx.to_account) === filters.account);
+      }
+
+      if (filters?.category) {
+        txs = txs.filter(tx => (tx.category?._id || tx.category) === filters.category);
+      }
+
+      const total = txs.reduce((sum, tx) => {
+        const catId = (typeof tx.category === 'object' ? tx.category?._id : tx.category)?.toString();
+        if (catId && linkedCategoryIds.has(catId)) {
+          return sum + (Number(tx.amount) || 0);
+        }
+        return sum;
+      }, 0);
+
+      return Math.round(total * 100) / 100;
+    }
+
+    if (data?.fixedIncome !== undefined) {
+      return data.fixedIncome;
+    }
+
+    return 0;
+  }, [data?.fixedIncome, incomeProfiles, filters, allTransactions]);
+
+  // Cash Flow = Net cash flow for the selected period from authoritative analytics
+  const cashFlow = useMemo(() => {
+    if (!data?.summary) return 0;
+    return data.summary.balance ?? (
+      (data.summary.income || 0) - (data.summary.expense || 0) + (data.summary.settlements || 0)
+    );
+  }, [data]);
+
+  const formattedNetWorth = money(netWorth);
+  const formattedInvestments = money(totalInvestments);
+  const formattedLiabilities = money(totalLiabilities);
+  const formattedFixedIncome = money(fixedIncome);
+  const formattedCashFlow = money(cashFlow);
+  const formattedSavings = money(savings);
+
+  const getMetricFontSize = (formattedValue) => {
+    const len = formattedValue ? String(formattedValue).length : 0;
+    if (len > 14) return 'text-base sm:text-lg md:text-xl';
+    if (len > 11) return 'text-lg sm:text-xl md:text-2xl';
+    return 'text-xl md:text-3xl';
+  };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in pb-10">
@@ -222,78 +391,96 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
         {/* Net Worth */}
         <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
+          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
             <Landmark className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
             <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-80">{t('overview.netWorth')}</p>
-            <p className={`text-2xl md:text-4xl lg:text-5xl font-black tabular-nums tracking-tight ${netWorth >= 0 ? 'text-[#E8C5A8]' : 'text-rose-400'}`}>
-              {money(netWorth)}
+            <p 
+              title={formattedNetWorth}
+              className={`font-black tabular-nums tracking-tight truncate ${getMetricFontSize(formattedNetWorth)} ${netWorth >= 0 ? 'text-[#E8C5A8]' : 'text-rose-400'}`}
+            >
+              {formattedNetWorth}
             </p>
           </div>
         </div>
 
         {/* Investments */}
         <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <TrendingUp className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
             <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('sidebar.investments')}</p>
-            <p className="text-xl md:text-3xl font-black tabular-nums tracking-tight text-emerald-400">
-              {money(totalInvestments)}
+            <p 
+              title={formattedInvestments}
+              className={`font-black tabular-nums tracking-tight truncate text-emerald-400 ${getMetricFontSize(formattedInvestments)}`}
+            >
+              {formattedInvestments}
             </p>
           </div>
         </div>
 
         {/* Total Liabilities */}
         <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <TrendingDown className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
             <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('overview.allLiabilities')}</p>
-            <p className="text-xl md:text-3xl font-black tabular-nums tracking-tight text-rose-400">
-              {money(totalLiabilities)}
+            <p 
+              title={formattedLiabilities}
+              className={`font-black tabular-nums tracking-tight truncate text-rose-400 ${getMetricFontSize(formattedLiabilities)}`}
+            >
+              {formattedLiabilities}
             </p>
           </div>
         </div>
 
         {/* Fixed Income */}
         <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <Wallet className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
             <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('overview.fixedIncome')}</p>
-            <p className="text-xl md:text-3xl font-black tabular-nums tracking-tight text-emerald-400">
-              {money(fixedIncome)}
+            <p 
+              title={formattedFixedIncome}
+              className={`font-black tabular-nums tracking-tight truncate text-emerald-400 ${getMetricFontSize(formattedFixedIncome)}`}
+            >
+              {formattedFixedIncome}
             </p>
           </div>
         </div>
 
-        {/* Net After Liabilities */}
+        {/* Cash Flow */}
         <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <CreditCard className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('overview.netAfterLiabilities')}</p>
-            <p className={`text-xl md:text-3xl font-black tabular-nums tracking-tight ${netAfterLiabilities >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {money(netAfterLiabilities)}
+            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('overview.cashFlow', 'Cash Flow')}</p>
+            <p 
+              title={formattedCashFlow}
+              className={`font-black tabular-nums tracking-tight truncate ${cashFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'} ${getMetricFontSize(formattedCashFlow)}`}
+            >
+              {formattedCashFlow}
             </p>
           </div>
         </div>
 
         {/* Savings */}
         <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700">
+          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700 pointer-events-none">
             <PiggyBank className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
             <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('analytics.savings')}</p>
-            <p className="text-xl md:text-3xl font-black tabular-nums tracking-tight text-[#E8C5A8]">
-              {money(savings)}
+            <p 
+              title={formattedSavings}
+              className={`font-black tabular-nums tracking-tight truncate text-[#E8C5A8] ${getMetricFontSize(formattedSavings)}`}
+            >
+              {formattedSavings}
             </p>
           </div>
         </div>
