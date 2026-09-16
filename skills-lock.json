@@ -5,19 +5,31 @@
       "source": "amElnagdy/delegate-skills",
       "sourceType": "github",
       "skillPath": "skills/agy-delegate/SKILL.md",
-      "computedHash": "a2cafbd49cb90f4ed61616bef711a08ad2371ccd3bae47fcee6588530e3e8182"
+      "computedHash": "0baeef57a3835e70e9e0e0b1aa2c24867768cdb4998f573210254f61838209dc"
+    },
+    "claude-delegate": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/claude-delegate/SKILL.md",
+      "computedHash": "5918b0c4a049a45103d33c03be040de2c8f96ccd548431351ec80bd1ab4e42d7"
     },
     "codex-delegate": {
       "source": "amElnagdy/delegate-skills",
       "sourceType": "github",
       "skillPath": "skills/codex-delegate/SKILL.md",
-      "computedHash": "7ab13b6af60de5ea6e9e0605a6d964629cf1bb1926ee06d9ecc8066e18799c6b"
+      "computedHash": "aeeded2cd88cfdf88bfa849127e249006fca0e1cd46d3a6bdc85174d703e2a08"
     },
     "delegate-setup": {
       "source": "amElnagdy/delegate-skills",
       "sourceType": "github",
       "skillPath": "skills/delegate-setup/SKILL.md",
       "computedHash": "ffdc998edffa50e4d3e942af0a5697f6619d86b5e92b2175539ecca69225843d"
+    },
+    "grok-delegate": {
+      "source": "amElnagdy/delegate-skills",
+      "sourceType": "github",
+      "skillPath": "skills/grok-delegate/SKILL.md",
+      "computedHash": "fa6ae082d72342c37005e995c02484e8c22b2ae37aa1ac9841c1ed22ab9f60ee"
     },
     "kimi-delegate": {
       "source": "amElnagdy/delegate-skills",
@@ -29,13 +41,13 @@
       "source": "amElnagdy/delegate-skills",
       "sourceType": "github",
       "skillPath": "skills/opencode-delegate/SKILL.md",
-      "computedHash": "42468ef235a0e2c1a0ae3cc7ab290e25f35db14621a57bb40351ac311aff5a95"
+      "computedHash": "ccdad0962ec839f028fa506e96f607792dae6ed51d58144b3b3e58b45d5abad3"
     },
     "pi-delegate": {
       "source": "amElnagdy/delegate-skills",
       "sourceType": "github",
       "skillPath": "skills/pi-delegate/SKILL.md",
-      "computedHash": "71654e553c854eebf0763c538b0ec16ee19115ade752318a07a9fc967bd27fc6"
+      "computedHash": "80994a0d23d8f99a0d7ca241c665319bca0ed83dbf85d170a253e4c934065a54"
     }
   }
 }
