@@ -1,15 +1,19 @@
-import bcrypt from 'bcryptjs';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+import path from 'path';
+import { createRequire } from 'module';
+const require = createRequire('d:/expenses-tracker/backend/package.json');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 dotenv.config({ path: 'd:/expenses-tracker/backend/.env' });
 
 async function seed() {
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/finova');
-  const hash = await bcrypt.hash('Password123!', 12);
+  await mongoose.connect(process.env.MONGO_URI);
+  const users = await mongoose.connection.db.collection('users').find({}, { projection: { email: 1, hasCompletedOnboarding: 1 } }).toArray();
+  console.log('Found users in DB:', users);
   const res = await mongoose.connection.db.collection('users').updateOne(
-    { email: 'test@idempotency.com' },
-    { $set: { password: hash, hasCompletedOnboarding: true } }
+    { email: { $regex: /gemini/i } },
+    { $set: { hasCompletedOnboarding: true } }
   );
+  console.log('Seed result regex:', res);
   console.log('Seed result:', res);
   await mongoose.disconnect();
 }

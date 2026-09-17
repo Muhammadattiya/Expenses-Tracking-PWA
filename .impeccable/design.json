@@ -1,0 +1,287 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-16T14:58:20Z",
+  "title": "Design System: Finova",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Warm Copper Ember",
+        "canonical": "oklch(53% 0.08 55)",
+        "tonalRamp": [
+          "#26170E",
+          "#422718",
+          "#633C25",
+          "#8D6346",
+          "#AB8265",
+          "#CAA589",
+          "#E8C5A8",
+          "#F5E5D8"
+        ]
+      },
+      "copper-light": {
+        "role": "secondary",
+        "displayName": "Pale Bisque Frost",
+        "canonical": "oklch(84% 0.05 60)",
+        "tonalRamp": [
+          "#473327",
+          "#6B4F3E",
+          "#916E57",
+          "#B89176",
+          "#D2AE94",
+          "#E8C5A8",
+          "#F2DBC9",
+          "#FAF0E8"
+        ]
+      },
+      "copper-dark": {
+        "role": "tertiary",
+        "displayName": "Roasted Espresso",
+        "canonical": "oklch(28% 0.03 45)",
+        "tonalRamp": [
+          "#17110F",
+          "#261D1A",
+          "#3D2E2B",
+          "#54413E",
+          "#6E5652",
+          "#8A6E6A",
+          "#A88984",
+          "#C7AAA5"
+        ]
+      },
+      "obsidian-canvas": {
+        "role": "neutral",
+        "displayName": "Obsidian Night",
+        "canonical": "oklch(14% 0.01 320)",
+        "tonalRamp": [
+          "#0D0B0E",
+          "#141115",
+          "#1C191E",
+          "#28242A",
+          "#38333B",
+          "#4D4751",
+          "#665F6B",
+          "#837C89"
+        ]
+      },
+      "gain-green": {
+        "role": "accent",
+        "displayName": "Verdant Mint",
+        "canonical": "oklch(73% 0.18 145)",
+        "tonalRamp": [
+          "#0A3816",
+          "#135424",
+          "#1F7535",
+          "#34C759",
+          "#5CD47A",
+          "#84E19C",
+          "#B0EFBF",
+          "#E0FAEC"
+        ]
+      },
+      "loss-red": {
+        "role": "accent",
+        "displayName": "Crimson Coral",
+        "canonical": "oklch(62% 0.22 25)",
+        "tonalRamp": [
+          "#4D0E0B",
+          "#751813",
+          "#A8241D",
+          "#FF3B30",
+          "#FF655D",
+          "#FF918B",
+          "#FFC0BC",
+          "#FFEAEA"
+        ]
+      },
+      "warning-amber": {
+        "role": "accent",
+        "displayName": "Sunlit Amber",
+        "canonical": "oklch(76% 0.17 75)",
+        "tonalRamp": [
+          "#472B00",
+          "#6E4400",
+          "#A36600",
+          "#F59E0B",
+          "#FBBF24",
+          "#FCD34D",
+          "#FDE68A",
+          "#FEF3C7"
+        ]
+      },
+      "info-blue": {
+        "role": "accent",
+        "displayName": "Cerulean Bill",
+        "canonical": "oklch(60% 0.21 250)",
+        "tonalRamp": [
+          "#002A5E",
+          "#004294",
+          "#005FD1",
+          "#007AFF",
+          "#3B99FF",
+          "#70B5FF",
+          "#A8D3FF",
+          "#E0EFFF"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero net worth, primary account balance numbers with tabular figures."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles and main page headers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, account names, and dialog headers."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Standard narrative text, descriptions, and transaction rows."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Category chips, metric pills, and navigation tags."
+      }
+    },
+    "shadows": [
+      {
+        "name": "liquid-hero-rim",
+        "value": "inset 0 1px 2px rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.4)",
+        "purpose": "Specular rim highlight and physical depth for hero Liquid Glass cards."
+      },
+      {
+        "name": "recessed-inset-well",
+        "value": "inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.1)",
+        "purpose": "Recessed inset well effect for metric badges and segmented tracks."
+      },
+      {
+        "name": "floating-nav",
+        "value": "0 8px 30px rgba(0,0,0,0.3)",
+        "purpose": "Floating separation for bottom navigation bar."
+      },
+      {
+        "name": "copper-focus-glow",
+        "value": "0 0 12px rgba(141, 99, 70, 0.3)",
+        "purpose": "Tactile focus glow on active inputs and buttons."
+      }
+    ],
+    "motion": [
+      {
+        "name": "spring-tactile",
+        "value": "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+        "purpose": "Calibrated spring compression on touch/click interactions (scale: 0.95)."
+      },
+      {
+        "name": "ease-fluid",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Fluid slide-up and page transitions."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Copper Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Tactile pill button for primary actions and confirmations.",
+      "html": "<button class=\"ds-btn-primary\"><span>Save Changes</span></button>",
+      "css": ".ds-btn-primary { background: #8D6346; color: #ffffff; padding: 12px 24px; border-radius: 9999px; font-family: 'Exo 2', sans-serif; font-size: 0.95rem; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 14px rgba(141, 99, 70, 0.3); cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); outline: none; display: inline-flex; align-items: center; justify-content: center; } .ds-btn-primary:hover { background: #E8C5A8; color: #3D2E2B; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(141, 99, 70, 0.4); } .ds-btn-primary:active { transform: scale(0.95); background: #8D6346; color: #ffffff; }"
+    },
+    {
+      "name": "Liquid Glass Hero Card",
+      "kind": "card",
+      "refersTo": "card-liquid-glass",
+      "description": "Ultra-clear Liquid Glass container with specular bevel and high translucency.",
+      "html": "<div class=\"ds-card-liquid\"><div class=\"ds-card-header\"><span class=\"ds-card-label\">Total Balance</span><span class=\"ds-card-badge\">Active</span></div><div class=\"ds-card-balance\">45,280.00 <span class=\"ds-card-curr\">SAR</span></div></div>",
+      "css": ".ds-card-liquid { background: rgba(43, 35, 33, 0.3); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 30px; padding: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.2); font-family: 'Exo 2', sans-serif; color: #ffffff; } .ds-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; } .ds-card-label { font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; } .ds-card-badge { font-size: 0.75rem; color: #E8C5A8; background: rgba(141, 99, 70, 0.25); padding: 4px 10px; border-radius: 9999px; border: 1px solid rgba(141, 99, 70, 0.3); } .ds-card-balance { font-size: 2.25rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; } .ds-card-curr { font-size: 1.1rem; font-weight: 500; opacity: 0.7; }"
+    },
+    {
+      "name": "Segmented Tab Pill",
+      "kind": "nav",
+      "refersTo": "pill-tab-active",
+      "description": "Recessed segmented pill track with active glass indicator.",
+      "html": "<div class=\"ds-segment-shell\"><button class=\"ds-segment-btn ds-segment-active\">Weekly</button><button class=\"ds-segment-btn\">Monthly</button><button class=\"ds-segment-btn\">Yearly</button></div>",
+      "css": ".ds-segment-shell { display: inline-flex; background: rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 30px; padding: 4px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3); font-family: 'Exo 2', sans-serif; } .ds-segment-btn { border: none; background: transparent; color: rgba(255, 255, 255, 0.6); padding: 8px 16px; font-size: 0.875rem; font-weight: 500; border-radius: 24px; cursor: pointer; transition: all 0.2s ease; outline: none; } .ds-segment-btn:hover { color: #ffffff; } .ds-segment-active { background: rgba(141, 99, 70, 0.25); color: #ffffff; border: 1px solid rgba(141, 99, 70, 0.35); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }"
+    },
+    {
+      "name": "Translucent Form Input",
+      "kind": "input",
+      "refersTo": "input-translucent",
+      "description": "Translucent field with warm copper focus glow.",
+      "html": "<input class=\"ds-input-translucent\" type=\"text\" placeholder=\"Enter transaction title...\" />",
+      "css": ".ds-input-translucent { width: 100%; box-sizing: border-box; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 12px 16px; font-family: 'Exo 2', sans-serif; font-size: 0.95rem; color: #ffffff; outline: none; transition: border-color 0.2s, box-shadow 0.2s; } .ds-input-translucent::placeholder { color: rgba(255, 255, 255, 0.35); } .ds-input-translucent:focus { border-color: #8D6346; box-shadow: 0 0 12px rgba(141, 99, 70, 0.35); background: rgba(255, 255, 255, 0.08); }"
+    },
+    {
+      "name": "Metric Badge (Verdant Mint)",
+      "kind": "chip",
+      "refersTo": "chip-gain",
+      "description": "Recessed financial metric pill for positive cash flow.",
+      "html": "<div class=\"ds-metric-pill\"><span class=\"ds-metric-dot\"></span><span class=\"ds-metric-val\">+12,450 SAR</span></div>",
+      "css": ".ds-metric-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 6px 12px; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1); font-family: 'Exo 2', sans-serif; } .ds-metric-dot { width: 8px; height: 8px; border-radius: 9999px; background: #34C759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.6); } .ds-metric-val { color: #34C759; font-size: 0.85rem; font-weight: 600; font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Obsidian Liquid Vault",
+    "overview": "Finova balances Cupertino-grade optical purity with the warm, tactile dignity of an artisanal atelier. Rather than treating finance as cold administrative ledger-keeping, Finova renders personal wealth through deep obsidian horizons, organic ambient copper radiance, and crystal-clear Liquid Glass. Surfaces feel physically grounded and luminous, revealing the atmospheric glow and scrollable content beneath them through high-clarity optical translucency rather than muddy frosting.",
+    "keyCharacteristics": [
+      "Liquid Glass Optics: Crystal-clear pure CSS translucency (backdrop-blur-[32px]) with delicate specular rim borders (border-white/10) revealing underlying ambient lights.",
+      "Warm Artisanal Warmth: Deep obsidian canvases (#141115 / #100E11) paired with rich copper accents (#8D6346, #E8C5A8, #3D2E2B).",
+      "Tactile Fluid Physics: iOS-grade spring micro-interactions on taps, gesture cards, and segmented navigation tabs.",
+      "Bidi Symmetry: Natural RTL-first layout that mirrors into LTR gracefully using logical CSS properties.",
+      "Confirmed Anti-References: Strictly avoid cold sterile corporate finance spreadsheets, garish neon crypto gradients, muddy opaque frosted glass, cartoonish gamification badges, and SVG displacement filters."
+    ],
+    "rules": [
+      {
+        "name": "The Ember Rarity Rule",
+        "body": "The primary copper accent (#8D6346) is reserved for focal points, active states, and tactile interactions; it must never exceed 15% of surface area to maintain its luminous prestige.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Integrity Rule",
+        "body": "Financial greens (#34C759) and reds (#FF3B30) denote financial gain/owed and loss/debt strictly; they never serve as decorative background accents.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rigor Rule",
+        "body": "Every financial balance, currency symbol, metric, and timestamp must strictly enforce tabular-nums tracking-tight to preserve column alignment and eliminate layout jitter during live balance recalculations.",
+        "section": "typography"
+      },
+      {
+        "name": "The Optical Translucency Rule",
+        "body": "Liquid Glass must remain crystal clear; under no circumstance should surface fill opacity exceed 35% on dark surfaces or rely on opaque grey frosting that blocks the underlying ambient glow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Ambient Diffusion Rule",
+        "body": "Ambient lighting is achieved via blurred radial background spheres (bg-[#8D6346] blur-[120px] opacity-30 to opacity-60) fixed beneath the glass layer; shadows on glass panels remain subtle and structural.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do enforce pure CSS Liquid Glass (backdrop-blur-[32px], bg-[#2B2321]/30, border-white/10) so underlying background glows remain vividly visible.",
+      "Do format all financial metrics and balances with tabular-nums tracking-tight.",
+      "Do apply physical spring physics (whileTap={{ scale: 0.95 }}) to all interactive buttons and cards.",
+      "Do use logical CSS classes (ms-, me-, start-, end-) for dynamic RTL/LTR support.",
+      "Do mount all modals into document.body via React Portals to prevent z-index stacking conflicts with BottomNav.",
+      "Do keep long virtualized lists bound to window scroll (useWindowScroll={true}) to prevent double scrollbars."
+    ],
+    "donts": [
+      "Don't use SVG displacement filters or chromatic aberration filters (#glass-filter-_r_b_); surfaces rely strictly on pure, performant CSS.",
+      "Don't make glass surfaces opaque or muddy grey; keep opacity under 35% on dark surfaces so depth remains optical.",
+      "Don't use generic flat primary buttons; buttons must feature tactile feedback and refined copper highlights.",
+      "Don't hardcode physical layout directions (left-, right-, ml-, mr-) in UI components.",
+      "Don't use native window.confirm for destructive operations.",
+      "Don't expose technical variable names or raw localization keys in the user interface."
+    ]
+  }
+}
