@@ -25,6 +25,7 @@ export default function AccountManagement({ onBack }) {
 
   // Add Account State
   const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountType, setNewAccountType] = useState('cash');
   const [newAccountIcon, setNewAccountIcon] = useState('Wallet');
@@ -151,10 +152,15 @@ export default function AccountManagement({ onBack }) {
 
   const handleAddAccount = async (e) => {
     e.preventDefault();
-    if (!newAccountName.trim()) return;
+    const trimmed = newAccountName.trim();
+    if (!trimmed) {
+      showToast(t('settings.nameRequired') || t('profile.nameRequired'), 'error');
+      return;
+    }
+    setIsAdding(true);
     try {
       await createAccount({
-        name: newAccountName,
+        name: trimmed,
         type: newAccountType,
         icon: newAccountIcon,
         color: newAccountColor,
@@ -171,9 +177,13 @@ export default function AccountManagement({ onBack }) {
       setNewAccountExcludeFromTotal(false);
       setNewAccountIsSavingsAccount(false);
       setAddAccountModalOpen(false);
-      fetchData();
+      await fetchData();
+      showToast(t('settings.addSuccess'), 'success');
     } catch (error) {
       console.error("Error adding account:", error);
+      showToast(error.response?.data?.message || t('settings.addError'), 'error');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -200,7 +210,11 @@ export default function AccountManagement({ onBack }) {
 
   const submitEdit = async (e) => {
     e.preventDefault();
-    if (!editName.trim()) return;
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      showToast(t('settings.nameRequired') || t('profile.nameRequired'), 'error');
+      return;
+    }
     setIsUpdating(true);
     try {
       const currentBalance = getAccountBalance(editingItem);
@@ -210,7 +224,7 @@ export default function AccountManagement({ onBack }) {
         newAdjustment += (newBalance - currentBalance);
       }
       await updateAccount(editingItem._id, { 
-        name: editName, 
+        name: trimmed, 
         icon: editIcon, 
         color: editColor, 
         type: editingItem.type, 
@@ -221,6 +235,7 @@ export default function AccountManagement({ onBack }) {
       });
       await fetchData();
       closeEditModal();
+      showToast(t('settings.editSuccess'), 'success');
     } catch (error) {
       showToast(error.response?.data?.message || t('settings.editError'), 'error');
     } finally {
@@ -240,8 +255,10 @@ export default function AccountManagement({ onBack }) {
       await fetchData();
       setDeleteModalOpen(false);
       setSelectedAccount(null);
+      showToast(t('settings.deleteSuccess'), 'success');
     } catch (error) {
       console.error("Error deleting item:", error);
+      showToast(error.response?.data?.message || t('settings.deleteError'), 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -267,7 +284,7 @@ export default function AccountManagement({ onBack }) {
           aria-label={t('common.back')}
           className="w-12 h-12 flex shrink-0 items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
         >
-          <ArrowLeft size={20} className={`text-white/90 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          <ArrowLeft size={20} className="text-white/90 rtl:rotate-180" />
         </motion.button>
         <h3 className="text-xl font-bold flex items-center gap-2 text-white drop-shadow-sm">
           <Wallet className="w-6 h-6 text-[#8D6346]" /> {t('settings.accountsTitle')}
@@ -334,6 +351,12 @@ export default function AccountManagement({ onBack }) {
             </li>
           )
         })}
+        {accounts.filter(a => !a.isArchived).length === 0 && (
+          <div className="py-16 flex flex-col items-center justify-center text-center opacity-70 bg-white/5 rounded-[2rem] border border-white/5 p-6">
+            <Wallet size={40} className="mb-4 text-[#8D6346]/60" />
+            <p className="text-white/80 font-bold text-base mb-1">{t('settings.noAccounts')}</p>
+          </div>
+        )}
       </ul>
 
       <motion.button
@@ -352,7 +375,7 @@ export default function AccountManagement({ onBack }) {
               <h3 className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.editAccount')}
               </h3>
-              <button onClick={closeEditModal} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors">
+              <button onClick={closeEditModal} disabled={isUpdating} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50">
                 <X size={24} />
               </button>
             </div>
@@ -371,17 +394,17 @@ export default function AccountManagement({ onBack }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
-                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
                     </div>
                     <div>
                       <label className="block text-xs text-white/50 mb-1.5">{t('settings.balanceLabel')}</label>
-                      <input type="number" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                      <input type="number" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
-                      <input type="text" maxLength="4" pattern="\d{4}" value={editCardLast4} onChange={(e) => setEditCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" />
+                      <input type="text" maxLength="4" pattern="\d{4}" value={editCardLast4} onChange={(e) => setEditCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
                     </div>
                     <div className="flex items-end pb-0.5">
                       <label className="flex items-center w-full justify-between gap-2 px-3 py-2.5 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
@@ -431,7 +454,7 @@ export default function AccountManagement({ onBack }) {
               <h3 className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.addAccountBtn')}
               </h3>
-              <button onClick={() => setAddAccountModalOpen(false)} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors">
+              <button onClick={() => { if (!isAdding) setAddAccountModalOpen(false); }} disabled={isAdding} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50">
                 <X size={24} />
               </button>
             </div>
@@ -440,11 +463,11 @@ export default function AccountManagement({ onBack }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
-                  <input type="text" value={newAccountName} onChange={(e) => setNewAccountName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                  <input type="text" value={newAccountName} onChange={(e) => setNewAccountName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
                 </div>
                 <div>
                   <label className="block text-xs text-white/50 mb-1.5">{t('settings.accountType')}</label>
-                  <select value={newAccountType} onChange={(e) => setNewAccountType(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none">
+                  <select value={newAccountType} onChange={(e) => setNewAccountType(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none">
                     <option value="cash" className="bg-[#2B2321] text-white">{t('settings.cash')}</option>
                     <option value="bank" className="bg-[#2B2321] text-white">{t('settings.bank')}</option>
                     <option value="wallet" className="bg-[#2B2321] text-white">{t('settings.wallet')}</option>
@@ -455,11 +478,11 @@ export default function AccountManagement({ onBack }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-white/50 mb-1.5">{t('settings.balanceLabel')}</label>
-                  <input type="number" value={newAccountBalance} onChange={(e) => setNewAccountBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                  <input type="number" value={newAccountBalance} onChange={(e) => setNewAccountBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
                 </div>
                 <div>
                   <label className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
-                  <input type="text" maxLength="4" pattern="\d{4}" value={newAccountCardLast4} onChange={(e) => setNewAccountCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" />
+                  <input type="text" maxLength="4" pattern="\d{4}" value={newAccountCardLast4} onChange={(e) => setNewAccountCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
                 </div>
               </div>
 
@@ -477,8 +500,8 @@ export default function AccountManagement({ onBack }) {
                 <IconPicker type="account" selectedIcon={newAccountIcon} onSelect={setNewAccountIcon} selectedColor={newAccountColor} onColorSelect={setNewAccountColor} colorClass="text-[#8D6346]" />
               </div>
 
-              <motion.button whileTap={{ scale: 0.95 }} type="submit" className="w-full py-3.5 mt-3 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2">
-                <Plus className="w-5 h-5" /> {t('settings.addAccountBtn')}
+              <motion.button whileTap={{ scale: 0.95 }} type="submit" disabled={isAdding} className="w-full py-3.5 mt-3 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2">
+                {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Plus className="w-5 h-5" /> {t('settings.addAccountBtn')}</>)}
               </motion.button>
             </form>
           </div>

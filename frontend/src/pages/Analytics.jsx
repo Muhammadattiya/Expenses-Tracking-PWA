@@ -20,22 +20,45 @@ import CustomSelect from '../components/ui/CustomSelect';
 import AnalyticsTabs from '../components/analytics/AnalyticsTabs';
 import DateFilterChips, { getFilterBounds } from '../components/analytics/DateFilterChips';
 import OverviewTab from '../components/analytics/OverviewTab';
-import SpendingTab from '../components/analytics/SpendingTab';
-import IncomeTab from '../components/analytics/IncomeTab';
-import PlanningTab from '../components/analytics/PlanningTab';
-import AssetsTab from '../components/analytics/AssetsTab';
-import LiabilitiesTab from '../components/analytics/LiabilitiesTab';
-import InsightsTab from '../components/analytics/InsightsTab';
+const SpendingTab = React.lazy(() => import('../components/analytics/SpendingTab'));
+const IncomeTab = React.lazy(() => import('../components/analytics/IncomeTab'));
+const PlanningTab = React.lazy(() => import('../components/analytics/PlanningTab'));
+const AssetsTab = React.lazy(() => import('../components/analytics/AssetsTab'));
+const LiabilitiesTab = React.lazy(() => import('../components/analytics/LiabilitiesTab'));
+const InsightsTab = React.lazy(() => import('../components/analytics/InsightsTab'));
 import { AnalyticsSkeleton } from '../components/ui/Skeletons';
+
+function TabLoadingSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse py-4">
+      <div className="h-44 bg-white/5 border border-white/10 rounded-[2.5rem] backdrop-blur-xl" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="h-36 bg-white/5 border border-white/10 rounded-[1.5rem]" />
+        <div className="h-36 bg-white/5 border border-white/10 rounded-[1.5rem]" />
+        <div className="h-36 bg-white/5 border border-white/10 rounded-[1.5rem]" />
+      </div>
+    </div>
+  );
+}
 
 export default function Analytics() {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(value || 0);
   
-  const [searchParams] = useSearchParams();
+  const numberFormatter = React.useMemo(() => {
+    return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
+      style: 'currency',
+      currency: 'EGP',
+      maximumFractionDigits: 0
+    });
+  }, [lang]);
+
+  const money = React.useCallback((value) => numberFormatter.format(value || 0), [numberFormatter]);
+  
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'overview';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -43,6 +66,15 @@ export default function Analytics() {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', newTab);
+      return next;
+    }, { replace: true });
+  };
   
   const [data, setData] = useState(null);
   const [accounts, setAccounts] = useState([]);
@@ -170,12 +202,26 @@ export default function Analytics() {
       weekEnd.setDate(weekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
+      const monthStartMs = monthStart.getTime();
+      const monthEndMs = monthEnd.getTime();
+      const weekStartMs = weekStart.getTime();
+      const weekEndMs = weekEnd.getTime();
+
+      // Pre-group expense transactions by category for instant O(1) matching
+      const expensesByCat = new Map();
+      (allTx || []).forEach(tx => {
+        if (tx.type === 'expense') {
+          const catId = typeof tx.category === 'object' ? String(tx.category?._id || '') : String(tx.category || '');
+          if (catId) {
+            if (!expensesByCat.has(catId)) expensesByCat.set(catId, []);
+            expensesByCat.get(catId).push(tx);
+          }
+        }
+      });
+
       const enrichedBudgets = (budgetsRes || []).map(b => {
         const catId = typeof b.category === 'object' ? String(b.category?._id || '') : String(b.category || '');
-        let categoryTx = (allTx || []).filter(tx => {
-          const txCatId = typeof tx.category === 'object' ? String(tx.category?._id || '') : String(tx.category || '');
-          return tx.type === 'expense' && txCatId === catId;
-        });
+        let categoryTx = expensesByCat.get(catId) || [];
         
         if (b.account) {
           const bAccId = typeof b.account === 'object' ? String(b.account?._id || '') : String(b.account);
@@ -189,13 +235,24 @@ export default function Analytics() {
         let spent = 0;
         const budgetPeriod = b.period || 'monthly';
         if (budgetPeriod === 'monthly') {
-          spent = categoryTx.filter(tx => new Date(tx.date) >= monthStart && new Date(tx.date) <= monthEnd).reduce((sum, tx) => sum + tx.amount, 0);
+          spent = categoryTx.reduce((sum, tx) => {
+            const tMs = new Date(tx.date).getTime();
+            return (tMs >= monthStartMs && tMs <= monthEndMs) ? sum + tx.amount : sum;
+          }, 0);
         } else if (budgetPeriod === 'weekly') {
-          spent = categoryTx.filter(tx => new Date(tx.date) >= weekStart && new Date(tx.date) <= weekEnd).reduce((sum, tx) => sum + tx.amount, 0);
+          spent = categoryTx.reduce((sum, tx) => {
+            const tMs = new Date(tx.date).getTime();
+            return (tMs >= weekStartMs && tMs <= weekEndMs) ? sum + tx.amount : sum;
+          }, 0);
         } else if (budgetPeriod === 'custom' && b.startDate && b.endDate) {
           const customStart = new Date(b.startDate); customStart.setHours(0,0,0,0);
           const customEnd = new Date(b.endDate); customEnd.setHours(23,59,59,999);
-          spent = categoryTx.filter(tx => new Date(tx.date) >= customStart && new Date(tx.date) <= customEnd).reduce((sum, tx) => sum + tx.amount, 0);
+          const cStartMs = customStart.getTime();
+          const cEndMs = customEnd.getTime();
+          spent = categoryTx.reduce((sum, tx) => {
+            const tMs = new Date(tx.date).getTime();
+            return (tMs >= cStartMs && tMs <= cEndMs) ? sum + tx.amount : sum;
+          }, 0);
         }
         
         return { ...b, spent };
@@ -216,6 +273,17 @@ export default function Analytics() {
       console.error("Failed to load static analytics data:", err);
     }
   };
+
+  // Debounce search input changes (300ms) to prevent hammering getAnalytics on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => {
+        if (prev.search === searchInput) return prev;
+        return { ...prev, search: searchInput };
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Mount effect: fetch user preferences, set initial filter, load static data and initial analytics
   useEffect(() => {
@@ -318,34 +386,44 @@ export default function Analytics() {
     <>
       {/* Fixed Background covering the viewport */}
       <div className="fixed inset-0 -z-10 bg-[#100E11] overflow-hidden pointer-events-none">
-        <div className="absolute top-[-50px] left-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-40 blur-[120px] rounded-full" />
-        <div className="absolute top-[30%] right-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-30 blur-[140px] rounded-full" />
-        <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#8D6346] opacity-30 blur-[150px] rounded-full" />
+        <div className="absolute top-[-50px] start-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-40 blur-[120px] rounded-full" />
+        <div className="absolute top-[30%] end-[-50px] w-[250px] h-[250px] bg-[#8D6346] opacity-30 blur-[140px] rounded-full" />
+        <div className="absolute bottom-[-50px] start-[-50px] w-[300px] h-[300px] bg-[#8D6346] opacity-30 blur-[150px] rounded-full" />
       </div>
 
       <motion.div 
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-        className="pt-8 space-y-8 max-w-7xl mx-auto min-h-screen relative z-0"
+        className="pt-6 md:pt-8 pb-24 md:pb-16 px-4 sm:px-6 lg:px-8 space-y-6 md:space-y-8 max-w-7xl mx-auto min-h-screen relative z-0"
       >
       {/* Header & Global Actions */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p className="text-[#8D6346] text-xs font-bold tracking-widest uppercase mb-1 drop-shadow-sm">{t('analytics.tabs.overview')}</p>
-          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">{t('analytics.title')}</h1>
+          <p className="text-[#E8C5A8] text-xs font-bold ltr:tracking-widest ltr:uppercase rtl:tracking-normal mb-1 drop-shadow-sm">{t(`analytics.tabs.${activeTab}`)}</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">{t('analytics.title')}</h1>
+          <p className="text-xs sm:text-sm text-white/60 mt-1 max-w-xl leading-relaxed">{t('analytics.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto">
           {!isAssetsTab && (
             <motion.button 
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowFilters(!showFilters)} 
-              className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all shadow-lg ${showFilters ? 'bg-[#8D6346] text-white shadow-[#8D6346]/20' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
+              aria-label={showFilters ? t('analytics.hideFilters') : t('analytics.filterResults')}
+              className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all shadow-lg min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 ${showFilters ? 'bg-[#8D6346] text-white shadow-[0_4px_16px_rgba(141,99,70,0.35)] border border-[#E8C5A8]/30' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
             >
               <Filter className="w-4 h-4" />
               <span>{showFilters ? t('analytics.hideFilters') : t('analytics.filterResults')}</span>
+              {(filters.account || filters.category || filters.search) && (
+                <span className="w-2 h-2 rounded-full bg-[#34C759] shadow-[0_0_8px_#34C759]" title={t('analytics.activeFilters')} />
+              )}
             </motion.button>
           )}
           
-          <motion.button whileTap={{ scale: 0.95 }} onClick={exportReport} className="flex items-center gap-2 bg-[#8D6346] hover:bg-[#8D6346]/90 text-white px-5 py-3 rounded-2xl text-sm font-bold transition-colors shadow-lg shadow-[#8D6346]/20">
+          <motion.button 
+            whileTap={{ scale: 0.95 }} 
+            onClick={exportReport} 
+            aria-label={t('analytics.export')}
+            className="flex items-center gap-2 bg-[#8D6346] hover:bg-[#8D6346]/90 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all shadow-lg shadow-[#8D6346]/25 border border-[#E8C5A8]/20 min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70"
+          >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">{t('analytics.export')}</span>
           </motion.button>
@@ -355,7 +433,7 @@ export default function Analytics() {
       {/* Control Panel (Filters) */}
       {!isAssetsTab && (
         <div className={`transition-all duration-500 overflow-hidden ${showFilters ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-4 md:p-6 rounded-[2rem]">
+          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-4 md:p-6 rounded-[2rem] space-y-4">
           <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
            <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
              <DateFilterChips filters={filters} setFilters={setFilters} userPrefs={userPrefs} />
@@ -389,27 +467,43 @@ export default function Analytics() {
 
               <div className="w-full md:w-48">
                 <div className="relative">
-                  <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                  <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-white/40 pointer-events-none" />
                   <input 
                     type="text" 
                     placeholder={t('analytics.searchPlaceholder')}
-                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 px-4 pr-10 text-sm text-[var(--color-text-main)] outline-none focus:border-[#8D6346] focus:ring-1 focus:ring-[#8D6346]/50 transition-all"
-                    value={filters.search} 
-                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                    aria-label={t('analytics.searchPlaceholder')}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 ps-10 pe-4 text-sm text-[var(--color-text-main)] outline-none focus:border-[#8D6346] focus:ring-1 focus:ring-[#8D6346]/50 transition-all"
+                    value={searchInput} 
+                    onChange={(e) => setSearchInput(e.target.value)}
                   />
                 </div>
               </div>
            </div>
+          </div>
+
+          {(filters.account || filters.category || searchInput || filters.search) && (
+            <div className="flex justify-end pt-2 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput('');
+                  setFilters(prev => ({ ...prev, account: '', category: '', search: '' }));
+                }}
+                className="text-xs font-bold text-[#FF3B30] hover:text-white px-3 py-1.5 rounded-xl bg-[#FF3B30]/10 hover:bg-[#FF3B30] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#FF3B30] active:scale-95 min-h-[36px]"
+              >
+                {t('analytics.resetFilters')}
+              </button>
+            </div>
+          )}
         </div>
-       </div>
        </div>
       )}
 
       {/* Tabs Navigation */}
-      <AnalyticsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <AnalyticsTabs activeTab={activeTab} setActiveTab={handleTabChange} />
 
       {/* Main Content Area */}
-      <div className="relative">
+      <div className="relative" role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -418,7 +512,8 @@ export default function Analytics() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
           >
-            {activeTab === 'overview' && (
+            <React.Suspense fallback={<TabLoadingSkeleton />}>
+              {activeTab === 'overview' && (
                 <OverviewTab 
                   money={money} 
                   data={data} 
@@ -433,25 +528,26 @@ export default function Analytics() {
                   allDebtTransactions={allDebtTransactions}
                   allReceivables={allReceivables}
                 />
-            )}
-            {activeTab === 'spending' && (
+              )}
+              {activeTab === 'spending' && (
                 <SpendingTab data={data} categories={categories} money={money} allTransactions={allTransactions} filters={filters} />
-            )}
-            {activeTab === 'income' && (
+              )}
+              {activeTab === 'income' && (
                 <IncomeTab data={data} categories={categories} money={money} allTransactions={allTransactions} filters={filters} />
-            )}
-            {activeTab === 'planning' && (
+              )}
+              {activeTab === 'planning' && (
                 <PlanningTab budgets={budgets} money={money} />
-            )}
-            {activeTab === 'assets' && (
+              )}
+              {activeTab === 'assets' && (
                 <AssetsTab investments={investments} money={money} />
-            )}
-            {activeTab === 'liabilities' && (
+              )}
+              {activeTab === 'liabilities' && (
                 <LiabilitiesTab debts={debts} bills={bills} filters={filters} money={money} allDebtTransactions={allDebtTransactions} />
-            )}
-            {activeTab === 'insights' && (
+              )}
+              {activeTab === 'insights' && (
                 <InsightsTab data={data} money={money} filters={filters} />
-            )}
+              )}
+            </React.Suspense>
           </motion.div>
         </AnimatePresence>
       </div>

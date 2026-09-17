@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, LogOut, Send, UserRound, Wallet, Tag, Repeat, ArrowRight, Settings, Pencil, RefreshCcw, ExternalLink, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Camera, LogOut, Send, UserRound, Wallet, Tag, Repeat, ArrowRight, Settings, Pencil, RefreshCcw, ExternalLink, Loader2, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getCurrentUser, updateProfile } from '../api/auth';
 import { getAccounts } from '../api/accounts';
 import { getCategories } from '../api/categories';
@@ -19,7 +19,15 @@ import { triggerHaptic } from '../utils/haptics';
 
 export default function Profile() {
   const { t, language } = useLanguage();
-  const [activeView, setActiveView] = useState('main');
+  const [searchParams] = useSearchParams();
+  const [activeView, setActiveView] = useState(searchParams.get('view') || 'main');
+
+  useEffect(() => {
+    const view = searchParams.get('view');
+    if (view && ['accounts', 'categories', 'income', 'cycle'].includes(view)) {
+      setActiveView(view);
+    }
+  }, [searchParams]);
   
   const [user, setUser] = useState(null);
   const [name, setName] = useState('');
@@ -391,10 +399,17 @@ export default function Profile() {
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between px-2">
-                      <label className="text-sm font-medium text-white/70">{t('profile.emailLabel')}</label>
+                      <label className="text-sm font-medium text-white/70 flex items-center gap-1.5">
+                        <span>{t('profile.emailLabel')}</span>
+                        <Lock size={12} className="text-white/40" />
+                      </label>
                       <span className="text-white/40 text-[11px]">{t('profile.emailLockedHint')}</span>
                     </div>
-                    <div className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-5 py-3.5 text-base text-white/60 cursor-not-allowed truncate">
+                    <div 
+                      aria-readonly="true"
+                      role="textbox"
+                      className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-5 py-3.5 text-base text-white/60 cursor-not-allowed truncate select-all"
+                    >
                       {user?.email || '...'}
                     </div>
                   </div>
@@ -451,9 +466,12 @@ export default function Profile() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="text-center text-[11px] text-white/60 overflow-hidden"
+                        className="text-center text-[11px] text-white/60 overflow-hidden flex flex-col items-center gap-0.5"
                       >
-                        <span>{t('profile.editsRemaining')}</span> <strong className="text-[#E8C5A8] font-bold ms-1 tabular-nums">{user?.profileEditsRemaining ?? 3}</strong>
+                        <div>
+                          <span>{t('profile.editsRemaining')}</span> <strong className="text-[#E8C5A8] font-bold ms-1 tabular-nums">{user?.profileEditsRemaining ?? 3}</strong>
+                        </div>
+                        <span className="text-[10px] text-white/40">{t('profile.editsResetHint')}</span>
                       </motion.div>
                     )}
                   </AnimatePresence>

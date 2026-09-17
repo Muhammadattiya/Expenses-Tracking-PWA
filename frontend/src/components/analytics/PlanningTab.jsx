@@ -1,72 +1,246 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Target, CalendarClock } from 'lucide-react';
+import { Target, TrendingUp, ShieldCheck, Sparkles, AlertCircle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { getIconComponent } from '../IconPicker';
 
-export default function PlanningTab({ budgets, bills, money }) {
+function PlanningTabComponent({ budgets = [], money }) {
   const { t } = useLanguage();
 
+  const { totalBudget, totalSpent, remainingBudget, overallPercentage, overBudgetCount } = React.useMemo(() => {
+    let budgetSum = 0;
+    let spentSum = 0;
+    let overCount = 0;
+
+    (budgets || []).forEach(b => {
+      const amt = Number(b.amount) || 0;
+      const spent = Number(b.spent) || 0;
+      budgetSum += amt;
+      spentSum += spent;
+      if (spent > amt) overCount++;
+    });
+
+    const remaining = Math.max(0, budgetSum - spentSum);
+    const overallPct = budgetSum > 0 ? (spentSum / budgetSum) * 100 : 0;
+
+    return {
+      totalBudget: budgetSum,
+      totalSpent: spentSum,
+      remainingBudget: remaining,
+      overallPercentage: overallPct,
+      overBudgetCount: overCount
+    };
+  }, [budgets]);
+
+  const overallStatus = React.useMemo(() => {
+    if (overallPercentage >= 100) {
+      return {
+        label: t('analytics.planning.dangerStatus'),
+        color: 'text-[#FF3B30] bg-[#FF3B30]/10 border-[#FF3B30]/20'
+      };
+    }
+    if (overallPercentage >= 85) {
+      return {
+        label: t('analytics.planning.warningStatus'),
+        color: 'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/20'
+      };
+    }
+    return {
+      label: t('analytics.planning.healthyStatus'),
+      color: 'text-[#34C759] bg-[#34C759]/10 border-[#34C759]/20'
+    };
+  }, [overallPercentage, t]);
+
   return (
-    <div className="space-y-10 animate-fade-in pb-10">
-      
-      <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-5 lg:p-6">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-brand-blue/20 rounded-2xl text-brand-blue">
-            <Target className="w-6 h-6" />
+    <div className="space-y-8 animate-fade-in pb-10">
+
+      {/* Hero Performance Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {/* Total Allocated */}
+        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs md:text-sm font-medium text-white/70">
+              {t('analytics.planning.totalBudget')}
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-[#8D6346]/20 border border-[#8D6346]/30 flex items-center justify-center text-[#8D6346]">
+              <Target size={16} />
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-[var(--color-text-main)] tracking-wide">{t('nav.budgets')}</h2>
+          <div className="text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap text-white mb-1">
+            {money(totalBudget)}
+          </div>
+          <p className="text-xs text-white/60 mt-0.5">
+            {budgets?.length || 0} {t('analytics.planning.activeBudgetsCount')}
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        {/* Total Spent */}
+        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs md:text-sm font-medium text-white/70">
+              {t('analytics.planning.totalSpent')}
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-[#E8C5A8]/20 border border-[#E8C5A8]/30 flex items-center justify-center text-[#E8C5A8]">
+              <TrendingUp size={16} />
+            </div>
+          </div>
+          <div className="text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap text-white mb-1">
+            {money(totalSpent)}
+          </div>
+          <p className="text-xs text-white/60 mt-0.5">
+            {Math.round(overallPercentage)}% {t('analytics.planning.ofLimit')}
+          </p>
+        </div>
+
+        {/* Remaining Allowance */}
+        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs md:text-sm font-medium text-white/70">
+              {t('analytics.planning.remainingBudget')}
+            </span>
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+              overBudgetCount > 0 
+                ? 'bg-[#FF3B30]/20 border border-[#FF3B30]/30 text-[#FF3B30]' 
+                : 'bg-[#34C759]/20 border border-[#34C759]/30 text-[#34C759]'
+            }`}>
+              <ShieldCheck size={16} />
+            </div>
+          </div>
+          <div className={`text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap mb-1 ${
+            overBudgetCount > 0 ? 'text-[#FF3B30]' : 'text-[#34C759]'
+          }`}>
+            {money(remainingBudget)}
+          </div>
+          <p className="text-xs text-white/60 mt-0.5">
+            {overBudgetCount > 0 
+              ? t('analytics.planning.exceededCategories', { count: overBudgetCount })
+              : t('analytics.planning.availableToSpend')
+            }
+          </p>
+        </div>
+
+        {/* Consumption Rate */}
+        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs md:text-sm font-medium text-white/70">
+              {t('analytics.planning.consumption')}
+            </span>
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${overallStatus.color}`}>
+              {overallStatus.label}
+            </span>
+          </div>
+          <div className="text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap text-white mb-2">
+            {Math.round(overallPercentage)}%
+          </div>
+          <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden shadow-inner">
+            <div 
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{ 
+                width: `${Math.min(overallPercentage, 100)}%`,
+                backgroundColor: overallPercentage >= 100 ? '#FF3B30' : overallPercentage >= 85 ? '#F59E0B' : '#34C759',
+                boxShadow: `0 0 8px ${overallPercentage >= 100 ? '#FF3B30' : overallPercentage >= 85 ? '#F59E0B' : '#34C759'}80`
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Category Budgets Grid */}
+      <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-5 lg:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-2xl text-[#8D6346]">
+              <Target className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[var(--color-text-main)] tracking-wide">
+                {t('analytics.planning.title')}
+              </h2>
+              <p className="text-xs text-white/50 mt-0.5">
+                {t('analytics.planning.budgetsDesc')}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            to="/budgets"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs transition-colors self-start sm:self-auto"
+          >
+            <span>{t('analytics.planning.manageBudgets')}</span>
+            <ArrowUpRight className="w-3.5 h-3.5 rtl:-scale-x-100 opacity-70" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           {budgets?.length ? budgets.map((b) => {
             const spent = b.spent || 0;
             const percentage = Math.min((spent / b.amount) * 100, 100);
-            const isDanger = percentage > 90;
+            const isDanger = percentage >= 90;
+            const isOver = spent > b.amount;
             const CatIcon = b.category?.icon ? getIconComponent(b.category.icon, 'Layers') : Target;
-            const color = b.category?.color || '#3b82f6';
+            const color = b.category?.color || '#8D6346';
             
             return (
-              <div className="bg-black/10 shadow-inner p-4 md:p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" key={b._id}>
+              <div 
+                className="bg-black/10 shadow-inner p-4 md:p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" 
+                key={b._id}
+              >
                 {/* Background glow */}
                 <div 
-                  className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity"
+                  className="absolute -top-10 -end-10 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity"
                   style={{ backgroundColor: color }}
                 />
                 
-                <div className="flex items-start justify-between mb-6 relative z-10">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-start justify-between mb-5 relative z-10">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div 
-                      className="w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-xl flex items-center justify-center shadow-lg"
+                      className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center shadow-lg"
                       style={{ backgroundColor: `${color}20`, color: color }}
                     >
-                      <CatIcon size={16} />
+                      <CatIcon size={18} />
                     </div>
-                    <div>
-                      <p className="font-bold text-[var(--color-text-main)] truncate max-w-[150px]">
+                    <div className="min-w-0">
+                      <p className="font-bold text-white text-sm md:text-base truncate max-w-[150px]">
                         {b.category?.name || t('analytics.allCategories')}
                       </p>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{b.period}</p>
+                      <p className="text-xs text-white/50 mt-0.5">
+                        {t(`budgets.${b.period}`, b.period)}
+                      </p>
                     </div>
                   </div>
+
+                  {/* Over / Remaining pill */}
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${
+                    isOver 
+                      ? 'text-[#FF3B30] bg-[#FF3B30]/10 border-[#FF3B30]/20' 
+                      : 'text-white/70 bg-white/5 border-white/10'
+                  }`}>
+                    {isOver 
+                      ? `+${money(spent - b.amount)} ${t('analytics.planning.overBudget')}`
+                      : `${money(b.amount - spent)} ${t('analytics.planning.remaining')}`
+                    }
+                  </span>
                 </div>
 
                 <div className="space-y-2 relative z-10">
                   <div className="flex justify-between items-baseline">
-                     <span className="text-lg md:text-2xl font-bold tabular-nums tracking-tight text-[var(--color-text-main)]">
+                     <span className={`text-lg md:text-xl font-bold tabular-nums tracking-tight whitespace-nowrap ${
+                       isOver ? 'text-[#FF3B30]' : 'text-white'
+                     }`}>
                        {money(spent)}
                      </span>
-                     <span className="text-sm font-medium text-[var(--color-text-muted)]">
+                     <span className="text-xs sm:text-sm font-medium tabular-nums tracking-tight text-white/50 whitespace-nowrap">
                        / {money(b.amount)}
                      </span>
                   </div>
                   
                   <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden shadow-inner">
                     <div 
-                      className={`h-full rounded-full transition-all duration-1000 ease-out`}
+                      className="h-full rounded-full transition-all duration-1000 ease-out"
                       style={{ 
-                        width: `${percentage}%`,
-                        backgroundColor: isDanger ? '#f43f5e' : color,
-                        boxShadow: `0 0 10px ${isDanger ? '#f43f5e' : color}80`
+                        width: `${percentage}%`, 
+                        backgroundColor: isDanger ? '#FF3B30' : color,
+                        boxShadow: `0 0 10px ${isDanger ? '#FF3B30' : color}80`
                       }}
                     />
                   </div>
@@ -74,13 +248,56 @@ export default function PlanningTab({ budgets, bills, money }) {
               </div>
             );
           }) : (
-            <div className="col-span-full py-12 text-center">
-              <p className="text-[var(--color-text-muted)]">{t('analytics.noData')}</p>
+            <div className="col-span-full py-12 text-center flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#8D6346]/10 border border-[#8D6346]/20 flex items-center justify-center text-[#8D6346] mb-3">
+                <Target size={24} />
+              </div>
+              <p className="text-[var(--color-text-muted)] text-sm max-w-md mb-5 leading-relaxed">
+                {t('analytics.planning.noBudgets')}
+              </p>
+              <Link 
+                to="/budgets"
+                className="px-5 py-2.5 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/20 transition-all inline-flex items-center gap-2"
+              >
+                <Target size={14} />
+                <span>{t('analytics.planning.createBudget')}</span>
+              </Link>
             </div>
           )}
         </div>
       </section>
-      
+
+      {/* Smart Budget Planner Integration Banner */}
+      <section className="bg-gradient-to-br from-[#2B2321]/40 via-[#2B2321]/20 to-[#8D6346]/15 backdrop-blur-[32px] border border-[#8D6346]/30 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-5 lg:p-6 relative overflow-hidden">
+        <div className="absolute -top-12 -end-12 w-48 h-48 bg-[#8D6346]/20 rounded-full blur-[80px] pointer-events-none" />
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-2xl text-[#E8C5A8] shrink-0 mt-0.5">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                <span>{t('analytics.planning.smartPlannerTitle')}</span>
+              </h3>
+              <p className="text-xs text-white/60 mt-1 max-w-xl leading-relaxed">
+                {t('analytics.planning.smartPlannerDesc')}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            to="/budgets/smart-planner"
+            className="px-5 py-3 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/30 transition-all inline-flex items-center justify-center gap-2 shrink-0 self-start md:self-auto"
+          >
+            <span>{t('analytics.planning.openSmartPlanner')}</span>
+            <ArrowUpRight className="w-4 h-4 rtl:-scale-x-100" />
+          </Link>
+        </div>
+      </section>
+
     </div>
   );
 }
+
+export default React.memo(PlanningTabComponent);

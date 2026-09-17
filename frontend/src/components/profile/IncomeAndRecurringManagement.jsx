@@ -54,12 +54,12 @@ export default function IncomeAndRecurringManagement({
   // Income Profile Handlers
   const handleAddIncomeProfile = async (data) => {
     try {
-      if (!data.name || !data.amount || !data.account) {
-        showToast(t('common.error'), 'error');
+      if (!data.name?.trim() || !data.amount || Number(data.amount) <= 0 || !data.account) {
+        showToast(t('common.fillRequired') || t('common.error'), 'error');
         return;
       }
       await createIncomeProfile({
-        name: data.name,
+        name: data.name.trim(),
         amount: Number(data.amount),
         frequency: data.frequency,
         weekDay: Number(data.weekDay),
@@ -69,7 +69,7 @@ export default function IncomeAndRecurringManagement({
         isActive: data.isActive
       });
       setAddIncomeProfileModalOpen(false);
-      fetchData();
+      await fetchData();
       showToast(t('common.success'), 'success');
     } catch (error) {
       showToast(error.response?.data?.message || t('common.error'), 'error');
@@ -78,12 +78,12 @@ export default function IncomeAndRecurringManagement({
 
   const handleUpdateIncomeProfile = async (data) => {
     try {
-      if (!data.name || !data.amount || !data.account) {
-        showToast(t('common.error'), 'error');
+      if (!data.name?.trim() || !data.amount || Number(data.amount) <= 0 || !data.account) {
+        showToast(t('common.fillRequired') || t('common.error'), 'error');
         return;
       }
       await updateIncomeProfile(data._id, {
-        name: data.name,
+        name: data.name.trim(),
         amount: Number(data.amount),
         frequency: data.frequency,
         weekDay: Number(data.weekDay),
@@ -94,7 +94,7 @@ export default function IncomeAndRecurringManagement({
       });
       setEditIncomeProfileModalOpen(false);
       setEditingIncomeProfile(null);
-      fetchData();
+      await fetchData();
       showToast(t('common.success'), 'success');
     } catch (error) {
       showToast(error.response?.data?.message || t('common.error'), 'error');
@@ -111,7 +111,7 @@ export default function IncomeAndRecurringManagement({
   const handleToggleRecurring = async (id) => {
     try {
       await toggleRecurringActive(id);
-      fetchData();
+      await fetchData();
     } catch (e) {
       showToast(t('settings.updateError'), 'error');
     }
@@ -153,7 +153,7 @@ export default function IncomeAndRecurringManagement({
           aria-label={t('common.back')}
           className="w-12 h-12 flex items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
         >
-          <ArrowLeft size={20} className={`text-white/90 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          <ArrowLeft size={20} className="text-white/90 rtl:rotate-180" />
         </motion.button>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Banknote className="w-6 h-6 text-[#8D6346]" />

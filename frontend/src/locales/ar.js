@@ -117,6 +117,8 @@ export default {
     "date": "التاريخ"
   },
   "appleShortcuts": {
+    "shortcutsGuideTitle": "خطوات إعداد iOS Shortcuts",
+    "tokenGenerated": "تم إنشاء الرمز بنجاح",
     "step1a": "افتح تطبيق ",
     "step1b": "Shortcuts (الاختصارات)",
     "step1c": " في جهاز الآيفون الخاص بك.",
@@ -222,15 +224,9 @@ export default {
     "currency": "ج.م",
     "income": "الدخل",
     "expense": "المصروفات",
+    "bills": "الفواتير",
     "budgets": "الميزانيات",
-    "category": "Category",
-    "currency')} • {draft": {
-      "categories?": {
-        "length || 0} {t('smartBudget": {
-          "categories": "categories"
-        }
-      }
-    }
+    "category": "الفئة"
   },
   "common": {
     "allAccounts": "جميع الحسابات",
@@ -245,8 +241,9 @@ export default {
     "today": "اليوم",
     "selectDate": "اختر التاريخ",
     "delete": "حذف",
-    "add": "Add",
+    "add": "إضافة",
     "edit": "تعديل",
+    "fillRequired": "يرجى ملء جميع الحقول المطلوبة",
     "offline": "أنت تتصفح بدون إنترنت. سيتم حفظ تغييراتك ومزامنتها لاحقاً.",
     "error": "حدث خطأ",
     "noData": "لا توجد خيارات",
@@ -267,6 +264,7 @@ export default {
     "balanceRunsOut": "رصيدك سينفد قبل القبض بـ {{days}} يوم.",
     "balanceSurvives": "رصيدك سيكفي حتى يوم القبض ({{days}} أيام).",
     "transactions": "المعاملات",
+    "recentTransactions": "المعاملات الأخيرة",
     "transactionsFor": "معاملات:",
     "noTransactions": "لا توجد معاملات في هذه الفترة",
     "thisWeek": "هذا الأسبوع",
@@ -274,14 +272,14 @@ export default {
     "weekOf": "أسبوع",
     "changeSettingsInfo": "يمكنك تغيير هذا النظام من الإعدادات",
     "allCategories": "جميع الفئات",
-    "debtsBorrowed": "Borrowed",
-    "debtsLent": "Lent",
-    "paid": "Paid",
-    "paydaySurvival": "Payday Survival",
-    "riskHigh": "High Risk",
+    "debtsBorrowed": "المستدان",
+    "debtsLent": "المُدان",
+    "paid": "المدفوع",
+    "paydaySurvival": "البقاء حتى يوم الراتب",
+    "riskHigh": "مخاطر عالية",
     "pendingReview": "غير مصنفة",
     "reviewBtn": "اختر فئة",
-    "all": "All",
+    "all": "الكل",
     "gain": "المكسب",
     "loss": "المصروف",
     "transactionHistory": "سجل المعاملات",
@@ -463,9 +461,9 @@ export default {
     "noAccountSelected": "بدون خصم (تجاوز)",
     "transferTitle": "استثمار في {name}",
     "holdingsBreakdown": "توزيع الأصول",
-    "stocks": "Stocks",
-    "real_estate": "Real Estate",
-    "crypto": "Crypto"
+    "stocks": "الأسهم",
+    "real_estate": "العقارات",
+    "crypto": "العملات الرقمية"
   },
   "receivables": {
     "loadError": "تعذر تحميل المبالغ المستحقة.",
@@ -490,6 +488,7 @@ export default {
     "friendsOwes": "مستحقات الأصدقاء",
     "personName": "اسم الشخص",
     "amountOwed": "مستحق عليه",
+    "owedAmount": "المبلغ المستحق",
     "addPerson": "+ إضافة شخص آخر",
     "yourShare": "نصيبك من المصروف (سيُسجل في التقارير):",
     "saveChanges": "حفظ التعديلات",
@@ -613,20 +612,32 @@ export default {
     "expenses": "المصروفات",
     "cashFlow": "التدفق النقدي",
     "overview": {
-      "netWorth": "صافي الثروة",
+      "netWorth": "صافي القيمة المالية",
+      "netWorthDesc": "إجمالي الأصول مطروحاً منها الالتزامات",
+      "investments": "الاستثمارات",
+      "investmentsDesc": "القيمة السوقية الحالية للأصول والذهب",
+      "allLiabilities": "جميع الالتزامات",
+      "liabilitiesDesc": "الديون المستحقة والفواتير غير المدفوعة للفترة",
+      "fixedIncome": "الدخل الثابت",
+      "fixedIncomeDesc": "الرواتب ومصادر الدخل الدورية المؤكدة",
       "cashFlow": "التدفق النقدي",
+      "cashFlowDesc": "صافي الإيرادات بعد خصم المصروفات للفترة",
       "savings": "المدخرات",
-      "savingsRate": "معدل الإدخار",
-      "topExpenses": "أعلى المصروفات",
-      "fixedIncome": "الدخل الثابت (المرتب)",
-      "cashFlow": "التدفق النقدي",
-      "netAfterLiabilities": "التدفق النقدي",
-      "allLiabilities": "جميع الالتزامات"
+      "savingsDesc": "إجمالي الأرصدة في حسابات التوفير",
+      "accountBalances": "أرصدة الحسابات",
+      "accountBalancesDesc": "السيولة المتاحة عبر محافظك وحساباتك المالية",
+      "noAccounts": "لم يتم العثور على أي حسابات. أضف حساباتك من الملف الشخصي.",
+      "due": "مستحق"
     },
-    "title": "التقارير والإحصائيات",
+    "savings": "المدخرات",
+    "accountBalances": "أرصدة الحسابات",
+    "title": "التقارير والتحليلات",
+    "subtitle": "نظرة مالية شاملة وتحليل دقيق لأدائك المالي والتزاماتك عبر جميع الحسابات",
     "export": "تصدير",
     "hideFilters": "إخفاء الفلاتر",
     "filterResults": "تصفية النتائج",
+    "resetFilters": "إعادة ضبط التصفية",
+    "activeFilters": "تم تطبيق فلاتر تصفية",
     "fromDate": "من تاريخ",
     "toDate": "إلى تاريخ",
     "account": "الحساب",
@@ -646,14 +657,48 @@ export default {
     "topCategories": "أعلى فئات الصرف",
     "topAccounts": "أعلى الحسابات (التدفق الصافي)",
     "noData": "لا توجد بيانات في هذه الفترة.",
+    "planning": {
+      "title": "تخطيط ومتابعة الميزانيات",
+      "budgetsDesc": "الحدود المستهدفة لمصروفاتك مقابل الإنفاق الفعلي",
+      "noBudgets": "لا توجد ميزانيات نشطة. أنشئ ميزانيات لتحديد سقف لمصروفاتك وتلقي تنبيهات استباقية.",
+      "createBudget": "إنشاء ميزانية",
+      "manageBudgets": "إدارة الميزانيات",
+      "totalBudget": "إجمالي الميزانية المخصصة",
+      "totalSpent": "إجمالي الإنفاق الفعلي",
+      "remainingBudget": "المتبقي للإنفاق",
+      "consumption": "نسبة استهلاك الميزانية",
+      "activeBudgetsCount": "ميزانيات نشطة",
+      "ofLimit": "من الميزانية",
+      "availableToSpend": "متاح للإنفاق بأمان",
+      "exceededCategories": "{{count}} فئات تجاوزت السقف",
+      "healthyStatus": "ضمن النطاق السليم",
+      "warningStatus": "قريب من السقف",
+      "dangerStatus": "تجاوز السقف",
+      "remaining": "متبقي",
+      "overBudget": "تجاوز الميزانية",
+      "smartPlannerTitle": "مخطط الميزانية الذكي",
+      "smartPlannerDesc": "استفد من التحليل الذكي للإنفاق التاريخي لإعادة ضبط وتوزيع حدود الفئات بتوازن مثالي.",
+      "openSmartPlanner": "فتح المخطط الذكي"
+    },
+    "assets": {
+      "portfolioDesc": "تتبع القيمة السوقية والتكلفة الأساسية وعوائد أصولك",
+      "noInvestments": "لم تتم إضافة أي استثمارات بعد. أضف الذهب أو الأسهم أو العقارات لمراقبة نمو ثروتك.",
+      "addInvestment": "إضافة استثمار"
+    },
+    "spending": {
+      "emptyDesc": "لا توجد مصروفات مسجلة في هذه الفترة الزمنية. جرّب تعديل خيارات التصفية أو التاريخ."
+    },
+    "income": {
+      "emptyDesc": "لا توجد إيرادات مسجلة في هذه الفترة الزمنية."
+    },
     "tabs": {
       "overview": "نظرة عامة",
       "spending": "المصروفات",
       "income": "الدخل",
       "planning": "التخطيط",
-      "assets": "أصول",
-      "liabilities": "خصوم",
-      "insights": "رؤى"
+      "assets": "الأصول",
+      "liabilities": "الالتزامات",
+      "insights": "التحليلات الذكية"
     },
     "filters": {
       "today": "اليوم",
@@ -668,6 +713,13 @@ export default {
     },
     "insights": {
       "forecast": "التوقعات",
+      "balanceForecast": "توقعات التدفق والسيولة",
+      "paydaySurvival": "البقاء حتى يوم الراتب",
+      "forecastSubDesc": "توقع ذكي للرصيد المستقبلي بناءً على الفواتير المجدولة والمعاملات المتكررة وسرعة الإنفاق التاريخية",
+      "paydaySubDesc": "تحليل ذكي لمدى كفاية السيولة النقدية الحالية لتغطية المصروفات بأمان حتى موعد الراتب القادم",
+      "recentIncome": "الدخل الأخير",
+      "recentIncomeDesc": "أحدث الإيداعات والإيرادات النقدية الواردة",
+      "retry": "إعادة المحاولة",
       "health": "الصحة المالية",
       "good": "ممتاز",
       "warning": "تحذير",
@@ -728,10 +780,46 @@ export default {
       "ofTotalIncome": "من إجمالي دخلك في هذه الفترة.",
       "dailyAvgIncome": "متوسط الدخل اليومي",
       "mostFrequentIncome": "أكثر مصدر متكرر",
-      "paydaySurvival": "Payday Survival Prediction"
+      "paydaySurvival": "توقع البقاء حتى يوم الراتب",
+      "spentOnThisDay": "إجمالي المصروفات في هذا اليوم",
+      "errorTitle": "حدث خطأ ما",
+      "errorDesc": "تعذر تحميل التوقعات المالية.",
+      "riskLevel": "مستوى المخاطر",
+      "tracking": "المتابعة:",
+      "transparencyBoard": "لوحة الشفافية (الحساب المعزول)",
+      "profile": "الملف",
+      "account": "الحساب",
+      "frequency": "التكرار",
+      "nextIncome": "الدخل القادم",
+      "amount": "المبلغ",
+      "currentBalance": "الرصيد الحالي",
+      "extraSafeDays": "أيام أمان إضافية",
+      "runOutMessagePrefix": "من المتوقع أن ينفد رصيدك في",
+      "runOutMessageMiddle": "، أي قبل",
+      "daysBeforeNextIncome": "يوم من موعد دخلك القادم.",
+      "bufferMessagePrefix": "من المتوقع أن يستمر رصيدك لمدة",
+      "bufferMessageSuffix": "يوم إضافي بعد تغطية جميع المصاريف المتوقعة قبل يوم الراتب.",
+      "formulaNote": "* أيام الأمان الإضافية = الرصيد المتبقي قبل الدخل التالي / متوسط الإنفاق اليومي المتغير المتوقع",
+      "riskAnalysis": "تحليل المخاطر",
+      "actionableInsights": "إرشادات وتوصيات عملية",
+      "balanceDescent": "منحنى انخفاض الرصيد حتى يوم الراتب",
+      "noData": "لا توجد بيانات متاحة",
+      "noIncomeProfileTitle": "توقع البقاء حتى يوم الراتب",
+      "noIncomeProfileDesc": "لم يتم العثور على ملف دخل نشط. قم بتهيئة ملف دخل لتفعيل توقعات البقاء حتى يوم الراتب ومعرفة عدد الأيام التي سيصمد فيها رصيدك قبل موعد راتبك القادم.",
+      "configureIncomeProfile": "تهيئة ملف الدخل",
+      "balance": "الرصيد",
+      "dailySpendAvg": "متوسط الإنفاق اليومي",
+      "weightedModel": "نموذج حسابي مرجح",
+      "risk": {
+        "safe": "آمن",
+        "low_risk": "منخفض المخاطر",
+        "medium_risk": "متوسط المخاطر",
+        "high_risk": "عالي المخاطر"
+      }
     },
-    "savings": "Savings",
-    "accountBalances": "Account Balances"
+    "savings": "المدخرات",
+    "accountBalances": "أرصدة الحسابات",
+    "tabsTitle": "اختيار قسم التقارير"
   },
   "settings": {
     "title": "الإعدادات",
@@ -825,8 +913,8 @@ export default {
     "monthStartDate": "تاريخ بداية الشهر",
     "monthStartNotice": "إذا كان الشهر لا يحتوي على هذا اليوم، سيتم استخدام اليوم الأخير من الشهر.",
     "savePreferences": "حفظ الإعدادات",
-    "saveSuccess": "Category created successfully",
-    "saveError": "Error creating category",
+    "saveSuccess": "تم إنشاء الفئة بنجاح",
+    "saveError": "حدث خطأ أثناء إنشاء الفئة",
     "updateError": "حدث خطأ",
     "setAsDefault": "تعيين كافتراضي",
     "systemAccountNotice": "لا يمكن تغيير اسم أو أيقونة هذا الحساب الأساسي.",
@@ -835,11 +923,14 @@ export default {
     "editSuccess": "تم التعديل بنجاح",
     "deleteSuccess": "تم الحذف بنجاح",
     "noCategories": "لا توجد فئات مضافة هنا",
+    "noAccounts": "لا توجد حسابات مضافة حتى الآن",
+    "nameRequired": "يرجى إدخال اسم صحيح",
     "deleteRecurringTitle": "حذف المعاملة",
     "deleteRecurringConfirm": "هل أنت متأكد من الحذف؟",
     "preferencesSaved": "تم حفظ التفضيلات بنجاح!"
   },
   "profile": {
+    "editsResetHint": "يتم تجديد رصيد التعديلات تلقائياً في بداية كل شهر.",
     "userPreferences": "البيانات والتفضيلات المالية",
     "trackingCycle": "دورة التتبع",
     "trackingCycleDesc": "فترة الميزانية الشهرية أو الأسبوعية",
@@ -993,6 +1084,10 @@ export default {
     "period": "الفترة",
     "weekly": "أسبوعياً",
     "monthly": "شهرياً",
+    "yearly": "سنوياً",
+    "custom": "مخصص",
+    "one_time": "مرة واحدة",
+    "categories": "الفئات",
     "save": "حفظ الميزانية",
     "saveSuccess": "تم حفظ الميزانية بنجاح.",
     "deleteSuccess": "تم حذف الميزانية بنجاح.",
@@ -1039,8 +1134,8 @@ export default {
     "custom": "مخصص",
     "saveSuccess": "تم حفظ الميزانية بنجاح",
     "deleteSuccess": "تم حذف الميزانية بنجاح",
-    "totalBudgeted": "Total Budgeted",
-    "deleteConfirmMessage": "Are you sure you want to delete this budget?"
+    "totalBudgeted": "إجمالي الميزانيات",
+    "deleteConfirmMessage": "هل أنت متأكد من حذف هذه الميزانية؟"
   },
   "smartBudget": {
     "title": "مخطط الميزانية الذكي",
@@ -1128,23 +1223,37 @@ export default {
   },
   "overview": {
     "allLiabilities": "جميع الالتزامات",
+    "liabilitiesDesc": "الديون المستحقة والفواتير غير المدفوعة للفترة",
     "due": "مستحق",
     "next": "التالي",
-    "netWorth": "صافي الثروة",
+    "netWorth": "صافي القيمة المالية",
+    "netWorthDesc": "إجمالي الأصول مطروحاً منها الالتزامات",
+    "investments": "الاستثمارات",
+    "investmentsDesc": "القيمة السوقية الحالية للأصول والذهب",
     "fixedIncome": "الدخل الثابت",
+    "fixedIncomeDesc": "الرواتب ومصادر الدخل الدورية المؤكدة",
     "cashFlow": "التدفق النقدي",
+    "cashFlowDesc": "صافي الإيرادات بعد خصم المصروفات للفترة",
+    "savings": "المدخرات",
+    "savingsDesc": "إجمالي الأرصدة في حسابات التوفير",
+    "accountBalances": "أرصدة الحسابات",
+    "accountBalancesDesc": "السيولة المتاحة عبر محافظك وحساباتك المالية",
+    "noAccounts": "لم يتم العثور على أي حسابات. أضف حساباتك من الملف الشخصي.",
     "netAfterLiabilities": "التدفق النقدي"
   },
   "liabilities": {
-    "noDebtsTitle": "No Outstanding Debts",
-    "noDebtsDesc": "You have no debts to pay at the moment. Great job!",
-    "noBillsTitle": "No Bills",
-    "noBillsDesc": "There are no bills due in this period."
+    "noDebtsTitle": "لا توجد ديون مستحقة",
+    "noDebtsDesc": "ليس لديك أي ديون للدفع في الوقت الحالي. عمل رائع!",
+    "noBillsTitle": "لا توجد فواتير",
+    "noBillsDesc": "لا توجد فواتير مستحقة في هذه الفترة."
   },
   "sidebar": {
-    "investments": "Investments"
+    "investments": "الاستثمارات"
   },
   "transactions": {
+    "income": "دخل",
+    "expense": "مصروف",
+    "transfer": "تحويل",
     "uncategorized": "بدون تصنيف",
     "settlementPaid": "تسوية (مدفوع)",
     "settlementReceived": "تسوية (مستلم)",
@@ -1153,13 +1262,13 @@ export default {
     "needsReview": "تحتاج مراجعة"
   },
   "weekdays": {
-    "sunday": "Sunday",
-    "monday": "Monday",
-    "tuesday": "Tuesday",
-    "wednesday": "Wednesday",
-    "thursday": "Thursday",
-    "friday": "Friday",
-    "saturday": "Saturday"
+    "sunday": "الأحد",
+    "monday": "الإثنين",
+    "tuesday": "الثلاثاء",
+    "wednesday": "الأربعاء",
+    "thursday": "الخميس",
+    "friday": "الجمعة",
+    "saturday": "السبت"
   },
   "clarification": {
     "notificationTitle": "محتاجين مساعدة بسيطة في فئاتك",

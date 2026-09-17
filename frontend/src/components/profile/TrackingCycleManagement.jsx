@@ -39,11 +39,16 @@ export default function TrackingCycleManagement({ onBack }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const dayNum = Number(trackingStartDayMonthly);
+    if (trackingPeriod === 'monthly' && (isNaN(dayNum) || dayNum < 1 || dayNum > 31)) {
+      showToast(t('common.error'), 'error');
+      return;
+    }
     try {
       setSaving(true);
       await updatePreferences({
         trackingPeriod,
-        trackingStartDayMonthly: Number(trackingStartDayMonthly),
+        trackingStartDayMonthly: Math.min(31, Math.max(1, dayNum || 1)),
         trackingStartDayWeekly: Number(trackingStartDayWeekly)
       });
       showToast(t('settings.preferencesSaved'), 'success');
@@ -75,7 +80,7 @@ export default function TrackingCycleManagement({ onBack }) {
           aria-label={t('common.back')}
           className="w-12 h-12 flex shrink-0 items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
         >
-          <ArrowLeft size={20} className={`text-white/90 ${isRTL ? 'rotate-180' : ''}`} />
+          <ArrowLeft size={20} className="text-white/90 rtl:rotate-180" />
         </motion.button>
         <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
           <RefreshCcw className="w-6 h-6 text-[#8D6346]" />
@@ -135,8 +140,16 @@ export default function TrackingCycleManagement({ onBack }) {
                       min="1"
                       max="31"
                       value={trackingStartDayMonthly}
-                      onChange={(e) => setTrackingStartDayMonthly(e.target.value)}
-                      className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-white focus:outline-none focus:border-[#8D6346]/50"
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          setTrackingStartDayMonthly('');
+                        } else {
+                          const parsed = parseInt(raw, 10);
+                          setTrackingStartDayMonthly(isNaN(parsed) ? '' : Math.min(31, Math.max(1, parsed)));
+                        }
+                      }}
+                      className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none focus:border-[#8D6346]/50"
                       required
                     />
                   </div>
@@ -154,7 +167,7 @@ export default function TrackingCycleManagement({ onBack }) {
                   <select
                     value={trackingStartDayWeekly}
                     onChange={(e) => setTrackingStartDayWeekly(e.target.value)}
-                    className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none"
+                    className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none"
                     required
                   >
                     {daysOfWeek.map(day => (

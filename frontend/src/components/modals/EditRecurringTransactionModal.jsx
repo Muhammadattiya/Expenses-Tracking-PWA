@@ -70,10 +70,24 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
     }
   }, [open, propAccounts, propCategories, accounts.length]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (open) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   if (!open || !transaction) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!amount || Number(amount) <= 0) {
+      showToast(t('common.fillRequired') || t('common.error'), 'error');
+      return;
+    }
     setIsUpdating(true);
     try {
       const payload = {
@@ -119,40 +133,42 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
           <h3 className="text-xl font-bold text-white">
             {t('modals.editRecurringTitle')}
           </h3>
-          <button onClick={onClose} className="p-2 text-white/50 hover:text-white bg-white/5 rounded-full transition-colors hover:bg-white/10">
+          <button onClick={onClose} disabled={isUpdating} aria-label={t('common.close')} className="p-2 text-white/50 hover:text-white bg-white/5 rounded-full transition-colors hover:bg-white/10 disabled:opacity-50">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('modals.amountLabel')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.amountLabel')}</label>
             <div className="relative">
               <input
                 type="number"
                 required
+                min="0.01"
+                step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
               />
-              <span className={`absolute top-3 text-white/50 font-medium ${lang === 'ar' ? 'left-4' : 'right-4'}`}>{t('nav.currency')}</span>
+              <span className="absolute top-3.5 end-4 text-white/50 font-medium pointer-events-none">{t('nav.currency')}</span>
             </div>
           </div>
 
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('modals.descriptionLabel')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.descriptionLabel')}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
             />
           </div>
 
           {transaction.type === 'transfer' ? (
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-[13px] text-[#3b82f6]/80 mb-1 ml-1">{t('modals.fromAccount')}</label>
+                <label className="block text-[13px] text-[#3b82f6]/80 mb-1 ms-1">{t('modals.fromAccount')}</label>
                 <CustomSelect
                   buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                   value={fromAccount}
@@ -162,7 +178,7 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-[13px] text-[#10b981]/80 mb-1 ml-1">{t('modals.toAccount')}</label>
+                <label className="block text-[13px] text-[#10b981]/80 mb-1 ms-1">{t('modals.toAccount')}</label>
                 <CustomSelect
                   buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                   value={toAccount}
@@ -175,7 +191,7 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
           ) : (
             <>
               <div>
-                <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('modals.accountLabel')}</label>
+                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.accountLabel')}</label>
                 <CustomSelect
                   buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                   value={account}
@@ -185,7 +201,7 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
                 />
               </div>
               <div>
-                <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('modals.categoryLabel')}</label>
+                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.categoryLabel')}</label>
                 <CustomSelect
                   buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                   value={category}
@@ -199,7 +215,7 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
 
           {/* Recurring Options */}
           <div className="pt-2 border-t border-white/10 mt-2">
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('recurring.repeatType')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.repeatType')}</label>
             <CustomSelect
               buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
               value={repeatType}
@@ -216,24 +232,24 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
 
           {repeatType === 'custom' && (
             <div>
-              <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('recurring.interval')}</label>
+              <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.interval')}</label>
               <input 
                 type="number" 
                 min="1" 
                 value={interval} 
                 onChange={(e) => setInterval(e.target.value)} 
-                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50" 
+                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50" 
               />
             </div>
           )}
 
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('recurring.executionTime')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.executionTime')}</label>
             <input 
               type="time" 
               value={executionTime} 
               onChange={(e) => setExecutionTime(e.target.value)} 
-              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white focus:outline-none text-left"
+              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none text-left"
               style={{ colorScheme: 'dark' }}
             />
           </div>
@@ -252,18 +268,18 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
           {!neverEnds && (
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('recurring.endDate')}</label>
+                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.endDate')}</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white focus:outline-none"
+                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none"
                   style={{ colorScheme: 'dark' }}
                 />
               </div>
               <div className="flex-1">
-                <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('recurring.maxOccurrences')}</label>
-                <input type="number" min="1" value={maxOccurrences} onChange={(e) => setMaxOccurrences(e.target.value)} placeholder="12" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white focus:outline-none" />
+                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.maxOccurrences')}</label>
+                <input type="number" min="1" value={maxOccurrences} onChange={(e) => setMaxOccurrences(e.target.value)} placeholder="12" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none" />
               </div>
             </div>
           )}
@@ -281,8 +297,8 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
 
           {reminderEnabled && (
             <div className="animate-fade-in">
-              <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('recurring.reminderDaysBefore')}</label>
-              <input type="number" min="0" value={reminderDaysBefore} onChange={(e) => setReminderDaysBefore(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white focus:outline-none" />
+              <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.reminderDaysBefore')}</label>
+              <input type="number" min="0" value={reminderDaysBefore} onChange={(e) => setReminderDaysBefore(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none" />
             </div>
           )}
 
@@ -290,7 +306,7 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
             <button
               type="submit"
               disabled={isUpdating}
-              className="w-full py-3.5 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[14px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2"
             >
               {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5"/> {t('modals.saveChanges')}</>}
             </button>
