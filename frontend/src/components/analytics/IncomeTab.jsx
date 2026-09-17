@@ -1,47 +1,13 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, Calendar, AlertCircle, Briefcase, Zap, PieChart } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { motion } from 'framer-motion';
-
-const InsightCard = React.memo(function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper', delay = 0 }) {
-  const colorMap = {
-    'brand-blue': 'text-[#8D6346]',
-    'brand-purple': 'text-[#E8C5A8]',
-    'brand-green': 'text-[#34C759]',
-    'brand-red': 'text-[#FF3B30]',
-    'brand-amber': 'text-[#F59E0B]',
-    'copper': 'text-[#E8C5A8]',
-    'emerald': 'text-[#34C759]',
-    'rose': 'text-[#FF3B30]',
-  };
-
-  const textColor = colorMap[color] || (color.startsWith('text-') ? color : 'text-[#E8C5A8]');
-
-  return (
-    <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#8D6346]/30 hover:shadow-[0_8px_32px_rgba(141,99,70,0.15)] transition-all duration-500 flex flex-col justify-between min-h-[140px]">
-      <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
-        <Icon className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
-      </div>
-      <div className="relative z-10 flex flex-col h-full justify-between">
-        <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/70">{title}</p>
-        <div>
-          <p className={`text-xl md:text-3xl font-black tabular-nums tracking-tight whitespace-nowrap ${textColor}`}>
-            {value}
-          </p>
-          {(subtitle || highlight) && (
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-               {highlight && <span className="text-[11px] md:text-xs font-semibold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/80 ltr:uppercase ltr:tracking-wider rtl:tracking-normal">{highlight}</span>}
-               {subtitle && <span className="text-xs text-white/60 leading-tight">{subtitle}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-});
+import { motion, useReducedMotion } from 'framer-motion';
+import InsightCard from './InsightCard';
+import { metricFlow } from '../../utils/metricFontSize';
 
 function IncomeTabComponent({ data, categories, money, allTransactions, filters }) {
   const { t, lang } = useLanguage();
+  const reduceMotion = useReducedMotion();
 
   const categoryMap = useMemo(() => {
     const map = new Map();
@@ -177,7 +143,6 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
           value={money(totalIncome)}
           subtitle={`${t('analytics.insights.inPeriod')} ${daysInPeriod} ${t('analytics.insights.days')}`}
           color="emerald"
-          delay={0.1}
         />
         
         <InsightCard 
@@ -186,25 +151,22 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
           value={money(dailyAverage)}
           subtitle={t('analytics.insights.perDay')}
           color="copper"
-          delay={0.2}
         />
 
         <InsightCard 
           title={t('analytics.insights.biggestIncome')}
           icon={Briefcase}
-          value={biggestIncome.amount > 0 ? money(biggestIncome.amount) : '---'}
+          value={biggestIncome.amount > 0 ? money(biggestIncome.amount) : t('analytics.insights.emDash')}
           highlight={biggestIncome.displayTitle}
           color="emerald"
-          delay={0.3}
         />
 
         <InsightCard 
           title={t('analytics.insights.mostFrequentIncome')}
           icon={Zap}
-          value={frequentCategory.name || '---'}
+          value={frequentCategory.name || t('analytics.insights.emDash')}
           subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount')}` : ''}
           color="copper"
-          delay={0.4}
         />
 
       </div>
@@ -212,7 +174,7 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
         {/* Recent Income Events (Balances desktop layout symmetry) */}
         {filteredTransactions.length > 0 && (
           <motion.section 
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.5 }}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0.15 } : { type: 'spring', bounce: 0, duration: 0.6, delay: 0.15 }}
             className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
           >
              <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
@@ -232,7 +194,7 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
                        <p className="text-xs text-white/50">{new Date(tx.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' })}</p>
                      </div>
                    </div>
-                   <span className="font-black tabular-nums tracking-tight text-[#34C759] text-sm md:text-base ms-2 whitespace-nowrap">
+                   <span className={`font-black text-[#34C759] text-sm md:text-base ms-2 ${metricFlow}`}>
                      +{money(tx.amount)}
                    </span>
                  </div>
@@ -247,7 +209,7 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
         
         {/* 2. Where Does Your Money Come From (Category Concentration) */}
         <motion.section 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.5 }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0.15 } : { type: 'spring', bounce: 0, duration: 0.6, delay: 0.2 }}
           className="relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><PieChart className="w-5 h-5 text-[#34C759]" /> {t('analytics.insights.incomeSources')}</h2>
@@ -269,22 +231,22 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
                const percentage = totalIncome > 0 ? ((cat.amount / totalIncome) * 100).toFixed(1) : 0;
                return (
                  <div key={cat.id} className="group relative bg-black/10 hover:bg-white/5 p-4 rounded-2xl border border-white/5 transition-colors">
-                   <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-3">
-                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white/90 bg-black/30 border border-white/10">{idx + 1}</span>
-                         <div>
-                           <span className="font-bold text-white text-sm">{cat.name}</span>
-                           <p className="text-xs text-white/50 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
+                   <div className="flex justify-between items-center mb-2 gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white/90 bg-black/30 border border-white/10 shrink-0">{idx + 1}</span>
+                         <div className="min-w-0">
+                           <span className="font-bold text-white text-sm truncate block">{cat.name}</span>
+                           <p className="text-xs text-white/70 mt-0.5 break-all">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
                          </div>
                       </div>
-                      <div className="text-end">
-                        <span className="block font-black tabular-nums whitespace-nowrap text-white" style={{ color: cat.color || '#34C759' }}>{money(cat.amount)}</span>
+                      <div className="text-end min-w-0 max-w-[45%]">
+                        <span className={`block font-black text-white ${metricFlow}`}>{money(cat.amount)}</span>
                         <span className="text-xs text-white/60 font-bold tabular-nums tracking-tight">{percentage}%</span>
                       </div>
                    </div>
                    <div className="w-full bg-black/30 shadow-inner rounded-full h-1.5 overflow-hidden">
                      <div 
-                       className="h-full rounded-full transition-all duration-1000 ease-out" 
+                       className="h-full rounded-full transition-all duration-1000 ease-out motion-reduce:transition-none" 
                        style={{ width: `${percentage}%`, backgroundColor: cat.color || '#34C759', boxShadow: `0 0 10px ${cat.color || '#34C759'}90` }}
                      />
                    </div>

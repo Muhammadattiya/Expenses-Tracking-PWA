@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Target, TrendingUp, ShieldCheck, Sparkles, AlertCircle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { Target, TrendingUp, ShieldCheck, Sparkles, ArrowUpRight } from 'lucide-react';
 import { getIconComponent } from '../IconPicker';
+import { getMetricFontSize, metricFlow } from '../../utils/metricFontSize';
 
 function PlanningTabComponent({ budgets = [], money }) {
   const { t } = useLanguage();
@@ -66,7 +67,7 @@ function PlanningTabComponent({ budgets = [], money }) {
               <Target size={16} />
             </div>
           </div>
-          <div className="text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap text-white mb-1">
+          <div className={`${getMetricFontSize(money(totalBudget), { compact: true })} ${metricFlow} font-black text-white mb-1`}>
             {money(totalBudget)}
           </div>
           <p className="text-xs text-white/60 mt-0.5">
@@ -84,7 +85,7 @@ function PlanningTabComponent({ budgets = [], money }) {
               <TrendingUp size={16} />
             </div>
           </div>
-          <div className="text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap text-white mb-1">
+          <div className={`${getMetricFontSize(money(totalSpent), { compact: true })} ${metricFlow} font-black text-white mb-1`}>
             {money(totalSpent)}
           </div>
           <p className="text-xs text-white/60 mt-0.5">
@@ -106,7 +107,7 @@ function PlanningTabComponent({ budgets = [], money }) {
               <ShieldCheck size={16} />
             </div>
           </div>
-          <div className={`text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap mb-1 ${
+          <div className={`${getMetricFontSize(money(remainingBudget), { compact: true })} ${metricFlow} font-black mb-1 ${
             overBudgetCount > 0 ? 'text-[#FF3B30]' : 'text-[#34C759]'
           }`}>
             {money(remainingBudget)}
@@ -129,12 +130,12 @@ function PlanningTabComponent({ budgets = [], money }) {
               {overallStatus.label}
             </span>
           </div>
-          <div className="text-xl md:text-2xl font-black tabular-nums tracking-tight whitespace-nowrap text-white mb-2">
+          <div className="text-xl md:text-2xl font-black tabular-nums tracking-tight text-white mb-2">
             {Math.round(overallPercentage)}%
           </div>
           <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden shadow-inner">
             <div 
-              className="h-full rounded-full transition-all duration-700 ease-out"
+              className="h-full rounded-full transition-all duration-700 ease-out motion-reduce:transition-none"
               style={{ 
                 width: `${Math.min(overallPercentage, 100)}%`,
                 backgroundColor: overallPercentage >= 100 ? '#FF3B30' : overallPercentage >= 85 ? '#F59E0B' : '#34C759',
@@ -164,7 +165,7 @@ function PlanningTabComponent({ budgets = [], money }) {
 
           <Link
             to="/budgets"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs transition-colors self-start sm:self-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 min-h-[44px] rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-xs transition-colors self-start sm:self-auto outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70"
           >
             <span>{t('analytics.planning.manageBudgets')}</span>
             <ArrowUpRight className="w-3.5 h-3.5 rtl:-scale-x-100 opacity-70" />
@@ -191,8 +192,8 @@ function PlanningTabComponent({ budgets = [], money }) {
                   style={{ backgroundColor: color }}
                 />
                 
-                <div className="flex items-start justify-between mb-5 relative z-10">
-                  <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-start justify-between gap-2 mb-5 relative z-10 flex-wrap">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div 
                       className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center shadow-lg"
                       style={{ backgroundColor: `${color}20`, color: color }}
@@ -200,7 +201,7 @@ function PlanningTabComponent({ budgets = [], money }) {
                       <CatIcon size={18} />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-white text-sm md:text-base truncate max-w-[150px]">
+                      <p className="font-bold text-white text-sm md:text-base truncate">
                         {b.category?.name || t('analytics.allCategories')}
                       </p>
                       <p className="text-xs text-white/50 mt-0.5">
@@ -210,7 +211,7 @@ function PlanningTabComponent({ budgets = [], money }) {
                   </div>
 
                   {/* Over / Remaining pill */}
-                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border max-w-full ${metricFlow} ${
                     isOver 
                       ? 'text-[#FF3B30] bg-[#FF3B30]/10 border-[#FF3B30]/20' 
                       : 'text-white/70 bg-white/5 border-white/10'
@@ -223,20 +224,20 @@ function PlanningTabComponent({ budgets = [], money }) {
                 </div>
 
                 <div className="space-y-2 relative z-10">
-                  <div className="flex justify-between items-baseline">
-                     <span className={`text-lg md:text-xl font-bold tabular-nums tracking-tight whitespace-nowrap ${
+                  <div className="flex justify-between items-baseline gap-2 min-w-0">
+                     <span className={`${getMetricFontSize(money(spent), { compact: true })} ${metricFlow} font-bold ${
                        isOver ? 'text-[#FF3B30]' : 'text-white'
                      }`}>
                        {money(spent)}
                      </span>
-                     <span className="text-xs sm:text-sm font-medium tabular-nums tracking-tight text-white/50 whitespace-nowrap">
+                     <span className={`text-xs sm:text-sm font-medium text-white/70 ${metricFlow} shrink-0 max-w-[45%]`}>
                        / {money(b.amount)}
                      </span>
                   </div>
                   
                   <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden shadow-inner">
                     <div 
-                      className="h-full rounded-full transition-all duration-1000 ease-out"
+                      className="h-full rounded-full transition-all duration-1000 ease-out motion-reduce:transition-none"
                       style={{ 
                         width: `${percentage}%`, 
                         backgroundColor: isDanger ? '#FF3B30' : color,
@@ -257,7 +258,7 @@ function PlanningTabComponent({ budgets = [], money }) {
               </p>
               <Link 
                 to="/budgets"
-                className="px-5 py-2.5 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/20 transition-all inline-flex items-center gap-2"
+                className="px-5 py-2.5 min-h-[44px] rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/20 transition-all inline-flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70"
               >
                 <Target size={14} />
                 <span>{t('analytics.planning.createBudget')}</span>
@@ -288,7 +289,7 @@ function PlanningTabComponent({ budgets = [], money }) {
 
           <Link
             to="/budgets/smart-planner"
-            className="px-5 py-3 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/30 transition-all inline-flex items-center justify-center gap-2 shrink-0 self-start md:self-auto"
+            className="px-5 py-3 min-h-[44px] rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/30 transition-all inline-flex items-center justify-center gap-2 shrink-0 self-start md:self-auto outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70"
           >
             <span>{t('analytics.planning.openSmartPlanner')}</span>
             <ArrowUpRight className="w-4 h-4 rtl:-scale-x-100" />

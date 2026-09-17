@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { TrendingDown, Users, ArrowUpRight, ArrowDownRight, CalendarClock, CheckCircle, Plus } from 'lucide-react';
+import { TrendingDown, Users, CalendarClock, CheckCircle, Plus } from 'lucide-react';
+import { getMetricFontSize, metricFlow } from '../../utils/metricFontSize';
 
 function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransactions }) {
   const { t, lang } = useLanguage();
@@ -382,13 +383,13 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
       
       {/* Master Hero Summary: All Liabilities */}
       <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-[#FF3B30]/30 border-s-[#FF3B30]/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-4 md:p-8 flex flex-col justify-center items-center text-center rounded-[2.5rem] relative overflow-hidden group">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 group-hover:scale-125 transition-transform duration-1000">
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 group-hover:scale-125 transition-transform duration-1000 motion-reduce:transition-none pointer-events-none">
           <TrendingDown className="w-64 h-64 text-[#FF3B30]" />
         </div>
         
         <div className="relative z-10 max-w-xl">
           <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-2 text-white/70">{t('analytics.overview.allLiabilities')}</p>
-          <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tabular-nums tracking-tight text-white whitespace-nowrap">{money(allLiabilities)}</p>
+          <p className={`${getMetricFontSize(money(allLiabilities), { hero: true })} font-black tabular-nums tracking-tight text-white min-w-0 break-all`}>{money(allLiabilities)}</p>
           <p className="text-xs sm:text-sm text-white/60 mt-2 leading-relaxed">{t('analytics.overview.liabilitiesDesc')}</p>
         </div>
       </div>
@@ -403,11 +404,11 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
           <div className="relative z-10 flex flex-col h-full justify-between">
             <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/70">{t('debts.iOwe')}</p>
             <div>
-              <p className="text-2xl md:text-3xl font-black tabular-nums tracking-tight text-[#FF3B30] mb-1 whitespace-nowrap">
+              <p className={`${getMetricFontSize(money(totalDebts))} ${metricFlow} font-black text-[#FF3B30] mb-1`}>
                 {money(totalDebts)}
               </p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                 <span className="text-[11px] font-bold px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[#FF3B30] ltr:uppercase ltr:tracking-wider rtl:tracking-normal whitespace-nowrap">
+                 <span className={`text-[11px] font-bold px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[#FF3B30] ltr:uppercase ltr:tracking-wider rtl:tracking-normal ${metricFlow}`}>
                    {t('dashboard.debtsBorrowed')}: {money(totalBorrowed)}
                  </span>
               </div>
@@ -423,7 +424,7 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
           <div className="relative z-10 flex flex-col h-full justify-between">
             <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/70">{t('nav.bills')}</p>
             <div>
-              <p className="text-2xl md:text-3xl font-black tabular-nums tracking-tight text-[#007AFF] mb-1 whitespace-nowrap">
+              <p className={`${getMetricFontSize(money(totalBills))} ${metricFlow} font-black text-[#007AFF] mb-1`}>
                 {money(totalBills)}
               </p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -447,8 +448,8 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
           
           return (
             <div className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:bg-white/5 transition-all duration-300 group flex flex-col gap-4 h-full justify-between" key={d._id}>
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
+              <div className="flex justify-between items-start gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div 
                     className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 shadow-lg"
                     style={{ backgroundColor: `${color}20`, color: color }}
@@ -456,16 +457,16 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
                     <Users size={24} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-white text-sm md:text-base truncate max-w-[120px] sm:max-w-[160px] leading-snug" title={d.personName}>{d.personName}</p>
+                    <p className="font-bold text-white text-sm md:text-base truncate leading-snug" title={d.personName}>{d.personName}</p>
                     <span className="text-[11px] font-semibold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/60 ltr:uppercase ltr:tracking-wide rtl:tracking-normal mt-1 inline-block whitespace-nowrap">
                       {isBorrowed ? t('dashboard.debtsBorrowed') : t('dashboard.debtsLent')}
                     </span>
                   </div>
                 </div>
-                <div className="text-end shrink-0 ms-2">
-                  <p className="text-lg md:text-xl font-black tabular-nums tracking-tight text-white whitespace-nowrap">{money(d.remainingAmount)}</p>
+                <div className="text-end min-w-0 max-w-[50%]">
+                  <p className={`${getMetricFontSize(money(d.remainingAmount), { compact: true })} ${metricFlow} font-black text-white`}>{money(d.remainingAmount)}</p>
                   {d.dueDate && (
-                    <p className="text-[11px] font-medium text-white/50 mt-1 whitespace-nowrap">
+                    <p className="text-[11px] font-medium text-white/70 mt-1">
                       {t('analytics.overview.due')}: {new Date(d.dueDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}
                     </p>
                   )}
@@ -474,13 +475,13 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
 
               {/* Repayment Progress */}
               <div className="space-y-1.5 mt-2">
-                 <div className="flex justify-between text-xs text-white/60 font-medium">
-                   <span className="whitespace-nowrap">{t('dashboard.paid')}: <span className="font-semibold text-white/80 tabular-nums">{money(paid)}</span></span>
+                 <div className="flex justify-between gap-2 text-xs text-white/70 font-medium min-w-0">
+                   <span className={metricFlow}>{t('dashboard.paid')}: <span className="font-semibold text-white/80">{money(paid)}</span></span>
                    <span className="tabular-nums font-bold text-white/80">{progress.toFixed(0)}%</span>
                  </div>
                  <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                    <div 
-                     className="h-full rounded-full transition-all duration-1000 ease-out"
+                     className="h-full rounded-full transition-all duration-1000 ease-out motion-reduce:transition-none"
                      style={{ width: `${progress}%`, backgroundColor: color }}
                    />
                  </div>
@@ -542,8 +543,8 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
 
             return (
               <div className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#007AFF]/30 hover:shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-all duration-300 group flex flex-col gap-4 h-full justify-between" key={b._id}>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
+                <div className="flex justify-between items-start gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div 
                       className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 shadow-lg"
                       style={{ backgroundColor: iconBg, color: iconColor }}
@@ -551,8 +552,8 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
                       {isPaid ? <CheckCircle size={24} /> : <CalendarClock size={24} />}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-white text-sm md:text-base truncate max-w-[120px] sm:max-w-[160px] leading-snug" title={b.name}>{b.name}</p>
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <p className="font-bold text-white text-sm md:text-base truncate leading-snug" title={b.name}>{b.name}</p>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         {b.repeat && b.repeat !== 'never' && (
                           <span className="text-[11px] font-semibold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/60 ltr:uppercase ltr:tracking-wide rtl:tracking-normal inline-block whitespace-nowrap">
                             {t(`recurring.${b.repeat}`, b.repeat)}
@@ -564,9 +565,9 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
                       </div>
                     </div>
                   </div>
-                  <div className="text-end shrink-0 ms-2">
-                    <p className={`text-lg md:text-xl font-black tabular-nums tracking-tight whitespace-nowrap ${amountColor}`}>{money(b.expectedAmount)}</p>
-                    <p className="text-[11px] font-medium text-white/50 mt-1 whitespace-nowrap">
+                  <div className="text-end min-w-0 max-w-[50%]">
+                    <p className={`${getMetricFontSize(money(b.expectedAmount), { compact: true })} ${metricFlow} font-black ${amountColor}`}>{money(b.expectedAmount)}</p>
+                    <p className="text-[11px] font-medium text-white/70 mt-1">
                       {isPaid && b.periodPaymentDate ? (
                         <span>{t('bills.status.paid')}: {new Date(b.periodPaymentDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
                       ) : (

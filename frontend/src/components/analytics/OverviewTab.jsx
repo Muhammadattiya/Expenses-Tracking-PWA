@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getIconComponent } from '../IconPicker';
 import { TrendingUp, TrendingDown, Landmark, Wallet, PiggyBank, CreditCard } from 'lucide-react';
+import { getMetricFontSize } from '../../utils/metricFontSize';
 
 function OverviewTabComponent({ money, data, accounts, investments, debts, bills, recurring, incomeProfiles, filters, allTransactions, allDebtTransactions, allReceivables }) {
   const { t } = useLanguage();
@@ -74,23 +75,6 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
     return balances;
   }, [accounts, investments, allTransactions, allDebtTransactions, allReceivables]);
 
-  const totalAccountBalances = useMemo(() => {
-    let total = 0;
-    (accounts || []).forEach(acc => {
-      if (!acc.isArchived && (!acc.excludeFromTotal || acc.type === 'investment')) {
-        total += (accountBalances[acc._id] || 0);
-      }
-    });
-
-    // Fallback if no account has type === 'investment'
-    const hasInvestmentAccount = (accounts || []).some(a => a.type === 'investment');
-    if (!hasInvestmentAccount) {
-      total += (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
-    }
-    return total;
-  }, [accounts, accountBalances, investments]);
-
-  // Total Assets is all balance in all non-archived eligible accounts (including the investment account)
   const totalAssets = useMemo(() => {
     let total = 0;
     (accounts || []).forEach(acc => {
@@ -387,13 +371,6 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
   const formattedCashFlow = money(cashFlow);
   const formattedSavings = money(savings);
 
-  const getMetricFontSize = (formattedValue) => {
-    const len = formattedValue ? String(formattedValue).length : 0;
-    if (len > 14) return 'text-base sm:text-lg md:text-xl';
-    if (len > 11) return 'text-lg sm:text-xl md:text-2xl';
-    return 'text-xl md:text-3xl';
-  };
-
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in pb-10">
       <div className="xl:col-span-8 space-y-6">
@@ -410,7 +387,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
             <div>
               <p 
                 title={formattedNetWorth}
-                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate ${getMetricFontSize(formattedNetWorth)} ${netWorth >= 0 ? 'text-[#E8C5A8]' : 'text-[#FF3B30]'}`}
+                className={`font-black tabular-nums tracking-tight min-w-0 break-all ${getMetricFontSize(formattedNetWorth)} ${netWorth >= 0 ? 'text-[#E8C5A8]' : 'text-[#FF3B30]'}`}
               >
                 {formattedNetWorth}
               </p>
@@ -429,7 +406,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
             <div>
               <p 
                 title={formattedInvestments}
-                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#34C759] ${getMetricFontSize(formattedInvestments)}`}
+                className={`font-black tabular-nums tracking-tight min-w-0 break-all text-[#34C759] ${getMetricFontSize(formattedInvestments)}`}
               >
                 {formattedInvestments}
               </p>
@@ -448,7 +425,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
             <div>
               <p 
                 title={formattedLiabilities}
-                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#FF3B30] ${getMetricFontSize(formattedLiabilities)}`}
+                className={`font-black tabular-nums tracking-tight min-w-0 break-all text-[#FF3B30] ${getMetricFontSize(formattedLiabilities)}`}
               >
                 {formattedLiabilities}
               </p>
@@ -467,7 +444,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
             <div>
               <p 
                 title={formattedFixedIncome}
-                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#34C759] ${getMetricFontSize(formattedFixedIncome)}`}
+                className={`font-black tabular-nums tracking-tight min-w-0 break-all text-[#34C759] ${getMetricFontSize(formattedFixedIncome)}`}
               >
                 {formattedFixedIncome}
               </p>
@@ -486,7 +463,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
             <div>
               <p 
                 title={formattedCashFlow}
-                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate ${cashFlow >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'} ${getMetricFontSize(formattedCashFlow)}`}
+                className={`font-black tabular-nums tracking-tight min-w-0 break-all ${cashFlow >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'} ${getMetricFontSize(formattedCashFlow)}`}
               >
                 {formattedCashFlow}
               </p>
@@ -505,7 +482,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
             <div>
               <p 
                 title={formattedSavings}
-                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#E8C5A8] ${getMetricFontSize(formattedSavings)}`}
+                className={`font-black tabular-nums tracking-tight min-w-0 break-all text-[#E8C5A8] ${getMetricFontSize(formattedSavings)}`}
               >
                 {formattedSavings}
               </p>
@@ -550,7 +527,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
                 </div>
                 <div className="flex-1 min-w-0 relative z-10">
                   <p className="font-bold text-white truncate" title={acc.name}>{acc.name}</p>
-                  <p className={`text-sm font-bold tabular-nums tracking-tight truncate mt-1 ${accBalance < 0 ? 'text-[#FF3B30]' : 'text-[#34C759]'}`} title={money(accBalance)}>
+                  <p className={`text-sm font-bold tabular-nums tracking-tight min-w-0 break-all mt-1 ${accBalance < 0 ? 'text-[#FF3B30]' : 'text-[#34C759]'}`} title={money(accBalance)}>
                     {money(accBalance)}
                   </p>
                 </div>
@@ -561,7 +538,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               <p className="text-sm text-[var(--color-text-muted)] mb-3">{t('analytics.overview.noAccounts')}</p>
               <Link 
                 to="/profile?view=accounts"
-                className="text-xs font-bold text-[#8D6346] hover:text-[#E8C5A8] underline underline-offset-4 transition-colors"
+                className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/20 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70"
               >
                 {t('settings.manageAccounts')}
               </Link>

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TrendingUp, Diamond, Building, Briefcase, Coins, Plus } from 'lucide-react';
+import { getMetricFontSize, metricFlow } from '../../utils/metricFontSize';
 
 function AssetsTabComponent({ investments = [], money }) {
   const { t } = useLanguage();
@@ -57,13 +58,13 @@ function AssetsTabComponent({ investments = [], money }) {
         
         <div className="relative z-10 text-center md:text-start mb-6 md:mb-0">
           <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-1.5 text-white/70">{t('analytics.overview.investments')}</p>
-          <p className="text-3xl sm:text-4xl md:text-5xl font-black tabular-nums tracking-tight whitespace-nowrap text-white mb-1.5 drop-shadow-sm">{money(totalInvestments)}</p>
+          <p className={`${getMetricFontSize(money(totalInvestments), { hero: true })} font-black tabular-nums tracking-tight min-w-0 break-all text-white mb-1.5 drop-shadow-sm`}>{money(totalInvestments)}</p>
           <p className="text-xs sm:text-sm text-white/60 mb-3.5 leading-relaxed">{t('analytics.assets.portfolioDesc')}</p>
           
           {totalCost > 0 && (
-            <div className={`flex items-center gap-2 justify-center md:justify-start ${totalProfit >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
-               <span className="font-bold tabular-nums tracking-tight whitespace-nowrap">{totalProfit >= 0 ? '+' : ''}{money(totalProfit)}</span>
-               <span className={`text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-lg tabular-nums tracking-tight whitespace-nowrap border ${totalProfit >= 0 ? 'bg-[#34C759]/15 border-[#34C759]/20' : 'bg-[#FF3B30]/15 border-[#FF3B30]/20'}`}>{totalProfit >= 0 ? '+' : ''}{profitPercentage.toFixed(1)}%</span>
+            <div className={`flex items-center gap-2 justify-center md:justify-start flex-wrap ${totalProfit >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
+               <span className={`font-bold ${metricFlow}`}>{totalProfit >= 0 ? '+' : ''}{money(totalProfit)}</span>
+               <span className={`text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-lg tabular-nums tracking-tight border ${totalProfit >= 0 ? 'bg-[#34C759]/15 border-[#34C759]/20' : 'bg-[#FF3B30]/15 border-[#FF3B30]/20'}`}>{totalProfit >= 0 ? '+' : ''}{profitPercentage.toFixed(1)}%</span>
             </div>
           )}
         </div>
@@ -84,8 +85,8 @@ function AssetsTabComponent({ investments = [], money }) {
                 className="absolute top-0 end-0 w-24 h-24 rtl:rounded-br-[100px] ltr:rounded-bl-[100px] -z-10 opacity-10 group-hover:scale-110 transition-transform"
                 style={{ backgroundColor: color }}
               />
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
+              <div className="flex justify-between items-start gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div 
                     className="w-12 h-12 flex items-center justify-center rounded-2xl shrink-0 shadow-lg"
                     style={{ backgroundColor: `${color}20`, color: color }}
@@ -93,19 +94,19 @@ function AssetsTabComponent({ investments = [], money }) {
                     {getTypeIcon(inv.type)}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-white text-sm md:text-base truncate max-w-[120px] sm:max-w-[150px] leading-tight" title={inv.name}>{inv.name}</p>
+                    <p className="font-bold text-white text-sm md:text-base truncate leading-tight" title={inv.name}>{inv.name}</p>
                     <span className="text-[11px] font-bold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/70 ltr:uppercase ltr:tracking-wider rtl:tracking-normal mt-1 inline-block whitespace-nowrap">
                       {inv.type === 'gold' ? t('investments.gold') : inv.type === 'stocks' ? t('investments.stocks') : inv.type === 'real_estate' ? t('investments.real_estate') : inv.type === 'crypto' ? t('investments.crypto') : inv.type}
                     </span>
                   </div>
                 </div>
                 
-                <div className="text-end shrink-0 ms-2">
-                  <p className="text-lg md:text-xl font-black tabular-nums tracking-tight whitespace-nowrap text-white">{money(inv.currentValue)}</p>
+                <div className="text-end min-w-0 max-w-[50%]">
+                  <p className={`${getMetricFontSize(money(inv.currentValue), { compact: true })} ${metricFlow} font-black text-white`}>{money(inv.currentValue)}</p>
                   
                   {inv.amount > 0 && inv.currentValue !== inv.amount && (
-                    <div className={`flex items-center justify-end gap-1 mt-1 ${isProfit ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
-                      <span className="text-[11px] font-bold tabular-nums tracking-tight whitespace-nowrap">{isProfit ? '+' : ''}{money(diff)}</span>
+                    <div className={`flex items-center justify-end gap-1 mt-1 flex-wrap ${isProfit ? 'text-[#34C759]' : 'text-[#FF3B30]'}`}>
+                      <span className={`text-[11px] font-bold ${metricFlow}`}>{isProfit ? '+' : ''}{money(diff)}</span>
                       <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md tabular-nums tracking-tight border ${isProfit ? 'bg-[#34C759]/15 border-[#34C759]/20' : 'bg-[#FF3B30]/15 border-[#FF3B30]/20'}`}>{isProfit ? '+' : ''}{pct.toFixed(1)}%</span>
                     </div>
                   )}

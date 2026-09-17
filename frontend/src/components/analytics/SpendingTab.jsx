@@ -2,47 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
 import { TrendingDown, Calendar, AlertCircle, ShoppingBag, Zap, PieChart, Scale } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { motion } from 'framer-motion';
-
-const InsightCard = React.memo(function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper', delay = 0 }) {
-  const colorMap = {
-    'brand-blue': 'text-[#8D6346]',
-    'brand-purple': 'text-[#E8C5A8]',
-    'brand-green': 'text-[#34C759]',
-    'brand-red': 'text-[#FF3B30]',
-    'brand-amber': 'text-[#F59E0B]',
-    'copper': 'text-[#E8C5A8]',
-    'emerald': 'text-[#34C759]',
-    'rose': 'text-[#FF3B30]',
-  };
-
-  const textColor = colorMap[color] || (color.startsWith('text-') ? color : 'text-[#E8C5A8]');
-
-  return (
-    <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#8D6346]/30 hover:shadow-[0_8px_32px_rgba(141,99,70,0.15)] transition-all duration-500 flex flex-col justify-between min-h-[140px]">
-      <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
-        <Icon className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
-      </div>
-      <div className="relative z-10 flex flex-col h-full justify-between">
-        <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/70">{title}</p>
-        <div>
-          <p className={`text-xl md:text-3xl font-black tabular-nums tracking-tight whitespace-nowrap ${textColor}`}>
-            {value}
-          </p>
-          {(subtitle || highlight) && (
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-               {highlight && <span className="text-[11px] md:text-xs font-semibold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/80 ltr:uppercase ltr:tracking-wider rtl:tracking-normal">{highlight}</span>}
-               {subtitle && <span className="text-xs text-white/60 leading-tight">{subtitle}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-});
+import { motion, useReducedMotion } from 'framer-motion';
+import InsightCard from './InsightCard';
+import { getMetricFontSize, metricFlow } from '../../utils/metricFontSize';
 
 function SpendingTabComponent({ data, categories, money, allTransactions, filters }) {
   const { t, lang } = useLanguage();
+  const reduceMotion = useReducedMotion();
   const [activeBarIndex, setActiveBarIndex] = useState(null);
 
   const categoryMap = useMemo(() => {
@@ -120,8 +86,7 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
     weekendPercentage,
     dayOfWeekData,
     topCategories,
-    top3Percentage,
-    sizeDistribution
+    top3Percentage
   } = useMemo(() => {
     const total = filteredTransactions.reduce((sum, tx) => sum + tx.amount, 0);
     
@@ -226,7 +191,6 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
           value={money(totalExpense)}
           subtitle={`${t('analytics.insights.inPeriod')} ${daysInPeriod} ${t('analytics.insights.days')}`}
           color="rose"
-          delay={0.1}
         />
         
         <InsightCard 
@@ -235,25 +199,22 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
           value={money(dailyAverage)}
           subtitle={t('analytics.insights.perDay')}
           color="copper"
-          delay={0.2}
         />
 
         <InsightCard 
           title={t('analytics.insights.biggestPurchase')}
           icon={ShoppingBag}
-          value={biggestPurchase.amount > 0 ? money(biggestPurchase.amount) : '---'}
+          value={biggestPurchase.amount > 0 ? money(biggestPurchase.amount) : t('analytics.insights.emDash')}
           highlight={biggestPurchase.displayTitle}
           color="rose"
-          delay={0.3}
         />
 
         <InsightCard 
           title={t('analytics.insights.mostFrequent')}
           icon={Zap}
-          value={frequentCategory.name || '---'}
+          value={frequentCategory.name || t('analytics.insights.emDash')}
           subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount')}` : ''}
           color="copper"
-          delay={0.4}
         />
 
       </div>
@@ -262,21 +223,21 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
         
         {/* 2. When Do You Spend (Day of Week) */}
         <motion.section 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.5 }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0.15 } : { type: 'spring', bounce: 0, duration: 0.6, delay: 0.15 }}
           className="lg:col-span-1 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#8D6346]" /> {t('analytics.insights.whenYouSpend')}</h2>
            <p className="text-xs text-white/60 mb-6 leading-relaxed">{t('analytics.insights.basedOnDays')}</p>
            
-           <div className="mb-4 h-[72px]">
+           <div className="mb-4 min-h-[72px]">
              {activeBarIndex !== null ? (
                <motion.div 
                  key="selected" 
                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
                  className="flex flex-col"
                >
-                 <div className="flex items-end gap-2">
-                   <span className="text-2xl sm:text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight whitespace-nowrap">{money(dayOfWeekData[activeBarIndex].amount)}</span>
+                 <div className="flex items-end gap-2 min-w-0 flex-wrap">
+                   <span className={`${getMetricFontSize(money(dayOfWeekData[activeBarIndex].amount))} ${metricFlow} font-black text-[#E8C5A8]`}>{money(dayOfWeekData[activeBarIndex].amount)}</span>
                    <span className="text-sm text-white/80 font-medium mb-1">{dayOfWeekData[activeBarIndex].name}</span>
                  </div>
                   <p className="text-xs text-white/60 mt-1">{t('analytics.insights.spentOnThisDay')}</p>
@@ -287,8 +248,8 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
                  className="flex flex-col"
                >
-                 <div className="flex items-end gap-2">
-                   <span className="text-2xl sm:text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight whitespace-nowrap">{weekendPercentage}%</span>
+                 <div className="flex items-end gap-2 min-w-0 flex-wrap">
+                   <span className="text-2xl sm:text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight">{weekendPercentage}%</span>
                    <span className="text-sm text-white/80 font-medium mb-1">{t('analytics.insights.onWeekends')}</span>
                  </div>
                  <p className="text-xs text-white/60 mt-1">{weekendPercentage > 50 ? t('analytics.insights.heavyWeekend') : t('analytics.insights.heavyWeekday')}</p>
@@ -296,7 +257,7 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
              )}
            </div>
 
-           <div className="h-48 w-full mt-4">
+           <div className="h-48 w-full mt-4" role="img" aria-label={t('analytics.insights.dayChartLabel')}>
              <ResponsiveContainer width="100%" height="100%">
                <BarChart data={dayOfWeekData} margin={lang === 'ar' ? { top: 10, right: -20, left: 0, bottom: 0 } : { top: 10, right: 0, left: -20, bottom: 0 }}>
                  <defs>
@@ -340,7 +301,7 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
 
         {/* 3. What Do You Spend On (Category Concentration) */}
         <motion.section 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.6 }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0.15 } : { type: 'spring', bounce: 0, duration: 0.6, delay: 0.2 }}
           className="lg:col-span-2 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><PieChart className="w-5 h-5 text-[#8D6346]" /> {t('analytics.insights.whereMoneyGoes')}</h2>
@@ -362,22 +323,22 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
                const percentage = totalExpense > 0 ? ((cat.amount / totalExpense) * 100).toFixed(1) : 0;
                return (
                  <div key={cat.id} className="group relative bg-black/10 hover:bg-white/5 p-4 rounded-2xl border border-white/5 transition-colors">
-                   <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-3">
-                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white/90 bg-black/30 border border-white/10">{idx + 1}</span>
-                         <div>
-                           <span className="font-bold text-white text-sm">{cat.name}</span>
-                           <p className="text-xs text-white/50 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
+                   <div className="flex justify-between items-center mb-2 gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white/90 bg-black/30 border border-white/10 shrink-0">{idx + 1}</span>
+                         <div className="min-w-0">
+                           <span className="font-bold text-white text-sm truncate block">{cat.name}</span>
+                           <p className="text-xs text-white/70 mt-0.5 break-all">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
                          </div>
                       </div>
-                      <div className="text-end">
-                        <span className="block font-black tabular-nums whitespace-nowrap text-white text-sm md:text-base" style={{ color: cat.color || '#fff' }}>{money(cat.amount)}</span>
+                      <div className="text-end min-w-0 max-w-[45%]">
+                        <span className={`block font-black text-white text-sm md:text-base ${metricFlow}`}>{money(cat.amount)}</span>
                         <span className="text-xs text-white/60 font-bold tabular-nums tracking-tight">{percentage}%</span>
                       </div>
                    </div>
                    <div className="w-full bg-black/30 shadow-inner rounded-full h-1.5 overflow-hidden border border-white/5">
                      <div 
-                       className="h-full rounded-full transition-all duration-1000 ease-out relative" 
+                       className="h-full rounded-full transition-all duration-1000 ease-out motion-reduce:transition-none relative" 
                        style={{ 
                          width: `${percentage}%`, 
                          background: 'linear-gradient(90deg, #8D6346 0%, #E8C5A8 100%)', 
@@ -399,7 +360,7 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
 
         {/* 4. Income vs Expense Comparison */}
         <motion.section 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.7 }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0.15 } : { type: 'spring', bounce: 0, duration: 0.6, delay: 0.25 }}
           className="lg:col-span-3 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Scale className="w-5 h-5 text-[#34C759]" /> {t('analytics.insights.cashflow')}</h2>
@@ -413,22 +374,22 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
                  return (
                    <>
                     <div>
-                      <div className="flex justify-between items-end mb-2">
-                        <span className="font-bold text-[#34C759] ltr:tracking-wider ltr:uppercase rtl:tracking-normal text-xs sm:text-sm">{t('analytics.insights.income')}</span>
-                        <span className="font-black text-xl sm:text-2xl tabular-nums text-white drop-shadow-sm whitespace-nowrap">{money(incomeVsExpense.income)}</span>
+                      <div className="flex justify-between items-end gap-3 mb-2 min-w-0">
+                        <span className="font-bold text-[#34C759] ltr:tracking-wider ltr:uppercase rtl:tracking-normal text-xs sm:text-sm shrink-0">{t('analytics.insights.income')}</span>
+                        <span className={`${getMetricFontSize(money(incomeVsExpense.income), { compact: true })} ${metricFlow} font-black text-white drop-shadow-sm text-end`}>{money(incomeVsExpense.income)}</span>
                       </div>
                       <div className="w-full bg-black/30 shadow-inner rounded-full h-4 overflow-hidden border border-white/5">
-                         <div className="h-full bg-gradient-to-r from-[#34C759]/70 to-[#34C759] rounded-full transition-all duration-1000 ease-out" style={{ width: `${incPct}%`, boxShadow: '0 0 15px rgba(52, 199, 89, 0.4)' }} />
+                         <div className="h-full bg-gradient-to-r from-[#34C759]/70 to-[#34C759] rounded-full transition-all duration-1000 ease-out motion-reduce:transition-none" style={{ width: `${incPct}%`, boxShadow: '0 0 15px rgba(52, 199, 89, 0.4)' }} />
                       </div>
                     </div>
                     
                     <div>
-                      <div className="flex justify-between items-end mb-2">
-                        <span className="font-bold text-[#FF3B30] ltr:tracking-wider ltr:uppercase rtl:tracking-normal text-xs sm:text-sm">{t('analytics.insights.expense')}</span>
-                        <span className="font-black text-xl sm:text-2xl tabular-nums text-white drop-shadow-sm whitespace-nowrap">{money(incomeVsExpense.expense)}</span>
+                      <div className="flex justify-between items-end gap-3 mb-2 min-w-0">
+                        <span className="font-bold text-[#FF3B30] ltr:tracking-wider ltr:uppercase rtl:tracking-normal text-xs sm:text-sm shrink-0">{t('analytics.insights.expense')}</span>
+                        <span className={`${getMetricFontSize(money(incomeVsExpense.expense), { compact: true })} ${metricFlow} font-black text-white drop-shadow-sm text-end`}>{money(incomeVsExpense.expense)}</span>
                       </div>
                       <div className="w-full bg-black/30 shadow-inner rounded-full h-4 overflow-hidden border border-white/5">
-                         <div className="h-full bg-gradient-to-r from-[#FF3B30]/70 to-[#FF3B30] rounded-full transition-all duration-1000 ease-out" style={{ width: `${expPct}%`, boxShadow: '0 0 15px rgba(255, 59, 48, 0.4)' }} />
+                         <div className="h-full bg-gradient-to-r from-[#FF3B30]/70 to-[#FF3B30] rounded-full transition-all duration-1000 ease-out motion-reduce:transition-none" style={{ width: `${expPct}%`, boxShadow: '0 0 15px rgba(255, 59, 48, 0.4)' }} />
                       </div>
                     </div>
                    </>
@@ -439,12 +400,12 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
                  <p className="text-sm text-white/90 leading-relaxed">
                    {incomeVsExpense.income >= incomeVsExpense.expense ? (
                       <>
-                        <span className="text-[#34C759] font-bold text-base block mb-1 whitespace-nowrap">{t('analytics.insights.saved')} {money(incomeVsExpense.income - incomeVsExpense.expense)}</span>
+                        <span className={`text-[#34C759] font-bold text-base block mb-1 ${metricFlow}`}>{t('analytics.insights.saved')} {money(incomeVsExpense.income - incomeVsExpense.expense)}</span>
                         {incomeVsExpense.income > 0 && <span className="text-white/60 text-xs ltr:uppercase ltr:tracking-wider rtl:tracking-normal">({Math.round(((incomeVsExpense.income - incomeVsExpense.expense)/incomeVsExpense.income)*100)}%) {t('analytics.insights.duringPeriod')}</span>}
                       </>
                    ) : (
                       <>
-                        <span className="text-[#FF3B30] font-bold text-base block mb-1 whitespace-nowrap">{t('analytics.insights.overspent')} {money(incomeVsExpense.expense - incomeVsExpense.income)}</span>
+                        <span className={`text-[#FF3B30] font-bold text-base block mb-1 ${metricFlow}`}>{t('analytics.insights.overspent')} {money(incomeVsExpense.expense - incomeVsExpense.income)}</span>
                         <span className="text-white/60 text-xs ltr:uppercase ltr:tracking-wider rtl:tracking-normal">{t('analytics.insights.duringPeriod')}</span>
                       </>
                    )}

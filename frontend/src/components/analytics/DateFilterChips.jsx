@@ -63,7 +63,7 @@ export const getFilterBounds = (type, userPrefs = {}) => {
 };
 
 function DateFilterChipsComponent({ filters, setFilters, userPrefs }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [showCustom, setShowCustom] = useState(false);
 
 
@@ -87,7 +87,7 @@ function DateFilterChipsComponent({ filters, setFilters, userPrefs }) {
     <div className="flex flex-col xl:flex-row gap-3 w-full items-start xl:items-center">
       
       {!showCustom && (
-        <div className="flex flex-wrap gap-2 w-full xl:w-auto">
+        <div role="group" aria-label={t('analytics.fromDate')} className="flex gap-2 w-full overflow-x-auto hide-scrollbar overscroll-x-contain snap-x snap-mandatory pb-1">
           {['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'year', 'all'].map((filterKey) => {
             const isActive = checkActive(filterKey);
             const labelKey = filterKey === 'this_week' ? 'thisWeek'
@@ -102,8 +102,9 @@ function DateFilterChipsComponent({ filters, setFilters, userPrefs }) {
               <button 
                 key={filterKey}
                 type="button"
+                aria-pressed={isActive}
                 onClick={() => handleQuickFilter(filterKey)}
-                className={`flex-1 min-w-[calc(50%-4px)] sm:min-w-fit sm:flex-none px-4 py-2.5 min-h-[44px] flex items-center justify-center rounded-2xl text-[11px] font-bold ltr:tracking-wide rtl:tracking-normal whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 ${
+                className={`shrink-0 snap-start px-4 py-2.5 min-h-[44px] flex items-center justify-center rounded-2xl text-[11px] font-bold ltr:tracking-wide rtl:tracking-normal whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 active:scale-95 motion-reduce:transition-none outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 ${
                   isActive
                     ? 'bg-[#8D6346]/25 text-[#E8C5A8] shadow-[0_2px_12px_rgba(141,99,70,0.3),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/40' 
                     : 'bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white'
@@ -116,8 +117,9 @@ function DateFilterChipsComponent({ filters, setFilters, userPrefs }) {
           <button 
             type="button"
             onClick={() => setShowCustom(true)}
-            aria-label={t('analytics.filters.custom') || 'Custom date range'}
-            className="flex-1 min-w-[calc(50%-4px)] sm:min-w-fit sm:flex-none px-4 py-2.5 min-h-[44px] flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold ltr:tracking-wide rtl:tracking-normal whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 text-white/70 hover:text-white"
+            aria-label={t('analytics.filters.custom')}
+            aria-pressed={false}
+            className="shrink-0 snap-start px-4 py-2.5 min-h-[44px] flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold ltr:tracking-wide rtl:tracking-normal whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 active:scale-95 motion-reduce:transition-none outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 text-white/70 hover:text-white"
           >
             <Calendar size={14} />
             <span>{t('analytics.filters.custom')}</span>
@@ -127,7 +129,7 @@ function DateFilterChipsComponent({ filters, setFilters, userPrefs }) {
 
       {showCustom && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full bg-black/40 p-3 sm:p-2.5 rounded-2xl border border-white/10 shadow-inner">
-          <div className="flex items-center gap-2 flex-1 w-full">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 w-full">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="text-[11px] font-bold ltr:uppercase ltr:tracking-wider rtl:tracking-normal text-white/60 shrink-0">{t('analytics.fromDate')}:</span>
               <input 
@@ -148,7 +150,7 @@ function DateFilterChipsComponent({ filters, setFilters, userPrefs }) {
                 aria-label={t('analytics.fromDate')}
               />
             </div>
-            <span className="text-[var(--color-text-muted)] text-xs font-bold px-0.5">-</span>
+            <span className="hidden sm:inline text-[var(--color-text-muted)] text-xs font-bold px-0.5" aria-hidden="true">-</span>
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="text-[11px] font-bold ltr:uppercase ltr:tracking-wider rtl:tracking-normal text-white/60 shrink-0">{t('analytics.toDate')}:</span>
               <input 
