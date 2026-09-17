@@ -156,7 +156,7 @@ const updateProfile = async (userId, data) => {
     user.profileEditsRemaining -= 1;
   }
 
-  if (typeof data.picture === 'string' && data.picture.length <= 2048) {
+  if (typeof data.picture === 'string' && (data.picture.startsWith('http://') || data.picture.startsWith('https://') || data.picture.startsWith('data:image/')) && data.picture.length <= 150 * 1024) {
     user.picture = data.picture;
   }
 

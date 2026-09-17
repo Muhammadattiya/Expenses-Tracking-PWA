@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, RefreshCcw, Calendar, Check, ArrowLeft } from 'lucide-react';
+import { RefreshCcw, Calendar, Check, ArrowLeft, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { getCurrentUser, updatePreferences } from '../../api/auth';
-import SplashScreen from '../SplashScreen';
 
 export default function TrackingCycleManagement({ onBack }) {
   const { t, lang } = useLanguage();
@@ -68,20 +67,16 @@ export default function TrackingCycleManagement({ onBack }) {
   ];
 
   return (
-    <motion.section
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-      className="space-y-6"
-    >
+    <section className="space-y-6">
       <header className="flex items-center gap-4 mb-8">
-        <button 
+        <motion.button 
+          whileTap={{ scale: 0.95 }}
           onClick={onBack} 
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors group"
+          aria-label={t('common.back')}
+          className="w-12 h-12 flex shrink-0 items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
         >
-          <ArrowLeft className={`w-5 h-5 transition-transform group-hover:-translate-x-1 ${isRTL ? 'rotate-180 group-hover:translate-x-1' : ''}`} />
-        </button>
+          <ArrowLeft size={20} className={`text-white/90 ${isRTL ? 'rotate-180' : ''}`} />
+        </motion.button>
         <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
           <RefreshCcw className="w-6 h-6 text-[#8D6346]" />
           {t('profile.trackingCycle')}
@@ -90,36 +85,37 @@ export default function TrackingCycleManagement({ onBack }) {
 
       <form onSubmit={handleSave} className="relative z-10 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 rounded-[2rem] space-y-6">
         {loading ? (
-          <SplashScreen />
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-14 h-14 rounded-full bg-[#8D6346]/20 border border-[#8D6346]/30 flex items-center justify-center shadow-inner">
+              <Loader2 className="w-7 h-7 text-[#8D6346] animate-spin" />
+            </div>
+            <span className="text-white/60 text-sm font-medium">{t('common.loading')}</span>
+          </div>
         ) : (
           <>
             <div className="space-y-4">
               <label className="block text-sm font-medium text-white/80">{t('settings.defaultBudgetPeriod')}</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
+              <div className="flex bg-black/20 p-1 rounded-full shadow-inner relative">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   type="button"
                   onClick={() => setTrackingPeriod('monthly')}
-                  className={`py-3 px-4 rounded-[30px] border flex items-center justify-center gap-2 transition-all ${
-                    trackingPeriod === 'monthly'
-                      ? 'bg-[#8D6346]/20 border-[#8D6346]/40 text-white shadow-inner'
-                      : 'bg-black/20 border-white/5 text-white/50 hover:bg-black/30'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold transition-colors relative z-10 ${trackingPeriod === 'monthly' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
                 >
+                  {trackingPeriod === 'monthly' && <motion.div layoutId="trackingPeriodTab" className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
                   <Calendar size={18} />
                   {t('budgets.monthly')}
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   type="button"
                   onClick={() => setTrackingPeriod('weekly')}
-                  className={`py-3 px-4 rounded-[30px] border flex items-center justify-center gap-2 transition-all ${
-                    trackingPeriod === 'weekly'
-                      ? 'bg-[#8D6346]/20 border-[#8D6346]/40 text-white shadow-inner'
-                      : 'bg-black/20 border-white/5 text-white/50 hover:bg-black/30'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold transition-colors relative z-10 ${trackingPeriod === 'weekly' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
                 >
+                  {trackingPeriod === 'weekly' && <motion.div layoutId="trackingPeriodTab" className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
                   <RefreshCcw size={18} />
                   {t('budgets.weekly')}
-                </button>
+                </motion.button>
               </div>
             </div>
 
@@ -192,6 +188,6 @@ export default function TrackingCycleManagement({ onBack }) {
           </>
         )}
       </form>
-    </motion.section>
+    </section>
   );
 }

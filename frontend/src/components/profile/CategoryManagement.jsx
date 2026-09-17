@@ -118,18 +118,13 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
   };
 
   return (
-    <motion.section
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-      className="space-y-6"
-    >
+    <section className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onBack}
-          className="w-12 h-12 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors"
+          aria-label={t('common.back')}
+          className="w-12 h-12 flex items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
         >
           <ArrowLeft size={20} className={`text-white/90 ${lang === 'ar' ? 'rotate-180' : ''}`} />
         </motion.button>
@@ -146,7 +141,7 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold transition-colors relative z-10 ${categoryTab === 'expense' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
         >
           {categoryTab === 'expense' && <motion.div layoutId="catTab" className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
-          <TrendingDown size={18} className={categoryTab === 'expense' ? 'text-red-400' : 'opacity-50'} />
+          <TrendingDown size={18} className={categoryTab === 'expense' ? 'text-brand-red' : 'opacity-50'} />
           {t('settings.expense')}
         </motion.button>
         <motion.button
@@ -155,7 +150,7 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold transition-colors relative z-10 ${categoryTab === 'income' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
         >
           {categoryTab === 'income' && <motion.div layoutId="catTab" className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.2)] -z-10" />}
-          <TrendingUp size={18} className={categoryTab === 'income' ? 'text-emerald-400' : 'opacity-50'} />
+          <TrendingUp size={18} className={categoryTab === 'income' ? 'text-brand-green' : 'opacity-50'} />
           {t('settings.income')}
         </motion.button>
       </div>
@@ -163,8 +158,8 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
       <ul className="flex flex-col gap-2">
         {categories.filter(cat => cat.type === categoryTab).map((cat) => {
           const CatIcon = getIconComponent(cat.icon, 'Tag');
-          const colorClass = cat.type === 'expense' ? 'text-red-400' : 'text-emerald-400';
-          const bgClass = cat.type === 'expense' ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20';
+          const colorClass = cat.type === 'expense' ? 'text-brand-red' : 'text-brand-green';
+          const bgClass = cat.type === 'expense' ? 'bg-brand-red/10 border-brand-red/20' : 'bg-brand-green/10 border-brand-green/20';
           return (
             <li key={cat._id} className="py-4 px-2 flex items-center justify-between gap-3 group hover:bg-white/5 rounded-2xl transition-colors">
               <div className={`${bgClass} border p-3 rounded-2xl ${colorClass} transition-transform group-hover:scale-110 shadow-inner`}>
@@ -177,14 +172,16 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => openEditModal(cat)}
-                  className="p-2.5 bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
+                  aria-label={t('common.edit')}
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
                 >
                   <Pencil size={18} />
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleDeleteCategory(cat)}
-                  className="p-2.5 bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
+                  aria-label={t('common.delete')}
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-brand-red/5 border border-transparent hover:bg-brand-red/10 hover:border-brand-red/20 transition-colors rounded-xl text-brand-red/60 hover:text-brand-red"
                 >
                   <Trash2 size={18} />
                 </motion.button>
@@ -207,7 +204,7 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
           setNewCategoryType(categoryTab);
           setAddCategoryModalOpen(true);
         }}
-        className="bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] w-full py-4 flex items-center justify-center rounded-[24px] text-[#8D6346] hover:bg-[#8D6346]/20 transition-all duration-300 gap-2 mt-4 font-bold"
+        className="bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] w-full py-4 flex items-center justify-center rounded-[24px] text-[#8D6346] hover:bg-[#8D6346]/20 transition-all duration-300 gap-2 mt-4 font-bold min-h-[48px]"
       >
         <Plus className="w-5 h-5" /> {t('settings.addCategoryBtn')}
       </motion.button>
@@ -220,7 +217,7 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
               <h3 className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.editCategory')}
               </h3>
-              <button onClick={closeEditModal} className="text-white/50 hover:text-white transition-colors">
+              <button onClick={closeEditModal} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -262,7 +259,7 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
               <h3 className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.addCategoryBtn')}
               </h3>
-              <button onClick={() => setAddCategoryModalOpen(false)} className="text-white/50 hover:text-white transition-colors">
+              <button onClick={() => setAddCategoryModalOpen(false)} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -318,6 +315,6 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
           setSelectedCategory(null);
         }}
       />
-    </motion.section>
+    </section>
   );
 }

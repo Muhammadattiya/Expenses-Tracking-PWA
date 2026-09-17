@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, Wallet, Pencil, Trash2, X, Star, ArrowLeft, Loader2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,7 +8,6 @@ import { getDebts } from "../../api/debts";
 import { getReceivables } from "../../api/receivables";
 import { getInvestments, getGoldPrice } from "../../api/investments";
 import ConfirmModal from "../modals/ConfirmModal";
-import SplashScreen from "../SplashScreen";
 import IconPicker, { getIconComponent } from "../IconPicker";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -90,51 +89,64 @@ export default function AccountManagement({ onBack }) {
     fetchData();
   }, []);
 
-  const getAccountBalance = (account) => {
-    if (account.type === 'investment') return investmentsValue;
-    let balance = account.balance_adjustment || 0;
-    transactions.forEach(t => {
-      const amt = Number(t.amount) || 0;
-      const tAccId = (t.account?._id || t.account)?.toString();
-      const tFromId = (t.from_account?._id || t.from_account)?.toString();
-      const tToId = (t.to_account?._id || t.to_account)?.toString();
+  const accountBalances = useMemo(() => {
+    const balances = new Map();
+    accounts.forEach(account => {
       const accId = account._id?.toString();
-
-      if (t.type === 'income' && tAccId === accId) balance += amt;
-      else if (t.type === 'expense' && tAccId === accId) balance -= amt;
-      else if (t.type === 'transfer') {
-        if (tToId === accId) balance += amt;
-        if (tFromId === accId) balance -= amt;
-      } else if (t.type === 'settlement' && tAccId === accId) balance += amt;
-    });
-
-    allDebtTransactions.forEach(dt => {
-      if ((dt.account?._id || dt.account) === account._id) {
-        if (dt.type === 'loan') {
-          if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') balance += dt.amount; // Borrowed money -> got money
-          else balance -= dt.amount; // Lent money -> lost money
-        } else if (dt.type === 'repayment') {
-          if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') balance -= dt.amount; // Repaid money -> lost money
-          else balance += dt.amount; // Got paid back -> got money
-        }
+      if (!accId) return;
+      if (account.type === 'investment') {
+        balances.set(accId, investmentsValue);
+        return;
       }
-    });
+      let balance = account.balance_adjustment || 0;
+      transactions.forEach(t => {
+        const amt = Number(t.amount) || 0;
+        const tAccId = (t.account?._id || t.account)?.toString();
+        const tFromId = (t.from_account?._id || t.from_account)?.toString();
+        const tToId = (t.to_account?._id || t.to_account)?.toString();
 
-    allReceivables.forEach(r => {
-      if ((r.paidFrom?._id || r.paidFrom) === account._id) balance -= r.paidAmount;
-      if ((r.receivedTo?._id || r.receivedTo) === account._id) balance += r.receivedAmount;
-      if (r.participants) {
-        r.participants.forEach(p => {
-          if (p.payments) {
-            p.payments.forEach(pay => {
-              if ((pay.account?._id || pay.account) === account._id) balance += pay.amount;
-            });
+        if (t.type === 'income' && tAccId === accId) balance += amt;
+        else if (t.type === 'expense' && tAccId === accId) balance -= amt;
+        else if (t.type === 'transfer') {
+          if (tToId === accId) balance += amt;
+          if (tFromId === accId) balance -= amt;
+        } else if (t.type === 'settlement' && tAccId === accId) balance += amt;
+      });
+
+      allDebtTransactions.forEach(dt => {
+        if ((dt.account?._id || dt.account) === account._id) {
+          if (dt.type === 'loan') {
+            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') balance += dt.amount;
+            else balance -= dt.amount;
+          } else if (dt.type === 'repayment') {
+            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') balance -= dt.amount;
+            else balance += dt.amount;
           }
-        });
-      }
+        }
+      });
+
+      allReceivables.forEach(r => {
+        if ((r.paidFrom?._id || r.paidFrom) === account._id) balance -= r.paidAmount;
+        if ((r.receivedTo?._id || r.receivedTo) === account._id) balance += r.receivedAmount;
+        if (r.participants) {
+          r.participants.forEach(p => {
+            if (p.payments) {
+              p.payments.forEach(pay => {
+                if ((pay.account?._id || pay.account) === account._id) balance += pay.amount;
+              });
+            }
+          });
+        }
+      });
+
+      balances.set(accId, balance);
     });
-    
-    return balance;
+    return balances;
+  }, [accounts, transactions, allDebtTransactions, allReceivables, investmentsValue]);
+
+  const getAccountBalance = (account) => {
+    const accId = account?._id?.toString();
+    return accountBalances.get(accId) ?? (account?.balance_adjustment || 0);
   };
 
   const handleAddAccount = async (e) => {
@@ -236,23 +248,24 @@ export default function AccountManagement({ onBack }) {
   };
 
   if (isLoading) {
-    return <SplashScreen />;
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-4">
+        <div className="w-14 h-14 rounded-full bg-[#8D6346]/20 border border-[#8D6346]/30 flex items-center justify-center shadow-inner">
+          <Loader2 className="w-7 h-7 text-[#8D6346] animate-spin" />
+        </div>
+        <span className="text-white/60 text-sm font-medium">{t('common.loading')}</span>
+      </div>
+    );
   }
 
   return (
-    <motion.section 
-      key="accounts"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-      className="relative z-10 flex flex-col w-full h-full"
-    >
+    <section className="relative z-10 flex flex-col w-full h-full">
       <div className="flex items-center gap-3 mb-4">
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onBack}
-          className="w-12 h-12 flex shrink-0 items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors"
+          aria-label={t('common.back')}
+          className="w-12 h-12 flex shrink-0 items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
         >
           <ArrowLeft size={20} className={`text-white/90 ${lang === 'ar' ? 'rotate-180' : ''}`} />
         </motion.button>
@@ -290,26 +303,29 @@ export default function AccountManagement({ onBack }) {
                         showToast(t('settings.updateError'), 'error');
                       }
                     }}
-                    className={`p-2 transition-colors rounded-xl border ${acc.isDefault ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30 shadow-inner' : 'bg-white/5 border-transparent hover:bg-white/10 text-white/40 hover:text-yellow-500'}`}
+                    aria-label={t('settings.setAsDefault')}
+                    className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors rounded-xl border ${acc.isDefault ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30 shadow-inner' : 'bg-white/5 border-transparent hover:bg-white/10 text-white/40 hover:text-yellow-500'}`}
                     title={t('settings.setAsDefault')}
                   >
-                    <Star size={16} fill={acc.isDefault ? "currentColor" : "none"} />
+                    <Star size={18} fill={acc.isDefault ? "currentColor" : "none"} />
                   </motion.button>
                   {!acc.isSystemAccount && (
                     <>
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => openEditModal(acc)}
-                        className="p-2 bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
+                        aria-label={t('common.edit')}
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
                       >
-                        <Pencil size={16} />
+                        <Pencil size={18} />
                       </motion.button>
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleDeleteAccount(acc)}
-                        className="p-2 bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
+                        aria-label={t('common.delete')}
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={18} />
                       </motion.button>
                     </>
                   )}
@@ -323,7 +339,7 @@ export default function AccountManagement({ onBack }) {
       <motion.button
         whileTap={{ scale: 0.98 }}
         onClick={() => setAddAccountModalOpen(true)}
-        className="bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] w-full py-4 flex items-center justify-center rounded-[24px] text-[#8D6346] hover:bg-[#8D6346]/20 transition-all duration-300 gap-2 mt-2 font-bold"
+        className="bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] w-full py-4 flex items-center justify-center rounded-[24px] text-[#8D6346] hover:bg-[#8D6346]/20 transition-all duration-300 gap-2 mt-2 font-bold min-h-[48px]"
       >
         <Plus className="w-5 h-5" /> {t('settings.addAccountBtn')}
       </motion.button>
@@ -336,7 +352,7 @@ export default function AccountManagement({ onBack }) {
               <h3 className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.editAccount')}
               </h3>
-              <button onClick={closeEditModal} className="text-white/50 hover:text-white transition-colors">
+              <button onClick={closeEditModal} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -415,7 +431,7 @@ export default function AccountManagement({ onBack }) {
               <h3 className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.addAccountBtn')}
               </h3>
-              <button onClick={() => setAddAccountModalOpen(false)} className="text-white/50 hover:text-white transition-colors">
+              <button onClick={() => setAddAccountModalOpen(false)} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -484,6 +500,6 @@ export default function AccountManagement({ onBack }) {
           setSelectedAccount(null);
         }}
       />
-    </motion.section>
+    </section>
   );
 }
