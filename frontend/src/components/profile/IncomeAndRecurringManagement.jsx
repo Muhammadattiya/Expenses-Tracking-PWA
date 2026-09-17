@@ -54,12 +54,12 @@ export default function IncomeAndRecurringManagement({
   // Income Profile Handlers
   const handleAddIncomeProfile = async (data) => {
     try {
-      if (!data.name || !data.amount || !data.account) {
-        showToast(t('common.error'), 'error');
+      if (!data.name?.trim() || !data.amount || Number(data.amount) <= 0 || !data.account) {
+        showToast(t('common.fillRequired') || t('common.error'), 'error');
         return;
       }
       await createIncomeProfile({
-        name: data.name,
+        name: data.name.trim(),
         amount: Number(data.amount),
         frequency: data.frequency,
         weekDay: Number(data.weekDay),
@@ -69,7 +69,7 @@ export default function IncomeAndRecurringManagement({
         isActive: data.isActive
       });
       setAddIncomeProfileModalOpen(false);
-      fetchData();
+      await fetchData();
       showToast(t('common.success'), 'success');
     } catch (error) {
       showToast(error.response?.data?.message || t('common.error'), 'error');
@@ -78,12 +78,12 @@ export default function IncomeAndRecurringManagement({
 
   const handleUpdateIncomeProfile = async (data) => {
     try {
-      if (!data.name || !data.amount || !data.account) {
-        showToast(t('common.error'), 'error');
+      if (!data.name?.trim() || !data.amount || Number(data.amount) <= 0 || !data.account) {
+        showToast(t('common.fillRequired') || t('common.error'), 'error');
         return;
       }
       await updateIncomeProfile(data._id, {
-        name: data.name,
+        name: data.name.trim(),
         amount: Number(data.amount),
         frequency: data.frequency,
         weekDay: Number(data.weekDay),
@@ -94,7 +94,7 @@ export default function IncomeAndRecurringManagement({
       });
       setEditIncomeProfileModalOpen(false);
       setEditingIncomeProfile(null);
-      fetchData();
+      await fetchData();
       showToast(t('common.success'), 'success');
     } catch (error) {
       showToast(error.response?.data?.message || t('common.error'), 'error');
@@ -111,7 +111,7 @@ export default function IncomeAndRecurringManagement({
   const handleToggleRecurring = async (id) => {
     try {
       await toggleRecurringActive(id);
-      fetchData();
+      await fetchData();
     } catch (e) {
       showToast(t('settings.updateError'), 'error');
     }
@@ -145,20 +145,15 @@ export default function IncomeAndRecurringManagement({
   };
 
   return (
-    <motion.section
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-      className="space-y-6"
-    >
+    <section className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onBack}
-          className="w-12 h-12 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors"
+          aria-label={t('common.back')}
+          className="w-12 h-12 flex items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
         >
-          <ArrowLeft size={20} className={`text-white/90 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+          <ArrowLeft size={20} className="text-white/90 rtl:rotate-180" />
         </motion.button>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Banknote className="w-6 h-6 text-[#8D6346]" />
@@ -198,11 +193,12 @@ export default function IncomeAndRecurringManagement({
             className="space-y-4"
           >
             {incomeProfiles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-white/40 space-y-5">
-                <div className="w-24 h-24 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[2rem] flex items-center justify-center mb-2 shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10">
-                  <Banknote size={40} className="text-white/20" />
+              <div className="flex flex-col items-center justify-center py-20 text-white/40 space-y-3 px-4">
+                <div className="w-20 h-20 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[2rem] flex items-center justify-center mb-1 shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10">
+                  <Banknote size={36} className="text-[#8D6346]/60" />
                 </div>
-                <p className="text-xl font-bold text-white/60 text-center">{t('incomeProfiles.noProfiles')}</p>
+                <p className="text-lg font-bold text-white/80 text-center">{t('incomeProfiles.noProfiles')}</p>
+                <p className="text-xs text-white/50 text-center max-w-xs">{t('incomeProfiles.noProfilesDesc')}</p>
               </div>
             ) : (
               incomeProfiles.map(profile => (
@@ -217,7 +213,7 @@ export default function IncomeAndRecurringManagement({
                           </span>
                         )}
                       </h3>
-                      <div className="text-2xl font-black text-[#8D6346] tracking-tight drop-shadow-sm">
+                      <div className="text-2xl font-black text-[#8D6346] font-mono tabular-nums tracking-tight drop-shadow-sm">
                         {Number(profile.amount).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}
                       </div>
                     </div>
@@ -234,16 +230,18 @@ export default function IncomeAndRecurringManagement({
                             });
                             setEditIncomeProfileModalOpen(true);
                           }}
-                          className="p-2 text-white/40 hover:text-white transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/10"
+                          aria-label={t('common.edit')}
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/40 hover:text-white transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/10"
                         >
-                          <Pencil size={16} />
+                          <Pencil size={18} />
                         </motion.button>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleDeleteIncomeProfile(profile)}
-                          className="p-2 text-red-400/60 hover:text-red-400 transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-red-500/20"
+                          aria-label={t('common.delete')}
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-brand-red/60 hover:text-brand-red transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-brand-red/20"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={18} />
                         </motion.button>
                       </div>
                     </div>
@@ -291,11 +289,12 @@ export default function IncomeAndRecurringManagement({
             className="space-y-4"
           >
             {recurringTransactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-white/40 space-y-5 flex-1">
-                <div className="w-24 h-24 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[2rem] flex items-center justify-center mb-2 shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10">
-                  <Repeat size={40} className="text-white/20" />
+              <div className="flex flex-col items-center justify-center py-20 text-white/40 space-y-3 px-4 flex-1">
+                <div className="w-20 h-20 bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[2rem] flex items-center justify-center mb-1 shadow-[0_8px_32px_rgba(0,0,0,0.3)] border border-white/10">
+                  <Repeat size={36} className="text-[#8D6346]/60" />
                 </div>
-                <p className="text-xl font-bold text-white/60 text-center">{t('recurring.noRecurring')}</p>
+                <p className="text-lg font-bold text-white/80 text-center">{t('recurring.noRecurring')}</p>
+                <p className="text-xs text-white/50 text-center max-w-xs">{t('recurring.noRecurringDesc')}</p>
               </div>
             ) : (
               recurringTransactions.map((rt) => (
@@ -306,32 +305,40 @@ export default function IncomeAndRecurringManagement({
                         {rt.title || t('recurring.untitled')}
                         {rt.reminderEnabled && <Bell size={14} className="text-yellow-400 drop-shadow" />}
                       </h3>
-                      <div className="text-2xl font-black text-[#8D6346] tracking-tight drop-shadow-sm">
+                      <div className="text-2xl font-black text-[#8D6346] font-mono tabular-nums tracking-tight drop-shadow-sm">
                         {new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP' }).format(rt.amount)}
                       </div>
                     </div>
                     
                     <div className="flex flex-col items-end gap-2">
                       <button
+                        type="button"
+                        role="switch"
+                        aria-checked={rt.isActive}
+                        aria-label={t('profile.toggleStatus') || 'Toggle active status'}
                         onClick={() => handleToggleRecurring(rt._id)}
-                        className={`relative w-12 h-6 rounded-full transition-colors duration-300 shadow-inner border border-white/10 ${rt.isActive ? 'bg-[#8D6346]' : 'bg-black/40'}`}
+                        className="min-h-[44px] flex items-center justify-center p-1"
                       >
-                        <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${rt.isActive ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-0'}`} />
+                        <div className={`relative w-12 h-6 rounded-full transition-colors duration-300 shadow-inner border border-white/10 ${rt.isActive ? 'bg-[#8D6346]' : 'bg-black/40'}`}>
+                          <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${rt.isActive ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-0'}`} />
+                        </div>
                       </button>
                       <div className="flex gap-1 mt-1">
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => setEditingRecurring(rt)}
-                          className="p-2 text-white/40 hover:text-white transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/10"
+                          aria-label={t('common.edit')}
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/40 hover:text-white transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/10"
                         >
-                          <Pencil size={16} />
+                          <Pencil size={18} />
                         </motion.button>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleDeleteRecurring(rt)}
-                          className="p-2 text-red-400/60 hover:text-red-400 transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-red-500/20"
+                          aria-label={t('common.delete')}
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-brand-red/60 hover:text-brand-red transition-colors bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-brand-red/20"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={18} />
                         </motion.button>
                       </div>
                     </div>
@@ -408,6 +415,6 @@ export default function IncomeAndRecurringManagement({
           setSelectedItem(null);
         }}
       />
-    </motion.section>
+    </section>
   );
 }

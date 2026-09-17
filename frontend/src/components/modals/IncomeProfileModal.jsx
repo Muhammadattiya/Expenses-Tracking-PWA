@@ -43,8 +43,26 @@ const IncomeProfileModal = ({
     }
   }, [open, initialData, accounts, categories]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (open) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
   const isEdit = !!initialData;
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (!profileData.name.trim() || Number(profileData.amount) <= 0) {
+      return;
+    }
+    onSubmit(profileData);
+  };
 
   return createPortal(
     <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${lang === 'ar' ? 'font-arabic' : 'font-english'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -55,41 +73,41 @@ const IncomeProfileModal = ({
           <h3 className="text-xl font-bold text-white">
             {isEdit ? t('incomeProfiles.editProfile') : t('incomeProfiles.addProfile')}
           </h3>
-          <button onClick={onClose} className="p-2 text-white/50 hover:text-white bg-white/5 rounded-full transition-colors hover:bg-white/10">
+          <button onClick={onClose} aria-label={t('common.close')} className="p-2 text-white/50 hover:text-white bg-white/5 rounded-full transition-colors hover:bg-white/10">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(profileData); }} className="flex flex-col gap-4">
+        <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('incomeProfiles.profileName')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.profileName')}</label>
             <input
               type="text"
               required
               value={profileData.name}
               onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
             />
           </div>
 
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('incomeProfiles.amount')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.amount')}</label>
             <div className="relative">
               <input
                 type="number"
                 required
-                min="0"
+                min="0.01"
                 step="0.01"
                 value={profileData.amount}
                 onChange={(e) => setProfileData({ ...profileData, amount: e.target.value })}
-                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
               />
-              <span className={`absolute top-3 text-white/50 font-medium ${lang === 'ar' ? 'left-4' : 'right-4'}`}>{t('nav.currency')}</span>
+              <span className="absolute top-3.5 end-4 text-white/50 font-medium pointer-events-none">{t('nav.currency')}</span>
             </div>
           </div>
 
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('incomeProfiles.frequency')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.frequency')}</label>
             <CustomSelect
               buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
               value={profileData.frequency}
@@ -103,7 +121,7 @@ const IncomeProfileModal = ({
 
           {profileData.frequency === 'weekly' ? (
             <div>
-              <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('incomeProfiles.weekDay')}</label>
+              <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.weekDay')}</label>
               <CustomSelect
                 buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                 value={profileData.weekDay}
@@ -121,7 +139,7 @@ const IncomeProfileModal = ({
             </div>
           ) : (
             <div>
-              <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('incomeProfiles.monthDay')}</label>
+              <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.monthDay')}</label>
               <CustomSelect
                 buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                 value={profileData.monthDay}
@@ -132,7 +150,7 @@ const IncomeProfileModal = ({
           )}
 
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('incomeProfiles.selectAccount')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.selectAccount')}</label>
             <CustomSelect
               buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
               value={typeof profileData.account === 'object' ? profileData.account?._id : profileData.account}
@@ -143,7 +161,7 @@ const IncomeProfileModal = ({
           </div>
 
           <div>
-            <label className="text-[13px] text-white/60 mb-1 block ml-1">{t('incomeProfiles.selectCategory')}</label>
+            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.selectCategory')}</label>
             <CustomSelect
               buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
               value={typeof profileData.category === 'object' ? profileData.category?._id : profileData.category}
@@ -153,7 +171,7 @@ const IncomeProfileModal = ({
             />
           </div>
 
-          <button type="submit" className="w-full py-3.5 mt-2 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[14px] hover:bg-[#8D6346]/30 transition-colors">
+          <button type="submit" className="w-full py-3.5 mt-2 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors">
             {t('incomeProfiles.saveProfile')}
           </button>
         </form>

@@ -1,28 +1,31 @@
 import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getIconComponent } from '../IconPicker';
 import { TrendingUp, TrendingDown, Landmark, Wallet, PiggyBank, CreditCard } from 'lucide-react';
 
-export default function OverviewTab({ money, data, accounts, investments, debts, bills, recurring, incomeProfiles, filters, allTransactions, allDebtTransactions, allReceivables }) {
+function OverviewTabComponent({ money, data, accounts, investments, debts, bills, recurring, incomeProfiles, filters, allTransactions, allDebtTransactions, allReceivables }) {
   const { t } = useLanguage();
 
   const accountBalances = useMemo(() => {
     const balances = {};
     const totalInvestmentsValue = (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
 
+    const accountsMap = new Map();
     (accounts || []).forEach(acc => {
+      accountsMap.set(String(acc._id), acc);
       balances[acc._id] = acc.type === 'investment' ? totalInvestmentsValue : (acc.balance_adjustment || 0);
     });
 
     (allTransactions || []).forEach(t => {
       const amount = Number(t.amount);
-      const accId = t.account?._id || t.account;
-      const fromId = t.from_account?._id || t.from_account;
-      const toId = t.to_account?._id || t.to_account;
+      const accId = String(t.account?._id || t.account || '');
+      const fromId = String(t.from_account?._id || t.from_account || '');
+      const toId = String(t.to_account?._id || t.to_account || '');
 
-      const accObj = (accounts || []).find(a => a._id === accId);
-      const fromObj = (accounts || []).find(a => a._id === fromId);
-      const toObj = (accounts || []).find(a => a._id === toId);
+      const accObj = accountsMap.get(accId);
+      const fromObj = accountsMap.get(fromId);
+      const toObj = accountsMap.get(toId);
 
       if (t.type === 'income') {
         if (accId && accObj?.type !== 'investment') balances[accId] = (balances[accId] || 0) + amount;
@@ -87,11 +90,11 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
     return total;
   }, [accounts, accountBalances, investments]);
 
-  // Total Assets is literally all balance in all non-archived accounts (including the investment account)
+  // Total Assets is all balance in all non-archived eligible accounts (including the investment account)
   const totalAssets = useMemo(() => {
     let total = 0;
     (accounts || []).forEach(acc => {
-      if (!acc.isArchived) {
+      if (!acc.isArchived && (!acc.excludeFromTotal || acc.type === 'investment')) {
         total += (accountBalances[acc._id] || 0);
       }
     });
@@ -113,24 +116,32 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
 
   // Period debts I have to pay (borrowed / i_owe) - Commitment inside the selected period
   const periodDebtsToPay = useMemo(() => {
+    if (!debts || !debts.length) return 0;
+
+    const isAll = !filters?.from || !filters?.to || filters?.filterType === 'all';
+    const fromTime = !isAll ? new Date(filters.from).getTime() : -Infinity;
+    const toTime = !isAll ? new Date(filters.to).getTime() : Infinity;
+
+    // Pre-index loan transactions by debtId
+    const loansByDebtId = new Map();
+    (allDebtTransactions || []).forEach(dt => {
+      if (dt.type === 'loan') {
+        const id = dt.debtId?._id ? String(dt.debtId._id) : String(dt.debtId || '');
+        if (id && !loansByDebtId.has(id)) {
+          loansByDebtId.set(id, dt);
+        }
+      }
+    });
+
     return (debts || [])
       .filter(d => String(d.type) === 'i_owe' || String(d.debtType) === 'i_owe' || String(d.type) === 'borrowed')
       .filter(d => {
-        if (!filters?.from || !filters?.to || filters?.filterType === 'all') {
-          return true;
-        }
-        const fromDate = new Date(filters.from);
-        const toDate = new Date(filters.to);
-        
-        // Find loan transaction date or fallback to d.dueDate or d.createdAt
-        const loanTx = (allDebtTransactions || []).find(dt => 
-          (dt.debtId?._id ? String(dt.debtId._id) : String(dt.debtId)) === String(d._id) && 
-          dt.type === 'loan'
-        );
+        if (isAll) return true;
+        const loanTx = loansByDebtId.get(String(d._id));
         const debtDateRaw = loanTx?.date || d.dueDate || d.createdAt;
         if (!debtDateRaw) return true;
-        const debtDate = new Date(debtDateRaw);
-        return debtDate >= fromDate && debtDate <= toDate;
+        const debtTime = new Date(debtDateRaw).getTime();
+        return debtTime >= fromTime && debtTime <= toTime;
       })
       .reduce((sum, d) => sum + (Number(d.remainingAmount) || 0), 0);
   }, [debts, allDebtTransactions, filters]);
@@ -390,98 +401,116 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
       {/* Hero Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
         {/* Net Worth */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
-            <Landmark className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#E8C5A8]/30 hover:shadow-[#8D6346]/20 transition-all duration-500">
+          <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
+            <Landmark className="w-12 h-12 md:w-24 md:h-24 text-[#E8C5A8]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-80">{t('overview.netWorth')}</p>
-            <p 
-              title={formattedNetWorth}
-              className={`font-black tabular-nums tracking-tight truncate ${getMetricFontSize(formattedNetWorth)} ${netWorth >= 0 ? 'text-[#E8C5A8]' : 'text-rose-400'}`}
-            >
-              {formattedNetWorth}
-            </p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/80">{t('analytics.overview.netWorth')}</p>
+            <div>
+              <p 
+                title={formattedNetWorth}
+                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate ${getMetricFontSize(formattedNetWorth)} ${netWorth >= 0 ? 'text-[#E8C5A8]' : 'text-[#FF3B30]'}`}
+              >
+                {formattedNetWorth}
+              </p>
+              <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.netWorthDesc')}</p>
+            </div>
           </div>
         </div>
 
         {/* Investments */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
-            <TrendingUp className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#34C759]/30 hover:shadow-[#34C759]/15 transition-all duration-500">
+          <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+            <TrendingUp className="w-12 h-12 md:w-24 md:h-24 text-[#34C759]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('sidebar.investments')}</p>
-            <p 
-              title={formattedInvestments}
-              className={`font-black tabular-nums tracking-tight truncate text-emerald-400 ${getMetricFontSize(formattedInvestments)}`}
-            >
-              {formattedInvestments}
-            </p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/80">{t('analytics.overview.investments')}</p>
+            <div>
+              <p 
+                title={formattedInvestments}
+                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#34C759] ${getMetricFontSize(formattedInvestments)}`}
+              >
+                {formattedInvestments}
+              </p>
+              <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.investmentsDesc')}</p>
+            </div>
           </div>
         </div>
 
         {/* Total Liabilities */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
-            <TrendingDown className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#FF3B30]/30 hover:shadow-[#FF3B30]/15 transition-all duration-500">
+          <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+            <TrendingDown className="w-12 h-12 md:w-24 md:h-24 text-[#FF3B30]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('overview.allLiabilities')}</p>
-            <p 
-              title={formattedLiabilities}
-              className={`font-black tabular-nums tracking-tight truncate text-rose-400 ${getMetricFontSize(formattedLiabilities)}`}
-            >
-              {formattedLiabilities}
-            </p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/80">{t('analytics.overview.allLiabilities')}</p>
+            <div>
+              <p 
+                title={formattedLiabilities}
+                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#FF3B30] ${getMetricFontSize(formattedLiabilities)}`}
+              >
+                {formattedLiabilities}
+              </p>
+              <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.liabilitiesDesc')}</p>
+            </div>
           </div>
         </div>
 
         {/* Fixed Income */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
-            <Wallet className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#34C759]/30 hover:shadow-[#34C759]/15 transition-all duration-500">
+          <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+            <Wallet className="w-12 h-12 md:w-24 md:h-24 text-[#34C759]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('overview.fixedIncome')}</p>
-            <p 
-              title={formattedFixedIncome}
-              className={`font-black tabular-nums tracking-tight truncate text-emerald-400 ${getMetricFontSize(formattedFixedIncome)}`}
-            >
-              {formattedFixedIncome}
-            </p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/80">{t('analytics.overview.fixedIncome')}</p>
+            <div>
+              <p 
+                title={formattedFixedIncome}
+                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#34C759] ${getMetricFontSize(formattedFixedIncome)}`}
+              >
+                {formattedFixedIncome}
+              </p>
+              <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.fixedIncomeDesc')}</p>
+            </div>
           </div>
         </div>
 
         {/* Cash Flow */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
-            <CreditCard className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+        <div className={`relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group transition-all duration-500 ${cashFlow >= 0 ? 'hover:border-[#34C759]/30 hover:shadow-[#34C759]/15' : 'hover:border-[#FF3B30]/30 hover:shadow-[#FF3B30]/15'}`}>
+          <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+            <CreditCard className={`w-12 h-12 md:w-24 md:h-24 ${cashFlow >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`} />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('overview.cashFlow', 'Cash Flow')}</p>
-            <p 
-              title={formattedCashFlow}
-              className={`font-black tabular-nums tracking-tight truncate ${cashFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'} ${getMetricFontSize(formattedCashFlow)}`}
-            >
-              {formattedCashFlow}
-            </p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/80">{t('analytics.overview.cashFlow')}</p>
+            <div>
+              <p 
+                title={formattedCashFlow}
+                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate ${cashFlow >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'} ${getMetricFontSize(formattedCashFlow)}`}
+              >
+                {formattedCashFlow}
+              </p>
+              <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.cashFlowDesc')}</p>
+            </div>
           </div>
         </div>
 
         {/* Savings */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500">
-          <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700 pointer-events-none">
-            <PiggyBank className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
+        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#E8C5A8]/30 hover:shadow-[#8D6346]/15 transition-all duration-500">
+          <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700 pointer-events-none">
+            <PiggyBank className="w-12 h-12 md:w-24 md:h-24 text-[#E8C5A8]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('analytics.savings')}</p>
-            <p 
-              title={formattedSavings}
-              className={`font-black tabular-nums tracking-tight truncate text-[#E8C5A8] ${getMetricFontSize(formattedSavings)}`}
-            >
-              {formattedSavings}
-            </p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/80">{t('analytics.overview.savings')}</p>
+            <div>
+              <p 
+                title={formattedSavings}
+                className={`font-black tabular-nums tracking-tight whitespace-nowrap truncate text-[#E8C5A8] ${getMetricFontSize(formattedSavings)}`}
+              >
+                {formattedSavings}
+              </p>
+              <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.savingsDesc')}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -490,36 +519,52 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
       <div className="xl:col-span-4 h-full">
       {/* Balances Section */}
       <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-5 lg:p-6">
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-2xl text-[#8D6346] shadow-[0_2px_8px_rgba(141,99,70,0.2)]">
             <Wallet className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-[var(--color-text-main)] tracking-wide">{t('analytics.accountBalances')}</h2>
+          <div>
+            <h2 className="text-xl font-bold text-[var(--color-text-main)] tracking-wide">{t('analytics.overview.accountBalances')}</h2>
+            <p className="text-xs text-white/50 mt-0.5">{t('analytics.overview.accountBalancesDesc')}</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-3 md:gap-4">
           {accounts?.length ? accounts.map((acc) => {
             const AccIcon = getIconComponent(acc.icon, 'Wallet');
             const accBalance = accountBalances[acc._id] || 0;
             return (
-              <div className="bg-black/10 shadow-inner p-3 md:p-5 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group flex items-center gap-2 md:gap-4" key={acc._id}>
+              <div 
+                className="bg-black/10 shadow-inner p-3 md:p-5 rounded-[1.5rem] border border-white/5 hover:border-white/15 transition-all duration-300 group flex items-center gap-2 md:gap-4 relative overflow-hidden" 
+                key={acc._id}
+              >
                 <div 
-                  className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-xl md:rounded-2xl shrink-0 transition-transform group-hover:scale-110 shadow-lg"
+                  className="absolute -top-6 -end-6 w-20 h-20 rounded-full blur-2xl opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none"
+                  style={{ backgroundColor: acc.color || '#8D6346' }}
+                />
+                <div 
+                  className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-xl md:rounded-2xl shrink-0 transition-transform group-hover:scale-110 shadow-lg relative z-10"
                   style={{ backgroundColor: `${acc.color}20`, color: acc.color }}
                 >
                   <AccIcon size={24} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white truncate">{acc.name}</p>
-                  <p className={`text-sm font-bold tracking-tight truncate mt-1 ${accBalance < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                <div className="flex-1 min-w-0 relative z-10">
+                  <p className="font-bold text-white truncate" title={acc.name}>{acc.name}</p>
+                  <p className={`text-sm font-bold tabular-nums tracking-tight truncate mt-1 ${accBalance < 0 ? 'text-[#FF3B30]' : 'text-[#34C759]'}`} title={money(accBalance)}>
                     {money(accBalance)}
                   </p>
                 </div>
               </div>
             );
           }) : (
-            <div className="col-span-full py-8 text-center text-[var(--color-text-muted)]">
-              {t('analytics.noData')}
+            <div className="col-span-full py-8 text-center flex flex-col items-center justify-center">
+              <p className="text-sm text-[var(--color-text-muted)] mb-3">{t('analytics.overview.noAccounts')}</p>
+              <Link 
+                to="/profile?view=accounts"
+                className="text-xs font-bold text-[#8D6346] hover:text-[#E8C5A8] underline underline-offset-4 transition-colors"
+              >
+                {t('settings.manageAccounts')}
+              </Link>
             </div>
           )}
         </div>
@@ -528,3 +573,5 @@ export default function OverviewTab({ money, data, accounts, investments, debts,
     </div>
   );
 }
+
+export default React.memo(OverviewTabComponent);

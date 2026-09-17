@@ -55,6 +55,7 @@ import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
 import SplashScreen from "../components/SplashScreen";
+import { AmbientBackground } from "../components/ui";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -327,11 +328,8 @@ const Settings = () => {
       transition={{ type: 'spring', damping: 20, stiffness: 300 }}
       className="p-4 pt-8 pb-24 space-y-6 relative min-h-[100dvh]"
     >
-      {/* Ambient Copper Background exactly like Dashboard */}
-      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115]">
-        <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
-        <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
-      </div>
+      {/* Ambient Copper Background */}
+      <AmbientBackground variant="dashboard" />
 
       <div className="relative z-10 grid grid-cols-[3rem_1fr_3rem] items-center mb-6 min-h-[3rem]">
         <div className="flex justify-start">
@@ -344,7 +342,7 @@ const Settings = () => {
           </motion.button>
         </div>
 
-        <h2 className={`font-bold text-center tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-sm flex items-center justify-center px-1 ${
+        <h2 className={`font-bold text-center tracking-tight text-white drop-shadow-sm flex items-center justify-center px-1 ${
           activeView === 'main' ? 'text-2xl sm:text-3xl' : 'text-base sm:text-lg leading-snug line-clamp-1'
         }`}>
           {activeView === 'main' && t('nav.settings')}

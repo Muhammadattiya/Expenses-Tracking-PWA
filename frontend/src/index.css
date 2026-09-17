@@ -133,6 +133,15 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+::selection {
+  background-color: rgba(141, 99, 70, 0.35);
+  color: #ffffff;
+}
+
+input, textarea {
+  caret-color: #8D6346;
+}
+
 /* Global RTL Bidi Fixes */
 html[dir="rtl"] p,
 html[dir="rtl"] span,

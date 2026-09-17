@@ -23,6 +23,7 @@ import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
 import QuickAddModal from "../components/modals/QuickAddModal";
 import CustomSelect from "../components/ui/CustomSelect";
+import { AmbientBackground, MetricPill } from "../components/ui";
 import { useNotification } from "../contexts/NotificationContext";
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -502,11 +503,8 @@ const Dashboard = () => {
 
   return (
     <div className="animate-fade-in w-full relative min-h-screen pb-32 overflow-x-hidden">
-      {/* Figma Background Effects */}
-      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115]">
-        <div className="absolute top-[340px] right-[-50px] w-[233px] h-[233px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
-        <div className="absolute top-[28px] left-[-74px] w-[295px] h-[295px] bg-[#8D6346] rounded-full blur-[120px] opacity-60" />
-      </div>
+      {/* Ambient Copper Background */}
+      <AmbientBackground variant="dashboard" />
 
       <div className="px-4 pt-6 pb-20 w-full max-w-7xl mx-auto space-y-6 lg:space-y-8">
         {/* Visa-Style Swipeable Card */}
@@ -565,18 +563,16 @@ const Dashboard = () => {
 
                   {/* Gain / Loss Pills */}
                   <div className="flex gap-3 w-full mt-3">
-                    {/* Gain */}
-                    <div className="flex-1 bg-white/5 rounded-[20px] py-2 px-3 flex flex-col items-center justify-center gap-0.5"
-                         style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.1)' }}>
-                      <p className="text-green-400 text-[11px] font-semibold tracking-wider uppercase">{t('dashboard.gain') || 'Gain'} <span className="opacity-50 lowercase tracking-normal">({userPrefs.trackingPeriod === 'weekly' ? (t('dashboard.thisWk') || 'This Wk') : (t('dashboard.thisMo') || 'This Mo')})</span></p>
-                      <p className="text-white font-medium text-sm tracking-wide tabular-nums">{totals.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}</p>
-                    </div>
-                    {/* Loss */}
-                    <div className="flex-1 bg-white/5 rounded-[20px] py-2 px-3 flex flex-col items-center justify-center gap-0.5"
-                         style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.1)' }}>
-                      <p className="text-red-400 text-[11px] font-semibold tracking-wider uppercase">{t('dashboard.loss') || 'Loss'} <span className="opacity-50 lowercase tracking-normal">({userPrefs.trackingPeriod === 'weekly' ? (t('dashboard.thisWk') || 'This Wk') : (t('dashboard.thisMo') || 'This Mo')})</span></p>
-                      <p className="text-white font-medium text-sm tracking-wide tabular-nums">{totals.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}</p>
-                    </div>
+                    <MetricPill
+                      type="gain"
+                      label={`${t('dashboard.gain') || 'Gain'} (${userPrefs.trackingPeriod === 'weekly' ? (t('dashboard.thisWk') || 'This Wk') : (t('dashboard.thisMo') || 'This Mo')})`}
+                      value={`${totals.income.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${t('nav.currency')}`}
+                    />
+                    <MetricPill
+                      type="loss"
+                      label={`${t('dashboard.loss') || 'Loss'} (${userPrefs.trackingPeriod === 'weekly' ? (t('dashboard.thisWk') || 'This Wk') : (t('dashboard.thisMo') || 'This Mo')})`}
+                      value={`${totals.expense.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${t('nav.currency')}`}
+                    />
                   </div>
                 </div>
              )}

@@ -5,109 +5,103 @@ const require = createRequire(import.meta.url);
 const playwrightPath = path.join(process.env.APPDATA, 'npm/node_modules/@playwright/cli/node_modules/playwright-core');
 const { chromium } = require(playwrightPath);
 
-async function waitForData(p) {
-  await p.waitForSelector('[role="tablist"]', { timeout: 15000 });
-  await p.waitForFunction(() => {
-    return !document.querySelector('.animate-pulse') && (document.querySelectorAll('section').length >= 2);
-  }, { timeout: 15000 }).catch(() => {});
-  await p.waitForTimeout(1000);
+const ARTIFACTS_DIR = 'C:/Users/DELL/.gemini/antigravity-ide/brain/82a549c6-a5b7-4de4-aa2b-5eb7d08cfeac';
+
+async function waitForProfile(page) {
+  await page.waitForSelector('#profile-name', { state: 'visible', timeout: 15000 });
+  await page.waitForFunction(() => !document.querySelector('.animate-spin') || document.querySelector('#profile-name'), { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(800);
 }
 
-async function run() {
+async function verifyPolish() {
   const browser = await chromium.launch({
     channel: 'chrome',
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
-
   const context = await browser.newContext({
-    viewport: { width: 1280, height: 850 }
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2
   });
+
   const page = await context.newPage();
 
-  console.log('1. Logging in...');
+  console.log('1. Navigating to Finova Login...');
   await page.goto('http://localhost:5173/login', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1000);
+
   await page.fill('input[type="email"]', 'gemini@gmail.com');
   await page.fill('input[type="password"]', '123456789');
   await page.click('button[type="submit"]');
-  await page.waitForTimeout(2500);
 
-  // Set English
+  await page.waitForURL('http://localhost:5173/', { timeout: 10000 });
+  console.log('2. Logged in. Navigating to Profile page...');
+  await page.goto('http://localhost:5173/profile', { waitUntil: 'networkidle' });
+  await waitForProfile(page);
+
+  // Capture View State (English)
+  const polishViewEnPath = path.join(ARTIFACTS_DIR, 'polish_profile_en_view.png');
+  await page.screenshot({ path: polishViewEnPath });
+  console.log('Captured polish_profile_en_view.png');
+
+  // Click Edit button to enter edit mode
+  console.log('4. Entering edit mode...');
+  await page.click('button[aria-label="Edit Profile"], button[aria-label="تعديل الملف الشخصي"]');
+  await page.waitForTimeout(400);
+
+  await page.focus('#profile-name');
+  const polishEditEnPath = path.join(ARTIFACTS_DIR, 'polish_profile_en_edit.png');
+  await page.screenshot({ path: polishEditEnPath });
+  console.log('Captured polish_profile_en_edit.png');
+
+  // Validation error status pill with AlertCircle
+  console.log('5. Triggering validation error for status pill...');
+  await page.fill('#profile-name', 'A');
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(500);
+
+  const polishStatusErrorPath = path.join(ARTIFACTS_DIR, 'polish_status_error_pill.png');
+  await page.screenshot({ path: polishStatusErrorPath });
+  console.log('Captured polish_status_error_pill.png');
+
+  // Successful save status pill with CheckCircle2
+  console.log('6. Saving valid name...');
+  await page.fill('#profile-name', 'Alex Vance');
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(800);
+
+  const polishStatusSuccessPath = path.join(ARTIFACTS_DIR, 'polish_status_success_pill.png');
+  await page.screenshot({ path: polishStatusSuccessPath });
+  console.log('Captured polish_status_success_pill.png');
+
+  // Switch to Arabic RTL with finova-lang
+  console.log('7. Switching to Arabic RTL (finova-lang)...');
+  await page.evaluate(() => {
+    localStorage.setItem('finova-lang', 'ar');
+  });
+  await page.goto('http://localhost:5173/profile', { waitUntil: 'networkidle' });
+  await waitForProfile(page);
+
+  const polishViewArPath = path.join(ARTIFACTS_DIR, 'polish_profile_ar_view.png');
+  await page.screenshot({ path: polishViewArPath });
+  console.log('Captured polish_profile_ar_view.png');
+
+  // Enter edit mode in Arabic
+  await page.click('button[aria-label="تعديل الملف الشخصي"], button[aria-label="Edit Profile"]');
+  await page.waitForTimeout(400);
+  const polishEditArPath = path.join(ARTIFACTS_DIR, 'polish_profile_ar_edit.png');
+  await page.screenshot({ path: polishEditArPath });
+  console.log('Captured polish_profile_ar_edit.png');
+
+  // Reset back to English
   await page.evaluate(() => {
     localStorage.setItem('finova-lang', 'en');
   });
 
-  console.log('2. Navigating to /receivables (English)...');
-  await page.goto('http://localhost:5173/receivables', { waitUntil: 'networkidle' });
-  await waitForData(page);
-
-  // Focus into an input in Group Expenses to verify copper focus ring
-  const groupInput = await page.$('input[placeholder="Amount to collect"]');
-  if (groupInput) {
-    console.log('Focusing group expense input...');
-    await groupInput.focus();
-    await page.waitForTimeout(400);
-  }
-  await page.screenshot({ path: 'scratch/polish_group_focus.png' });
-  console.log('Captured scratch/polish_group_focus.png');
-
-  // Switch to Personal Debts
-  console.log('3. Navigating to Personal Debts...');
-  await page.click('button[role="tab"]#tab-personal, button:has-text("Personal Debts")');
-  await waitForData(page);
-
-  // Open repayment form
-  const payBtn = await page.$('button:has-text("Pay Debt"), button:has-text("Collect")');
-  if (payBtn) {
-    await payBtn.click();
-    await page.waitForTimeout(500);
-    const amountInput = await page.$('input[placeholder="Amount"]');
-    if (amountInput) {
-      await amountInput.focus();
-      await page.waitForTimeout(400);
-    }
-  }
-  await page.screenshot({ path: 'scratch/polish_personal_focus.png' });
-  console.log('Captured scratch/polish_personal_focus.png');
-
-  // Check touch target heights of interactive controls
-  const minTouchTargetsValid = await page.evaluate(() => {
-    const interactive = Array.from(document.querySelectorAll('button, input, [role="tab"]'));
-    const issues = [];
-    for (const el of interactive) {
-      const rect = el.getBoundingClientRect();
-      // Only check visible elements that are primary actions/tabs
-      if (rect.width > 0 && rect.height > 0) {
-        if (el.getAttribute('role') === 'tab' && rect.height < 44) {
-          issues.push({ role: 'tab', height: rect.height, text: el.innerText });
-        }
-      }
-    }
-    return { issueCount: issues.length, issues };
-  });
-  console.log('Touch target assessment on tabs:', minTouchTargetsValid);
-
-  // Test Arabic RTL
-  console.log('4. Switching to Arabic (RTL)...');
-  await page.evaluate(() => {
-    localStorage.setItem('finova-lang', 'ar');
-  });
-  await page.goto('http://localhost:5173/receivables', { waitUntil: 'networkidle' });
-  await waitForData(page);
-  await page.screenshot({ path: 'scratch/polish_arabic_group.png' });
-  console.log('Captured scratch/polish_arabic_group.png');
-
-  await page.click('button[role="tab"]#tab-personal, button:has-text("ديون شخصية")');
-  await waitForData(page);
-  await page.screenshot({ path: 'scratch/polish_arabic_personal.png' });
-  console.log('Captured scratch/polish_arabic_personal.png');
-
   await browser.close();
-  console.log('Verification finished successfully!');
+  console.log('Polish verification complete!');
 }
 
-run().catch(err => {
-  console.error('Test error:', err);
+verifyPolish().catch(err => {
+  console.error('Verification failed:', err);
   process.exit(1);
 });

@@ -4,87 +4,112 @@ import { TrendingDown, Calendar, AlertCircle, ShoppingBag, Zap, PieChart, Scale 
 import { useLanguage } from '../../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 
-function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper', delay = 0 }) {
+const InsightCard = React.memo(function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper', delay = 0 }) {
   const colorMap = {
-    'brand-blue': 'text-brand-blue',
-    'brand-purple': 'text-purple-400',
-    'brand-green': 'text-emerald-400',
-    'brand-red': 'text-rose-400',
-    'brand-amber': 'text-amber-400',
+    'brand-blue': 'text-[#8D6346]',
+    'brand-purple': 'text-[#E8C5A8]',
+    'brand-green': 'text-[#34C759]',
+    'brand-red': 'text-[#FF3B30]',
+    'brand-amber': 'text-[#F59E0B]',
     'copper': 'text-[#E8C5A8]',
-    'emerald': 'text-emerald-400',
-    'rose': 'text-rose-400',
+    'emerald': 'text-[#34C759]',
+    'rose': 'text-[#FF3B30]',
   };
 
   const textColor = colorMap[color] || (color.startsWith('text-') ? color : 'text-[#E8C5A8]');
 
   return (
-    <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:shadow-[#8D6346]/20 transition-all duration-500 flex flex-col justify-between min-h-[140px]">
-      <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+    <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#8D6346]/30 hover:shadow-[0_8px_32px_rgba(141,99,70,0.15)] transition-all duration-500 flex flex-col justify-between min-h-[140px]">
+      <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
         <Icon className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
       </div>
       <div className="relative z-10 flex flex-col h-full justify-between">
-        <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{title}</p>
+        <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/70">{title}</p>
         <div>
-          <p className={`text-xl md:text-3xl font-black tabular-nums tracking-tight ${textColor}`}>
+          <p className={`text-xl md:text-3xl font-black tabular-nums tracking-tight whitespace-nowrap ${textColor}`}>
             {value}
           </p>
           {(subtitle || highlight) && (
             <div className="flex flex-wrap items-center gap-2 mt-2">
-               {highlight && <span className="text-[10px] md:text-xs font-bold px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[var(--color-text-muted)] uppercase tracking-wider">{highlight}</span>}
-               {subtitle && <span className="text-[10px] md:text-xs text-[var(--color-text-muted)] leading-tight">{subtitle}</span>}
+               {highlight && <span className="text-[11px] md:text-xs font-semibold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/80 ltr:uppercase ltr:tracking-wider rtl:tracking-normal">{highlight}</span>}
+               {subtitle && <span className="text-xs text-white/60 leading-tight">{subtitle}</span>}
             </div>
           )}
         </div>
       </div>
     </div>
   );
-}
+});
 
-export default function SpendingTab({ data, categories, money, allTransactions, filters }) {
+function SpendingTabComponent({ data, categories, money, allTransactions, filters }) {
   const { t, lang } = useLanguage();
   const [activeBarIndex, setActiveBarIndex] = useState(null);
 
+  const categoryMap = useMemo(() => {
+    const map = new Map();
+    (categories || []).forEach(c => map.set(String(c._id), c));
+    return map;
+  }, [categories]);
+
+  const { startMs, endMs, filterAcc, filterCat } = useMemo(() => {
+    return {
+      startMs: filters?.from ? new Date(filters.from).getTime() : -Infinity,
+      endMs: filters?.to ? new Date(filters.to).getTime() : Infinity,
+      filterAcc: filters?.account ? String(filters.account) : null,
+      filterCat: filters?.category ? String(filters.category) : null,
+    };
+  }, [filters?.from, filters?.to, filters?.account, filters?.category]);
+
   const filteredTransactions = useMemo(() => {
-    if (!allTransactions) return [];
-    let txs = allTransactions.filter(tx => tx.type === 'expense' && (!tx.status || tx.status === 'completed'));
+    if (!allTransactions || !allTransactions.length) return [];
     
-    if (filters?.from && filters?.to) {
-       const start = new Date(filters.from);
-       const end = new Date(filters.to);
-       txs = txs.filter(tx => new Date(tx.date) >= start && new Date(tx.date) <= end);
-    }
-    if (filters?.account) {
-       txs = txs.filter(tx => (tx.account?._id || tx.account) === filters.account || (tx.from_account?._id || tx.from_account) === filters.account);
-    }
-    if (filters?.category) {
-       txs = txs.filter(tx => (tx.category?._id || tx.category) === filters.category);
-    }
-    return txs;
-  }, [allTransactions, filters]);
+    return allTransactions.filter(tx => {
+      if (tx.type !== 'expense') return false;
+      if (tx.status && tx.status !== 'completed') return false;
+      
+      const txTime = new Date(tx.date).getTime();
+      if (txTime < startMs || txTime > endMs) return false;
+
+      if (filterAcc) {
+        const accId = String(tx.account?._id || tx.account || '');
+        const fromAccId = String(tx.from_account?._id || tx.from_account || '');
+        if (accId !== filterAcc && fromAccId !== filterAcc) return false;
+      }
+
+      if (filterCat) {
+        const catId = String(tx.category?._id || tx.category || '');
+        if (catId !== filterCat) return false;
+      }
+
+      return true;
+    });
+  }, [allTransactions, startMs, endMs, filterAcc, filterCat]);
 
   const incomeVsExpense = useMemo(() => {
-    if (!allTransactions) return { income: 0, expense: 0 };
-    let txs = allTransactions.filter(tx => !tx.status || tx.status === 'completed');
-    
-    if (filters?.from && filters?.to) {
-       const start = new Date(filters.from);
-       const end = new Date(filters.to);
-       txs = txs.filter(tx => new Date(tx.date) >= start && new Date(tx.date) <= end);
-    }
-    if (filters?.account) {
-       txs = txs.filter(tx => (tx.account?._id || tx.account) === filters.account || (tx.from_account?._id || tx.from_account) === filters.account);
-    }
+    if (!allTransactions || !allTransactions.length) return { income: 0, expense: 0 };
     
     let income = 0;
     let expense = 0;
-    txs.forEach(tx => {
+
+    for (let i = 0; i < allTransactions.length; i++) {
+      const tx = allTransactions[i];
+      if (tx.status && tx.status !== 'completed') continue;
+
+      const txTime = new Date(tx.date).getTime();
+      if (txTime < startMs || txTime > endMs) continue;
+
+      if (filterAcc) {
+        const accId = String(tx.account?._id || tx.account || '');
+        const fromAccId = String(tx.from_account?._id || tx.from_account || '');
+        if (accId !== filterAcc && fromAccId !== filterAcc) continue;
+      }
+
       if (tx.type === 'income') income += tx.amount;
-      if (tx.type === 'expense') expense += tx.amount;
-    });
+      else if (tx.type === 'expense') expense += tx.amount;
+    }
     
     return { income, expense };
-  }, [allTransactions, filters]);
+  }, [allTransactions, startMs, endMs, filterAcc]);
 
   const {
     totalExpense,
@@ -109,17 +134,22 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
     const daily = days > 0 ? total / days : 0;
     
     const biggest = filteredTransactions.reduce((max, tx) => tx.amount > max.amount ? tx : max, { amount: 0, title: '' });
-    const biggestCat = categories.find(c => c._id === (typeof biggest.category === 'object' ? biggest.category?._id : biggest.category));
+    const biggestCatId = String(typeof biggest.category === 'object' ? (biggest.category?._id || '') : (biggest.category || ''));
+    const biggestCat = categoryMap.get(biggestCatId);
     const biggestCatName = biggestCat ? (lang === 'ar' ? (biggestCat.nameAr || biggestCat.name) : (biggestCat.nameEn || biggestCat.name)) : '';
     const biggestTitle = biggest.amount > 0 ? (biggest.title ? `${biggest.title} (${biggestCatName})` : biggestCatName) : t('analytics.insights.none');
     
     const catCounts = {};
     const daysArr = [0, 0, 0, 0, 0, 0, 0]; // Sun to Sat
+    const catDataMap = {};
     
     filteredTransactions.forEach(tx => {
-       const catId = typeof tx.category === 'object' ? tx.category?._id : tx.category;
+       const catId = String(typeof tx.category === 'object' ? (tx.category?._id || '') : (tx.category || ''));
        if (catId) {
          catCounts[catId] = (catCounts[catId] || 0) + 1;
+         if (!catDataMap[catId]) catDataMap[catId] = { amount: 0, count: 0 };
+         catDataMap[catId].amount += tx.amount;
+         catDataMap[catId].count += 1;
        }
        const day = new Date(tx.date).getDay();
        daysArr[day] += tx.amount;
@@ -130,7 +160,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
     Object.entries(catCounts).forEach(([id, count]) => {
        if (count > maxFreq) { maxFreq = count; mostFreqCatId = id; }
     });
-    const mostFreqCatObj = categories.find(c => c._id === mostFreqCatId) || { nameAr: '', nameEn: '', name: '' };
+    const mostFreqCatObj = categoryMap.get(String(mostFreqCatId)) || { nameAr: '', nameEn: '', name: '' };
     const mostFreqName = lang === 'ar' ? (mostFreqCatObj.nameAr || mostFreqCatObj.name) : (mostFreqCatObj.nameEn || mostFreqCatObj.name);
 
     const weekendSpend = daysArr[5] + daysArr[6]; // Friday & Saturday
@@ -146,20 +176,8 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
        isWeekend: idx === 5 || idx === 6
     }));
 
-    // Categories Breakdown
-    const catDataMap = {};
-
-    filteredTransactions.forEach(tx => {
-       const catId = typeof tx.category === 'object' ? tx.category?._id : tx.category;
-       if (catId) {
-         if (!catDataMap[catId]) catDataMap[catId] = { amount: 0, count: 0 };
-         catDataMap[catId].amount += tx.amount;
-         catDataMap[catId].count += 1;
-       }
-    });
-
     const topCats = Object.entries(catDataMap).map(([id, catData]) => {
-       const catObj = categories.find(c => c._id === id);
+       const catObj = categoryMap.get(id);
        return {
           id,
           name: catObj ? (lang === 'ar' ? (catObj.nameAr || catObj.name) : (catObj.nameEn || catObj.name)) : t('analytics.insights.unknownCategory'),
@@ -193,8 +211,8 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
       
       {/* Background Effect */}
       <div className="absolute inset-0 z-[-1] pointer-events-none rounded-[3rem] overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-red/5 rounded-full blur-[120px] mix-blend-screen opacity-50" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-brand-purple/5 rounded-full blur-[150px] mix-blend-screen opacity-50" />
+        <div className="absolute top-0 end-0 w-[500px] h-[500px] bg-[#FF3B30]/5 rounded-full blur-[120px] mix-blend-screen opacity-50" />
+        <div className="absolute bottom-0 start-0 w-[600px] h-[600px] bg-[#8D6346]/5 rounded-full blur-[150px] mix-blend-screen opacity-50" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40" />
       </div>
 
@@ -248,7 +266,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
           className="lg:col-span-1 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#8D6346]" /> {t('analytics.insights.whenYouSpend')}</h2>
-           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.basedOnDays')}</p>
+           <p className="text-xs text-white/60 mb-6 leading-relaxed">{t('analytics.insights.basedOnDays')}</p>
            
            <div className="mb-4 h-[72px]">
              {activeBarIndex !== null ? (
@@ -258,10 +276,10 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                  className="flex flex-col"
                >
                  <div className="flex items-end gap-2">
-                   <span className="text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight">{money(dayOfWeekData[activeBarIndex].amount)}</span>
-                   <span className="text-sm text-white/70 font-medium mb-1">{dayOfWeekData[activeBarIndex].name}</span>
+                   <span className="text-2xl sm:text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight whitespace-nowrap">{money(dayOfWeekData[activeBarIndex].amount)}</span>
+                   <span className="text-sm text-white/80 font-medium mb-1">{dayOfWeekData[activeBarIndex].name}</span>
                  </div>
-                 <p className="text-xs text-white/50 mt-1">{t('analytics.insights.spentOnThisDay') || 'Total spent on this day'}</p>
+                  <p className="text-xs text-white/60 mt-1">{t('analytics.insights.spentOnThisDay')}</p>
                </motion.div>
              ) : (
                <motion.div 
@@ -270,17 +288,17 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                  className="flex flex-col"
                >
                  <div className="flex items-end gap-2">
-                   <span className="text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight">{weekendPercentage}%</span>
-                   <span className="text-sm text-white/70 font-medium mb-1">{t('analytics.insights.onWeekends')}</span>
+                   <span className="text-2xl sm:text-3xl font-black text-[#E8C5A8] tabular-nums tracking-tight whitespace-nowrap">{weekendPercentage}%</span>
+                   <span className="text-sm text-white/80 font-medium mb-1">{t('analytics.insights.onWeekends')}</span>
                  </div>
-                 <p className="text-xs text-white/50 mt-1">{weekendPercentage > 50 ? t('analytics.insights.heavyWeekend') : t('analytics.insights.heavyWeekday')}</p>
+                 <p className="text-xs text-white/60 mt-1">{weekendPercentage > 50 ? t('analytics.insights.heavyWeekend') : t('analytics.insights.heavyWeekday')}</p>
                </motion.div>
              )}
            </div>
 
            <div className="h-48 w-full mt-4">
              <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={dayOfWeekData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+               <BarChart data={dayOfWeekData} margin={lang === 'ar' ? { top: 10, right: -20, left: 0, bottom: 0 } : { top: 10, right: 0, left: -20, bottom: 0 }}>
                  <defs>
                    <linearGradient id="weekendCopper" x1="0" y1="0" x2="0" y2="1">
                      <stop offset="0%" stopColor="#E8C5A8" stopOpacity={0.9} />
@@ -326,36 +344,36 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
           className="lg:col-span-2 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><PieChart className="w-5 h-5 text-[#8D6346]" /> {t('analytics.insights.whereMoneyGoes')}</h2>
-           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.categoryBreakdownDesc')}</p>
+           <p className="text-xs text-white/60 mb-6 leading-relaxed">{t('analytics.insights.categoryBreakdownDesc')}</p>
            
            <div className="mb-6 p-4 rounded-2xl bg-[#8D6346]/10 border border-[#8D6346]/20 flex flex-col sm:flex-row items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-[#8D6346]/20 flex items-center justify-center flex-shrink-0">
                  <AlertCircle className="w-6 h-6 text-[#E8C5A8]" />
               </div>
               <div>
-                 <p className="text-sm text-white/80 leading-relaxed">
+                 <p className="text-sm text-white/90 leading-relaxed">
                    {t('analytics.insights.top3Rule')} <strong className="text-[#E8C5A8] font-black text-lg mx-1">{top3Percentage}%</strong> {t('analytics.insights.ofTotalSpend')}
                  </p>
               </div>
            </div>
 
-           <div className="space-y-4 max-h-[300px] overflow-y-auto hide-scrollbar pr-2">
+           <div className="space-y-4 max-h-[300px] overflow-y-auto hide-scrollbar pe-2">
              {topCategories.map((cat, idx) => {
                const percentage = totalExpense > 0 ? ((cat.amount / totalExpense) * 100).toFixed(1) : 0;
                return (
                  <div key={cat.id} className="group relative bg-black/10 hover:bg-white/5 p-4 rounded-2xl border border-white/5 transition-colors">
                    <div className="flex justify-between items-center mb-2">
-                     <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white bg-black/30 border border-white/10">{idx + 1}</span>
-                        <div>
-                          <span className="font-bold text-white text-sm">{cat.name}</span>
-                          <p className="text-xs text-white/40 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
-                        </div>
-                     </div>
-                     <div className="text-right">
-                       <span className="block font-black tabular-nums text-white" style={{ color: cat.color || '#fff' }}>{money(cat.amount)}</span>
-                       <span className="text-[11px] text-white/50 font-bold tracking-widest">{percentage}%</span>
-                     </div>
+                      <div className="flex items-center gap-3">
+                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white/90 bg-black/30 border border-white/10">{idx + 1}</span>
+                         <div>
+                           <span className="font-bold text-white text-sm">{cat.name}</span>
+                           <p className="text-xs text-white/50 mt-0.5">{cat.count} {t('analytics.insights.transactionsCount')} • {t('analytics.insights.avg')}: {money(cat.avg)}</p>
+                         </div>
+                      </div>
+                      <div className="text-end">
+                        <span className="block font-black tabular-nums whitespace-nowrap text-white text-sm md:text-base" style={{ color: cat.color || '#fff' }}>{money(cat.amount)}</span>
+                        <span className="text-xs text-white/60 font-bold tabular-nums tracking-tight">{percentage}%</span>
+                      </div>
                    </div>
                    <div className="w-full bg-black/30 shadow-inner rounded-full h-1.5 overflow-hidden border border-white/5">
                      <div 
@@ -373,7 +391,7 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                )
              })}
              {topCategories.length === 0 && (
-                <div className="text-center py-10 text-white/40 font-medium tracking-wide">{t('analytics.noData')}</div>
+                <div className="text-center py-10 text-white/50 text-sm font-medium tracking-wide max-w-sm mx-auto">{t('analytics.spending.emptyDesc')}</div>
              )}
            </div>
 
@@ -384,8 +402,8 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', bounce: 0, duration: 0.6, delay: 0.7 }}
           className="lg:col-span-3 relative overflow-hidden bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6"
         >
-           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Scale className="w-5 h-5 text-brand-green" /> {t('analytics.insights.cashflow')}</h2>
-           <p className="text-xs text-white/50 mb-6">{t('analytics.insights.cashflowDesc')}</p>
+           <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2"><Scale className="w-5 h-5 text-[#34C759]" /> {t('analytics.insights.cashflow')}</h2>
+           <p className="text-xs text-white/60 mb-6 leading-relaxed">{t('analytics.insights.cashflowDesc')}</p>
 
            <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
               {(() => {
@@ -396,21 +414,21 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
                    <>
                     <div>
                       <div className="flex justify-between items-end mb-2">
-                        <span className="font-bold text-emerald-400 tracking-wide uppercase text-sm">{t('analytics.insights.income')}</span>
-                        <span className="font-black text-2xl tabular-nums text-white drop-shadow-sm">{money(incomeVsExpense.income)}</span>
+                        <span className="font-bold text-[#34C759] ltr:tracking-wider ltr:uppercase rtl:tracking-normal text-xs sm:text-sm">{t('analytics.insights.income')}</span>
+                        <span className="font-black text-xl sm:text-2xl tabular-nums text-white drop-shadow-sm whitespace-nowrap">{money(incomeVsExpense.income)}</span>
                       </div>
                       <div className="w-full bg-black/30 shadow-inner rounded-full h-4 overflow-hidden border border-white/5">
-                         <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-1000 ease-out" style={{ width: `${incPct}%`, boxShadow: '0 0 15px rgba(52,211,153,0.4)' }} />
+                         <div className="h-full bg-gradient-to-r from-[#34C759]/70 to-[#34C759] rounded-full transition-all duration-1000 ease-out" style={{ width: `${incPct}%`, boxShadow: '0 0 15px rgba(52, 199, 89, 0.4)' }} />
                       </div>
                     </div>
                     
                     <div>
                       <div className="flex justify-between items-end mb-2">
-                        <span className="font-bold text-rose-400 tracking-wide uppercase text-sm">{t('analytics.insights.expense')}</span>
-                        <span className="font-black text-2xl tabular-nums text-white drop-shadow-sm">{money(incomeVsExpense.expense)}</span>
+                        <span className="font-bold text-[#FF3B30] ltr:tracking-wider ltr:uppercase rtl:tracking-normal text-xs sm:text-sm">{t('analytics.insights.expense')}</span>
+                        <span className="font-black text-xl sm:text-2xl tabular-nums text-white drop-shadow-sm whitespace-nowrap">{money(incomeVsExpense.expense)}</span>
                       </div>
                       <div className="w-full bg-black/30 shadow-inner rounded-full h-4 overflow-hidden border border-white/5">
-                         <div className="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full transition-all duration-1000 ease-out" style={{ width: `${expPct}%`, boxShadow: '0 0 15px rgba(251,113,133,0.4)' }} />
+                         <div className="h-full bg-gradient-to-r from-[#FF3B30]/70 to-[#FF3B30] rounded-full transition-all duration-1000 ease-out" style={{ width: `${expPct}%`, boxShadow: '0 0 15px rgba(255, 59, 48, 0.4)' }} />
                       </div>
                     </div>
                    </>
@@ -418,16 +436,16 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
               })()}
 
               <div className="mt-2 p-5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-center">
-                 <p className="text-sm text-white/80 leading-relaxed">
+                 <p className="text-sm text-white/90 leading-relaxed">
                    {incomeVsExpense.income >= incomeVsExpense.expense ? (
                       <>
-                        <span className="text-emerald-400 font-bold text-base block mb-1">{t('analytics.insights.saved')} {money(incomeVsExpense.income - incomeVsExpense.expense)}</span>
-                        {incomeVsExpense.income > 0 && <span className="text-white/60 text-xs uppercase tracking-wider">({Math.round(((incomeVsExpense.income - incomeVsExpense.expense)/incomeVsExpense.income)*100)}%) {t('analytics.insights.duringPeriod')}</span>}
+                        <span className="text-[#34C759] font-bold text-base block mb-1 whitespace-nowrap">{t('analytics.insights.saved')} {money(incomeVsExpense.income - incomeVsExpense.expense)}</span>
+                        {incomeVsExpense.income > 0 && <span className="text-white/60 text-xs ltr:uppercase ltr:tracking-wider rtl:tracking-normal">({Math.round(((incomeVsExpense.income - incomeVsExpense.expense)/incomeVsExpense.income)*100)}%) {t('analytics.insights.duringPeriod')}</span>}
                       </>
                    ) : (
                       <>
-                        <span className="text-rose-400 font-bold text-base block mb-1">{t('analytics.insights.overspent')} {money(incomeVsExpense.expense - incomeVsExpense.income)}</span>
-                        <span className="text-white/60 text-xs uppercase tracking-wider">{t('analytics.insights.duringPeriod')}</span>
+                        <span className="text-[#FF3B30] font-bold text-base block mb-1 whitespace-nowrap">{t('analytics.insights.overspent')} {money(incomeVsExpense.expense - incomeVsExpense.income)}</span>
+                        <span className="text-white/60 text-xs ltr:uppercase ltr:tracking-wider rtl:tracking-normal">{t('analytics.insights.duringPeriod')}</span>
                       </>
                    )}
                  </p>
@@ -440,3 +458,5 @@ export default function SpendingTab({ data, categories, money, allTransactions, 
     </div>
   );
 }
+
+export default React.memo(SpendingTabComponent);

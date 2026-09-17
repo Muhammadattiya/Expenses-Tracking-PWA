@@ -1,28 +1,46 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { TrendingDown, Users, ArrowUpRight, ArrowDownRight, CalendarClock, CheckCircle } from 'lucide-react';
+import { TrendingDown, Users, ArrowUpRight, ArrowDownRight, CalendarClock, CheckCircle, Plus } from 'lucide-react';
 
-export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTransactions }) {
-  const { t } = useLanguage();
+function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransactions }) {
+  const { t, lang } = useLanguage();
+
+  const loanTxMap = React.useMemo(() => {
+    const map = new Map();
+    (allDebtTransactions || []).forEach(dt => {
+      if (dt.type === 'loan') {
+        const id = dt.debtId?._id ? String(dt.debtId._id) : String(dt.debtId || '');
+        if (id && !map.has(id)) {
+          map.set(id, dt);
+        }
+      }
+    });
+    return map;
+  }, [allDebtTransactions]);
+
+  const { isAllRange, fromTime, toTime } = React.useMemo(() => {
+    const isAll = !filters?.from || !filters?.to || filters?.filterType === 'all';
+    return {
+      isAllRange: isAll,
+      fromTime: !isAll ? new Date(filters.from).getTime() : -Infinity,
+      toTime: !isAll ? new Date(filters.to).getTime() : Infinity
+    };
+  }, [filters?.from, filters?.to, filters?.filterType]);
 
   const totalDebts = React.useMemo(() => {
     return (debts || [])
       .filter(d => d.type === 'i_owe')
       .filter(d => {
-        if (!filters?.from || !filters?.to || filters?.filterType === 'all') return true;
-        const fromDate = new Date(filters.from);
-        const toDate = new Date(filters.to);
-        const loanTx = (allDebtTransactions || []).find(dt => 
-          (dt.debtId?._id ? String(dt.debtId._id) : String(dt.debtId)) === String(d._id) && 
-          dt.type === 'loan'
-        );
+        if (isAllRange) return true;
+        const loanTx = loanTxMap.get(String(d._id));
         const debtDateRaw = loanTx?.date || d.dueDate || d.createdAt;
         if (!debtDateRaw) return true;
-        const debtDate = new Date(debtDateRaw);
-        return debtDate >= fromDate && debtDate <= toDate;
+        const debtTime = new Date(debtDateRaw).getTime();
+        return debtTime >= fromTime && debtTime <= toTime;
       })
       .reduce((sum, d) => sum + (d.remainingAmount || 0), 0);
-  }, [debts, allDebtTransactions, filters]);
+  }, [debts, loanTxMap, isAllRange, fromTime, toTime]);
 
   const totalBorrowed = totalDebts; // Since it's only i_owe now
 
@@ -140,19 +158,14 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
     return (debts || [])
       .filter(d => d.type === 'i_owe' && (d.remainingAmount > 0 || d.status === 'active'))
       .filter(d => {
-        if (!filters?.from || !filters?.to || filters?.filterType === 'all') return true;
-        const fromDate = new Date(filters.from);
-        const toDate = new Date(filters.to);
-        const loanTx = (allDebtTransactions || []).find(dt => 
-          (dt.debtId?._id ? String(dt.debtId._id) : String(dt.debtId)) === String(d._id) && 
-          dt.type === 'loan'
-        );
+        if (isAllRange) return true;
+        const loanTx = loanTxMap.get(String(d._id));
         const debtDateRaw = loanTx?.date || d.dueDate || d.createdAt;
         if (!debtDateRaw) return true;
-        const debtDate = new Date(debtDateRaw);
-        return debtDate >= fromDate && debtDate <= toDate;
+        const debtTime = new Date(debtDateRaw).getTime();
+        return debtTime >= fromTime && debtTime <= toTime;
       });
-  }, [debts, allDebtTransactions, filters]);
+  }, [debts, loanTxMap, isAllRange, fromTime, toTime]);
 
   const filteredBills = React.useMemo(() => {
     if (!bills || !bills.length) return [];
@@ -368,32 +381,33 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
     <div className="space-y-10 animate-fade-in pb-10">
       
       {/* Master Hero Summary: All Liabilities */}
-      <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-brand-red/30 border-l-brand-red/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-4 md:p-8 flex flex-col justify-center items-center text-center rounded-[2.5rem] relative overflow-hidden group">
+      <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-[#FF3B30]/30 border-s-[#FF3B30]/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-4 md:p-8 flex flex-col justify-center items-center text-center rounded-[2.5rem] relative overflow-hidden group">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 group-hover:scale-125 transition-transform duration-1000">
-          <TrendingDown className="w-64 h-64 text-brand-red" />
+          <TrendingDown className="w-64 h-64 text-[#FF3B30]" />
         </div>
         
-        <div className="relative z-10">
-          <p className="text-sm font-bold tracking-widest uppercase mb-2 text-[var(--color-text-main)] opacity-70">{t('overview.allLiabilities')}</p>
-          <p className="text-6xl font-black tabular-nums tracking-tight text-white">{money(allLiabilities)}</p>
+        <div className="relative z-10 max-w-xl">
+          <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-2 text-white/70">{t('analytics.overview.allLiabilities')}</p>
+          <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tabular-nums tracking-tight text-white whitespace-nowrap">{money(allLiabilities)}</p>
+          <p className="text-xs sm:text-sm text-white/60 mt-2 leading-relaxed">{t('analytics.overview.liabilitiesDesc')}</p>
         </div>
       </div>
 
       {/* Sub Summaries */}
-      <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6">
         {/* Debts Overview */}
         <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:bg-white/5 transition-all duration-500 flex flex-col justify-between min-h-[140px]">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
-            <Users className="w-12 h-12 md:w-24 md:h-24 text-brand-red" />
+          <div className="absolute top-0 end-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+            <Users className="w-12 h-12 md:w-24 md:h-24 text-[#FF3B30]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('nav.receivables')}</p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/70">{t('debts.iOwe')}</p>
             <div>
-              <p className="text-xl md:text-3xl font-black tabular-nums tracking-tight text-brand-red mb-1">
+              <p className="text-2xl md:text-3xl font-black tabular-nums tracking-tight text-[#FF3B30] mb-1 whitespace-nowrap">
                 {money(totalDebts)}
               </p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                 <span className="text-[10px] md:text-xs font-bold px-2 py-1 bg-white/5 border border-white/5 rounded-md text-rose-400 uppercase tracking-wider">
+                 <span className="text-[11px] font-bold px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[#FF3B30] ltr:uppercase ltr:tracking-wider rtl:tracking-normal whitespace-nowrap">
                    {t('dashboard.debtsBorrowed')}: {money(totalBorrowed)}
                  </span>
               </div>
@@ -402,19 +416,19 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
         </div>
 
         {/* Bills Overview */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:bg-white/5 transition-all duration-500 flex flex-col justify-between min-h-[140px]">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
-            <CalendarClock className="w-12 h-12 md:w-24 md:h-24 text-rose-400" />
+        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#007AFF]/30 hover:shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-all duration-500 flex flex-col justify-between min-h-[140px]">
+          <div className="absolute top-0 end-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+            <CalendarClock className="w-12 h-12 md:w-24 md:h-24 text-[#007AFF]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
-            <p className="text-sm font-bold tracking-widest uppercase mb-4 text-[var(--color-text-main)] opacity-70">{t('nav.bills')}</p>
+            <p className="text-xs md:text-sm font-bold ltr:tracking-wider ltr:uppercase rtl:tracking-normal mb-3 text-white/70">{t('nav.bills')}</p>
             <div>
-              <p className="text-xl md:text-3xl font-black tabular-nums tracking-tight text-rose-400 mb-1">
+              <p className="text-2xl md:text-3xl font-black tabular-nums tracking-tight text-[#007AFF] mb-1 whitespace-nowrap">
                 {money(totalBills)}
               </p>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                 <span className="text-[10px] md:text-xs font-bold px-2 py-1 bg-white/5 border border-white/5 rounded-md text-[var(--color-text-muted)] uppercase tracking-wider">
-                   {t('overview.allLiabilities')}: {filteredBills.length}
+                 <span className="text-[11px] font-bold px-2.5 py-1 bg-[#007AFF]/10 border border-[#007AFF]/20 rounded-lg text-[#007AFF] ltr:uppercase ltr:tracking-wider rtl:tracking-normal whitespace-nowrap">
+                   {filteredBills.length} {t('nav.bills')}
                  </span>
               </div>
             </div>
@@ -426,7 +440,7 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
         {filteredDebts.length ? filteredDebts.map((d) => {
           const isBorrowed = d.type === 'i_owe';
-          const color = isBorrowed ? '#f43f5e' : '#10b981'; // rose-500 or emerald-500
+          const color = isBorrowed ? '#FF3B30' : '#34C759'; // rose-500 or emerald-500
           const initialAmount = d.initialAmount || d.amount || d.remainingAmount;
           const paid = initialAmount - d.remainingAmount;
           const progress = initialAmount > 0 ? (paid / initialAmount) * 100 : 0;
@@ -442,17 +456,17 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
                     <Users size={24} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-[var(--color-text-main)] text-sm md:text-base truncate max-w-[120px] sm:max-w-[150px] leading-tight" title={d.personName}>{d.personName}</p>
-                    <span className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 bg-white/5 border border-white/5 rounded-md text-[var(--color-text-muted)] uppercase mt-1 inline-block whitespace-nowrap">
+                    <p className="font-bold text-white text-sm md:text-base truncate max-w-[120px] sm:max-w-[160px] leading-snug" title={d.personName}>{d.personName}</p>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/60 ltr:uppercase ltr:tracking-wide rtl:tracking-normal mt-1 inline-block whitespace-nowrap">
                       {isBorrowed ? t('dashboard.debtsBorrowed') : t('dashboard.debtsLent')}
                     </span>
                   </div>
                 </div>
-                <div className="text-right shrink-0 ml-2">
-                  <p className="text-lg md:text-xl font-black tabular-nums tracking-tight text-white">{money(d.remainingAmount)}</p>
+                <div className="text-end shrink-0 ms-2">
+                  <p className="text-lg md:text-xl font-black tabular-nums tracking-tight text-white whitespace-nowrap">{money(d.remainingAmount)}</p>
                   {d.dueDate && (
-                    <p className="text-[9px] md:text-[10px] text-[var(--color-text-muted)] mt-1 whitespace-nowrap">
-                      {t('overview.due')}: {new Date(d.dueDate).toLocaleDateString()}
+                    <p className="text-[11px] font-medium text-white/50 mt-1 whitespace-nowrap">
+                      {t('analytics.overview.due')}: {new Date(d.dueDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}
                     </p>
                   )}
                 </div>
@@ -460,9 +474,9 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
 
               {/* Repayment Progress */}
               <div className="space-y-1.5 mt-2">
-                 <div className="flex justify-between text-[10px] md:text-xs text-[var(--color-text-muted)] font-medium">
-                   <span>{t('dashboard.paid')}: {money(paid)}</span>
-                   <span>{progress.toFixed(0)}%</span>
+                 <div className="flex justify-between text-xs text-white/60 font-medium">
+                   <span className="whitespace-nowrap">{t('dashboard.paid')}: <span className="font-semibold text-white/80 tabular-nums">{money(paid)}</span></span>
+                   <span className="tabular-nums font-bold text-white/80">{progress.toFixed(0)}%</span>
                  </div>
                  <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                    <div 
@@ -475,22 +489,22 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
           );
         }) : (
           <div className="col-span-full py-16 flex flex-col items-center justify-center bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-               <CheckCircle className="w-8 h-8 text-emerald-400" />
+            <div className="w-16 h-16 rounded-full bg-[#34C759]/10 flex items-center justify-center mb-4">
+               <CheckCircle className="w-8 h-8 text-[#34C759]" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">{t('liabilities.noDebtsTitle')}</h3>
-            <p className="text-[var(--color-text-muted)] max-w-sm">{t('liabilities.noDebtsDesc')}</p>
+            <p className="text-sm text-white/60 max-w-sm leading-relaxed">{t('liabilities.noDebtsDesc')}</p>
           </div>
         )}
       </div>
 
       {/* Bills Section */}
-      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 lg:p-4 md:p-8 rounded-[2.5rem]">
+      <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-[#007AFF]/30 border-s-[#007AFF]/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 md:p-8 rounded-[2.5rem]">
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-brand-red/20 rounded-2xl text-brand-red">
+          <div className="p-3 bg-[#007AFF]/20 border border-[#007AFF]/30 rounded-2xl text-[#007AFF]">
             <CalendarClock className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-[var(--color-text-main)] tracking-wide">{t('nav.bills')}</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-white ltr:tracking-wide rtl:tracking-normal">{t('nav.bills')}</h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
@@ -500,34 +514,34 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
             const isOverdue = b.isOverdue;
             const isDueToday = b.isDueToday;
 
-            let statusBg = 'bg-sky-500/10 border-sky-500/20 text-sky-400';
+            let statusBg = 'bg-[#007AFF]/10 border-[#007AFF]/20 text-[#007AFF]';
             let statusText = t('bills.status.upcoming');
-            let iconBg = 'rgba(56, 189, 248, 0.2)';
-            let iconColor = '#38bdf8';
-            let amountColor = 'text-white';
+            let iconBg = 'rgba(0, 122, 255, 0.2)';
+            let iconColor = '#007AFF';
+            let amountColor = 'text-[#007AFF]';
 
             if (isPaid) {
-              statusBg = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
+              statusBg = 'bg-[#34C759]/10 border-[#34C759]/20 text-[#34C759]';
               statusText = t('bills.status.paid');
               iconBg = 'rgba(52, 199, 89, 0.2)';
               iconColor = '#34C759';
-              amountColor = 'text-emerald-400';
+              amountColor = 'text-[#34C759]';
             } else if (isOverdue) {
-              statusBg = 'bg-rose-500/10 border-rose-500/20 text-rose-400';
+              statusBg = 'bg-[#FF3B30]/10 border-[#FF3B30]/20 text-[#FF3B30]';
               statusText = t('bills.status.overdue');
-              iconBg = 'rgba(244, 63, 94, 0.2)';
-              iconColor = '#f43f5e';
-              amountColor = 'text-brand-red';
+              iconBg = 'rgba(255, 59, 48, 0.2)';
+              iconColor = '#FF3B30';
+              amountColor = 'text-[#FF3B30]';
             } else if (isDueToday) {
-              statusBg = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+              statusBg = 'bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]';
               statusText = t('bills.status.due_today');
               iconBg = 'rgba(245, 158, 11, 0.2)';
-              iconColor = '#f59e0b';
-              amountColor = 'text-amber-400';
+              iconColor = '#F59E0B';
+              amountColor = 'text-[#F59E0B]';
             }
 
             return (
-              <div className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:bg-white/5 transition-all duration-300 group flex flex-col gap-4 h-full justify-between" key={b._id}>
+              <div className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#007AFF]/30 hover:shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-all duration-300 group flex flex-col gap-4 h-full justify-between" key={b._id}>
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
                     <div 
@@ -537,26 +551,26 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
                       {isPaid ? <CheckCircle size={24} /> : <CalendarClock size={24} />}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-[var(--color-text-main)] text-sm md:text-base truncate max-w-[120px] sm:max-w-[150px] leading-tight" title={b.name}>{b.name}</p>
+                      <p className="font-bold text-white text-sm md:text-base truncate max-w-[120px] sm:max-w-[160px] leading-snug" title={b.name}>{b.name}</p>
                       <div className="flex items-center gap-1.5 mt-1">
                         {b.repeat && b.repeat !== 'never' && (
-                          <span className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 bg-white/5 border border-white/5 rounded-md text-[var(--color-text-muted)] uppercase inline-block whitespace-nowrap">
-                            {t(`frequency.${b.repeat}`, b.repeat)}
+                          <span className="text-[11px] font-semibold px-2 py-0.5 bg-white/5 border border-white/10 rounded-md text-white/60 ltr:uppercase ltr:tracking-wide rtl:tracking-normal inline-block whitespace-nowrap">
+                            {t(`recurring.${b.repeat}`, b.repeat)}
                           </span>
                         )}
-                        <span className={`text-[9px] md:text-[10px] font-bold px-2 py-0.5 border rounded-md uppercase inline-block whitespace-nowrap ${statusBg}`}>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 border rounded-md ltr:uppercase ltr:tracking-wider rtl:tracking-normal inline-block whitespace-nowrap ${statusBg}`}>
                           {statusText}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0 ml-2">
-                    <p className={`text-lg md:text-xl font-black tabular-nums tracking-tight ${amountColor}`}>{money(b.expectedAmount)}</p>
-                    <p className="text-[9px] md:text-[10px] text-[var(--color-text-muted)] mt-1 whitespace-nowrap">
+                  <div className="text-end shrink-0 ms-2">
+                    <p className={`text-lg md:text-xl font-black tabular-nums tracking-tight whitespace-nowrap ${amountColor}`}>{money(b.expectedAmount)}</p>
+                    <p className="text-[11px] font-medium text-white/50 mt-1 whitespace-nowrap">
                       {isPaid && b.periodPaymentDate ? (
-                        <span>{t('bills.status.paid')}: {new Date(b.periodPaymentDate).toLocaleDateString()}</span>
+                        <span>{t('bills.status.paid')}: {new Date(b.periodPaymentDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
                       ) : (
-                        <span>{t('overview.due')}: {new Date(displayDate).toLocaleDateString()}</span>
+                        <span>{t('analytics.overview.due')}: {new Date(displayDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
                       )}
                     </p>
                   </div>
@@ -564,12 +578,19 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
               </div>
             );
           }) : (
-            <div className="col-span-full py-16 flex flex-col items-center justify-center bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] text-center mt-2">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                 <CheckCircle className="w-8 h-8 text-emerald-400" />
+            <div className="col-span-full py-16 flex flex-col items-center justify-center bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] text-center mt-2 p-6">
+              <div className="w-16 h-16 rounded-full bg-[#007AFF]/10 border border-[#007AFF]/20 flex items-center justify-center mb-4">
+                 <CalendarClock className="w-8 h-8 text-[#007AFF]" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">{t('liabilities.noBillsTitle')}</h3>
-              <p className="text-[var(--color-text-muted)] max-w-sm">{t('liabilities.noBillsDesc')}</p>
+              <p className="text-sm text-white/60 max-w-sm leading-relaxed mb-5">{t('liabilities.noBillsDesc')}</p>
+              <Link 
+                to="/bills"
+                className="px-5 py-2.5 rounded-xl bg-[#007AFF] hover:bg-[#007AFF]/90 text-white font-bold text-xs shadow-lg shadow-[#007AFF]/25 transition-all inline-flex items-center gap-2 min-h-[44px] active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#007AFF]"
+              >
+                <Plus size={14} />
+                <span>{t('nav.bills')}</span>
+              </Link>
             </div>
           )}
         </div>
@@ -578,3 +599,5 @@ export default function LiabilitiesTab({ debts, bills, filters, money, allDebtTr
     </div>
   );
 }
+
+export default React.memo(LiabilitiesTabComponent);
