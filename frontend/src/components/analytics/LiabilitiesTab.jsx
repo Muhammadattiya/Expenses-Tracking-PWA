@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TrendingDown, Users, CalendarClock, CheckCircle, Plus } from 'lucide-react';
 import { getMetricFontSize, metricFlow } from '../../utils/metricFontSize';
 
 function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransactions }) {
   const { t, lang } = useLanguage();
+  const reduceMotion = useReducedMotion();
 
   const loanTxMap = React.useMemo(() => {
     const map = new Map();
@@ -42,74 +44,6 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
       })
       .reduce((sum, d) => sum + (d.remainingAmount || 0), 0);
   }, [debts, loanTxMap, isAllRange, fromTime, toTime]);
-
-  const totalBorrowed = totalDebts; // Since it's only i_owe now
-
-
-  // Helper to count exact occurrences of a repeating event within the filtered date range (Mathematically accurate for JS Dates)
-  const calculateOccurrences = (eventDate, frequency, filters, createdAt = null) => {
-    if (!eventDate) return 0;
-    
-    const start = new Date(eventDate);
-    const fromDate = filters?.from ? new Date(filters.from) : new Date(start);
-    let toDate = filters?.to ? new Date(filters.to) : new Date();
-
-    const today = new Date();
-    if (filters?.filterType === 'year' && toDate > today) {
-      toDate = today;
-    }
-    if (fromDate > toDate) return 0;
-    
-    if (frequency === 'never') {
-      return (start >= fromDate && start <= toDate) ? 1 : 0;
-    }
-
-    const earliestDate = createdAt ? new Date(createdAt) : null;
-
-    // Helper to get the i-th occurrence strictly mathematically
-    const getOccurrence = (i) => {
-      const d = new Date(start);
-      if (frequency === 'daily') d.setDate(d.getDate() + i);
-      else if (frequency === 'weekly') d.setDate(d.getDate() + i * 7);
-      else if (frequency === 'yearly') d.setFullYear(d.getFullYear() + i);
-      else if (frequency === 'monthly') {
-        const targetMonth = d.getMonth() + i;
-        const expectedMonth = ((targetMonth % 12) + 12) % 12; // safe modulo for JS
-        d.setMonth(targetMonth);
-        if (d.getMonth() !== expectedMonth) d.setDate(0);
-      }
-      return d;
-    };
-
-    let count = 0;
-    let i = 0;
-    
-    if (start < fromDate) {
-      if (frequency === 'daily') i = Math.max(0, Math.floor((fromDate - start) / (1000 * 60 * 60 * 24)));
-      else if (frequency === 'weekly') i = Math.max(0, Math.floor((fromDate - start) / (1000 * 60 * 60 * 24 * 7)));
-      else if (frequency === 'monthly') i = Math.max(0, (fromDate.getFullYear() - start.getFullYear()) * 12 + (fromDate.getMonth() - start.getMonth()) - 1);
-      else if (frequency === 'yearly') i = Math.max(0, fromDate.getFullYear() - start.getFullYear() - 1);
-    } else if (start > toDate) {
-      if (frequency === 'daily') i = Math.floor((fromDate - start) / (1000 * 60 * 60 * 24)) - 1;
-      else if (frequency === 'weekly') i = Math.floor((fromDate - start) / (1000 * 60 * 60 * 24 * 7)) - 1;
-      else if (frequency === 'monthly') i = (fromDate.getFullYear() - start.getFullYear()) * 12 + (fromDate.getMonth() - start.getMonth()) - 1;
-      else if (frequency === 'yearly') i = fromDate.getFullYear() - start.getFullYear() - 1;
-    }
-
-    while (true) {
-      const current = getOccurrence(i);
-      if (current > toDate) break;
-      if (current >= fromDate) {
-        if (!earliestDate || current >= earliestDate) {
-          count++;
-        }
-      }
-      i++;
-      if (i > 10000) break;
-    }
-    
-    return count;
-  };
 
   const getRepeatingOccurrences = (eventDate, frequency, fromDate, toDate) => {
     if (!eventDate || !frequency || frequency === 'never' || fromDate > toDate) return [];
@@ -378,11 +312,28 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
 
   const allLiabilities = totalDebts + totalBills;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: reduceMotion ? { duration: 0.15 } : { staggerChildren: 0.04 }
+    }
+  };
+
+  const itemVariants = reduceMotion
+    ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.15 } } }
+    : { hidden: { opacity: 0, y: 12, scale: 0.98 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', bounce: 0.15, duration: 0.45 } } };
+
   return (
-    <div className="space-y-10 animate-fade-in pb-10">
+    <div className="space-y-10 pb-10">
       
       {/* Master Hero Summary: All Liabilities */}
-      <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-[#FF3B30]/30 border-s-[#FF3B30]/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-4 md:p-8 flex flex-col justify-center items-center text-center rounded-[2.5rem] relative overflow-hidden group">
+      <motion.div 
+        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.99 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-[#FF3B30]/30 border-s-[#FF3B30]/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-4 md:p-8 flex flex-col justify-center items-center text-center rounded-[2.5rem] relative overflow-hidden group"
+      >
         <div className="absolute inset-0 flex items-center justify-center opacity-5 group-hover:scale-125 transition-transform duration-1000 motion-reduce:transition-none pointer-events-none">
           <TrendingDown className="w-64 h-64 text-[#FF3B30]" />
         </div>
@@ -392,13 +343,22 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
           <p className={`${getMetricFontSize(money(allLiabilities), { hero: true })} font-black tabular-nums tracking-tight text-white min-w-0 break-all`}>{money(allLiabilities)}</p>
           <p className="text-xs sm:text-sm text-white/60 mt-2 leading-relaxed">{t('analytics.overview.liabilitiesDesc')}</p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Sub Summaries */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6"
+      >
         {/* Debts Overview */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:bg-white/5 transition-all duration-500 flex flex-col justify-between min-h-[140px]">
-          <div className="absolute top-0 end-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#FF3B30]/30 transition-colors duration-300 flex flex-col justify-between min-h-[140px]"
+        >
+          <div className="absolute top-0 end-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <Users className="w-12 h-12 md:w-24 md:h-24 text-[#FF3B30]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
@@ -407,18 +367,17 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
               <p className={`${getMetricFontSize(money(totalDebts))} ${metricFlow} font-black text-[#FF3B30] mb-1`}>
                 {money(totalDebts)}
               </p>
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                 <span className={`text-[11px] font-bold px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[#FF3B30] ltr:uppercase ltr:tracking-wider rtl:tracking-normal ${metricFlow}`}>
-                   {t('dashboard.debtsBorrowed')}: {money(totalBorrowed)}
-                 </span>
-              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Bills Overview */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#007AFF]/30 hover:shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-all duration-500 flex flex-col justify-between min-h-[140px]">
-          <div className="absolute top-0 end-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#007AFF]/30 hover:shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-colors duration-300 flex flex-col justify-between min-h-[140px]"
+        >
+          <div className="absolute top-0 end-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <CalendarClock className="w-12 h-12 md:w-24 md:h-24 text-[#007AFF]" />
           </div>
           <div className="relative z-10 flex flex-col h-full justify-between">
@@ -434,11 +393,16 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Grid of Debts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch"
+      >
         {filteredDebts.length ? filteredDebts.map((d) => {
           const isBorrowed = d.type === 'i_owe';
           const color = isBorrowed ? '#FF3B30' : '#34C759'; // rose-500 or emerald-500
@@ -447,7 +411,12 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
           const progress = initialAmount > 0 ? (paid / initialAmount) * 100 : 0;
           
           return (
-            <div className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:bg-white/5 transition-all duration-300 group flex flex-col gap-4 h-full justify-between" key={d._id}>
+            <motion.div 
+              variants={itemVariants}
+              whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+              className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-white/20 transition-colors duration-300 group flex flex-col gap-4 h-full justify-between" 
+              key={d._id}
+            >
               <div className="flex justify-between items-start gap-3 min-w-0">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div 
@@ -486,20 +455,27 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
                    />
                  </div>
               </div>
-            </div>
+            </motion.div>
           );
         }) : (
           <div className="col-span-full py-16 flex flex-col items-center justify-center bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] text-center">
             <div className="w-16 h-16 rounded-full bg-[#34C759]/10 flex items-center justify-center mb-4">
-               <CheckCircle className="w-8 h-8 text-[#34C759]" />
+              <CheckCircle className="w-8 h-8 text-[#34C759]" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">{t('liabilities.noDebtsTitle')}</h3>
-            <p className="text-sm text-white/60 max-w-sm leading-relaxed">{t('liabilities.noDebtsDesc')}</p>
+            <h3 className="text-xl font-bold text-white mb-2">{t('debts.noDebts')}</h3>
+            <p className="text-sm text-white/60 max-w-sm leading-relaxed mb-5">{t('liabilities.debtsClearDesc')}</p>
+            <Link 
+              to="/receivables?tab=debts"
+              className="px-5 py-2.5 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/20 transition-all inline-flex items-center gap-2 min-h-[44px] active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]"
+            >
+              <Plus size={14} />
+              <span>{t('debts.addNew')}</span>
+            </Link>
           </div>
         )}
-      </div>
+      </motion.div>
 
-      {/* Bills Section */}
+      {/* Repeating Bills List */}
       <section className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-[#007AFF]/30 border-s-[#007AFF]/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] p-6 md:p-8 rounded-[2.5rem]">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 bg-[#007AFF]/20 border border-[#007AFF]/30 rounded-2xl text-[#007AFF]">
@@ -508,7 +484,12 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
           <h2 className="text-lg sm:text-xl font-bold text-white ltr:tracking-wide rtl:tracking-normal">{t('nav.bills')}</h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch"
+        >
           {filteredBills.length ? filteredBills.map((b) => {
             const isPaid = b.isPaidForPeriod !== undefined ? b.isPaidForPeriod : (b.status === 'paid');
             const displayDate = b.periodDueDate || b.dueDate;
@@ -542,7 +523,12 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
             }
 
             return (
-              <div className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#007AFF]/30 hover:shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-all duration-300 group flex flex-col gap-4 h-full justify-between" key={b._id}>
+              <motion.div 
+                variants={itemVariants}
+                whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+                className="bg-[#2B2321]/30 backdrop-blur-[32px] p-5 rounded-[1.5rem] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:border-[#007AFF]/30 hover:shadow-[0_8px_32px_rgba(0,122,255,0.15)] transition-colors duration-300 group flex flex-col gap-4 h-full justify-between" 
+                key={b._id}
+              >
                 <div className="flex justify-between items-start gap-3 min-w-0">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div 
@@ -576,7 +562,7 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           }) : (
             <div className="col-span-full py-16 flex flex-col items-center justify-center bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] text-center mt-2 p-6">
@@ -594,7 +580,7 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
               </Link>
             </div>
           )}
-        </div>
+        </motion.div>
       </section>
 
     </div>

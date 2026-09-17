@@ -123,20 +123,28 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
 
   if (!data || !filteredTransactions) return null;
 
-  return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in pb-10 relative min-h-screen">
-      
-      {/* Background Effect for Income */}
-      <div className="absolute inset-0 z-[-1] pointer-events-none rounded-[3rem] overflow-hidden">
-        <div className="absolute top-0 end-0 w-[500px] h-[500px] bg-[#34C759]/5 rounded-full blur-[120px] mix-blend-screen opacity-50" />
-        <div className="absolute bottom-0 start-0 w-[600px] h-[600px] bg-[#8D6346]/10 rounded-full blur-[150px] mix-blend-screen opacity-50" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40" />
-      </div>
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: reduceMotion ? { duration: 0.15 } : { staggerChildren: 0.04 }
+    }
+  };
 
+  const itemVariants = reduceMotion
+    ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.15 } } }
+    : { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { type: 'spring', bounce: 0.15, duration: 0.4 } } };
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pb-10">
       <div className="xl:col-span-7 flex flex-col gap-6">
       {/* 1. Main Insight Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-6">
-        
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-2 gap-3 md:gap-6"
+      >
         <InsightCard 
           title={t('analytics.insights.totalIncome')}
           icon={TrendingUp}
@@ -168,8 +176,7 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
           subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount')}` : ''}
           color="copper"
         />
-
-      </div>
+      </motion.div>
 
         {/* Recent Income Events (Balances desktop layout symmetry) */}
         {filteredTransactions.length > 0 && (
@@ -182,9 +189,19 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
              </h2>
              <p className="text-xs text-white/60 mb-4 leading-relaxed">{t('analytics.insights.recentIncomeDesc')}</p>
 
-             <div className="space-y-3">
+             <motion.div 
+               variants={containerVariants}
+               initial="hidden"
+               animate="show"
+               className="space-y-3"
+             >
                {filteredTransactions.slice(0, 5).map((tx) => (
-                 <div key={tx._id} className="flex items-center justify-between p-3.5 rounded-2xl bg-black/10 border border-white/5 hover:border-white/10 transition-colors">
+                 <motion.div 
+                   key={tx._id} 
+                   variants={itemVariants}
+                   whileHover={reduceMotion ? undefined : { y: -1.5, transition: { duration: 0.2 } }}
+                   className="flex items-center justify-between p-3.5 rounded-2xl bg-black/10 border border-white/5 hover:border-white/10 transition-colors"
+                 >
                    <div className="min-w-0 flex items-center gap-3">
                      <div className="w-9 h-9 rounded-xl bg-[#34C759]/10 border border-[#34C759]/20 flex items-center justify-center shrink-0">
                        <TrendingUp className="w-4 h-4 text-[#34C759]" />
@@ -197,15 +214,14 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
                    <span className={`font-black text-[#34C759] text-sm md:text-base ms-2 ${metricFlow}`}>
                      +{money(tx.amount)}
                    </span>
-                 </div>
+                 </motion.div>
                ))}
-             </div>
+             </motion.div>
           </motion.section>
         )}
 
       </div>
-      <div className="xl:col-span-5 h-full">
-      <div className="grid grid-cols-1 gap-6 h-full">
+      <div className="xl:col-span-5 flex flex-col gap-6">
         
         {/* 2. Where Does Your Money Come From (Category Concentration) */}
         <motion.section 
@@ -259,7 +275,6 @@ function IncomeTabComponent({ data, categories, money, allTransactions, filters 
            </div>
 
         </motion.section>
-      </div>
       </div>
     </div>
   );

@@ -1,22 +1,27 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { getMetricFontSize } from '../../utils/metricFontSize';
 
 const COLOR_MAP = {
-  'brand-blue': 'text-[#8D6346]',
-  'brand-purple': 'text-[#E8C5A8]',
-  'brand-green': 'text-[#34C759]',
-  'brand-red': 'text-[#FF3B30]',
-  'brand-amber': 'text-[#F59E0B]',
   copper: 'text-[#E8C5A8]',
   emerald: 'text-[#34C759]',
   rose: 'text-[#FF3B30]',
 };
 
-function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper' }) {
+function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'copper', variants }) {
   const textColor = COLOR_MAP[color] || (color.startsWith('text-') ? color : 'text-[#E8C5A8]');
+  const reduceMotion = useReducedMotion();
+
+  const defaultVariants = reduceMotion
+    ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.15 } } }
+    : { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { type: 'spring', bounce: 0.2, duration: 0.45 } } };
 
   return (
-    <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#8D6346]/30 hover:shadow-[0_8px_32px_rgba(141,99,70,0.15)] transition-all duration-500 motion-reduce:transition-none flex flex-col justify-between min-h-[140px] min-w-0">
+    <motion.div 
+      variants={variants || defaultVariants}
+      whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+      className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#8D6346]/30 hover:shadow-[0_8px_32px_rgba(141,99,70,0.15)] transition-colors duration-300 flex flex-col justify-between min-h-[140px] min-w-0"
+    >
       <div className="absolute top-0 end-0 p-4 opacity-20 group-hover:scale-110 transition-transform duration-700 motion-reduce:transition-none pointer-events-none">
         <Icon className="w-12 h-12 md:w-24 md:h-24 text-[#8D6346]" />
       </div>
@@ -41,8 +46,9 @@ function InsightCard({ title, icon: Icon, value, subtitle, highlight, color = 'c
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 export default React.memo(InsightCard);
+

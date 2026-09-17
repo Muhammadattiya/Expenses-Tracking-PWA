@@ -7,7 +7,7 @@ import { getDebts } from '../api/debts';
 import { getInvestments } from '../api/investments';
 import { budgetService } from '../services/budgetService';
 import { getBills } from '../api/bills';
-import { getRecurringTransactions } from '../api/recurringTransactions';
+
 import { getReceivables } from '../api/receivables';
 import { getIncomeProfiles } from '../api/incomeProfiles';
 import { getCurrentUser } from '../api/auth';
@@ -27,6 +27,30 @@ const AssetsTab = React.lazy(() => import('../components/analytics/AssetsTab'));
 const LiabilitiesTab = React.lazy(() => import('../components/analytics/LiabilitiesTab'));
 const InsightsTab = React.lazy(() => import('../components/analytics/InsightsTab'));
 import { AnalyticsSkeleton } from '../components/ui/Skeletons';
+
+class TabErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 function TabLoadingSkeleton() {
   return (
@@ -85,7 +109,7 @@ export default function Analytics() {
   const [investments, setInvestments] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [bills, setBills] = useState([]);
-  const [recurring, setRecurring] = useState([]);
+
   const [incomeProfiles, setIncomeProfiles] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
@@ -97,6 +121,7 @@ export default function Analytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
+  const [tabRetry, setTabRetry] = useState(0);
   const reqIdRef = useRef(0);
   const staticLoadedRef = useRef(false);
   const lastLoadedFiltersRef = useRef('');
@@ -132,6 +157,7 @@ export default function Analytics() {
           }, delay);
         } else {
           setIsBuilding(false);
+          setLoadError(true);
         }
       } else {
         pendingAttemptsRef.current = 0;
@@ -156,7 +182,6 @@ export default function Analytics() {
         invsRes, 
         budgetsRes, 
         billsRes, 
-        recurringRes,
         incomeProfilesRes,
         allTx,
         receivablesData
@@ -167,7 +192,6 @@ export default function Analytics() {
         getInvestments().catch(() => []),
         budgetService.getBudgets().catch(() => []),
         getBills().catch(() => []),
-        getRecurringTransactions().catch(() => []),
         getIncomeProfiles().catch(() => []),
         getTransactionsOffline().catch(() => []),
         getReceivables().catch(() => [])
@@ -284,7 +308,6 @@ export default function Analytics() {
       setIncomeProfiles(incomeProfilesRes || []);
       setBudgets(enrichedBudgets);
       setBills(billsRes);
-      setRecurring(recurringRes || []);
       setAllTransactions(allTx);
       setAllReceivables(receivablesData || []);
       getTransactions()
@@ -412,12 +435,13 @@ export default function Analytics() {
 
   const isAssetsTab = activeTab === 'assets';
   const hasActiveFilters = Boolean(filters.account || filters.category || filters.search || searchInput);
+  const isRTL = lang === 'ar';
   const pageMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
-    : { initial: { opacity: 0, x: 20 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 20 }, transition: { type: 'spring', bounce: 0, duration: 0.4 } };
+    : { initial: { opacity: 0, x: isRTL ? -16 : 16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: isRTL ? -16 : 16 }, transition: { type: 'spring', bounce: 0, duration: 0.4 } };
   const tabMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
-    : { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 }, transition: { type: 'spring', bounce: 0, duration: 0.4 } };
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -6 }, transition: { type: 'spring', bounce: 0, duration: 0.35 } };
 
   return (
     <>
@@ -435,13 +459,13 @@ export default function Analytics() {
       {/* Header & Global Actions */}
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p className="text-[#E8C5A8] text-xs font-bold ltr:tracking-widest ltr:uppercase rtl:tracking-normal mb-1 drop-shadow-sm">{t(`analytics.tabs.${activeTab}`)}</p>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-sm">{t('analytics.title')}</h1>
           <p className="text-xs sm:text-sm text-white/60 mt-1 max-w-xl leading-relaxed">{t('analytics.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto">
           {!isAssetsTab && (
             <motion.button 
+              type="button"
               whileTap={reduceMotion ? undefined : { scale: 0.95 }}
               onClick={() => setShowFilters(!showFilters)} 
               aria-label={showFilters ? t('analytics.hideFilters') : t('analytics.filterResults')}
@@ -461,6 +485,7 @@ export default function Analytics() {
           )}
           
           <motion.button 
+            type="button"
             whileTap={reduceMotion ? undefined : { scale: 0.95 }} 
             onClick={exportReport} 
             aria-label={t('analytics.export')}
@@ -472,108 +497,130 @@ export default function Analytics() {
         </div>
       </header>
 
-      {(loadError || isBuilding) && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[1.5rem] border backdrop-blur-[32px] ${
-            loadError
-              ? 'bg-[#FF3B30]/10 border-[#FF3B30]/20'
-              : 'bg-[#8D6346]/10 border-[#8D6346]/20'
-          }`}
-        >
-          <div className="flex items-start gap-3 min-w-0">
-            <AlertCircle className={`w-5 h-5 shrink-0 mt-0.5 ${loadError ? 'text-[#FF3B30]' : 'text-[#E8C5A8]'}`} aria-hidden="true" />
-            <div>
-              <p className="text-sm font-bold text-white">
-                {loadError ? t('analytics.loadErrorTitle') : t('analytics.buildingReports')}
-              </p>
-              {loadError && (
-                <p className="text-xs text-white/70 mt-1 leading-relaxed">{t('analytics.loadErrorDesc')}</p>
-              )}
-            </div>
-          </div>
-          {loadError && (
-            <button
-              type="button"
-              onClick={retryAnalytics}
-              className="px-4 py-2.5 min-h-[44px] rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 active:scale-95"
+      <AnimatePresence>
+        {(loadError || isBuilding) && (
+          <motion.div
+            key="status-alert"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: -6 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: -6 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div
+              role="status"
+              aria-live="polite"
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[1.5rem] border backdrop-blur-[32px] ${
+                loadError
+                  ? 'bg-[#FF3B30]/10 border-[#FF3B30]/20'
+                  : 'bg-[#8D6346]/10 border-[#8D6346]/20'
+              }`}
             >
-              {t('analytics.insights.retry')}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Control Panel (Filters) */}
-      {!isAssetsTab && showFilters && (
-        <div id="analytics-filters">
-          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-4 md:p-6 rounded-[2rem] space-y-4">
-          <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
-           <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
-             <DateFilterChips filters={filters} setFilters={setFilters} userPrefs={userPrefs} />
-           </div>
-           
-           <div className="w-full lg:w-auto flex flex-col md:flex-row gap-4">
-              <div className="w-full md:w-48 z-20">
-                <CustomSelect
-                  options={[
-                    { value: '', label: t('analytics.allAccounts'), icon: 'Globe', color: '#ffffff' },
-                    ...accounts.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
-                  ]}
-                  value={filters.account}
-                  onChange={(val) => setFilters({ ...filters, account: val })}
-                  placeholder={t('analytics.allAccounts')}
-                  aria-label={t('analytics.allAccounts')}
-                />
-              </div>
-
-              <div className="w-full md:w-48 z-10">
-                <CustomSelect
-                  options={[
-                    { value: '', label: t('analytics.allCategories'), icon: 'Layers', color: '#ffffff' },
-                    ...categories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon, color: cat.color }))
-                  ]}
-                  value={filters.category}
-                  onChange={(val) => setFilters({ ...filters, category: val })}
-                  placeholder={t('analytics.allCategories')}
-                  aria-label={t('analytics.allCategories')}
-                />
-              </div>
-
-              <div className="w-full md:w-48">
-                <div className="relative">
-                  <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-white/60 pointer-events-none" aria-hidden="true" />
-                  <input 
-                    type="text" 
-                    placeholder={t('analytics.searchPlaceholder')}
-                    aria-label={t('analytics.searchPlaceholder')}
-                    className="w-full min-h-[44px] bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 ps-10 pe-4 text-sm text-[var(--color-text-main)] outline-none focus:border-[#8D6346] focus:ring-1 focus:ring-[#8D6346]/50 transition-all"
-                    value={searchInput} 
-                    onChange={(e) => setSearchInput(e.target.value)}
-                  />
+              <div className="flex items-start gap-3 min-w-0">
+                <AlertCircle className={`w-5 h-5 shrink-0 mt-0.5 ${loadError ? 'text-[#FF3B30]' : 'text-[#E8C5A8]'}`} aria-hidden="true" />
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    {loadError ? t('analytics.loadErrorTitle') : t('analytics.buildingReports')}
+                  </p>
+                  {loadError && (
+                    <p className="text-xs text-white/70 mt-1 leading-relaxed">{t('analytics.loadErrorDesc')}</p>
+                  )}
                 </div>
               </div>
-           </div>
-          </div>
-
-          {(filters.account || filters.category || searchInput || filters.search) && (
-            <div className="flex justify-end pt-2 border-t border-white/5">
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchInput('');
-                  setFilters(prev => ({ ...prev, account: '', category: '', search: '' }));
-                }}
-                className="text-xs font-bold text-[#FF3B30] hover:text-white px-3 py-2 rounded-xl bg-[#FF3B30]/10 hover:bg-[#FF3B30] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#FF3B30] active:scale-95 min-h-[44px]"
-              >
-                {t('analytics.resetFilters')}
-              </button>
+              {loadError && (
+                <button
+                  type="button"
+                  onClick={retryAnalytics}
+                  className="px-4 py-2.5 min-h-[44px] rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 active:scale-95"
+                >
+                  {t('analytics.insights.retry')}
+                </button>
+              )}
             </div>
-          )}
-        </div>
-       </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Control Panel (Filters) */}
+      <AnimatePresence>
+        {!isAssetsTab && showFilters && (
+          <motion.div 
+            id="analytics-filters"
+            key="filters-panel"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, scale: 0.98 }}
+            animate={{ opacity: 1, height: 'auto', scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, scale: 0.98 }}
+            transition={{ type: 'spring', bounce: 0.1, duration: 0.35 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-4 md:p-6 rounded-[2rem] space-y-4">
+            <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
+             <div className="flex-1 w-full flex flex-col md:flex-row gap-4">
+               <DateFilterChips filters={filters} setFilters={setFilters} userPrefs={userPrefs} />
+             </div>
+             
+             <div className="w-full lg:w-auto flex flex-col md:flex-row gap-4">
+                <div className="w-full md:w-48 z-20">
+                  <CustomSelect
+                    options={[
+                      { value: '', label: t('analytics.allAccounts'), icon: 'Globe', color: '#ffffff' },
+                      ...accounts.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
+                    ]}
+                    value={filters.account}
+                    onChange={(val) => setFilters({ ...filters, account: val })}
+                    placeholder={t('analytics.allAccounts')}
+                    aria-label={t('analytics.allAccounts')}
+                  />
+                </div>
+
+                <div className="w-full md:w-48 z-10">
+                  <CustomSelect
+                    options={[
+                      { value: '', label: t('analytics.allCategories'), icon: 'Layers', color: '#ffffff' },
+                      ...categories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon, color: cat.color }))
+                    ]}
+                    value={filters.category}
+                    onChange={(val) => setFilters({ ...filters, category: val })}
+                    placeholder={t('analytics.allCategories')}
+                    aria-label={t('analytics.allCategories')}
+                  />
+                </div>
+
+                <div className="w-full md:w-48">
+                  <div className="relative">
+                    <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-white/60 pointer-events-none" aria-hidden="true" />
+                    <input 
+                      type="text" 
+                      placeholder={t('analytics.searchPlaceholder')}
+                      aria-label={t('analytics.searchPlaceholder')}
+                      className="w-full min-h-[44px] bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl py-3.5 ps-10 pe-4 text-sm text-[var(--color-text-main)] outline-none focus:border-[#8D6346] focus:ring-1 focus:ring-[#8D6346]/50 transition-all"
+                      value={searchInput} 
+                      onChange={(e) => setSearchInput(e.target.value)}
+                    />
+                  </div>
+                </div>
+             </div>
+            </div>
+
+            {(filters.account || filters.category || searchInput || filters.search) && (
+              <div className="flex justify-end pt-2 border-t border-white/5">
+                <motion.button
+                  type="button"
+                  whileTap={reduceMotion ? undefined : { scale: 0.95 }}
+                  onClick={() => {
+                    setSearchInput('');
+                    setFilters(prev => ({ ...prev, account: '', category: '', search: '' }));
+                  }}
+                  className="text-xs font-bold text-[#FF3B30] hover:text-white px-3 py-2 rounded-xl bg-[#FF3B30]/10 hover:bg-[#FF3B30] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#FF3B30] min-h-[44px]"
+                >
+                  {t('analytics.resetFilters')}
+                </motion.button>
+              </div>
+            )}
+          </div>
+         </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tabs Navigation */}
       <AnalyticsTabs activeTab={activeTab} setActiveTab={handleTabChange} />
@@ -585,6 +632,22 @@ export default function Analytics() {
             key={activeTab}
             {...tabMotion}
           >
+            <TabErrorBoundary
+              resetKey={`${activeTab}-${tabRetry}`}
+              fallback={
+                <div role="alert" className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <p className="text-sm font-bold text-white">{t('analytics.loadErrorTitle')}</p>
+                  <p className="text-xs text-white/70 max-w-sm">{t('analytics.loadErrorDesc')}</p>
+                  <button
+                    type="button"
+                    onClick={() => setTabRetry((n) => n + 1)}
+                    className="px-4 py-2.5 min-h-[44px] rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70"
+                  >
+                    {t('analytics.insights.retry')}
+                  </button>
+                </div>
+              }
+            >
             <React.Suspense fallback={<TabLoadingSkeleton />}>
               {activeTab === 'overview' && (
                 <OverviewTab 
@@ -594,7 +657,6 @@ export default function Analytics() {
                   investments={investments} 
                   debts={debts} 
                   bills={bills}
-                  recurring={recurring}
                   incomeProfiles={incomeProfiles}
                   filters={filters}
                   allTransactions={allTransactions}
@@ -621,6 +683,7 @@ export default function Analytics() {
                 <InsightsTab data={data} money={money} filters={filters} />
               )}
             </React.Suspense>
+            </TabErrorBoundary>
           </motion.div>
         </AnimatePresence>
       </div>

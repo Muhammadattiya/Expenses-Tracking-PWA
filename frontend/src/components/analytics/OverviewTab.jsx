@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getIconComponent } from '../IconPicker';
 import { TrendingUp, TrendingDown, Landmark, Wallet, PiggyBank, CreditCard } from 'lucide-react';
 import { getMetricFontSize } from '../../utils/metricFontSize';
 
-function OverviewTabComponent({ money, data, accounts, investments, debts, bills, recurring, incomeProfiles, filters, allTransactions, allDebtTransactions, allReceivables }) {
+function OverviewTabComponent({ money, data, accounts, investments, debts, bills, incomeProfiles, filters, allTransactions, allDebtTransactions, allReceivables }) {
   const { t } = useLanguage();
+  const reduceMotion = useReducedMotion();
 
   const accountBalances = useMemo(() => {
     const balances = {};
@@ -371,14 +373,43 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
   const formattedCashFlow = money(cashFlow);
   const formattedSavings = money(savings);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: reduceMotion ? { duration: 0.15 } : { staggerChildren: 0.04 }
+    }
+  };
+
+  const itemVariants = reduceMotion
+    ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.15 } } }
+    : {
+        hidden: { opacity: 0, y: 12, scale: 0.98 },
+        show: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: { type: 'spring', bounce: 0.15, duration: 0.45 }
+        }
+      };
+
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in pb-10">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pb-10">
       <div className="xl:col-span-8 space-y-6">
       
       {/* Hero Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
+      >
         {/* Net Worth */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#E8C5A8]/30 hover:shadow-[#8D6346]/20 transition-all duration-500">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#E8C5A8]/30 hover:shadow-[#8D6346]/20 transition-colors duration-300"
+        >
           <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
             <Landmark className="w-12 h-12 md:w-24 md:h-24 text-[#E8C5A8]" />
           </div>
@@ -394,10 +425,14 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.netWorthDesc')}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Investments */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#34C759]/30 hover:shadow-[#34C759]/15 transition-all duration-500">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#34C759]/30 hover:shadow-[#34C759]/15 transition-colors duration-300"
+        >
           <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <TrendingUp className="w-12 h-12 md:w-24 md:h-24 text-[#34C759]" />
           </div>
@@ -413,10 +448,14 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.investmentsDesc')}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Total Liabilities */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#FF3B30]/30 hover:shadow-[#FF3B30]/15 transition-all duration-500">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#FF3B30]/30 hover:shadow-[#FF3B30]/15 transition-colors duration-300"
+        >
           <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <TrendingDown className="w-12 h-12 md:w-24 md:h-24 text-[#FF3B30]" />
           </div>
@@ -432,10 +471,14 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.liabilitiesDesc')}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Fixed Income */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#34C759]/30 hover:shadow-[#34C759]/15 transition-all duration-500">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#34C759]/30 hover:shadow-[#34C759]/15 transition-colors duration-300"
+        >
           <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <Wallet className="w-12 h-12 md:w-24 md:h-24 text-[#34C759]" />
           </div>
@@ -451,10 +494,14 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.fixedIncomeDesc')}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Cash Flow */}
-        <div className={`relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group transition-all duration-500 ${cashFlow >= 0 ? 'hover:border-[#34C759]/30 hover:shadow-[#34C759]/15' : 'hover:border-[#FF3B30]/30 hover:shadow-[#FF3B30]/15'}`}>
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className={`relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group transition-colors duration-300 ${cashFlow >= 0 ? 'hover:border-[#34C759]/30 hover:shadow-[#34C759]/15' : 'hover:border-[#FF3B30]/30 hover:shadow-[#FF3B30]/15'}`}
+        >
           <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
             <CreditCard className={`w-12 h-12 md:w-24 md:h-24 ${cashFlow >= 0 ? 'text-[#34C759]' : 'text-[#FF3B30]'}`} />
           </div>
@@ -470,10 +517,14 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.cashFlowDesc')}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Savings */}
-        <div className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#E8C5A8]/30 hover:shadow-[#8D6346]/15 transition-all duration-500">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="relative overflow-hidden p-4 md:p-6 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] group hover:border-[#E8C5A8]/30 hover:shadow-[#8D6346]/15 transition-colors duration-300"
+        >
           <div className="absolute top-0 end-0 p-4 opacity-15 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700 pointer-events-none">
             <PiggyBank className="w-12 h-12 md:w-24 md:h-24 text-[#E8C5A8]" />
           </div>
@@ -489,8 +540,8 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               <p className="text-xs text-white/60 mt-1.5 font-normal truncate leading-relaxed">{t('analytics.overview.savingsDesc')}</p>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       </div>
       <div className="xl:col-span-4 h-full">
@@ -506,13 +557,20 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-3 md:gap-4">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-3 md:gap-4"
+        >
           {accounts?.length ? accounts.map((acc) => {
             const AccIcon = getIconComponent(acc.icon, 'Wallet');
             const accBalance = accountBalances[acc._id] || 0;
             return (
-              <div 
-                className="bg-black/10 shadow-inner p-3 md:p-5 rounded-[1.5rem] border border-white/5 hover:border-white/15 transition-all duration-300 group flex items-center gap-2 md:gap-4 relative overflow-hidden" 
+              <motion.div 
+                variants={itemVariants}
+                whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+                className="bg-black/10 shadow-inner p-3 md:p-5 rounded-[1.5rem] border border-white/5 hover:border-white/15 transition-colors duration-300 group flex items-center gap-2 md:gap-4 relative overflow-hidden" 
                 key={acc._id}
               >
                 <div 
@@ -531,7 +589,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
                     {money(accBalance)}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             );
           }) : (
             <div className="col-span-full py-8 text-center flex flex-col items-center justify-center">
@@ -544,7 +602,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
               </Link>
             </div>
           )}
-        </div>
+        </motion.div>
       </section>
       </div>
     </div>

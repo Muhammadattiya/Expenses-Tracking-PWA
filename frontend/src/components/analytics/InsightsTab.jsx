@@ -4,7 +4,7 @@ import { getForecast, getSurvival } from '../../api/forecast';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceDot, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, AlertCircle, CheckCircle2, Zap, CalendarDays, BrainCircuit, ArrowRight, Lightbulb, Info } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { getMetricFontSize, metricFlow } from '../../utils/metricFontSize';
 
 function InsightsTabComponent({ money, filters }) {
@@ -259,8 +259,19 @@ function InsightsTabComponent({ money, filters }) {
         </p>
       </div>
 
-      {activeSubTab === 'forecast' && (
-        <div role="tabpanel" id="subpanel-forecast" aria-labelledby="subtab-forecast" className="space-y-6 animate-fade-in">
+      <AnimatePresence mode="wait">
+        {activeSubTab === 'forecast' ? (
+          <motion.div 
+            key="forecast-panel"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            role="tabpanel" 
+            id="subpanel-forecast" 
+            aria-labelledby="subtab-forecast" 
+            className="space-y-6"
+          >
           {/* Future Balance Hero Card */}
           <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-8 rounded-[2.5rem] relative overflow-hidden group">
             <div className="absolute -end-20 -top-20 w-64 h-64 rounded-full blur-3xl opacity-20 bg-[#8D6346]" />
@@ -423,11 +434,18 @@ function InsightsTabComponent({ money, filters }) {
                </div>
              </div>
           </div>
-        </div>
-      )}
-
-      {activeSubTab === 'payday' && (
-        <div role="tabpanel" id="subpanel-payday" aria-labelledby="subtab-payday" className="animate-fade-in">
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="payday-panel"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            role="tabpanel" 
+            id="subpanel-payday" 
+            aria-labelledby="subtab-payday"
+          >
           {/* Payday Survival Card */}
           {survival && (
             survival.hasIncomeProfile === true ? (
@@ -664,8 +682,9 @@ function InsightsTabComponent({ money, filters }) {
               </section>
             )
           )}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

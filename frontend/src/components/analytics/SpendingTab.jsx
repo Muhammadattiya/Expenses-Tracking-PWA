@@ -171,20 +171,23 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
 
   if (!data || !filteredTransactions) return null;
 
-  return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in pb-10 relative min-h-screen">
-      
-      {/* Background Effect */}
-      <div className="absolute inset-0 z-[-1] pointer-events-none rounded-[3rem] overflow-hidden">
-        <div className="absolute top-0 end-0 w-[500px] h-[500px] bg-[#FF3B30]/5 rounded-full blur-[120px] mix-blend-screen opacity-50" />
-        <div className="absolute bottom-0 start-0 w-[600px] h-[600px] bg-[#8D6346]/5 rounded-full blur-[150px] mix-blend-screen opacity-50" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40" />
-      </div>
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: reduceMotion ? { duration: 0.15 } : { staggerChildren: 0.04 }
+    }
+  };
 
-      <div className="xl:col-span-12 flex flex-col gap-6">
+  return (
+    <div className="flex flex-col gap-6 pb-10">
       {/* 1. Main Insight Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6"
+      >
         <InsightCard 
           title={t('analytics.insights.totalSpent')}
           icon={TrendingDown}
@@ -216,8 +219,7 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
           subtitle={frequentCategory.count > 0 ? `${frequentCategory.count} ${t('analytics.insights.transactionsCount')}` : ''}
           color="copper"
         />
-
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -257,7 +259,34 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
              )}
            </div>
 
-           <div className="h-48 w-full mt-4" role="img" aria-label={t('analytics.insights.dayChartLabel')}>
+           <div
+             className="h-48 w-full mt-4 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 rounded-xl"
+             role="listbox"
+             aria-label={t('analytics.insights.dayChartLabel')}
+             aria-activedescendant={activeBarIndex != null ? `spend-day-${activeBarIndex}` : undefined}
+             tabIndex={0}
+             onKeyDown={(e) => {
+               const isRTL = lang === 'ar';
+               const isNext = isRTL ? e.key === 'ArrowLeft' : e.key === 'ArrowRight';
+               const isPrev = isRTL ? e.key === 'ArrowRight' : e.key === 'ArrowLeft';
+               if (!isNext && !isPrev && e.key !== 'Home' && e.key !== 'End' && e.key !== 'Enter' && e.key !== ' ') return;
+               e.preventDefault();
+               if (e.key === 'Home') {
+                 setActiveBarIndex(0);
+                 return;
+               }
+               if (e.key === 'End') {
+                 setActiveBarIndex(dayOfWeekData.length - 1);
+                 return;
+               }
+               setActiveBarIndex((current) => {
+                 const from = current == null ? (isNext ? -1 : 0) : current;
+                 if (isNext) return (from + 1) % dayOfWeekData.length;
+                 if (isPrev) return (from - 1 + dayOfWeekData.length) % dayOfWeekData.length;
+                 return from;
+               });
+             }}
+           >
              <ResponsiveContainer width="100%" height="100%">
                <BarChart data={dayOfWeekData} margin={lang === 'ar' ? { top: 10, right: -20, left: 0, bottom: 0 } : { top: 10, right: 0, left: -20, bottom: 0 }}>
                  <defs>
@@ -287,7 +316,8 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
                      const highlightFill = 'url(#weekendCopper)';
                      return (
                        <Cell 
-                         key={`cell-${index}`} 
+                         key={`cell-${index}`}
+                         id={`spend-day-${index}`}
                          fill={isSelected ? highlightFill : baseFill} 
                          style={{ transition: 'fill 0.3s ease' }} 
                        />
@@ -413,8 +443,6 @@ function SpendingTabComponent({ data, categories, money, allTransactions, filter
               </div>
            </div>
         </motion.section>
-
-      </div>
       </div>
     </div>
   );

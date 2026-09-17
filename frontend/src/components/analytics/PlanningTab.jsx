@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Target, TrendingUp, ShieldCheck, Sparkles, ArrowUpRight } from 'lucide-react';
 import { getIconComponent } from '../IconPicker';
@@ -7,6 +8,7 @@ import { getMetricFontSize, metricFlow } from '../../utils/metricFontSize';
 
 function PlanningTabComponent({ budgets = [], money }) {
   const { t } = useLanguage();
+  const reduceMotion = useReducedMotion();
 
   const { totalBudget, totalSpent, remainingBudget, overallPercentage, overBudgetCount } = React.useMemo(() => {
     let budgetSum = 0;
@@ -52,13 +54,34 @@ function PlanningTabComponent({ budgets = [], money }) {
     };
   }, [overallPercentage, t]);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: reduceMotion ? { duration: 0.15 } : { staggerChildren: 0.04 }
+    }
+  };
+
+  const itemVariants = reduceMotion
+    ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.15 } } }
+    : { hidden: { opacity: 0, y: 12, scale: 0.98 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', bounce: 0.15, duration: 0.45 } } };
+
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
+    <div className="space-y-8 pb-10">
 
       {/* Hero Performance Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4"
+      >
         {/* Total Allocated */}
-        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group transition-colors"
+        >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs md:text-sm font-medium text-white/70">
               {t('analytics.planning.totalBudget')}
@@ -73,10 +96,14 @@ function PlanningTabComponent({ budgets = [], money }) {
           <p className="text-xs text-white/60 mt-0.5">
             {budgets?.length || 0} {t('analytics.planning.activeBudgetsCount')}
           </p>
-        </div>
+        </motion.div>
 
         {/* Total Spent */}
-        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group transition-colors"
+        >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs md:text-sm font-medium text-white/70">
               {t('analytics.planning.totalSpent')}
@@ -91,10 +118,14 @@ function PlanningTabComponent({ budgets = [], money }) {
           <p className="text-xs text-white/60 mt-0.5">
             {Math.round(overallPercentage)}% {t('analytics.planning.ofLimit')}
           </p>
-        </div>
+        </motion.div>
 
         {/* Remaining Allowance */}
-        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group transition-colors"
+        >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs md:text-sm font-medium text-white/70">
               {t('analytics.planning.remainingBudget')}
@@ -118,10 +149,14 @@ function PlanningTabComponent({ budgets = [], money }) {
               : t('analytics.planning.availableToSpend')
             }
           </p>
-        </div>
+        </motion.div>
 
         {/* Consumption Rate */}
-        <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
+          className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-2xl p-4 md:p-5 relative overflow-hidden group transition-colors"
+        >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs md:text-sm font-medium text-white/70">
               {t('analytics.planning.consumption')}
@@ -143,8 +178,8 @@ function PlanningTabComponent({ budgets = [], money }) {
               }}
             />
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Category Budgets Grid */}
       <section className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-5 lg:p-6">
@@ -172,7 +207,12 @@ function PlanningTabComponent({ budgets = [], money }) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
+        >
           {budgets?.length ? budgets.map((b) => {
             const spent = b.spent || 0;
             const percentage = Math.min((spent / b.amount) * 100, 100);
@@ -182,7 +222,9 @@ function PlanningTabComponent({ budgets = [], money }) {
             const color = b.category?.color || '#8D6346';
             
             return (
-              <div 
+              <motion.div 
+                variants={itemVariants}
+                whileHover={reduceMotion ? undefined : { y: -2, transition: { duration: 0.2 } }}
                 className="bg-black/10 shadow-inner p-4 md:p-6 rounded-[1.5rem] border border-white/5 hover:border-white/10 transition-colors group relative overflow-hidden" 
                 key={b._id}
               >
@@ -239,22 +281,22 @@ function PlanningTabComponent({ budgets = [], money }) {
                     <div 
                       className="h-full rounded-full transition-all duration-1000 ease-out motion-reduce:transition-none"
                       style={{ 
-                        width: `${percentage}%`, 
+                        width: `${percentage}%`,
                         backgroundColor: isDanger ? '#FF3B30' : color,
-                        boxShadow: `0 0 10px ${isDanger ? '#FF3B30' : color}80`
+                        boxShadow: `0 0 8px ${isDanger ? '#FF3B30' : color}80`
                       }}
                     />
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           }) : (
             <div className="col-span-full py-12 text-center flex flex-col items-center justify-center">
               <div className="w-12 h-12 rounded-2xl bg-[#8D6346]/10 border border-[#8D6346]/20 flex items-center justify-center text-[#8D6346] mb-3">
                 <Target size={24} />
               </div>
-              <p className="text-[var(--color-text-muted)] text-sm max-w-md mb-5 leading-relaxed">
-                {t('analytics.planning.noBudgets')}
+              <p className="text-[var(--color-text-muted)] text-sm max-w-md mb-4 leading-relaxed">
+                {t('analytics.planning.noBudgetsDesc')}
               </p>
               <Link 
                 to="/budgets"
@@ -265,7 +307,7 @@ function PlanningTabComponent({ budgets = [], money }) {
               </Link>
             </div>
           )}
-        </div>
+        </motion.div>
       </section>
 
       {/* Smart Budget Planner Integration Banner */}
