@@ -134,8 +134,8 @@ class PaydaySurvivalService {
         runOutDate: null,
         remainingSurvivalDays: null,
         predictedDeficit: 0,
-        explanations: ["Today is payday! Your money has successfully survived."],
-        actionableInsights: ["No action required."],
+        explanations: [{ key: 'analytics.insights.paydayPaydayToday' }],
+        actionableInsights: [{ key: 'analytics.insights.paydayNoAction' }],
         timeline: [
           { label: 'Today', type: 'start' },
           { label: incomeName, amount: incomeAmount, type: 'end' }
@@ -209,23 +209,23 @@ class PaydaySurvivalService {
     const varPct = totalExpenses > 0 ? Math.round((totalVariable / totalExpenses) * 100) : 0;
 
     if (totalExpenses > 0) {
-      explanations.push(`Bills represent ${billPct}% of your projected expenses before payday.`);
-      explanations.push(`Recurring transactions account for ${recurringPct}%.`);
-      explanations.push(`Variable spending represents ${varPct}%.`);
+      explanations.push({ key: 'analytics.insights.paydayBillsShare', pct: billPct });
+      explanations.push({ key: 'analytics.insights.paydayRecurringShare', pct: recurringPct });
+      explanations.push({ key: 'analytics.insights.paydayVariableShare', pct: varPct });
     }
 
     if (risk === 'High Risk') {
       const daysEarly = daysRemaining - remainingSurvivalDays;
-      explanations.push(`Your account balance is expected to become negative ${daysEarly} day${daysEarly !== 1 ? 's' : ''} before your next income.`);
+      explanations.push({ key: 'analytics.insights.paydayNegativeBefore', days: daysEarly });
       
       const deficitAbs = Math.abs(predictedDeficit);
-      actionableInsights.push(`Reducing variable spending by approximately ${Math.ceil(deficitAbs)} EGP before your next income would allow your balance to survive until payday.`);
+      actionableInsights.push({ key: 'analytics.insights.paydayReduceSpend', amount: Math.ceil(deficitAbs) });
     } else if (risk === 'Medium Risk' || risk === 'Low Risk') {
-      explanations.push(`Your balance will remain positive, but only enough for approximately ${financialBuffer.toFixed(1)} additional days.`);
-      actionableInsights.push(`Slightly reducing daily spending will create a safer buffer for your upcoming payday.`);
+      explanations.push({ key: 'analytics.insights.paydayThinBuffer', days: financialBuffer.toFixed(1) });
+      actionableInsights.push({ key: 'analytics.insights.paydaySaferBuffer' });
     } else {
-      explanations.push(`Your balance is expected to last ${financialBuffer.toFixed(1)} extra days after covering all projected expenses.`);
-      actionableInsights.push(`No action is required. Your current balance is expected to comfortably reach your next income.`);
+      explanations.push({ key: 'analytics.insights.paydayLastsExtra', days: financialBuffer.toFixed(1) });
+      actionableInsights.push({ key: 'analytics.insights.paydayComfortable' });
     }
 
     // Timeline Generation
