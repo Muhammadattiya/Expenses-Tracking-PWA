@@ -3,6 +3,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, AlertCircle } from "lucide-react";
+import Button from "../ui/Button";
 
 const ConfirmModal = ({
   open,
@@ -93,31 +94,28 @@ const ConfirmModal = ({
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <button
-              type="button"
+            <Button
+              variant="glass"
+              size="pill"
+              fullWidth
               onClick={onCancel}
               disabled={loading || disabled}
-              className="flex-1 py-3 px-5 rounded-full font-semibold text-[13.5px] bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="py-3 px-5 text-[13.5px] font-semibold text-white/70 hover:text-white"
             >
               {finalCancelText}
-            </button>
+            </Button>
 
-            <button
-              type="button"
-              onClick={onConfirm}
+            <Button
+              variant={confirmColor === "red" ? "danger" : "primary"}
+              size="pill"
+              fullWidth
+              loading={loading}
               disabled={loading || disabled}
-              className={`flex-1 py-3 px-5 rounded-full font-semibold text-[13.5px] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
-                confirmColor === "red"
-                  ? "bg-red-500/25 border border-red-500/40 hover:bg-red-500/35 text-red-100 shadow-[0_4px_20px_rgba(239,68,68,0.25),inset_0_1px_1px_rgba(255,255,255,0.18)]"
-                  : "bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)]"
-              }`}
+              onClick={onConfirm}
+              className="py-3 px-5 text-[13.5px] font-semibold"
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
-              ) : (
-                finalConfirmText
-              )}
-            </button>
+              {finalConfirmText}
+            </Button>
           </div>
         </motion.div>
       </div>

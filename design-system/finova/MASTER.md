@@ -9,7 +9,7 @@
 
 - **Stack**: React 19 + Vite, Tailwind CSS v4, Framer Motion, Lucide React.
 - **Direction**: Dynamic RTL / LTR support (Arabic default, English supported).
-- **Glassmorphism Rule**: **NO SVG displacement or chromatic aberration filters**. Surfaces rely exclusively on pure CSS `backdrop-blur`, layered translucency (`bg-black/20`, `bg-[#2B2321]/30`), and subtle top/left highlight borders (`border-t-white/30`, `border-white/10`).
+- **Liquid Glass Rule**: **PRESERVE CURRENT LIQUID GLASS AS-IS**. Finova uses the established `.liquidglass` class (with its backdrop filter and specular shadows) across hero cards, modals, and panels. Under NO circumstance should `.liquidglass` be removed, altered, or degraded. Complementary surfaces use pure CSS glassmorphism (`backdrop-blur-[32px]`, `bg-black/20`, `bg-[#2B2321]/30`).
 
 ---
 
@@ -92,3 +92,17 @@
 - **Destructive Confirmations**: Never use native `window.confirm()`. Always use `<ConfirmModal />`.
 - **Lists & Virtualization**: Use `useWindowScroll={true}` on `react-virtuoso` without fixed parent heights to avoid double scrollbars.
 - **RTL Support**: Use logical Tailwind properties (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`) instead of physical directions (`ml-`, `mr-`, `pl-`, `pr-`, `left-`, `right-`).
+
+---
+
+## 5. Extracted Shared UI Primitives (`src/components/ui/`)
+
+| Component | Export Path | Key Features |
+|-----------|-------------|--------------|
+| **Button** | `src/components/ui/Button.jsx` | Tactile spring physics (`whileTap={{ scale: 0.95/0.98 }}`), variants: `primary` (copper), `secondary` / `glass` (translucent), `subtle`, `danger`, `ghost`, loading spinners, icon slots. |
+| **SegmentedControl** | `src/components/ui/SegmentedControl.jsx` | Fluid sliding pill tab indicator using Framer Motion `layoutId`, recessed glass track (`bg-black/25 backdrop-blur-[12px]`), RTL-compatible keyboard/touch navigation. |
+| **MetricPill** | `src/components/ui/MetricPill.jsx` | Strict `tabular-nums tracking-tight` formatting for financial numbers, semantic color variants (`gain`, `loss`, `warning`, `info`, `copper`, `neutral`), stacked & inline variants. |
+| **AmbientBackground** | `src/components/ui/AmbientBackground.jsx` | Fixed atmospheric background copper glows (`#8D6346 blur-[120px] opacity-60`), variants: `dashboard`, `debts`, `minimal`. |
+| **TextInput** | `src/components/ui/TextInput.jsx` | Translucent glass input (`bg-white/5`), copper glow focus ring (`focus:border-[#8D6346]`), labels, helper text, and error states. |
+| **Barrel Export** | `src/components/ui/index.js` | Unified entry point for importing all shared design system primitives. |
+

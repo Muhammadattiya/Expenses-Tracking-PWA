@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Plus, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
+import Button from '../ui/Button';
 
 export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, initialData }) {
   const { t } = useLanguage();
@@ -204,19 +205,17 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
 
         {/* Footer */}
         <div className="p-6 border-t border-white/10 bg-transparent">
-          <button 
+          <Button
             type="submit"
             form="personal-debt-form"
-            disabled={isSubmitting}
-            className="w-full py-4 rounded-full font-bold text-[14px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md disabled:opacity-50 disabled:pointer-events-none"
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={isSubmitting}
+            icon={<Plus className="w-5 h-5" />}
           >
-            {isSubmitting ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true"></span>
-            ) : (
-              <Plus className="w-5 h-5" />
-            )}
-            <span>{initialData ? t('debts.saveChanges') : t('debts.saveDebt')}</span>
-          </button>
+            {initialData ? t('debts.saveChanges') : t('debts.saveDebt')}
+          </Button>
         </div>
 
       </div>

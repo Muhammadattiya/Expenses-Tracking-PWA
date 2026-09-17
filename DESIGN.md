@@ -227,8 +227,10 @@ Finova features soft, continuous curvature modeled after native iOS hardware.
 - **Do** mount all modals into `document.body` via React Portals to prevent z-index stacking conflicts with `BottomNav`.
 - **Do** keep long virtualized lists bound to window scroll (`useWindowScroll={true}`) to prevent double scrollbars.
 
+- **Do** preserve the established `.liquidglass` class and implementation as-is without modification.
+
 ### Don't:
-- **Don't** use SVG displacement filters or chromatic aberration filters (`#glass-filter-_r_b_`); surfaces rely strictly on pure, performant CSS.
+- **Don't** modify, alter, or attempt to replace the existing `.liquidglass` class and its specular glass filter; keep it intact as-is.
 - **Don't** make glass surfaces opaque or muddy grey; keep opacity under 35% on dark surfaces so depth remains optical.
 - **Don't** use generic flat primary buttons; buttons must feature tactile feedback and refined copper highlights.
 - **Don't** hardcode physical layout directions (`left-`, `right-`, `ml-`, `mr-`) in UI components.
