@@ -48,7 +48,7 @@ exports.createDebt = async (req, res, next) => {
     res.status(201).json({ debt, transaction });
   } catch (err) {
     console.error('[ERROR] createDebt:', err);
-    next(error);
+    next(err);
   }
 };
 
@@ -61,7 +61,7 @@ exports.getDebts = async (req, res, next) => {
     res.json({ debts, transactions });
   } catch (err) {
     console.error('[ERROR] getDebts:', err);
-    next(error);
+    next(err);
   }
 };
 
@@ -116,7 +116,7 @@ exports.addTransaction = async (req, res, next) => {
     res.status(201).json({ debt, transaction });
   } catch (err) {
     console.error('[ERROR] addTransaction:', err);
-    next(error);
+    next(err);
   }
 };
 
@@ -131,7 +131,7 @@ exports.deleteDebt = async (req, res, next) => {
     res.json({ message: 'Debt deleted successfully' });
   } catch (err) {
     console.error('[ERROR] deleteDebt:', err);
-    next(error);
+    next(err);
   }
 };
 
@@ -150,6 +150,6 @@ exports.updateDebt = async (req, res, next) => {
     res.json({ debt });
   } catch (err) {
     console.error('[ERROR] updateDebt:', err);
-    next(error);
+    next(err);
   }
 };

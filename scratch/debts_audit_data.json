@@ -1,0 +1,405 @@
+{
+  "auditResults": {
+    "title": "Finova",
+    "url": "http://localhost:5173/receivables",
+    "h1": "Debts & Receivables",
+    "h2s": [
+      "EGP 900.00",
+      "Group Expenses",
+      "Weekend BBQ Gathering"
+    ],
+    "buttons": [
+      {
+        "index": 0,
+        "text": "Split Bills",
+        "width": 114,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": "tab",
+        "hasPopup": null
+      },
+      {
+        "index": 1,
+        "text": "Personal Debts",
+        "width": 154,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": "tab",
+        "hasPopup": null
+      },
+      {
+        "index": 2,
+        "text": "All",
+        "width": 50,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 3,
+        "text": "Active",
+        "width": 74,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 4,
+        "text": "Settled",
+        "width": 80,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 5,
+        "text": "Add Receivable",
+        "width": 167,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 6,
+        "text": "",
+        "width": 44,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 7,
+        "text": "",
+        "width": 44,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 8,
+        "text": "Cash",
+        "width": 153,
+        "height": 42,
+        "isSmall": true,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 9,
+        "text": "Collect",
+        "width": 347,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 10,
+        "text": "Cash",
+        "width": 153,
+        "height": 42,
+        "isSmall": true,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 11,
+        "text": "Collect",
+        "width": 347,
+        "height": 44,
+        "isSmall": false,
+        "hasAria": true,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 12,
+        "text": "",
+        "width": 48,
+        "height": 48,
+        "isSmall": false,
+        "hasAria": false,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 13,
+        "text": "",
+        "width": 40,
+        "height": 40,
+        "isSmall": true,
+        "hasAria": false,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 14,
+        "text": "",
+        "width": 40,
+        "height": 40,
+        "isSmall": true,
+        "hasAria": false,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 15,
+        "text": "",
+        "width": 40,
+        "height": 40,
+        "isSmall": true,
+        "hasAria": false,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 16,
+        "text": "",
+        "width": 40,
+        "height": 40,
+        "isSmall": true,
+        "hasAria": false,
+        "role": null,
+        "hasPopup": null
+      },
+      {
+        "index": 17,
+        "text": "",
+        "width": 48,
+        "height": 48,
+        "isSmall": false,
+        "hasAria": false,
+        "role": null,
+        "hasPopup": null
+      }
+    ],
+    "inputs": [
+      {
+        "type": "number",
+        "id": "",
+        "hasLabel": false,
+        "ariaLabel": "Amount - Hassan",
+        "placeholder": "Amount"
+      },
+      {
+        "type": "number",
+        "id": "",
+        "hasLabel": false,
+        "ariaLabel": "Amount - Youssef",
+        "placeholder": "Amount"
+      }
+    ],
+    "touchTargets": [
+      {
+        "text": "Cash",
+        "width": 153,
+        "height": 42,
+        "classes": "w-full bg-black/20 backdrop-blur-[10px] border bor"
+      },
+      {
+        "text": "Cash",
+        "width": 153,
+        "height": 42,
+        "classes": "w-full bg-black/20 backdrop-blur-[10px] border bor"
+      },
+      {
+        "text": "Icon Button",
+        "width": 40,
+        "height": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-cente"
+      },
+      {
+        "text": "Icon Button",
+        "width": 40,
+        "height": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-cente"
+      },
+      {
+        "text": "Icon Button",
+        "width": 40,
+        "height": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-cente"
+      },
+      {
+        "text": "Icon Button",
+        "width": 40,
+        "height": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-cente"
+      }
+    ],
+    "contrastSample": [],
+    "overflowX": false
+  },
+  "mobileAudit": {
+    "hasHorizontalOverflow": false,
+    "docWidth": 375,
+    "winWidth": 375,
+    "smallTouchTargetCount": 8,
+    "smallTouchTargets": [
+      {
+        "tag": "INPUT",
+        "text": "Amount - Hassan",
+        "w": 156,
+        "h": 42,
+        "classes": "flex-1 min-w-0 bg-black/20 backdrop-blur-[10px] border borde"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Cash",
+        "w": 122,
+        "h": 42,
+        "classes": "w-full bg-black/20 backdrop-blur-[10px] border border-white/"
+      },
+      {
+        "tag": "INPUT",
+        "text": "Amount - Youssef",
+        "w": 156,
+        "h": 42,
+        "classes": "flex-1 min-w-0 bg-black/20 backdrop-blur-[10px] border borde"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Cash",
+        "w": 122,
+        "h": 42,
+        "classes": "w-full bg-black/20 backdrop-blur-[10px] border border-white/"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "unnamed",
+        "w": 40,
+        "h": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-center rounded-"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "unnamed",
+        "w": 40,
+        "h": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-center rounded-"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "unnamed",
+        "w": 40,
+        "h": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-center rounded-"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "unnamed",
+        "w": 40,
+        "h": 40,
+        "classes": "relative w-10 h-10 flex items-center justify-center rounded-"
+      }
+    ]
+  },
+  "perfMetrics": {
+    "totalNodes": 238,
+    "imagesWithoutAlt": 0,
+    "svgCount": 21
+  },
+  "errors": [
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "[GSI_LOGGER]: The given origin is not allowed for the given client ID."
+  ],
+  "consoleLogs": [
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c [view] http://localhost:5173/login color: rgb(120, 120, 120) color: inherit {o: http://localhost:5173/login, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, ts: 1789566969487} /_vercel/insights/view"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://goo.gl/9p2vKq) %o"
+    },
+    {
+      "type": "warning",
+      "text": "[GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used."
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "[GSI_LOGGER]: The given origin is not allowed for the given client ID."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c [view] http://localhost:5173/ color: rgb(120, 120, 120) color: inherit {o: http://localhost:5173/, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, ts: 1789566973032} /_vercel/insights/view"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c [view] http://localhost:5173/receivables color: rgb(120, 120, 120) color: inherit {o: http://localhost:5173/receivables, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, ts: 1789566975540} /_vercel/insights/view"
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit"
+    }
+  ]
+}

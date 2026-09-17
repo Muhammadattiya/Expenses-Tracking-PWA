@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell, Calculator } from "lucide-react";
+import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell, Calculator, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { getAccounts } from "../api/accounts";
@@ -8,20 +8,24 @@ import { getCategories } from "../api/categories";
 import { createTransaction } from "../api/transactions";
 import { createRecurringTransaction } from "../api/recurringTransactions";
 import CustomDatePicker from "../components/ui/CustomDatePicker";
-import CustomSelect from "../components/ui/CustomSelect";
 import RecurringSettingsModal from "../components/modals/RecurringSettingsModal";
+import CategoryBottomSheetModal from "../components/modals/CategoryBottomSheetModal";
+import AccountBottomSheetModal from "../components/modals/AccountBottomSheetModal";
 import CalculatorModal from "../components/modals/CalculatorModal";
+import { getIconComponent } from "../components/IconPicker";
 import { payBill } from "../api/bills";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import SplashScreen from "../components/SplashScreen";
+import { triggerHaptic } from "../utils/haptics";
 
 const AddTransaction = () => {
   // الحالات (States) الأساسية
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useNotification();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const formRef = useRef(null);
 
   const [type, setType] = useState('expense');
   const [amount, setAmount] = useState(location.state?.defaultAmount?.toString() || '');
@@ -29,6 +33,15 @@ const AddTransaction = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isSuccessCelebration, setIsSuccessCelebration] = useState(false);
+
+  // حالة مودال الحسابات
+  const [accountModalConfig, setAccountModalConfig] = useState({
+    isOpen: false,
+    target: 'account',
+    title: ''
+  });
 
   const todayStr = new Date().toISOString().split('T')[0];
   const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })();
@@ -63,18 +76,19 @@ const AddTransaction = () => {
   });
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
 
-  // إزالة الـ scroll تماماً من الصفحة للحفاظ على احتواء كل العناصر وثباتها داخل الشاشة
+  // اختصار لوحة المفاتيح: Ctrl+Enter أو Cmd+Enter للحفظ السريع على سطح المكتب
   useEffect(() => {
-    const origHtmlOverflow = document.documentElement.style.overflow;
-    const origBodyOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.documentElement.style.overflow = origHtmlOverflow;
-      document.body.style.overflow = origBodyOverflow;
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!isSubmitting && amount && Number(amount) > 0) {
+          formRef.current?.requestSubmit();
+        }
+      }
     };
-  }, []);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSubmitting, amount]);
 
   // جلب البيانات من الباك إند أول ما الصفحة تفتح
   useEffect(() => {
@@ -82,7 +96,7 @@ const AddTransaction = () => {
       try {
         const [accountsData, categoriesData] = await Promise.all([
           getAccounts(),
-          getCategories(),
+          getCategories()
         ]);
 
         setAccounts(accountsData);
@@ -128,6 +142,7 @@ const AddTransaction = () => {
 
 
   const handleTypeChange = (newType) => {
+    triggerHaptic('selection');
     setType(newType);
     if (newType === 'transfer') return;
     const availableCategories = categories[newType] || [];
@@ -141,15 +156,23 @@ const AddTransaction = () => {
     e.preventDefault();
     if (isSubmitting) return;
 
+    const parsedAmount = Number(amount);
+    if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+      triggerHaptic('warning');
+      showToast(t('addTransaction.enterValidAmount'), 'warning');
+      return;
+    }
+
     const payload = {
       type,
-      amount: Number(amount),
+      amount: parsedAmount,
       title,
       date: new Date(date).toISOString(),
     };
 
     if (type === 'transfer') {
       if (!fromAccount || !toAccount) {
+        triggerHaptic('warning');
         showToast(t('addTransaction.selectAccounts'), 'warning');
         return;
       }
@@ -157,6 +180,7 @@ const AddTransaction = () => {
       payload.to_account = toAccount;
     } else {
       if (!account || !category) {
+        triggerHaptic('warning');
         showToast(t('addTransaction.selectAccountAndCategory'), 'warning');
         return;
       }
@@ -203,12 +227,39 @@ const AddTransaction = () => {
         reminderDaysBefore: 1
       });
 
+      // تحديث فوري وسلس للأرصدة محلياً لسرعة الاستجابة
+      if (type === 'transfer') {
+        setAccountBalances(prev => ({
+          ...prev,
+          [fromAccount]: (prev[fromAccount] || 0) - parsedAmount,
+          [toAccount]: (prev[toAccount] || 0) + parsedAmount
+        }));
+      } else if (type === 'expense') {
+        setAccountBalances(prev => ({
+          ...prev,
+          [account]: (prev[account] || 0) - parsedAmount
+        }));
+      } else if (type === 'income') {
+        setAccountBalances(prev => ({
+          ...prev,
+          [account]: (prev[account] || 0) + parsedAmount
+        }));
+      }
+
+      // نبض لمسي احتفالي عند نجاح الحفظ
+      triggerHaptic('success');
+      setIsSuccessCelebration(true);
+      setTimeout(() => {
+        setIsSuccessCelebration(false);
+      }, 1400);
+
       showToast(t('addTransaction.successMsg'), 'success');
 
       if (billId) {
         navigate('/bills');
       }
     } catch (error) {
+      triggerHaptic('warning');
       console.error('❌ خطأ في حفظ المعاملة:', error);
       showToast(error.response?.data?.message || t('addTransaction.errorMsg'), 'error');
     } finally {
@@ -222,7 +273,7 @@ const AddTransaction = () => {
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto select-none flex flex-col gap-2.5 sm:gap-3.5 h-[calc(100dvh-2rem)]">
+    <div className="w-full max-w-lg mx-auto select-none flex flex-col gap-3 sm:gap-4 px-4 pt-3 pb-32 min-h-screen relative">
       {/* Ambient Copper Background with rich glow showing through the transparent glass */}
       <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115] overflow-hidden">
         <div className="absolute top-[20px] left-[-90px] w-[340px] h-[340px] bg-[#8D6346] rounded-full blur-[140px] opacity-45" />
@@ -230,11 +281,27 @@ const AddTransaction = () => {
         <div className="absolute bottom-[-60px] left-1/2 -translate-x-1/2 w-[380px] h-[280px] bg-[#8D6346] rounded-full blur-[140px] opacity-40" />
       </div>
 
+      {/* Top Header Bar with Cancel / Back Navigation */}
+      <div className="flex items-center justify-between w-full px-1">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all active:scale-95"
+          aria-label={t('modals.cancelBtn') || 'Back'}
+        >
+          {lang === 'ar' ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
+        <h2 className="text-white font-bold text-base sm:text-lg tracking-wide">
+          {type === 'expense' ? t('addTransaction.expense') : type === 'income' ? t('addTransaction.income') : t('addTransaction.transfer')}
+        </h2>
+        <div className="w-11 h-11" />
+      </div>
+
       {/* Top Segmented Control (Expense / Income / Transfer) */}
       <div className="w-full shrink-0">
         <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 rounded-full shadow-inner relative w-full h-11 sm:h-12 items-center">
           {[
-            { key: 'expense', label: t('addTransaction.expense'), color: '#FF5555', shadow: 'rgba(255,85,85,0.45)' },
+            { key: 'expense', label: t('addTransaction.expense'), color: '#FF3B30', shadow: 'rgba(255,59,48,0.45)' },
             { key: 'income', label: t('addTransaction.income'), color: '#34C759', shadow: 'rgba(52,199,89,0.45)' },
             { key: 'transfer', label: t('addTransaction.transfer'), color: '#007AFF', shadow: 'rgba(0,122,255,0.45)' }
           ].map((tab) => {
@@ -266,41 +333,57 @@ const AddTransaction = () => {
         </div>
       </div>
 
-      {/* Glass Container reaching 100% full width of the screen regardless of dimensions - Transparent glass allowing theme colors to show through */}
+      {/* Responsive Liquid Glass Form Card */}
       <form 
+        ref={formRef}
         onSubmit={handleSubmit} 
-        className="w-screen relative left-1/2 -translate-x-1/2 pt-4 pb-24 sm:pt-5 sm:pb-28 rounded-t-[28px] sm:rounded-t-[36px] rounded-b-none bg-black/10 backdrop-blur-xl border-t border-white/15 shadow-[0_-2px_16px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.12)] flex flex-col flex-1 -mb-32 overflow-x-hidden"
+        className="w-full rounded-[28px] sm:rounded-[36px] bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 p-5 sm:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_2px_rgba(255,255,255,0.15)] flex flex-col gap-4 sm:gap-5"
       >
-        <div className="w-full max-w-lg mx-auto px-5 sm:px-6 flex flex-col gap-3.5 sm:gap-4.5 flex-1">
+        <div className="w-full flex flex-col gap-3.5 sm:gap-4.5">
           {/* 1. Amount Section */}
           <div className="flex flex-col items-center justify-center w-full py-1 sm:py-2">
-            <label className="text-xs sm:text-sm font-medium text-white/70 tracking-wide mb-1.5 text-center">
+            <label htmlFor="tx-amount" className="text-xs sm:text-sm font-medium text-white/70 tracking-wide mb-1.5 text-center cursor-pointer">
               {t('addTransaction.amount')}
             </label>
             <div className="flex items-center justify-center gap-2 relative w-full">
               <button
                 type="button"
-                onClick={() => setShowCalculator(true)}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setShowCalculator(true);
+                }}
                 className="absolute start-1 sm:start-3 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner text-white/60 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all active:scale-95"
                 aria-label={t('common.calculator')}
               >
                 <Calculator className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
               <input
+                id="tx-amount"
                 type="number"
                 inputMode="decimal"
                 required
+                min="0.01"
+                max="999999999"
+                step="any"
+                aria-label={t('addTransaction.amount')}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
                 className="bg-transparent text-center text-5xl sm:text-6xl font-extrabold text-white focus:outline-none w-full max-w-[65%] placeholder-white/25 tracking-tight leading-none py-1.5 tabular-nums"
-                style={{ caretColor: type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF' }}
+                style={{ caretColor: type === 'expense' ? '#FF3B30' : type === 'income' ? '#34C759' : '#007AFF' }}
               />
               <span className="text-sm sm:text-base text-white/80 font-bold self-end pb-2 sm:pb-2.5">
                 {t('nav.currency')}
               </span>
             </div>
-            <div className="w-2/5 max-w-[160px] min-w-[80px] h-[2px] bg-gradient-to-r from-transparent via-[#8D6346]/50 to-transparent mx-auto mt-1.5" />
+            <div 
+              className="w-2/5 max-w-[160px] min-w-[80px] h-[2px] mx-auto mt-1.5 transition-all duration-300 rounded-full" 
+              style={{
+                background: `linear-gradient(to right, transparent, ${
+                  type === 'expense' ? 'rgba(255, 59, 48, 0.7)' : type === 'income' ? 'rgba(52, 199, 89, 0.7)' : 'rgba(0, 122, 255, 0.7)'
+                }, transparent)`
+              }}
+            />
           </div>
 
           {/* 2. Date Segmented Control */}
@@ -310,12 +393,12 @@ const AddTransaction = () => {
             </label>
             <div className="flex bg-black/20 backdrop-blur-[10px] border border-white/5 p-1 sm:p-1.5 rounded-full shadow-inner relative h-11 sm:h-12 items-center">
               {[
-                { key: 'today', label: t('addTransaction.today'), active: isToday, onClick: () => setDate(todayStr) },
-                { key: 'yesterday', label: t('addTransaction.yesterday'), active: isYesterday, onClick: () => setDate(yesterdayStr) },
-                { key: 'custom', label: isCustom ? date : t('addTransaction.customDate'), active: isCustom, onClick: () => setIsDatePickerOpen(true) }
+                { key: 'today', label: t('addTransaction.today'), active: isToday, onClick: () => { triggerHaptic('selection'); setDate(todayStr); } },
+                { key: 'yesterday', label: t('addTransaction.yesterday'), active: isYesterday, onClick: () => { triggerHaptic('selection'); setDate(yesterdayStr); } },
+                { key: 'custom', label: isCustom ? date : t('addTransaction.customDate'), active: isCustom, onClick: () => { triggerHaptic('light'); setIsDatePickerOpen(true); } }
               ].map((tab) => {
-                const activeColor = type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF';
-                const activeShadow = type === 'expense' ? 'rgba(255,85,85,0.45)' : type === 'income' ? 'rgba(52,199,89,0.45)' : 'rgba(0,122,255,0.45)';
+                const activeColor = type === 'expense' ? '#FF3B30' : type === 'income' ? '#34C759' : '#007AFF';
+                const activeShadow = type === 'expense' ? 'rgba(255,59,48,0.45)' : type === 'income' ? 'rgba(52,199,89,0.45)' : 'rgba(0,122,255,0.45)';
                 return (
                   <button
                     key={tab.key}
@@ -345,78 +428,191 @@ const AddTransaction = () => {
 
           {/* 3. Description Input */}
           <div className="w-full">
-            <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1">
+            <label htmlFor="tx-description" className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 cursor-pointer">
               {t('addTransaction.description')}
             </label>
             <input
+              id="tx-description"
               type="text"
+              maxLength={120}
+              aria-label={t('addTransaction.description')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('addTransaction.descPlaceholder')}
-              className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
+              className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/10 shadow-inner rounded-full px-4.5 text-sm sm:text-base text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
             />
           </div>
 
           {/* 4 & 5. Accounts & Category */}
           {type === 'transfer' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4.5 w-full">
+              {/* From Account Trigger Button */}
               <div className="w-full">
                 <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.fromAccount')}
                 </label>
-                <CustomSelect
-                  value={fromAccount}
-                  onChange={setFromAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                  placeholder={t('addTransaction.fromAccountPlaceholder')}
-                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
-                />
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={accountModalConfig.isOpen && accountModalConfig.target === 'fromAccount'}
+                  onClick={() => setAccountModalConfig({
+                    isOpen: true,
+                    target: 'fromAccount',
+                    title: t('addTransaction.fromAccount')
+                  })}
+                  className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/10 hover:border-white/20 shadow-inner rounded-full px-3.5 sm:px-4 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 active:scale-[0.98] focus:outline-none focus:border-[#8D6346]"
+                >
+                  <div className="flex items-center gap-2.5 truncate min-w-0">
+                    {(() => {
+                      const currentAcc = accounts.find(a => a._id === fromAccount);
+                      if (!currentAcc) return <span className="text-white/40">{t('addTransaction.fromAccountPlaceholder')}</span>;
+                      const IconComp = getIconComponent(currentAcc.icon, 'Wallet');
+                      return (
+                        <>
+                          <div 
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            style={{ 
+                              backgroundColor: currentAcc.color ? `${currentAcc.color}25` : 'rgba(141,99,70,0.25)',
+                              color: currentAcc.color || '#E8C5A8'
+                            }}
+                          >
+                            <IconComp size={15} />
+                          </div>
+                          <span className="truncate text-white font-medium">{currentAcc.name}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-white/50 shrink-0 ms-1" />
+                </button>
               </div>
+
+              {/* To Account Trigger Button */}
               <div className="w-full">
                 <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.toAccount')}
                 </label>
-                <CustomSelect
-                  value={toAccount}
-                  onChange={setToAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                  placeholder={t('addTransaction.toAccountPlaceholder')}
-                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
-                />
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={accountModalConfig.isOpen && accountModalConfig.target === 'toAccount'}
+                  onClick={() => setAccountModalConfig({
+                    isOpen: true,
+                    target: 'toAccount',
+                    title: t('addTransaction.toAccount')
+                  })}
+                  className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/10 hover:border-white/20 shadow-inner rounded-full px-3.5 sm:px-4 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 active:scale-[0.98] focus:outline-none focus:border-[#8D6346]"
+                >
+                  <div className="flex items-center gap-2.5 truncate min-w-0">
+                    {(() => {
+                      const currentAcc = accounts.find(a => a._id === toAccount);
+                      if (!currentAcc) return <span className="text-white/40">{t('addTransaction.toAccountPlaceholder')}</span>;
+                      const IconComp = getIconComponent(currentAcc.icon, 'Wallet');
+                      return (
+                        <>
+                          <div 
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            style={{ 
+                              backgroundColor: currentAcc.color ? `${currentAcc.color}25` : 'rgba(141,99,70,0.25)',
+                              color: currentAcc.color || '#E8C5A8'
+                            }}
+                          >
+                            <IconComp size={15} />
+                          </div>
+                          <span className="truncate text-white font-medium">{currentAcc.name}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-white/50 shrink-0 ms-1" />
+                </button>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4.5 w-full">
+              {/* Account Trigger Button */}
               <div className="w-full">
                 <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.account')}
                 </label>
-                <CustomSelect
-                  value={account}
-                  onChange={setAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                  placeholder={t('addTransaction.accountPlaceholder')}
-                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
-                />
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={accountModalConfig.isOpen && accountModalConfig.target === 'account'}
+                  onClick={() => setAccountModalConfig({
+                    isOpen: true,
+                    target: 'account',
+                    title: t('addTransaction.account')
+                  })}
+                  className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/10 hover:border-white/20 shadow-inner rounded-full px-3.5 sm:px-4 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 active:scale-[0.98] focus:outline-none focus:border-[#8D6346]"
+                >
+                  <div className="flex items-center gap-2.5 truncate min-w-0">
+                    {(() => {
+                      const currentAcc = accounts.find(a => a._id === account);
+                      if (!currentAcc) return <span className="text-white/40">{t('addTransaction.accountPlaceholder')}</span>;
+                      const IconComp = getIconComponent(currentAcc.icon, 'Wallet');
+                      return (
+                        <>
+                          <div 
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            style={{ 
+                              backgroundColor: currentAcc.color ? `${currentAcc.color}25` : 'rgba(141,99,70,0.25)',
+                              color: currentAcc.color || '#E8C5A8'
+                            }}
+                          >
+                            <IconComp size={15} />
+                          </div>
+                          <span className="truncate text-white font-medium">{currentAcc.name}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-white/50 shrink-0 ms-1" />
+                </button>
               </div>
 
+              {/* Category Trigger Button opening iOS Bottom Sheet Grid */}
               <div className="w-full">
                 <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 truncate">
                   {t('addTransaction.category')}
                 </label>
-                <CustomSelect
-                  value={category}
-                  onChange={setCategory}
-                  options={categories[type] ? categories[type].map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon })) : []}
-                  placeholder={t('addTransaction.categoryPlaceholder')}
-                  buttonClassName="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full px-4.5 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 focus:outline-none focus:border-[#8D6346]"
-                />
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={isCategoryModalOpen}
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/10 hover:border-white/20 shadow-inner rounded-full px-3.5 sm:px-4 text-sm sm:text-base font-medium text-white flex items-center justify-between transition-all hover:bg-white/5 active:scale-[0.98] focus:outline-none focus:border-[#8D6346]"
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    {(() => {
+                      const activeCatList = categories[type] || [];
+                      const currentCat = activeCatList.find(c => c._id === category);
+                      if (!currentCat) return <span className="text-white/40">{t('addTransaction.categoryPlaceholder')}</span>;
+                      const IconComp = getIconComponent(currentCat.icon, 'Tag');
+                      return (
+                        <>
+                          <div 
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            style={{ 
+                              backgroundColor: currentCat.color ? `${currentCat.color}25` : 'rgba(141,99,70,0.25)',
+                              color: currentCat.color || '#E8C5A8'
+                            }}
+                          >
+                            <IconComp size={15} />
+                          </div>
+                          <span className="truncate text-white font-medium">{currentCat.name}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-white/50 shrink-0" />
+                </button>
               </div>
             </div>
           )}
 
           {/* 6. Recurring Settings Button */}
-          <div className="w-full mt-[22px] sm:mt-[26px]">
+          <div className="w-full mt-1">
             {recurringSettings.repeatType === 'never' ? (
               <button
                 type="button"
@@ -443,17 +639,37 @@ const AddTransaction = () => {
             )}
           </div>
 
-          {/* 7. Confirm & Save Button */}
+          {/* 7. Confirm & Save Button (Solid Warm Copper Ember with High Affordance) */}
           <motion.button
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.96 }}
             type="submit"
-            disabled={isSubmitting}
-            className="w-full h-13 sm:h-14 rounded-full font-bold text-base sm:text-lg text-white shadow-inner transition-colors duration-200 bg-[#8D6346]/30 backdrop-blur-[10px] border border-[#8D6346]/50 hover:bg-[#8D6346]/45 flex items-center justify-center gap-2 active:bg-[#8D6346]/55 mt-[22px] sm:mt-[26px] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting || isSuccessCelebration || !amount || Number(amount) <= 0}
+            className={`w-full h-13 sm:h-14 rounded-full font-bold text-base sm:text-lg text-white shadow-[0_4px_20px_rgba(141,99,70,0.35)] transition-all duration-300 border border-white/15 flex items-center justify-center gap-2 active:scale-95 mt-4 sm:mt-5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden ${
+              isSuccessCelebration
+                ? 'bg-[#34C759] shadow-[0_0_24px_rgba(52,199,89,0.5)] scale-[1.01]'
+                : 'bg-[#8D6346] hover:bg-[#E8C5A8] hover:text-[#3D2E2B]'
+            }`}
           >
-            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : t('addTransaction.submit')}
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isSuccessCelebration ? (
+              <motion.div
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", damping: 15, stiffness: 300 }}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-5 h-5 text-white" />
+                <span>{t('common.success')}</span>
+              </motion.div>
+            ) : (
+              t('addTransaction.submit')
+            )}
           </motion.button>
         </div>
       </form>
+
+      {/* Date Picker Modal */}
       {isDatePickerOpen && (
         <CustomDatePicker
           value={date}
@@ -462,6 +678,7 @@ const AddTransaction = () => {
         />
       )}
 
+      {/* Recurring Settings Modal */}
       {isRecurringModalOpen && (
         <RecurringSettingsModal
           isOpen={isRecurringModalOpen}
@@ -471,6 +688,37 @@ const AddTransaction = () => {
         />
       )}
 
+      {/* iOS Liquid Glass Category Bottom Sheet Grid Modal */}
+      <CategoryBottomSheetModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        categories={categories[type] || []}
+        selectedId={category}
+        onSelect={setCategory}
+        type={type}
+      />
+
+      {/* iOS Liquid Glass Account Bottom Sheet Modal */}
+      <AccountBottomSheetModal
+        isOpen={accountModalConfig.isOpen}
+        onClose={() => setAccountModalConfig(prev => ({ ...prev, isOpen: false }))}
+        accounts={accounts}
+        selectedId={
+          accountModalConfig.target === 'fromAccount' 
+            ? fromAccount 
+            : accountModalConfig.target === 'toAccount' 
+              ? toAccount 
+              : account
+        }
+        onSelect={(id) => {
+          if (accountModalConfig.target === 'fromAccount') setFromAccount(id);
+          else if (accountModalConfig.target === 'toAccount') setToAccount(id);
+          else setAccount(id);
+        }}
+        title={accountModalConfig.title}
+      />
+
+      {/* Calculator Modal */}
       <CalculatorModal
         isOpen={showCalculator}
         onClose={() => setShowCalculator(false)}

@@ -1,0 +1,5 @@
+- generic [ref=e2]:
+  - img "Finova Logo" [ref=e5]
+  - generic [ref=e6]:
+    - heading "Finova" [level=1] [ref=e7]
+    - paragraph [ref=e8]: Redefining your money.
