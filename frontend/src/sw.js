@@ -77,7 +77,7 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();
     const options = {
-      body: data.body || 'لديك إشعار جديد',
+      body: data.body || 'You have a new notification',
       icon: '/pwa-192x192.png',
       badge: '/favicon.svg',
       vibrate: [100, 50, 100],
@@ -94,7 +94,7 @@ self.addEventListener('push', (event) => {
         client.postMessage({
           type: 'PUSH_NOTIFICATION',
           title: data.title || 'Finova',
-          body: data.body || 'لديك إشعار جديد'
+          body: data.body || 'You have a new notification'
         });
       });
     });
