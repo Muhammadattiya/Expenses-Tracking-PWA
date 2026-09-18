@@ -138,7 +138,7 @@ exports.handleSmsWebhook = async (req, res, next) => {
         try {
           const singleTx = await Transaction.create({
             user: candidate.user._id,
-            title: candidate.parsedData.merchant || (candidate.parsedData.type === 'income' ? 'إيداع / تحويل وارد' : 'معاملة SMS (تحتاج مراجعة)'),
+            title: candidate.parsedData.merchant || (candidate.parsedData.type === 'income' ? 'Deposit / Incoming Transfer' : 'SMS Transaction (Needs Review)'),
             normalizedMerchant: candidate.parsedData.merchant ? normalizeMerchantToken(candidate.parsedData.merchant) : null,
             amount: candidate.parsedData.amount,
             type: candidate.parsedData.type,
@@ -159,8 +159,8 @@ exports.handleSmsWebhook = async (req, res, next) => {
           }
 
           const payload = notificationService.buildPayload({
-            title: 'معاملة جديدة من رسالة (SMS)',
-            body: `مبلغ ${singleTx.amount} ج.م - اضغط للمراجعة وتأكيد الحساب`,
+            title: 'New SMS Transaction',
+            body: `Amount ${singleTx.amount} EGP - Tap to review and confirm account`,
             url: '/'
           });
           await notificationService.sendToUser(candidate.user._id, payload);
@@ -203,7 +203,7 @@ exports.handleSmsWebhook = async (req, res, next) => {
     try {
       newTx = await Transaction.create({
         user: user._id,
-        title: parsedData.merchant || (parsedData.type === 'income' ? 'إيداع / تحويل وارد' : 'معاملة SMS (تحتاج مراجعة)'),
+        title: parsedData.merchant || (parsedData.type === 'income' ? 'Deposit / Incoming Transfer' : 'SMS Transaction (Needs Review)'),
         normalizedMerchant: parsedData.merchant ? normalizeMerchantToken(parsedData.merchant) : null,
         amount: parsedData.amount,
         type: parsedData.type,
@@ -238,8 +238,8 @@ exports.handleSmsWebhook = async (req, res, next) => {
     // Fire push notification for standard transaction
     try {
       const payload = notificationService.buildPayload({
-        title: 'معاملة جديدة من رسالة (SMS)',
-        body: `مبلغ ${newTx.amount} ج.م - اضغط للمراجعة وتأكيد الحساب`,
+        title: 'New SMS Transaction',
+        body: `Amount ${newTx.amount} EGP - Tap to review and confirm account`,
         url: '/'
       });
       await notificationService.sendToUser(user._id, payload);
