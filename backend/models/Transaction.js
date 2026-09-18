@@ -52,6 +52,22 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     index: true
   },
+  smsDirection: {
+    type: String,
+    enum: ['outgoing', 'incoming', null],
+    default: null
+  },
+  smsProvenance: [
+    {
+      smsHash: { type: String, required: true },
+      direction: { type: String, enum: ['outgoing', 'incoming'], required: true },
+      accountLast4: { type: String },
+      account: { type: mongoose.Schema.Types.ObjectId, ref: 'Account' },
+      referenceNumber: { type: String },
+      eventTimestamp: { type: Date },
+      receivedAt: { type: Date, default: Date.now }
+    }
+  ],
   idempotencyKey: {
     type: String,
     index: true,
@@ -107,6 +123,7 @@ transactionSchema.index({ user: 1, account: 1, date: -1 });
 transactionSchema.index({ user: 1, category: 1, date: -1 });
 transactionSchema.index({ user: 1, normalizedMerchant: 1, category: 1 });
 transactionSchema.index({ user: 1, smsHash: 1 }, { unique: true, partialFilterExpression: { smsHash: { $type: 'string' } } });
+transactionSchema.index({ user: 1, 'smsProvenance.smsHash': 1 }, { sparse: true });
 transactionSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

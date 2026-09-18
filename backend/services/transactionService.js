@@ -832,4 +832,6 @@ module.exports = {
   updateTransaction,
   deleteTransaction,
   importTransactions,
+  withRetry,
+  updateBudgetIncrementally,
 };
