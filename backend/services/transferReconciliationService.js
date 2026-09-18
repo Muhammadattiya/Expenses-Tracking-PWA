@@ -1,19 +1,31 @@
 /**
- * Transfer Reconciliation Service for Finova
+ * Transfer Reconciliation Service for Finova (Non-Destructive Holding Queue)
  *
  * Atomically detects, validates, and reconciles IPN self-transfers
  * represented by separate outgoing and incoming SMS messages.
- * Complies with Constitution Principles I, II, III, IV, and V.
+ *
+ * STRICT MANDATE: ZERO DATABASE DELETIONS.
+ * - Transfer candidates are held in a 45-second holding queue.
+ * - If a matching counterpart arrives, exactly ONE Transfer transaction is created.
+ *   Zero expenses, zero incomes, and ZERO database deletions.
+ * - If 45 seconds elapse without a counterpart, the candidate is finalized as an
+ *   independent single transaction without any deletion.
  */
 
 const crypto = require('crypto');
-const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 const Account = require('../models/Account');
 const { applyTransactionDelta } = require('./analyticsEngine');
-const { withRetry, updateBudgetIncrementally } = require('./transactionService');
+const notificationService = require('./notificationService');
 
 const SMS_TRANSFER_PAIRING_WINDOW_SECONDS = 45;
+
+/**
+ * In-memory holding queue for pending transfer candidates.
+ * Partitioned strictly by authenticated user ID for 100% tenant isolation.
+ * Map<userId_string, Array<HeldCandidate>>
+ */
+const transferHoldingQueue = new Map();
 
 /**
  * Computes a deterministic idempotency key for an SMS pair
@@ -28,87 +40,80 @@ const computePairIdempotencyKey = (hash1, hash2) => {
 };
 
 /**
- * Attempts to reconcile a newly arrived SMS transaction with an existing counterpart
- * within the 45-second window into a single IPN self-transfer transaction.
+ * Processes an incoming transfer candidate using the non-destructive holding queue.
  *
  * @param {Object} params
- * @param {string|mongoose.Types.ObjectId} params.userId - Authenticated user ID
- * @param {Object} params.currentTransaction - The saved Mongoose transaction document
- * @param {Object} params.parsedSms - Normalized parsed SMS metadata
- * @param {string} params.smsHash - SHA-256 hash of current raw SMS
- * @returns {Promise<{ isReconciled: boolean, transaction: Object, counterpartId?: mongoose.Types.ObjectId }>}
+ * @param {Object} params.user - Authenticated User document
+ * @param {Object} params.parsedData - Parsed SMS object
+ * @param {mongoose.Types.ObjectId|string|null} params.accountId - Resolved Account ID
+ * @param {mongoose.Types.ObjectId|string|null} params.categoryId - Resolved Category ID
+ * @param {string} params.smsText - Raw or sanitized SMS text
+ * @param {string} params.smsHash - SHA-256 hash of raw SMS
+ * @param {Function} params.finalizeCallback - Callback invoked if candidate times out and becomes a single transaction
+ * @returns {Promise<{ isReconciled: boolean, isPending: boolean, transaction?: Object }>}
  */
-const attemptTransferReconciliation = async ({ userId, currentTransaction, parsedSms, smsHash }) => {
-  if (!userId || !currentTransaction || !parsedSms || !smsHash) {
-    return { isReconciled: false, transaction: currentTransaction };
+const processTransferCandidate = async ({
+  user,
+  parsedData,
+  accountId,
+  categoryId,
+  smsText,
+  smsHash,
+  finalizeCallback
+}) => {
+  const userIdStr = String(user._id);
+
+  if (!transferHoldingQueue.has(userIdStr)) {
+    transferHoldingQueue.set(userIdStr, []);
   }
 
-  // Only expense and income transactions from sms_shortcut can be paired
-  if (!['expense', 'income'].includes(currentTransaction.type) || currentTransaction.source !== 'sms_shortcut') {
-    return { isReconciled: false, transaction: currentTransaction };
+  const userQueue = transferHoldingQueue.get(userIdStr);
+
+  // In-memory deduplication check: if this exact SMS is already in queue, return pending
+  const existingCandidate = userQueue.find(c => c.smsHash === smsHash);
+  if (existingCandidate) {
+    return { isReconciled: false, isPending: true };
   }
 
-  const txCreatedAt = currentTransaction.createdAt ? new Date(currentTransaction.createdAt) : new Date();
-  const windowStart = new Date(txCreatedAt.getTime() - SMS_TRANSFER_PAIRING_WINDOW_SECONDS * 1000);
-  const windowEnd = new Date(txCreatedAt.getTime() + SMS_TRANSFER_PAIRING_WINDOW_SECONDS * 1000);
+  const currentIsOutgoing = parsedData.direction === 'outgoing' || parsedData.type === 'expense';
+  const now = Date.now();
 
-  // Candidate must have opposite type (expense <-> income) and exact same amount
-  const oppositeType = currentTransaction.type === 'expense' ? 'income' : 'expense';
+  // Search queue for an eligible matching counterpart
+  let matchedIndex = -1;
 
-  // Strictly query within the same authenticated user scope (multi-tenant isolation)
-  const candidates = await Transaction.find({
-    user: userId,
-    source: 'sms_shortcut',
-    type: oppositeType,
-    amount: currentTransaction.amount,
-    _id: { $ne: currentTransaction._id },
-    createdAt: { $gte: windowStart, $lte: windowEnd }
-  }).sort({ createdAt: -1 });
+  for (let i = 0; i < userQueue.length; i++) {
+    const candidate = userQueue[i];
 
-  if (!candidates || candidates.length === 0) {
-    return { isReconciled: false, transaction: currentTransaction };
-  }
-
-  // Iterate over candidates and evaluate the 10 strict pairing criteria
-  for (const candidate of candidates) {
-    // Rule 1: Multi-tenant ownership
-    if (String(candidate.user) !== String(userId) || String(currentTransaction.user) !== String(userId)) {
+    // Rule 1: Multi-tenant ownership (already strictly partitioned by userIdStr)
+    if (candidate.userId !== userIdStr) {
       continue;
     }
 
-    // Rule 2: Opposite directions
-    const currentIsOutgoing = currentTransaction.smsDirection === 'outgoing' || currentTransaction.type === 'expense';
-    const candidateIsOutgoing = candidate.smsDirection === 'outgoing' || candidate.type === 'expense';
+    // Rule 2: Opposite directions (one outgoing, one incoming)
+    const candidateIsOutgoing = candidate.parsedData.direction === 'outgoing' || candidate.parsedData.type === 'expense';
     if (currentIsOutgoing === candidateIsOutgoing) {
       continue;
     }
 
     // Rule 3: Exact amount equality
-    if (Math.abs(Number(currentTransaction.amount) - Number(candidate.amount)) > 0.001) {
+    if (Math.abs(Number(candidate.parsedData.amount) - Number(parsedData.amount)) > 0.001) {
       continue;
     }
 
-    // Determine outgoing vs incoming
-    const outgoingTx = currentIsOutgoing ? currentTransaction : candidate;
-    const incomingTx = currentIsOutgoing ? candidate : currentTransaction;
-
-    const fromAccountId = outgoingTx.account;
-    const toAccountId = incomingTx.account;
-
-    // Rule 4: Both source and destination accounts must be explicitly resolved (neither is null)
-    if (!fromAccountId || !toAccountId) {
+    // Rule 4: Both source and destination accounts must be explicitly resolved
+    if (!candidate.accountId || !accountId) {
       continue;
     }
 
     // Rule 5: Source and destination accounts must be distinct
-    if (String(fromAccountId) === String(toAccountId)) {
+    if (String(candidate.accountId) === String(accountId)) {
       continue;
     }
 
-    // Rule 6: Both accounts owned by the authenticated user and active
+    // Rule 6: Both accounts verified active and owned by this user
     const userAccounts = await Account.find({
-      _id: { $in: [fromAccountId, toAccountId] },
-      user: userId,
+      _id: { $in: [candidate.accountId, accountId] },
+      user: user._id,
       isArchived: { $ne: true }
     }).lean();
 
@@ -116,193 +121,209 @@ const attemptTransferReconciliation = async ({ userId, currentTransaction, parse
       continue;
     }
 
-    // Rule 7: Pairing window check
-    const candidateCreatedAt = candidate.createdAt ? new Date(candidate.createdAt) : new Date();
-    const timeDiffMs = Math.abs(txCreatedAt.getTime() - candidateCreatedAt.getTime());
+    // Rule 7: Within the pairing window
+    const timeDiffMs = Math.abs(now - candidate.receivedAt.getTime());
     if (timeDiffMs > SMS_TRANSFER_PAIRING_WINDOW_SECONDS * 1000) {
       continue;
     }
 
-    // Rules 8, 9, 10: Reference number check
-    const refCurrent = (currentTransaction.referenceNumber || '').trim().toLowerCase();
-    const refCandidate = (candidate.referenceNumber || '').trim().toLowerCase();
+    // Rules 8, 9, 10: Reference number validation
+    const refCurrent = (parsedData.referenceNumber || '').trim().toLowerCase();
+    const refCandidate = (candidate.parsedData.referenceNumber || '').trim().toLowerCase();
 
     if (refCurrent && refCandidate) {
-      // Both messages have reference numbers: must match exactly
       if (refCurrent !== refCandidate) {
-        // Rule 10: Mismatched references strictly rejected
+        // Mismatched references strictly rejected
         continue;
       }
-      // Rule 8: Matched reference
-    }
-    // Rule 9 / FR-009: If one or both lack reference number, pairing is permitted as rules 1-7 strongly pass.
-
-    const candidateHash = candidate.smsHash;
-    if (!candidateHash) {
-      continue;
     }
 
-    // Compute pair idempotency key
-    const pairKey = computePairIdempotencyKey(smsHash, candidateHash);
+    // Candidate passed all criteria
+    matchedIndex = i;
+    break;
+  }
 
-    // Concurrency guard: Check if already reconciled into a transfer with this pairKey
-    const existingTransfer = await Transaction.findOne({
-      user: userId,
+  // ==========================================
+  // CASE A: Eligible Counterpart Found!
+  // ==========================================
+  if (matchedIndex !== -1) {
+    const [counterpart] = userQueue.splice(matchedIndex, 1);
+    if (counterpart.timer) {
+      clearTimeout(counterpart.timer);
+    }
+
+    const outgoing = currentIsOutgoing
+      ? { parsedData, accountId, smsHash, smsText, receivedAt: new Date() }
+      : counterpart;
+    const incoming = currentIsOutgoing
+      ? counterpart
+      : { parsedData, accountId, smsHash, smsText, receivedAt: new Date() };
+
+    const pairKey = computePairIdempotencyKey(outgoing.smsHash, incoming.smsHash);
+
+    // Concurrency check: does a Transfer with this pairKey already exist?
+    let transferTx = await Transaction.findOne({
+      user: user._id,
       idempotencyKey: pairKey
     });
 
-    if (existingTransfer) {
-      return { isReconciled: true, transaction: existingTransfer, counterpartId: candidate._id };
-    }
+    if (!transferTx) {
+      const reconciledReference = outgoing.parsedData.referenceNumber || incoming.parsedData.referenceNumber || null;
+      const reconciledDate = outgoing.parsedData.eventTimestamp || incoming.parsedData.eventTimestamp || new Date();
 
-    // Formulate provenance metadata for both messages
-    const currentMeta = {
-      smsHash: smsHash,
-      direction: currentIsOutgoing ? 'outgoing' : 'incoming',
-      accountLast4: parsedSms.accountLast4 || parsedSms.cardLast4 || null,
-      account: currentTransaction.account || null,
-      referenceNumber: currentTransaction.referenceNumber || null,
-      eventTimestamp: currentTransaction.date || null,
-      receivedAt: currentTransaction.createdAt || new Date()
-    };
+      const reconciledProvenance = [
+        {
+          smsHash: outgoing.smsHash,
+          direction: 'outgoing',
+          accountLast4: outgoing.parsedData.accountLast4 || outgoing.parsedData.cardLast4 || null,
+          account: outgoing.accountId,
+          referenceNumber: outgoing.parsedData.referenceNumber || null,
+          eventTimestamp: outgoing.parsedData.eventTimestamp || null,
+          receivedAt: outgoing.receivedAt || new Date()
+        },
+        {
+          smsHash: incoming.smsHash,
+          direction: 'incoming',
+          accountLast4: incoming.parsedData.accountLast4 || incoming.parsedData.cardLast4 || null,
+          account: incoming.accountId,
+          referenceNumber: incoming.parsedData.referenceNumber || null,
+          eventTimestamp: incoming.parsedData.eventTimestamp || null,
+          receivedAt: incoming.receivedAt || new Date()
+        }
+      ];
 
-    const candidateAccount = userAccounts.find(a => String(a._id) === String(candidate.account));
-    const candidateMeta = {
-      smsHash: candidateHash,
-      direction: candidateIsOutgoing ? 'outgoing' : 'incoming',
-      accountLast4: candidateAccount ? candidateAccount.cardLast4 : null,
-      account: candidate.account || null,
-      referenceNumber: candidate.referenceNumber || null,
-      eventTimestamp: candidate.date || null,
-      receivedAt: candidate.createdAt || new Date()
-    };
+      // CREATE EXACTLY ONE TRANSFER TRANSACTION. ZERO DB DELETIONS!
+      transferTx = await Transaction.create({
+        user: user._id,
+        title: 'تحويل ذاتي (IPN)',
+        amount: outgoing.parsedData.amount,
+        type: 'transfer',
+        from_account: outgoing.accountId,
+        to_account: incoming.accountId,
+        source: 'sms_shortcut',
+        referenceNumber: reconciledReference,
+        date: reconciledDate,
+        smsHash: pairKey,
+        idempotencyKey: pairKey,
+        smsProvenance: reconciledProvenance
+      });
 
-    const reconciledProvenance = currentIsOutgoing ? [currentMeta, candidateMeta] : [candidateMeta, currentMeta];
-    const reconciledReference = refCurrent || refCandidate || null;
-
-    let reconciledTransaction = null;
-
-    // Execute atomic reconciliation transaction with retries
-    await withRetry(async () => {
-      const session = await mongoose.startSession();
+      // Apply transfer analytics delta (+1 transfer)
       try {
-        await session.withTransaction(async () => {
-          // Verify candidate still exists and has not been reconciled concurrently
-          const freshCandidate = await Transaction.findOne({
-            _id: candidate._id,
-            user: userId,
-            type: oppositeType
-          }).session(session);
+        await applyTransactionDelta(user._id, transferTx, 1);
+      } catch (deltaErr) {
+        console.error('[ANALYTICS] Transfer delta error:', deltaErr.message);
+      }
 
-          if (!freshCandidate) {
-            // Already modified or deleted concurrently
-            return;
-          }
-
-          // 1. Update current transaction to type: 'transfer'
-          reconciledTransaction = await Transaction.findOneAndUpdate(
-            { _id: currentTransaction._id, user: userId },
-            {
-              $set: {
-                type: 'transfer',
-                title: 'تحويل ذاتي (IPN)',
-                from_account: fromAccountId,
-                to_account: toAccountId,
-                account: null,
-                category: null,
-                amount: currentTransaction.amount,
-                referenceNumber: reconciledReference,
-                idempotencyKey: pairKey,
-                smsProvenance: reconciledProvenance,
-                smsDirection: null
-              }
-            },
-            { returnDocument: 'after', session }
-          );
-
-          // 2. Delete the superseded candidate transaction
-          await Transaction.deleteOne({ _id: candidate._id, user: userId }).session(session);
-
-          // 3. Roll back temporary budget spent if candidate was an expense
-          if (candidate.type === 'expense') {
-            await updateBudgetIncrementally(userId, candidate, -1, session);
-          }
+      // Send single push notification for the reconciled transfer
+      try {
+        const payload = notificationService.buildPayload({
+          title: 'تحويل ذاتي (IPN)',
+          body: `تم رصد تحويل ذاتي بمبلغ ${transferTx.amount} ج.م بين حساباتك`,
+          url: '/'
         });
-      } catch (err) {
-        // Handle race conditions where another worker inserted the transfer with pairKey
-        if (err.code === 11000 || /duplicate key/i.test(err.message)) {
-          const concurrentTransfer = await Transaction.findOne({ user: userId, idempotencyKey: pairKey });
-          if (concurrentTransfer) {
-            reconciledTransaction = concurrentTransfer;
-            return;
-          }
-        }
-        // Fallback for standalone MongoDB environments without replica set support
-        if (err.message && err.message.includes('Transaction numbers are only allowed on a replica set member')) {
-          const freshCandidate = await Transaction.findOne({
-            _id: candidate._id,
-            user: userId,
-            type: oppositeType
-          });
-          if (!freshCandidate) return;
-
-          reconciledTransaction = await Transaction.findOneAndUpdate(
-            { _id: currentTransaction._id, user: userId },
-            {
-              $set: {
-                type: 'transfer',
-                title: 'تحويل ذاتي (IPN)',
-                from_account: fromAccountId,
-                to_account: toAccountId,
-                account: null,
-                category: null,
-                amount: currentTransaction.amount,
-                referenceNumber: reconciledReference,
-                idempotencyKey: pairKey,
-                smsProvenance: reconciledProvenance,
-                smsDirection: null
-              }
-            },
-            { returnDocument: 'after' }
-          );
-
-          await Transaction.deleteOne({ _id: candidate._id, user: userId });
-          if (candidate.type === 'expense') {
-            await updateBudgetIncrementally(userId, candidate, -1, null);
-          }
-          return;
-        }
-        throw err;
-      } finally {
-        await session.endSession();
-      }
-    });
-
-    if (reconciledTransaction) {
-      // 4. Roll back candidate analytics delta (-1) and apply transfer delta (+1)
-      try {
-        await applyTransactionDelta(userId, candidate, -1);
-        await applyTransactionDelta(userId, reconciledTransaction, 1);
-      } catch (analyticsErr) {
-        console.error('[ANALYTICS] Transfer reconciliation delta adjustment failed:', analyticsErr.message);
+        await notificationService.sendToUser(user._id, payload);
+      } catch (pushErr) {
+        console.error('[PUSH] Transfer push notification error:', pushErr.message);
       }
 
-      console.log(`[TRANSFER RECONCILIATION] Success: paired SMS ${smsHash.slice(0, 8)} with ${candidateHash.slice(0, 8)} as transfer ${reconciledTransaction._id}`);
-
-      return {
-        isReconciled: true,
-        transaction: reconciledTransaction,
-        counterpartId: candidate._id
-      };
+      console.log(`[SMS Webhook] reconciled_transfer id="${transferTx._id}" amount=${transferTx.amount}`);
     }
+
+    return {
+      isReconciled: true,
+      isPending: false,
+      transaction: transferTx
+    };
   }
 
-  // If no candidate met all 10 criteria, keep as independent transaction
-  return { isReconciled: false, transaction: currentTransaction };
+  // ==========================================
+  // CASE B: Counterpart Not Found -> Hold in Queue
+  // ==========================================
+  const candidateRecord = {
+    id: crypto.randomBytes(8).toString('hex'),
+    userId: userIdStr,
+    user: user,
+    parsedData: parsedData,
+    accountId: accountId,
+    categoryId: categoryId,
+    smsText: smsText,
+    smsHash: smsHash,
+    receivedAt: new Date(),
+    timer: null
+  };
+
+  // Set timer to finalize as single transaction if 45s passes without counterpart
+  candidateRecord.timer = setTimeout(async () => {
+    try {
+      // Remove from queue
+      const q = transferHoldingQueue.get(userIdStr);
+      if (q) {
+        const idx = q.findIndex(c => c.id === candidateRecord.id);
+        if (idx !== -1) {
+          q.splice(idx, 1);
+        }
+      }
+
+      // Finalize candidate as independent single transaction via callback
+      if (typeof finalizeCallback === 'function') {
+        await finalizeCallback(candidateRecord);
+      }
+    } catch (timeoutErr) {
+      console.error('[TRANSFER HOLDING] Finalize on timeout error:', timeoutErr.message);
+    }
+  }, SMS_TRANSFER_PAIRING_WINDOW_SECONDS * 1000);
+
+  userQueue.push(candidateRecord);
+
+  console.log(`[SMS Webhook] transfer_candidate_held id="${candidateRecord.id}" amount=${parsedData.amount} direction=${parsedData.direction}`);
+
+  return {
+    isReconciled: false,
+    isPending: true
+  };
+};
+
+/**
+ * Flush all pending items in the queue immediately as single transactions.
+ * Useful for graceful process shutdown without data loss.
+ */
+const flushPendingHoldingQueue = async (finalizeCallback) => {
+  for (const [userIdStr, queue] of transferHoldingQueue.entries()) {
+    while (queue.length > 0) {
+      const candidate = queue.shift();
+      if (candidate.timer) {
+        clearTimeout(candidate.timer);
+      }
+      if (typeof finalizeCallback === 'function') {
+        try {
+          await finalizeCallback(candidate);
+        } catch (err) {
+          console.error(`[TRANSFER HOLDING] Flush error for candidate ${candidate.id}:`, err.message);
+        }
+      }
+    }
+  }
+};
+
+/**
+ * Helper to inspect or clear queue in unit tests (in-memory only, ZERO DB TOUCHED).
+ */
+const _getQueueForUser = (userId) => {
+  return transferHoldingQueue.get(String(userId)) || [];
+};
+
+const _clearQueueForUser = (userId) => {
+  const q = transferHoldingQueue.get(String(userId)) || [];
+  q.forEach(c => { if (c.timer) clearTimeout(c.timer); });
+  transferHoldingQueue.delete(String(userId));
 };
 
 module.exports = {
   SMS_TRANSFER_PAIRING_WINDOW_SECONDS,
   computePairIdempotencyKey,
-  attemptTransferReconciliation
+  processTransferCandidate,
+  flushPendingHoldingQueue,
+  _getQueueForUser,
+  _clearQueueForUser
 };

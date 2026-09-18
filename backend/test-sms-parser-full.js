@@ -106,6 +106,15 @@ const testCases = [
   {
     sms: "تم ايداع مبلغ 5000.00 EGP فى حسابك ببنك قطر الوطنى المنتهى بـ 1122",
     expected: { type: 'income', amount: 5000, cardLast4: '1122' }
+  },
+  // Transfer Pair Cases
+  {
+    sms: "IPN transfer sent with amount of EGP 350.00 from 0694 on 18/09 at 07:32 AM. Ref# 43f3ef2a. For more details call 19700",
+    expected: { type: 'expense', amount: 350, cardLast4: '0694', isTransferCandidate: true, referenceNumber: '43f3ef2a' }
+  },
+  {
+    sms: "تم إستقبال تحويل لحظي إلى حسابكم 4113 بمبلغ 350.00 جم من MOHAMED AHMED ATIYA ABDELSALAM في 07:32 يوم 9/18/26 رقم المعاملة 43f3ef2a للمزيد أتصل ب 16990",
+    expected: { type: 'income', amount: 350, cardLast4: '4113', isTransferCandidate: true, referenceNumber: '43f3ef2a' }
   }
 ];
 
@@ -130,6 +139,14 @@ testCases.forEach((tc, i) => {
   }
   if (result.cardLast4 !== tc.expected.cardLast4) {
     console.log(`❌ Example ${i + 1} FAILED: Expected cardLast4 '${tc.expected.cardLast4}' but got '${result.cardLast4}'`);
+    passed = false;
+  }
+  if (tc.expected.isTransferCandidate !== undefined && result.isTransferCandidate !== tc.expected.isTransferCandidate) {
+    console.log(`❌ Example ${i + 1} FAILED: Expected isTransferCandidate '${tc.expected.isTransferCandidate}' but got '${result.isTransferCandidate}'`);
+    passed = false;
+  }
+  if (tc.expected.referenceNumber !== undefined && result.referenceNumber !== tc.expected.referenceNumber) {
+    console.log(`❌ Example ${i + 1} FAILED: Expected referenceNumber '${tc.expected.referenceNumber}' but got '${result.referenceNumber}'`);
     passed = false;
   }
 
