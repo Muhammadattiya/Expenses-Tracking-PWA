@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const { parseSms } = require('./services/smsParser');
+const { resolveUserAccount } = require('./services/accountResolver');
 const Account = require('./models/Account');
 const User = require('./models/User');
 
@@ -20,12 +21,12 @@ const TEST_CASES = [
   {
     desc: '3. English IPN transfer sent',
     sms: 'IPN transfer sent with amount of EGP 300.00 from 0694 on 25/08 at 04:27 AM. Ref# 226f1cc5. For more details call 19700',
-    expected: { type: 'expense', amount: 300, cardLast4: '0694' }
+    expected: { type: 'expense', amount: 300, cardLast4: '0694', direction: 'outgoing', referenceNumber: '226f1cc5' }
   },
   {
     desc: '4. Arabic prepaid transfer out',
     sms: 'تم تنفيذ تحويل لحظي من بطاقتكم مسبقة الدفع بمبلغ 10.00 جم إلى سيف م**** ا*** س*** ا*** ز** رقم مرجعي 566651352320 يوم 08-21 الساعة 04:50 للمزيد اتصل بـ 19623',
-    expected: { type: 'expense', amount: 10, cardLast4: null }
+    expected: { type: 'expense', amount: 10, cardLast4: null, direction: 'outgoing' }
   },
   {
     desc: '5. Arabic prepaid card purchase',
@@ -36,23 +37,23 @@ const TEST_CASES = [
   {
     desc: '6. Vodafone Cash transfer',
     sms: '300 L.E were successfully transferred to 01223212038 the transfer fee is 1 LE, your current Vodafone Cash balance is 1937.55 L.E. Transaction date: 26-07-29 05:28 Transaction ID: 022157551991',
-    expected: { type: 'expense', amount: 300, cardLast4: null }
+    expected: { type: 'expense', amount: 300, cardLast4: null, direction: 'outgoing' }
   },
   {
     desc: '7. Vodafone Cash recharge',
     sms: '140 L.E was successfully recharged to your mobile balance; your current Vodafone Cash balance is 1564.32 LE',
-    expected: { type: 'expense', amount: 140, cardLast4: null }
+    expected: { type: 'expense', amount: 140, cardLast4: null, direction: 'outgoing' }
   },
   {
     desc: '8. Vodafone Cash payment',
     sms: 'تم دفع مبلغ 480.0جنية لSwvl. رصيد محفظتك الحالي 2997.98 جنيه. رقم العملية 022431701746 تاريخ العملية 06-08-26 16:49.',
-    expected: { type: 'expense', amount: 480, cardLast4: null },
+    expected: { type: 'expense', amount: 480, cardLast4: null, direction: 'outgoing' },
     checkMerchant: (m) => m && m.includes('Swvl')
   },
   {
     desc: '9. Vodafone Cash withdrawal',
     sms: 'تم سحب 1000.00 جنية من محفظة فودافون كاش. رصيد حسابك الحالي 467.98 جنيه. تاريخ العملية 21:40 26-08-15 رقم العملية 022729264572.',
-    expected: { type: 'expense', amount: 1000, cardLast4: null }
+    expected: { type: 'expense', amount: 1000, cardLast4: null, direction: 'outgoing' }
   },
   {
     desc: '10. Arabic ADIB account transaction',
@@ -62,7 +63,7 @@ const TEST_CASES = [
   {
     desc: '11. English ADIB IPN transaction',
     sms: 'Your account ending in 9596 has been charged the amount of 95.5 for an IPN transfer on 2026-08-25 15:55 Txn Ref: 09d676e7',
-    expected: { type: 'expense', amount: 95.5, cardLast4: '9596' }
+    expected: { type: 'expense', amount: 95.5, cardLast4: '9596', referenceNumber: '09d676e7' }
   },
   {
     desc: '12. Arabic ADIB account transaction 2',
@@ -72,7 +73,7 @@ const TEST_CASES = [
   {
     desc: '13. English ADIB IPN transaction 2',
     sms: 'Your account ending in 9596 has been charged the amount of 500.5 for an IPN transfer on 2026-08-18 17:56 Txn Ref: 1be731da',
-    expected: { type: 'expense', amount: 500.5, cardLast4: '9596' }
+    expected: { type: 'expense', amount: 500.5, cardLast4: '9596', referenceNumber: '1be731da' }
   },
   {
     desc: '14. Banque Misr POS',
@@ -83,37 +84,37 @@ const TEST_CASES = [
   {
     desc: '15. Arabic IPN transfer sent',
     sms: 'تم تحويل مبلغ 6650EGP من حساب رقم xxx6201 فى 20-AUG-2026 عن طريق التحويل اللحظي',
-    expected: { type: 'expense', amount: 6650, cardLast4: '6201' }
+    expected: { type: 'expense', amount: 6650, cardLast4: '6201', direction: 'outgoing' }
   },
   {
     desc: '16. Arabic prepaid transfer received',
     sms: 'تم إضافة تحويل لحظي لبطاقتكم مسبقة الدفع بمبلغ 300.00 جم من سيف مصطفى احمد سامى احمد زيد رقم مرجعي 509818302771 يوم 08-12 الساعة 23:27 للمزيد اتصل بـ 19623',
-    expected: { type: 'income', amount: 300, cardLast4: null }
+    expected: { type: 'income', amount: 300, cardLast4: null, direction: 'incoming', referenceNumber: '509818302771' }
   },
   {
     desc: '17. English IPN received',
     sms: 'IPN transfer received with amount of EGP 200.00 on 0694 on 24/08 at 12:48 PM. Ref# 0447d84d.',
-    expected: { type: 'income', amount: 200, cardLast4: '0694' }
+    expected: { type: 'income', amount: 200, cardLast4: '0694', direction: 'incoming', referenceNumber: '0447d84d' }
   },
   {
     desc: '18. Arabic IPN received',
     sms: 'تم اضافة مبلغ 20000EGP الى حساب رقم xxx6201 فى 19-AUG-2026 عن طريق التحويل اللحظي',
-    expected: { type: 'income', amount: 20000, cardLast4: '6201' }
+    expected: { type: 'income', amount: 20000, cardLast4: '6201', direction: 'incoming' }
   },
   {
     desc: '19. Arabic ADIB income',
     sms: 'عميلنا العزيز, نوجه عناية سيادتكم أنه تم إضافة 8700.00 EGP الى حسابك رقم 100001269596 فى 22/08/2026 10:44:17 PM علما بأن رصيدكم الحالى 29627.19 شكرا لاختيارك ADIB',
-    expected: { type: 'income', amount: 8700, cardLast4: '9596' }
+    expected: { type: 'income', amount: 8700, cardLast4: '9596', direction: 'incoming' }
   },
   {
     desc: '20. Arabic ADIB income 2',
     sms: 'عميلنا العزيز, نوجه عناية سيادتكم أنه تم إضافة 10.00 EGP الى حسابك رقم 100001269596 فى 20/08/2026 03:41:00 AM علما بأن رصيدكم الحالى 20027.64 شكرا لاختيارك ADIB',
-    expected: { type: 'income', amount: 10, cardLast4: '9596' }
+    expected: { type: 'income', amount: 10, cardLast4: '9596', direction: 'incoming' }
   },
   {
     desc: '21. Vodafone Cash received',
     sms: 'تم استلام مبلغ 450.00 جنيه من 01065001413 المسجل بإسم AHMED MOHAMED HASANEIN YOUSSEF على رقم محفظتك 01020441385 بتاريخ 18:45 26-08-23. رصيدك الحالي: 3522.98 جنيه رقم العملية: 022975974894',
-    expected: { type: 'income', amount: 450, cardLast4: null }
+    expected: { type: 'income', amount: 450, cardLast4: null, direction: 'incoming', referenceNumber: '022975974894' }
   },
   // --- ADVERSARIAL TESTS ---
   {
@@ -170,6 +171,43 @@ const TEST_CASES = [
     desc: '32. Adversarial: Combined explicit and false positive',
     sms: 'تم خصم مبلغ 300 جنيه من بطاقة رقم 9596. الرصيد 1234. رقم العملية 5555',
     expected: { type: 'expense', amount: 300, cardLast4: '9596' }
+  },
+
+  // --- NEW IPN & ACCOUNT RECOVERY TESTS ---
+  {
+    desc: '33. Arabic IPN incoming: إلى حسابكم 4113',
+    sms: 'تم إستقبال تحويل لحظي إلى حسابكم 4113 بمبلغ 350.00 جم من MOHAMED AHMED ATIYA ABDELSALAM في 07:32 يوم 9/18/26 رقم المعاملة 43f3ef2a للمزيد أتصل ب 16990',
+    expected: { type: 'income', amount: 350, cardLast4: '4113', direction: 'incoming', referenceNumber: '43f3ef2a' }
+  },
+  {
+    desc: '34. English IPN outgoing: from 0694 on',
+    sms: 'IPN transfer sent with amount of EGP 350.00 from 0694 on 18/09 at 07:32 AM. Ref# 43f3ef2a. For more details call 19700',
+    expected: { type: 'expense', amount: 350, cardLast4: '0694', direction: 'outgoing', referenceNumber: '43f3ef2a' }
+  },
+  {
+    desc: '35. Arabic-Indic numerals for IPN and account digits',
+    sms: 'تم إستقبال تحويل لحظي إلى حسابكم ٤١١٣ بمبلغ ٣٥٠.٠٠ جم من محمد في ٠٧:٣٢ يوم ٩/١٨/٢٦ رقم المعاملة 43f3ef2a',
+    expected: { type: 'income', amount: 350, cardLast4: '4113', direction: 'incoming', referenceNumber: '43f3ef2a' }
+  },
+  {
+    desc: '36. Adversarial: Arabic OTP code with amount',
+    sms: 'كود تأكيد العملية هو 4113 لإتمام معاملة بمبلغ 350 جم لدى فوري',
+    expected: { type: 'expense', amount: 350, cardLast4: null }
+  },
+  {
+    desc: '37. Adversarial: Bank support phone line',
+    sms: 'تم استلام 500 جنيه بنجاح. للاستفسار اتصل بـ 4113 أو زور فرعنا',
+    expected: { type: 'income', amount: 500, cardLast4: null }
+  },
+  {
+    desc: '38. Adversarial: Ref# containing 4 digits',
+    sms: 'Successful transaction of EGP 350. Ref# 4113. Available bal 1200 EGP',
+    expected: { type: 'expense', amount: 350, cardLast4: null }
+  },
+  {
+    desc: '39. Arabic IPN with "الى" instead of "إلى"',
+    sms: 'تم استقبال تحويل لحظي الى حسابكم 4113 بمبلغ 500 EGP من احمد',
+    expected: { type: 'income', amount: 500, cardLast4: '4113', direction: 'incoming' }
   }
 ];
 
@@ -196,6 +234,14 @@ TEST_CASES.forEach((tc) => {
     if (parsed.cardLast4 !== tc.expected.cardLast4) {
       passed = false;
       errors.push(`Expected cardLast4 ${tc.expected.cardLast4}, got ${parsed.cardLast4}`);
+    }
+    if (tc.expected.direction && parsed.direction !== tc.expected.direction) {
+      passed = false;
+      errors.push(`Expected direction ${tc.expected.direction}, got ${parsed.direction}`);
+    }
+    if (tc.expected.referenceNumber && parsed.referenceNumber !== tc.expected.referenceNumber) {
+      passed = false;
+      errors.push(`Expected referenceNumber ${tc.expected.referenceNumber}, got ${parsed.referenceNumber}`);
     }
     if (tc.checkMerchant && !tc.checkMerchant(parsed.merchant)) {
       passed = false;
@@ -228,33 +274,99 @@ async function testE2E() {
       password: 'password'
     });
 
-    const account = await Account.create({
+    const user2 = await User.create({
+      name: 'User 2',
+      email: 'user2@example.com',
+      password: 'password'
+    });
+
+    const account1984 = await Account.create({
       user: user._id,
-      name: 'Test Card',
+      name: 'Debit Card 1984',
       type: 'bank',
       cardLast4: '1984',
       currency: 'EGP',
       balance_adjustment: 0
     });
 
-    const sms = 'Your Debit Card **1984 had a Successful transaction of EGP 257.14';
-    const parsed = parseSms(sms);
-    
-    let matchedAccount = null;
-    if (parsed && parsed.cardLast4) {
-      matchedAccount = await Account.findOne({ user: user._id, cardLast4: parsed.cardLast4 });
-    }
+    const account4113 = await Account.create({
+      user: user._id,
+      name: 'CIB Account 4113',
+      type: 'bank',
+      cardLast4: '4113',
+      currency: 'EGP',
+      balance_adjustment: 0
+    });
 
-    if (matchedAccount && matchedAccount._id.toString() === account._id.toString()) {
-      console.log('[PASS] E2E Account Matching Succeeded');
+    const account0694 = await Account.create({
+      user: user._id,
+      name: 'ADIB Account 0694',
+      type: 'bank',
+      cardLast4: '0694',
+      currency: 'EGP',
+      balance_adjustment: 0
+    });
+
+    // 1. Test standard English debit matching
+    const match1984 = await resolveUserAccount(user._id, '1984');
+    if (match1984 && match1984._id.toString() === account1984._id.toString()) {
+      console.log('[PASS] E2E Account 1984 matched correctly');
     } else {
-      console.log('[FAIL] E2E Account Matching Failed');
-      console.log(`       Expected account ID: ${account._id}`);
-      console.log(`       Got: ${matchedAccount ? matchedAccount._id : 'null'}`);
+      console.log('[FAIL] E2E Account 1984 matching failed');
       passed = false;
     }
 
-    // Negative test
+    // 2. Test Arabic IPN account matching 4113
+    const parsedArabic = parseSms('تم إستقبال تحويل لحظي إلى حسابكم 4113 بمبلغ 350.00 جم');
+    const match4113 = await resolveUserAccount(user._id, parsedArabic.cardLast4);
+    if (match4113 && match4113._id.toString() === account4113._id.toString()) {
+      console.log('[PASS] E2E Arabic IPN Account 4113 matched correctly');
+    } else {
+      console.log('[FAIL] E2E Arabic IPN Account 4113 matching failed');
+      passed = false;
+    }
+
+    // 3. Test English IPN account matching 0694
+    const parsedEnglish = parseSms('IPN transfer sent with amount of EGP 350.00 from 0694 on 18/09');
+    const match0694 = await resolveUserAccount(user._id, parsedEnglish.cardLast4);
+    if (match0694 && match0694._id.toString() === account0694._id.toString()) {
+      console.log('[PASS] E2E English IPN Account 0694 matched correctly');
+    } else {
+      console.log('[FAIL] E2E English IPN Account 0694 matching failed');
+      passed = false;
+    }
+
+    // 4. Test Cross-user isolation: User 2 owns account 9999
+    await Account.create({
+      user: user2._id,
+      name: 'Other User Card',
+      type: 'bank',
+      cardLast4: '9999'
+    });
+    const crossUserMatch = await resolveUserAccount(user._id, '9999');
+    if (crossUserMatch === null) {
+      console.log('[PASS] E2E Cross-User Isolation Succeeded (returned null)');
+    } else {
+      console.log('[FAIL] E2E Cross-User Isolation Failed: matched another user account');
+      passed = false;
+    }
+
+    // 5. Test Ambiguous accounts (user has two accounts with same cardLast4)
+    await Account.create({
+      user: user._id,
+      name: 'Duplicate Card 4113',
+      type: 'bank',
+      cardLast4: '4113'
+    });
+    const ambiguousMatch = await resolveUserAccount(user._id, '4113');
+    if (ambiguousMatch === null) {
+      console.log('[PASS] E2E Ambiguous Accounts Zero-Guessing Succeeded (returned null)');
+    } else {
+      console.log('[FAIL] E2E Ambiguous Accounts Zero-Guessing Failed: guessed an account');
+      passed = false;
+    }
+
+    // 6. Negative test: Phone number
     const negSms = 'Call 01012341984 for more info about payment 200 L.E';
     const negParsed = parseSms(negSms);
     if (negParsed && negParsed.cardLast4) {
@@ -270,9 +382,10 @@ async function testE2E() {
   } finally {
     await mongoose.disconnect();
     if (failed > 0 || !passed) {
+      console.error(`Tests failed: ${failed} parser test failures, E2E passed=${passed}`);
       process.exit(1);
     } else {
-      console.log('All tests passed.');
+      console.log('All regression and account resolution tests passed.');
       process.exit(0);
     }
   }
