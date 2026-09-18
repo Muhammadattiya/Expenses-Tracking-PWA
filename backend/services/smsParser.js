@@ -21,6 +21,8 @@ const normalizeArabicNumerals = (text) => {
 const normalizeSmsText = (text) => {
   if (!text || typeof text !== 'string') return '';
   let normalized = normalizeArabicNumerals(text);
+  // Strip enclosing wrapper characters added by some SMS forwarders/shortcuts
+  normalized = normalized.replace(/^[:\s{]+/, '').replace(/[}\s]+$/, '');
   // Replace zero-width spaces and non-breaking spaces with standard space
   normalized = normalized.replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ');
   normalized = normalized.replace(/\s+/g, ' ').trim();
@@ -369,14 +371,16 @@ const BANK_PATTERNS = [
       const amountMatch = text.match(/تم استلام مبلغ\s*([\d.]+)\s*جنيه/i);
       const merchantMatch = text.match(/بإسم\s+([A-Za-z\s]+)\s+على/i) || text.match(/من\s+(\d+)\s+المسجل/i);
       const refMatch = text.match(/رقم العملية:\s+(\d+)/i);
+      const walletMatch = text.match(/(?:على\s+)?رقم\s+محفظتك\s+(\d{11})/i);
+      const last4 = walletMatch ? walletMatch[1].slice(-4) : null;
       if (!amountMatch) return null;
       return {
         amount: parseFloat(amountMatch[1]),
         type: 'income',
         direction: 'incoming',
         merchant: merchantMatch ? merchantMatch[1].trim() : 'Vodafone Cash',
-        cardLast4: null,
-        accountLast4: null,
+        cardLast4: last4,
+        accountLast4: last4,
         referenceNumber: refMatch ? refMatch[1] : null
       };
     }
@@ -519,46 +523,56 @@ const extractCardLast4 = (smsText) => {
   let match;
   
   // "from 0694 on", "on 0694 on"
-  match = text.match(/(?:from|on)\s+(\d{4})\s+on(?:\s|$|\.|,)/i);
+  match = text.match(/(?:from|on)\s+(\d{4})\s+on(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1];
 
-  // "ending in 9596", "ending with 9596"
-  match = text.match(/ending\s*(?:in|with)\s*(\d{4,16})(?:\s|$|\.|,)/i);
+  // "ending in 9596", "ending with 9596", "ending 3456"
+  match = text.match(/ending\s*(?:in|with)?\s*(\d{4,16})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1].slice(-4);
 
   // "إلى حسابكم 4113" or "من حسابكم 4113" or "حسابكم 4113"
-  match = text.match(/(?:إلى|الى|من)?\s*حسابكم\s*(\d{4,16})(?:\s|$|\.|,)/i);
+  match = text.match(/(?:إلى|الى|من)?\s*حسابكم\s*(\d{4,16})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1].slice(-4);
 
   // "حساب رقم xxx6201" or "حسابك 100001269596" or "حسابك رقم 100001269596"
-  match = text.match(/حساب(?:ك)?\s*(?:رقم)?\s*(?:[xX*\s-]*?)(\d{4,16})(?:\s|$|\.|,)/i);
+  match = text.match(/حساب(?:ك)?\s*(?:رقم)?\s*(?:[xX*\s-]*?)(\d{4,16})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1].slice(-4);
 
   // "بطاقة ... رقم 2513" or "بطاقة بنك مصر ***6614"
-  match = text.match(/بطاقة\s*(?:[^\d]{0,30}?)\s*(?:رقم)?\s*(?:[xX*\s-]*?)(\d{4,16})(?:\s|$|\.|,)/i);
+  match = text.match(/بطاقة\s*(?:[^\d]{0,30}?)\s*(?:رقم)?\s*(?:[xX*\s-]*?)(\d{4,16})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1].slice(-4);
 
-  // "المنتهية بـ 1984"
-  match = text.match(/المنتهي(?:ة)?\s*بـ?\s*(\d{4,16})(?:\s|$|\.|,)/i);
+  // "المنتهية بـ 1984" or "المنتهى بـ 1122" or "منتهى بـ 1122"
+  match = text.match(/(?:المنته[يىة]|منته[يىة]|المنتهية|منتهية)\s*بـ?\s*(\d{4,16})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1].slice(-4);
   
   // "اخر 4 ارقام 1234"
-  match = text.match(/(?:اخر 4 ارقام|آخر أربعة أرقام)\s*(\d{4})/i);
+  match = text.match(/(?:اخر 4 ارقام|آخر أربعة أرقام)\s*(\d{4})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1];
 
   // English "card ****1234" or "account ****1234"
-  match = text.match(/(?:card|account)(?:\s+(?:no\.?|number))?\s+(?:[^\d]{0,20}?)\s*(?:[xX*\s-]*?)(\d{4,16})(?:\s|$|\.|,)/i);
+  match = text.match(/(?:card|account)(?:\s+(?:no\.?|number))?\s+(?:[^\d]{0,20}?)\s*(?:[xX*\s-]*?)(\d{4,16})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
   if (match) return match[1].slice(-4);
+
+  // "using card 4321"
+  match = text.match(/using\s+card\s+(\d{4})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
+  if (match) return match[1];
+
+  // "على رقم محفظتك 01020441385" -> 1385
+  match = text.match(/(?:على\s+)?رقم\s+محفظتك\s+(?:01\d{9})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/i);
+  if (match) return match[0].slice(-4);
 
   // 2. Medium Confidence: Masked formats
   // Must be directly preceded by at least two x, X, or * (e.g. ****1984, xx1984)
-  const maskedRegex = /(?:[xX*]{2,}[\s-]*|x{2,}X*[\s-]*|X{2,}x*[\s-]*)(\d{4})(?:\s|$|\.|,)/gi;
+  const maskedRegex = /(?:[xX*]{2,}[\s-]*|x{2,}X*[\s-]*|X{2,}x*[\s-]*)(\d{4})(?=[\s.,:;()[\]{}،\u060C\-]|$|[^\d])/gi;
   let maskedMatch;
   while ((maskedMatch = maskedRegex.exec(text)) !== null) {
     const preContext = text.slice(Math.max(0, maskedMatch.index - 25), maskedMatch.index);
-    // Protect against masked reference numbers, IDs, OTPs
-    if (!/(?:Ref|رقم مرجعي|مرجع|Process|Transaction|Operation|عملية|كود|رمز)/i.test(preContext)) {
-      return maskedMatch[1];
+    // Protect against masked reference numbers, IDs, OTPs, or people names (like سيف م**** ا***)
+    if (!/(?:Ref|رقم مرجعي|مرجع|Process|Transaction|Operation|عملية|كود|رمز|إلى|الى|من)/i.test(preContext)) {
+      if (/(?:card|account|بطاقة|حساب|بنك|bank)/i.test(preContext)) {
+        return maskedMatch[1];
+      }
     }
   }
 
@@ -605,11 +619,16 @@ const parseSms = (smsText) => {
         const last4 = extracted.cardLast4 || extracted.accountLast4 || extractCardLast4(normalized);
         const direction = extracted.direction || (extracted.type === 'income' ? 'incoming' : 'outgoing');
         const eventTimestamp = extracted.eventTimestamp || parseEventTimestamp(normalized);
+        const isTransferCandidate = !!(
+          extracted.isTransferCandidate ||
+          /(?:IPN transfer|تحويل لحظي|التحويل اللحظي|إستقبال تحويل لحظي|استقبال تحويل لحظي)/i.test(normalized)
+        );
         return {
           ...extracted,
           cardLast4: last4,
           accountLast4: last4,
           direction: direction,
+          isTransferCandidate: isTransferCandidate,
           eventTimestamp: eventTimestamp,
           rawSms: smsText,
           confidence: 'high'
@@ -633,6 +652,7 @@ const parseSms = (smsText) => {
     const last4 = extractCardLast4(normalized);
     const direction = type === 'income' ? 'incoming' : 'outgoing';
     const eventTimestamp = parseEventTimestamp(normalized);
+    const isTransferCandidate = /(?:IPN transfer|تحويل لحظي|التحويل اللحظي|إستقبال تحويل لحظي|استقبال تحويل لحظي)/i.test(normalized);
     
     // Guess merchant from SMS text roughly if possible
     let merchant = 'Unrecognized SMS';
@@ -653,6 +673,7 @@ const parseSms = (smsText) => {
       direction,
       cardLast4: last4,
       accountLast4: last4,
+      isTransferCandidate,
       merchant,
       referenceNumber: null,
       eventTimestamp,

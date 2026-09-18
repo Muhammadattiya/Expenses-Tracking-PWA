@@ -5,7 +5,7 @@ const Category = require('../models/Category');
 const Transaction = require('../models/Transaction');
 const { parseSms } = require('../services/smsParser');
 const { resolveUserAccount } = require('../services/accountResolver');
-const { attemptTransferReconciliation } = require('../services/transferReconciliationService');
+const { processTransferCandidate } = require('../services/transferReconciliationService');
 const { updateBudgetIncrementally } = require('../services/transactionService');
 const notificationService = require('../services/notificationService');
 const { resolveMerchantIntent } = require('../services/merchantIntelligence/merchantClassificationResolver');
@@ -130,6 +130,75 @@ exports.handleSmsWebhook = async (req, res, next) => {
       }
     }
 
+    // ==========================================
+    // Transfer Candidate Routing (Non-Destructive Holding Queue)
+    // ==========================================
+    if (parsedData.isTransferCandidate) {
+      const finalizeCallback = async (candidate) => {
+        try {
+          const singleTx = await Transaction.create({
+            user: candidate.user._id,
+            title: candidate.parsedData.merchant || (candidate.parsedData.type === 'income' ? 'إيداع / تحويل وارد' : 'معاملة SMS (تحتاج مراجعة)'),
+            normalizedMerchant: candidate.parsedData.merchant ? normalizeMerchantToken(candidate.parsedData.merchant) : null,
+            amount: candidate.parsedData.amount,
+            type: candidate.parsedData.type,
+            smsDirection: candidate.parsedData.direction || (candidate.parsedData.type === 'expense' ? 'outgoing' : 'incoming'),
+            account: candidate.accountId,
+            category: candidate.categoryId,
+            source: 'sms_shortcut',
+            referenceNumber: candidate.parsedData.referenceNumber,
+            date: candidate.parsedData.eventTimestamp || candidate.receivedAt || new Date(),
+            rawSms: redactSensitiveInfo(candidate.smsText),
+            smsHash: candidate.smsHash
+          });
+
+          const { applyTransactionDelta } = require('../services/analyticsEngine');
+          applyTransactionDelta(candidate.user._id, singleTx, 1).catch(err => console.error('[ANALYTICS] Finalize delta error:', err.message));
+          if (singleTx.type === 'expense' && singleTx.category) {
+            updateBudgetIncrementally(candidate.user._id, singleTx, 1).catch(err => console.error('[BUDGET] Finalize budget error:', err.message));
+          }
+
+          const payload = notificationService.buildPayload({
+            title: 'معاملة جديدة من رسالة (SMS)',
+            body: `مبلغ ${singleTx.amount} ج.م - اضغط للمراجعة وتأكيد الحساب`,
+            url: '/'
+          });
+          await notificationService.sendToUser(candidate.user._id, payload);
+
+          console.log(`[SMS Webhook] transfer_candidate_finalized_single id="${singleTx._id}" amount=${singleTx.amount}`);
+        } catch (finErr) {
+          console.error('[SMS Webhook] Error finalizing held transfer candidate:', finErr.message);
+        }
+      };
+
+      const reconResult = await processTransferCandidate({
+        user,
+        parsedData,
+        accountId,
+        categoryId,
+        smsText,
+        smsHash,
+        finalizeCallback
+      });
+
+      if (reconResult.isReconciled) {
+        return res.status(200).json({
+          message: 'Transfer reconciled successfully',
+          id: reconResult.transaction._id,
+          isReconciled: true
+        });
+      } else {
+        return res.status(200).json({
+          message: 'Transfer candidate received; held for counterpart reconciliation',
+          status: 'pending',
+          isReconciled: false
+        });
+      }
+    }
+
+    // ==========================================
+    // Regular Non-Transfer Transaction (Immediate Execution)
+    // ==========================================
     let newTx;
     try {
       newTx = await Transaction.create({
@@ -154,69 +223,34 @@ exports.handleSmsWebhook = async (req, res, next) => {
       throw createErr;
     }
 
-    // Self-Transfer Reconciliation Engine: Check if this SMS pairs with a counterpart within 45s
-    let finalTx = newTx;
-    let isReconciled = false;
-
     try {
-      const reconResult = await attemptTransferReconciliation({
-        userId: user._id,
-        currentTransaction: newTx,
-        parsedSms: parsedData,
-        smsHash: smsHash
+      const { applyTransactionDelta } = require('../services/analyticsEngine');
+      applyTransactionDelta(user._id, newTx, 1).catch(err => console.error('[ANALYTICS] smsWebhook delta failed:', err.message));
+      if (newTx.type === 'expense' && newTx.category) {
+        updateBudgetIncrementally(user._id, newTx, 1).catch(err => console.error('[BUDGET] smsWebhook budget delta failed:', err.message));
+      }
+    } catch (e) {
+      // Non-fatal
+    }
+
+    console.log(`[SMS Webhook] single_tx id="${newTx._id}" amount=${newTx.amount} accountMatched=${!!accountId}`);
+
+    // Fire push notification for standard transaction
+    try {
+      const payload = notificationService.buildPayload({
+        title: 'معاملة جديدة من رسالة (SMS)',
+        body: `مبلغ ${newTx.amount} ج.م - اضغط للمراجعة وتأكيد الحساب`,
+        url: '/'
       });
-
-      if (reconResult && reconResult.isReconciled) {
-        isReconciled = true;
-        finalTx = reconResult.transaction;
-      }
-    } catch (reconErr) {
-      console.error('[TRANSFER RECONCILIATION] Error:', reconErr.message);
-      // Fall back safely to independent transaction
-    }
-
-    // If not reconciled, apply standard incremental analytics and budget deltas
-    if (!isReconciled) {
-      try {
-        const { applyTransactionDelta } = require('../services/analyticsEngine');
-        applyTransactionDelta(user._id, newTx, 1).catch(err => console.error('[ANALYTICS] smsWebhook delta failed:', err.message));
-        if (newTx.type === 'expense' && newTx.category) {
-          updateBudgetIncrementally(user._id, newTx, 1).catch(err => console.error('[BUDGET] smsWebhook budget delta failed:', err.message));
-        }
-      } catch (e) {
-        // Non-fatal
-      }
-    }
-
-    console.log(`[SMS Webhook] ${isReconciled ? 'reconciled_transfer' : 'single_tx'} id="${finalTx._id}" amount=${finalTx.amount} accountMatched=${!!accountId}`);
-
-    // Fire push notification if subscriptions exist
-    try {
-      if (isReconciled) {
-        // Dedicated reconciliation notification (FR-015)
-        const payload = notificationService.buildPayload({
-          title: 'تحويل ذاتي (IPN)',
-          body: `تم رصد تحويل ذاتي بمبلغ ${finalTx.amount} ج.م بين حساباتك`,
-          url: '/'
-        });
-        await notificationService.sendToUser(user._id, payload);
-      } else {
-        // Standard single transaction notification
-        const payload = notificationService.buildPayload({
-          title: 'معاملة جديدة من رسالة (SMS)',
-          body: `مبلغ ${newTx.amount} ج.م - اضغط للمراجعة وتأكيد الحساب`,
-          url: '/'
-        });
-        await notificationService.sendToUser(user._id, payload);
-      }
+      await notificationService.sendToUser(user._id, payload);
     } catch (pushErr) {
       console.error('Error sending push for SMS webhook', pushErr);
     }
 
     res.status(200).json({
-      message: isReconciled ? 'Transfer reconciled successfully' : 'Transaction saved',
-      id: finalTx._id,
-      isReconciled
+      message: 'Transaction saved',
+      id: newTx._id,
+      isReconciled: false
     });
 
   } catch (error) {
