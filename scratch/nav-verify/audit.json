@@ -1,0 +1,162 @@
+{
+  "mobile": {
+    "home": {
+      "navDir": "ltr",
+      "navBtns": [
+        {
+          "tag": "BUTTON",
+          "label": "Open menu",
+          "href": null,
+          "svgClass": "lucide lucide-ellipsis text-white",
+          "box": {
+            "x": 15,
+            "y": 764,
+            "w": 48,
+            "h": 48
+          }
+        },
+        {
+          "tag": "A",
+          "label": "Home",
+          "href": "/",
+          "svgClass": "lucide lucide-layout-dashboard transition-colors duration-200 text-[#8D6346] drop-shadow-md",
+          "box": {
+            "x": 77,
+            "y": 764,
+            "w": 79,
+            "h": 48
+          }
+        },
+        {
+          "tag": "A",
+          "label": "Reports",
+          "href": "/analytics",
+          "svgClass": "lucide lucide-chart-no-axes-combined transition-colors duration-200 text-white/60 group-hover:text-white",
+          "box": {
+            "x": 156,
+            "y": 764,
+            "w": 79,
+            "h": 48
+          }
+        },
+        {
+          "tag": "A",
+          "label": "Profile",
+          "href": "/profile",
+          "svgClass": "lucide lucide-user transition-colors duration-200 text-white/60 group-hover:text-white",
+          "box": {
+            "x": 234,
+            "y": 764,
+            "w": 79,
+            "h": 48
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Add",
+          "href": null,
+          "svgClass": "lucide lucide-plus text-white",
+          "box": {
+            "x": 327,
+            "y": 764,
+            "w": 48,
+            "h": 48
+          }
+        }
+      ],
+      "nova": {
+        "label": "Nova, assistant",
+        "className": "fixed z-[80] top-[max(0.75rem,env(safe-area-inset-top))] start-3 w-11 h-11 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]",
+        "box": {
+          "x": 12,
+          "y": 12,
+          "w": 44,
+          "h": 44
+        },
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "hasGlass": true
+      }
+    }
+  },
+  "desktop": {
+    "home": {
+      "navDir": "ltr",
+      "navBtns": [
+        {
+          "tag": "BUTTON",
+          "label": "Open menu",
+          "href": null,
+          "svgClass": "lucide lucide-ellipsis text-white",
+          "box": {
+            "x": 460,
+            "y": 720,
+            "w": 48,
+            "h": 48
+          }
+        },
+        {
+          "tag": "A",
+          "label": "Home",
+          "href": "/",
+          "svgClass": "lucide lucide-layout-dashboard transition-colors duration-200 text-[#8D6346] drop-shadow-md",
+          "box": {
+            "x": 522,
+            "y": 720,
+            "w": 79,
+            "h": 48
+          }
+        },
+        {
+          "tag": "A",
+          "label": "Reports",
+          "href": "/analytics",
+          "svgClass": "lucide lucide-chart-no-axes-combined transition-colors duration-200 text-white/60 group-hover:text-white",
+          "box": {
+            "x": 601,
+            "y": 720,
+            "w": 79,
+            "h": 48
+          }
+        },
+        {
+          "tag": "A",
+          "label": "Profile",
+          "href": "/profile",
+          "svgClass": "lucide lucide-user transition-colors duration-200 text-white/60 group-hover:text-white",
+          "box": {
+            "x": 679,
+            "y": 720,
+            "w": 79,
+            "h": 48
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Add",
+          "href": null,
+          "svgClass": "lucide lucide-plus text-white",
+          "box": {
+            "x": 772,
+            "y": 720,
+            "w": 48,
+            "h": 48
+          }
+        }
+      ],
+      "nova": {
+        "label": "Nova, assistant",
+        "className": "fixed z-[80] top-[max(0.75rem,env(safe-area-inset-top))] start-3 w-11 h-11 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]",
+        "box": {
+          "x": 12,
+          "y": 12,
+          "w": 44,
+          "h": 44
+        },
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "hasGlass": true
+      }
+    }
+  }
+}

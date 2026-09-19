@@ -1,5 +1,7 @@
-import { Outlet } from 'react-router-dom';
+import { useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import BottomNav from './BottomNav';
+import NovaHeader from './NovaHeader';
 import InstallPrompt from './InstallPrompt';
 import CategoryClarificationManager from './modals/CategoryClarificationManager';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -9,6 +11,9 @@ import PullToRefresh from './PullToRefresh';
 export default function Layout() {
   const { lang, t } = useLanguage();
   const { isOnline } = useNetwork();
+  const { pathname } = useLocation();
+  const isComposer = pathname === '/add' || pathname.startsWith('/add/');
+  const [novaOpen, setNovaOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen bg-[var(--color-background)] text-[var(--color-text-main)] font-sans selection:bg-brand-blue/30" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -20,15 +25,16 @@ export default function Layout() {
         </div>
       )}
 
-      <main className="pb-32 px-5 pt-8 w-full max-w-7xl mx-auto min-h-screen animate-fade-in">
+      <main className={`${isComposer ? 'pb-8 pt-8' : 'pb-32 pt-20'} px-5 w-full max-w-7xl mx-auto min-h-screen animate-fade-in`}>
         <PullToRefresh>
           <Outlet />
         </PullToRefresh>
       </main>
       <InstallPrompt />
-      <CategoryClarificationManager />
+      <NovaHeader side={isComposer ? 'end' : 'start'} onOpenChange={setNovaOpen} />
+      {!isComposer && !novaOpen && <CategoryClarificationManager />}
       
-      <BottomNav />
+      {!isComposer && !novaOpen && <BottomNav />}
     </div>
   );
 }

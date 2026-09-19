@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell, Calculator, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ArrowUp, Repeat, CheckCircle2, Loader2, Bell, Calculator, ChevronDown, ChevronLeft, ChevronRight, Mic, MicOff } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { getAccounts } from "../api/accounts";
@@ -18,6 +18,7 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import SplashScreen from "../components/SplashScreen";
 import { triggerHaptic } from "../utils/haptics";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
 const AddTransaction = () => {
   // الحالات (States) الأساسية
@@ -26,6 +27,15 @@ const AddTransaction = () => {
   const { showToast } = useNotification();
   const { t, lang } = useLanguage();
   const formRef = useRef(null);
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    startListening,
+    stopListening,
+    isSupported,
+    error: speechError,
+  } = useSpeechRecognition(lang === 'ar' ? 'ar-EG' : 'en-US');
 
   const [type, setType] = useState('expense');
   const [amount, setAmount] = useState(location.state?.defaultAmount?.toString() || '');
@@ -89,6 +99,17 @@ const AddTransaction = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSubmitting, amount]);
+
+  useEffect(() => {
+    const spoken = `${transcript || ''} ${interimTranscript || ''}`.trim();
+    if (spoken) setTitle(spoken.slice(0, 120));
+  }, [transcript, interimTranscript]);
+
+  useEffect(() => {
+    if (speechError) {
+      showToast(t('quickAdd.speechError'), 'warning');
+    }
+  }, [speechError, showToast, t]);
 
   // جلب البيانات من الباك إند أول ما الصفحة تفتح
   useEffect(() => {
@@ -255,7 +276,7 @@ const AddTransaction = () => {
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto select-none flex flex-col gap-3 sm:gap-4 px-4 pt-3 pb-32 min-h-screen relative">
+    <div className="w-full max-w-lg mx-auto select-none flex flex-col gap-3 sm:gap-4 px-4 pt-3 pb-8 min-h-screen relative">
       {/* Ambient Copper Background with rich glow showing through the transparent glass */}
       <div className="fixed inset-0 pointer-events-none -z-10 bg-[#141115] overflow-hidden">
         <div className="absolute top-[20px] left-[-90px] w-[340px] h-[340px] bg-[#8D6346] rounded-full blur-[140px] opacity-45" />
@@ -413,16 +434,33 @@ const AddTransaction = () => {
             <label htmlFor="tx-description" className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 px-1 cursor-pointer">
               {t('addTransaction.description')}
             </label>
-            <input
-              id="tx-description"
-              type="text"
-              maxLength={120}
-              aria-label={t('addTransaction.description')}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('addTransaction.descPlaceholder')}
-              className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/10 shadow-inner rounded-full px-4.5 text-sm sm:text-base text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
-            />
+            <div className="relative">
+              <input
+                id="tx-description"
+                type="text"
+                maxLength={120}
+                aria-label={t('addTransaction.description')}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t('addTransaction.descPlaceholder')}
+                className="w-full h-12 sm:h-13 bg-black/20 backdrop-blur-[10px] border border-white/10 shadow-inner rounded-full px-4.5 pe-14 text-sm sm:text-base text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] focus:bg-black/30 transition-all hover:bg-white/5"
+              />
+              {isSupported && (
+                <button
+                  type="button"
+                  onClick={isListening ? stopListening : startListening}
+                  aria-label={isListening ? t('quickAdd.stopListening') : t('quickAdd.listen')}
+                  aria-pressed={isListening}
+                  className={`absolute end-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center ${
+                    isListening
+                      ? 'text-red-200 bg-red-500/30 border border-red-500/40'
+                      : 'text-white/80 bg-white/10 border border-white/10'
+                  }`}
+                >
+                  {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* 4 & 5. Accounts & Category */}

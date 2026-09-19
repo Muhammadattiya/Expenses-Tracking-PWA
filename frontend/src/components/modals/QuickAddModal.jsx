@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, X, Send, Loader2, Trash2, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { Mic, MicOff, X, Send, Loader2, Trash2, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Sparkles, PenLine } from 'lucide-react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { parseQuickAddText, confirmQuickAddTransactions } from '../../api/quickAdd';
 import { getAccounts } from '../../api/accounts';
@@ -21,7 +22,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   const { t, lang } = useLanguage();
   const { showToast } = useNotification();
   
-  const { isListening, transcript, interimTranscript, setTranscript, startListening, stopListening, isSupported } = useSpeechRecognition(lang === 'ar' ? 'ar-EG' : 'en-US');
+  const { isListening, transcript, interimTranscript, setTranscript, startListening, stopListening, isSupported, error: speechError } = useSpeechRecognition(lang === 'ar' ? 'ar-EG' : 'en-US');
   
   const [textInput, setTextInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,11 +49,20 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
 
   useEffect(() => {
     if (!isOpen) return undefined;
+    if (isSupported) {
+      startListening();
+      return undefined;
+    }
     const id = window.requestAnimationFrame(() => {
       textAreaRef.current?.focus();
     });
     return () => window.cancelAnimationFrame(id);
-  }, [isOpen]);
+  }, [isOpen, isSupported, startListening]);
+
+  useEffect(() => {
+    if (!isOpen || !speechError) return;
+    showToast(t('quickAdd.speechError'), 'warning');
+  }, [speechError, isOpen, showToast, t]);
 
   useEffect(() => {
     if (isOpen) {
@@ -208,6 +218,8 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                   <button 
                     type="button"
                     onClick={isListening ? stopListening : startListening}
+                    aria-label={isListening ? t('quickAdd.stopListening') : t('quickAdd.listen')}
+                    aria-pressed={isListening}
                     className={`absolute bottom-3 end-3 p-3 rounded-2xl transition-all duration-300 ${
                       isListening 
                         ? 'bg-red-500/30 border border-red-500/50 text-red-200 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse' 
@@ -218,6 +230,11 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                   </button>
                 )}
               </div>
+              {isListening && (
+                <p className="text-xs text-[#E8C5A8] px-1" aria-live="polite">
+                  {t('quickAdd.listening')}
+                </p>
+              )}
               
               <button 
                 type="button"
@@ -228,6 +245,14 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={16} />}
                 <span>{t('quickAdd.analyze')}</span>
               </button>
+              <Link
+                to="/add"
+                onClick={onClose}
+                className="w-full py-3.5 rounded-full font-semibold text-[14px] text-white/90 border border-white/15 bg-black/20 hover:bg-white/10 flex justify-center items-center gap-2 transition-colors active:scale-[0.98]"
+              >
+                <PenLine size={16} aria-hidden="true" />
+                <span>{t('quickAdd.manualEntry')}</span>
+              </Link>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
@@ -240,8 +265,9 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                   <div key={cand.id} className="bg-black/30 border border-white/10 rounded-[1.8rem] p-4 flex flex-col gap-3 relative shadow-inner">
                     <button 
                       type="button"
-                      onClick={() => removeCandidate(cand.id)} 
-                      className={`absolute top-3.5 ${lang === 'ar' ? 'left-3.5' : 'right-3.5'} text-red-400/80 hover:text-red-300 transition-colors p-1`}
+                      onClick={() => removeCandidate(cand.id)}
+                      aria-label={t('common.delete')}
+                      className="absolute top-3.5 end-3.5 text-red-400/80 hover:text-red-300 transition-colors p-1 min-w-11 min-h-11 flex items-center justify-center"
                     >
                       <Trash2 size={15} />
                     </button>
