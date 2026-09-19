@@ -528,6 +528,7 @@ export default {
     "iOwe": "I Owe",
     "owedToMe": "Owed To Me",
     "addDebt": "Add Debt",
+    "addNew": "Add Debt",
     "personName": "Person Name",
     "amount": "Amount",
     "debtType": "Debt Direction",

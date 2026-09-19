@@ -469,7 +469,7 @@ function LiabilitiesTabComponent({ debts, bills, filters, money, allDebtTransact
               className="px-5 py-2.5 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-bold text-xs shadow-lg shadow-[#8D6346]/20 transition-all inline-flex items-center gap-2 min-h-[44px] active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]"
             >
               <Plus size={14} />
-              <span>{t('debts.addNew')}</span>
+              <span>{t('debts.addDebt')}</span>
             </Link>
           </div>
         )}
