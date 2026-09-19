@@ -545,6 +545,7 @@ export default {
     "iOwe": "ديون عليّ",
     "owedToMe": "ديون لي",
     "addDebt": "إضافة دين",
+    "addNew": "إضافة دين",
     "personName": "اسم الشخص",
     "amount": "المبلغ",
     "debtType": "اتجاه الدين",
