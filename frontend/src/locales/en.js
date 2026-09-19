@@ -102,9 +102,14 @@ export default {
     "finish": "Finish"
   },
   "quickAdd": {
-    "title": "Quick Add",
+    "title": "Log",
     "placeholder": "e.g., I spent 150 EGP at KFC yesterday...",
     "analyze": "Analyze",
+    "listen": "Start listening",
+    "stopListening": "Stop listening",
+    "listening": "Listening…",
+    "speechError": "Could not hear that. Type it, or try the mic again.",
+    "manualEntry": "Open full form",
     "detectedTransactions": "Detected Transactions",
     "descPlaceholder": "Description",
     "selectCategory": "Select Category...",
@@ -212,13 +217,14 @@ export default {
     "revokeWarning": "Revoking will immediately disable any connected shortcuts. Are you sure?"
   },
   "nav": {
-    "bar": "Main",
+    "bar": "Navigation",
     "dashboard": "Home",
-    "nova": "Nova",
+    "nova": "Nova, assistant",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "quickAdd": "Quick add",
     "add": "Add",
+    "quickAdd": "Log",
+    "manualEntry": "Manual entry",
     "investments": "Invest",
     "analytics": "Reports",
     "receivables": "Debts",

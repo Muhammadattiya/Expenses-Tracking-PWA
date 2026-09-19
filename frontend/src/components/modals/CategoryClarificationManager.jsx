@@ -28,8 +28,19 @@ export default function CategoryClarificationManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dockOverlay, setDockOverlay] = useState(false);
   
   const hasFetched = useRef(false);
+
+  useEffect(() => {
+    const sync = () => {
+      setDockOverlay(document.documentElement.dataset.dockOverlay === '1');
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-dock-overlay'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,7 +116,7 @@ export default function CategoryClarificationManager() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {!isModalOpen && activeCategory && (
+        {!isModalOpen && activeCategory && !dockOverlay && (
           <motion.div
             key="pill"
             layoutId="clarification-morph"
