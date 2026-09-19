@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import ar from '../locales/ar';
 import en from '../locales/en';
 
-const LanguageContext = createContext(null);
+export const LanguageContext = createContext(null);
 
 const dictionaries = { ar, en };
 
@@ -23,6 +23,10 @@ export const LanguageProvider = ({ children }) => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
     localStorage.setItem('finova-lang', lang);
+    window.__setFinovaLang = setLang;
+    return () => {
+      delete window.__setFinovaLang;
+    };
   }, [lang]);
 
   const t = (key, defaultTextOrVariables, variables) => {

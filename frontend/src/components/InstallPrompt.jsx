@@ -25,7 +25,7 @@ export default function InstallPrompt() {
         await promptEvent.prompt();
         setPromptEvent(null);
       }}
-      className={`fixed ${lang === 'ar' ? 'left-4' : 'right-4'} top-4 z-50 rounded-full liquidglass bg-[#1C1819]/85 backdrop-blur-xl border border-white/15 p-3 text-[#E8C5A8] shadow-[0_8px_25px_rgba(0,0,0,0.5)] hover:bg-[#8D6346]/25 hover:border-[#8D6346]/50 transition-all active:scale-90 flex items-center justify-center`}
+      className={`fixed ${lang === 'ar' ? 'left-4' : 'right-4'} top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] z-50 rounded-full liquidglass bg-[#1C1819]/85 backdrop-blur-xl border border-white/15 p-3 text-[#E8C5A8] shadow-[0_8px_25px_rgba(0,0,0,0.5)] hover:bg-[#8D6346]/25 hover:border-[#8D6346]/50 transition-all active:scale-90 flex items-center justify-center`}
     >
       <Download size={19} className="text-[#E8C5A8]" />
     </button>

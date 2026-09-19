@@ -23,7 +23,7 @@ export default function SettlementCelebration({ open, onClose, title, subtitle, 
         <div 
           role="status" 
           aria-live="polite"
-          className="fixed top-6 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[130] flex justify-center pointer-events-none"
+          className="fixed top-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[130] flex justify-center pointer-events-none"
         >
           <motion.div
             initial={{ opacity: 0, y: -25, scale: 0.95 }}
