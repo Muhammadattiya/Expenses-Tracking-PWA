@@ -208,8 +208,7 @@ Finova features soft, continuous curvature modeled after native iOS hardware.
 - **Floating Bottom Bar**:
   - Structure: 328px wide by 48px high, centered at `bottom-8 z-[90]`.
   - Material: Liquid Glass pill (`rounded-[24px] px-4 backdrop-blur-2xl border border-white/10 bg-black/30`).
-  - Active Tab: Sliding pill indicator using Framer Motion `layoutId="pillIndicator"`.
-  - Center Action: FAB Plus button (`w-12 h-12 rounded-full`) expanding into a quick-action drawer.
+  - Active Tab: Resting highlight uses Framer Motion `layoutId="pillIndicator"`. Press-drag uses the reusable **liquid scrub** (finger-follow gel, snap to nearest slot on release, copper preview on the hovered icon). See `frontend/src/components/dock/LIQUID_SCRUB.md`. Do not add extra `backdrop-filter` on `.liquidglass` for this effect.
 
 ### Modals & Dialogs
 - **Layering**: Must strictly mount through `createPortal(<div className="fixed inset-0 z-[100]...">...</div>, document.body)`.
