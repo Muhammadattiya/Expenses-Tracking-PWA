@@ -68,7 +68,7 @@ export default function PWABadge() {
 
   return (
     <div 
-      className="fixed top-4 inset-x-4 z-[95] flex flex-col gap-3 max-w-md mx-auto pointer-events-none"
+      className="fixed top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] inset-x-4 z-[95] flex flex-col gap-3 max-w-md mx-auto pointer-events-none"
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
       <AnimatePresence>

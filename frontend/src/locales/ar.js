@@ -269,6 +269,7 @@ export default {
     "copy": "نسخ",
     "search": "بحث",
     "close": "إغلاق",
+    "notifications": "الإشعارات",
     "back": "رجوع"
   },
   "dashboard": {

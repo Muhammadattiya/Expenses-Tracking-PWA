@@ -268,6 +268,7 @@ export default {
     "copy": "Copy",
     "search": "Search",
     "close": "Close",
+    "notifications": "Notifications",
     "back": "Back"
   },
   "dashboard": {
