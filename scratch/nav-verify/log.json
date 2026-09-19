@@ -1,0 +1,1415 @@
+{
+  "mobile": [
+    {
+      "step": "landed",
+      "url": "http://localhost:5173/",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "nova-open",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "true",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": true
+      }
+    },
+    {
+      "step": "nova-closed",
+      "dialog": 0,
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "reports",
+      "url": "http://localhost:5173/analytics",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": "page",
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "profile",
+      "url": "http://localhost:5173/profile",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": "page",
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "plus-open",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "buttons": [
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/bills",
+            "w": 126,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/budgets",
+            "w": 151,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/investments",
+            "w": 138,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/receivables",
+            "w": 136,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/add",
+            "w": 123,
+            "h": 66
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Close menu",
+            "expanded": "true",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": "page",
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    }
+  ],
+  "narrow": [
+    {
+      "step": "landed",
+      "url": "http://localhost:5173/",
+      "dock": {
+        "aria": "Main",
+        "width": 296,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 320,
+          "h": 568
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "nova-open",
+      "dock": {
+        "aria": "Main",
+        "width": 296,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 320,
+          "h": 568
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "true",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": true
+      }
+    },
+    {
+      "step": "nova-closed",
+      "dialog": 0,
+      "dock": {
+        "aria": "Main",
+        "width": 296,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 320,
+          "h": 568
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "reports",
+      "url": "http://localhost:5173/analytics",
+      "dock": {
+        "aria": "Main",
+        "width": 296,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 320,
+          "h": 568
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": "page",
+            "href": "/analytics",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "profile",
+      "url": "http://localhost:5173/profile",
+      "dock": {
+        "aria": "Main",
+        "width": 296,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 320,
+          "h": 568
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": "page",
+            "href": "/profile",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "plus-open",
+      "dock": {
+        "aria": "Main",
+        "width": 296,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 320,
+          "h": 568
+        },
+        "buttons": [
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/bills",
+            "w": 126,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/budgets",
+            "w": 151,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/investments",
+            "w": 138,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/receivables",
+            "w": 136,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/add",
+            "w": 123,
+            "h": 66
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Close menu",
+            "expanded": "true",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": "page",
+            "href": "/profile",
+            "w": 44,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    }
+  ],
+  "desktop": [
+    {
+      "step": "landed",
+      "url": "http://localhost:5173/",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "nova-open",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "true",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": true
+      }
+    },
+    {
+      "step": "nova-closed",
+      "dialog": 0,
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": "page",
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "reports",
+      "url": "http://localhost:5173/analytics",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": "page",
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": null,
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "profile",
+      "url": "http://localhost:5173/profile",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "buttons": [
+          {
+            "tag": "BUTTON",
+            "label": "Open menu",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": "page",
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    },
+    {
+      "step": "plus-open",
+      "dock": {
+        "aria": "Main",
+        "width": 360,
+        "height": 48,
+        "bottom": 32,
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "buttons": [
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/bills",
+            "w": 126,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/budgets",
+            "w": 151,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/investments",
+            "w": 138,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/receivables",
+            "w": 136,
+            "h": 66
+          },
+          {
+            "tag": "A",
+            "label": null,
+            "expanded": null,
+            "current": null,
+            "href": "/add",
+            "w": 123,
+            "h": 66
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Close menu",
+            "expanded": "true",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "A",
+            "label": "Home",
+            "expanded": null,
+            "current": null,
+            "href": "/",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Reports",
+            "expanded": null,
+            "current": null,
+            "href": "/analytics",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "A",
+            "label": "Profile",
+            "expanded": null,
+            "current": "page",
+            "href": "/profile",
+            "w": 60,
+            "h": 44
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Nova",
+            "expanded": "false",
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          },
+          {
+            "tag": "BUTTON",
+            "label": "Quick add",
+            "expanded": null,
+            "current": null,
+            "href": null,
+            "w": 48,
+            "h": 48
+          }
+        ],
+        "dialog": false
+      }
+    }
+  ]
+}

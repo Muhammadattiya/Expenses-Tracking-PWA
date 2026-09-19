@@ -35,6 +35,18 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassN
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsOpen(false);
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [isOpen]);
+
   const updatePosition = () => {
     if (containerRef.current && isOpen) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -96,6 +108,7 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassN
 
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       setIsOpen(false);
       return;
     }

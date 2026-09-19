@@ -227,24 +227,6 @@ const AddTransaction = () => {
         reminderDaysBefore: 1
       });
 
-      // تحديث فوري وسلس للأرصدة محلياً لسرعة الاستجابة
-      if (type === 'transfer') {
-        setAccountBalances(prev => ({
-          ...prev,
-          [fromAccount]: (prev[fromAccount] || 0) - parsedAmount,
-          [toAccount]: (prev[toAccount] || 0) + parsedAmount
-        }));
-      } else if (type === 'expense') {
-        setAccountBalances(prev => ({
-          ...prev,
-          [account]: (prev[account] || 0) - parsedAmount
-        }));
-      } else if (type === 'income') {
-        setAccountBalances(prev => ({
-          ...prev,
-          [account]: (prev[account] || 0) + parsedAmount
-        }));
-      }
 
       // نبض لمسي احتفالي عند نجاح الحفظ
       triggerHaptic('success');

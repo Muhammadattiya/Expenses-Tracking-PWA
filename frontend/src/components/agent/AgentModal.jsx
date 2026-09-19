@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Bot, User, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { chatWithAgent } from '../../api/agent';
 import { useLanguage } from '../../contexts/LanguageContext';
+import useFocusTrap from '../../hooks/useFocusTrap';
 
 export default function AgentModal({ isOpen, onClose }) {
   const { lang, t } = useLanguage();
@@ -16,6 +17,10 @@ export default function AgentModal({ isOpen, onClose }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const dialogRef = useRef(null);
+  const titleId = 'nova-agent-title';
+  useFocusTrap(isOpen, dialogRef);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,6 +31,28 @@ export default function AgentModal({ isOpen, onClose }) {
       scrollToBottom();
     }
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const id = window.requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+      return () => window.cancelAnimationFrame(id);
+    }
+    return undefined;
+  }, [isOpen]);
 
   const handleSend = async (e) => {
     e?.preventDefault();
@@ -66,10 +93,9 @@ export default function AgentModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
-
   return createPortal(
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
+      {isOpen && (
       <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-auto" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <motion.div
           initial={{ opacity: 0 }}
@@ -80,6 +106,10 @@ export default function AgentModal({ isOpen, onClose }) {
         />
         
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           initial={{ opacity: 0, y: '100%', scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: '100%', scale: 0.95 }}
@@ -94,7 +124,7 @@ export default function AgentModal({ isOpen, onClose }) {
                 <div className="absolute inset-0 bg-[#8D6346]/5 animate-pulse" />
               </div>
               <div>
-                <h3 className="text-white font-bold tracking-wide">
+                <h3 id={titleId} className="text-white font-bold tracking-wide">
                   {t('agent.title')}
                 </h3>
                 <p className="text-white/50 text-xs">
@@ -103,8 +133,10 @@ export default function AgentModal({ isOpen, onClose }) {
               </div>
             </div>
             <motion.button
+              type="button"
               whileTap={{ scale: 0.9 }}
               onClick={onClose}
+              aria-label={t('agent.close')}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-white/70 hover:text-white transition-colors"
             >
               <X size={20} />
@@ -125,12 +157,12 @@ export default function AgentModal({ isOpen, onClose }) {
                 </div>
                 <div className={`max-w-[75%] p-3 text-sm leading-relaxed shadow-sm ${
                   msg.role === 'user' 
-                    ? 'bg-[#8D6346] text-white rounded-[20px] rounded-tr-sm' 
+                    ? 'bg-[#8D6346] text-white rounded-[20px] rounded-se-sm' 
                     : msg.isError 
-                      ? 'bg-red-500/10 text-red-200 border border-red-500/20 rounded-[20px] rounded-tl-sm'
-                      : 'bg-white/10 text-white border border-white/5 backdrop-blur-md rounded-[20px] rounded-tl-sm'
+                      ? 'bg-red-500/10 text-red-200 border border-red-500/20 rounded-[20px] rounded-ss-sm'
+                      : 'bg-white/10 text-white border border-white/5 backdrop-blur-md rounded-[20px] rounded-ss-sm'
                 }`}>
-                  {msg.isError && <AlertCircle size={16} className="inline-block mr-2 mb-0.5" />}
+                  {msg.isError && <AlertCircle size={16} className="inline-block me-2 mb-0.5" />}
                   {msg.content}
                 </div>
               </motion.div>
@@ -145,7 +177,7 @@ export default function AgentModal({ isOpen, onClose }) {
                 <div className="w-8 h-8 rounded-full bg-black/40 border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
                   <Bot size={16} className="text-[#8D6346] animate-pulse" />
                 </div>
-                <div className="max-w-[75%] p-3 rounded-[20px] bg-white/5 border border-white/5 backdrop-blur-md rounded-tl-sm flex items-center gap-2 text-white/70">
+                <div className="max-w-[75%] p-3 rounded-[20px] bg-white/5 border border-white/5 backdrop-blur-md rounded-ss-sm flex items-center gap-2 text-white/70">
                   <Loader2 size={16} className="animate-spin" />
                   <span className="text-xs">{t('agent.thinking')}</span>
                 </div>
@@ -158,19 +190,21 @@ export default function AgentModal({ isOpen, onClose }) {
           <div className="p-4 bg-black/20 border-t border-white/10 backdrop-blur-md">
             <form onSubmit={handleSend} className="relative flex items-center">
               <input
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={t('agent.placeholder')}
-                className="w-full bg-black/40 border border-white/10 rounded-full px-5 py-3.5 pr-14 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/30 transition-colors shadow-inner"
+                aria-label={t('agent.placeholder')}
+                className="w-full bg-black/40 border border-white/10 rounded-full px-5 py-3.5 pe-14 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/30 transition-colors shadow-inner"
                 disabled={isLoading}
               />
               <motion.button
                 type="submit"
                 whileTap={{ scale: 0.9 }}
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/15 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/25 transition-colors border border-white/10 shadow-sm"
-                style={{ left: lang === 'ar' ? '0.5rem' : 'auto', right: lang === 'ar' ? 'auto' : '0.5rem' }}
+                aria-label={t('agent.send')}
+                className="absolute end-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/15 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/25 transition-colors border border-white/10 shadow-sm"
               >
                 <Send size={18} className={lang === 'ar' ? 'rotate-180' : ''} />
               </motion.button>
@@ -178,6 +212,7 @@ export default function AgentModal({ isOpen, onClose }) {
           </div>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>,
     document.body
   );
