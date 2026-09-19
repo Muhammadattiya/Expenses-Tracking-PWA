@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -12,8 +13,10 @@ import {
   Users
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { motion, AnimatePresence, useReducedMotion, useMotionTemplate, useMotionValue, useSpring } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { triggerHaptic } from '../utils/haptics';
+import useLiquidScrub from '../hooks/useLiquidScrub';
+import LiquidBlob from './dock/LiquidBlob';
 
 const dockControlClass =
   'relative w-12 h-12 rounded-full flex items-center justify-center text-white group shrink-0 focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]';
@@ -36,18 +39,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const [fabOpen, setFabOpen] = useState(false);
-  const [held, setHeld] = useState(false);
-  const [scrubbing, setScrubbing] = useState(false);
   const navRef = useRef(null);
-  const trackRef = useRef(null);
-  const pillRef = useRef(null);
-  const didScrub = useRef(false);
-  const sheenX = useMotionValue(80);
-  const sheenY = useMotionValue(24);
-  const sheenO = useSpring(0, { stiffness: 260, damping: 32 });
-  const blobX = useSpring(0, { stiffness: 420, damping: 36, mass: 0.7 });
-  const blobW = useSpring(56, { stiffness: 420, damping: 36, mass: 0.7 });
-  const sheenBg = useMotionTemplate`radial-gradient(110px 80px at ${sheenX}px ${sheenY}px, rgba(255,255,255,0.32), rgba(255,255,255,0.08) 38%, transparent 68%)`;
 
   const spring = reduceMotion
     ? { duration: 0 }
@@ -104,6 +96,32 @@ export default function BottomNav() {
     { path: '/profile', icon: User, label: t('nav.profile') },
   ];
 
+  const {
+    trackRef,
+    railRef,
+    scrubbing,
+    hoverIndex,
+    didScrub,
+    sheenBg,
+    sheenO,
+    blobX,
+    blobW,
+    bindTrack,
+  } = useLiquidScrub({
+    count: navItems.length,
+    rtl: lang === 'ar',
+    reduceMotion,
+    enabled: !fabOpen,
+    onCommit: (index) => {
+      const item = navItems[index];
+      if (!item) return;
+      if (location.pathname !== item.path) {
+        triggerHaptic('selection');
+        navigate(item.path);
+      }
+    },
+  });
+
   const fabItems = [
     { path: '/bills', icon: Receipt, label: t('nav.bills') },
     { path: '/budgets', icon: Target, label: t('nav.budgets') },
@@ -115,70 +133,6 @@ export default function BottomNav() {
   const overflowActive = OVERFLOW_PATHS.some((p) => pathInFamily(location.pathname, p));
   const plusMarked = overflowActive && !fabOpen;
 
-  const pointOnNav = (clientX, clientY) => {
-    const r = trackRef.current?.getBoundingClientRect();
-    if (!r) return;
-    sheenX.set(clientX - r.left);
-    sheenY.set(clientY - r.top);
-  };
-
-  const tabFromClientX = (clientX) => {
-    const r = pillRef.current?.getBoundingClientRect();
-    if (!r || r.width <= 0) return 0;
-    const t = Math.max(0, Math.min(0.999, (clientX - r.left) / r.width));
-    const visual = Math.floor(t * navItems.length);
-    return lang === 'ar' ? navItems.length - 1 - visual : visual;
-  };
-
-  const placeBlob = (clientX) => {
-    const r = pillRef.current?.getBoundingClientRect();
-    if (!r || r.width <= 0) return;
-    const slot = r.width / navItems.length;
-    const visual = Math.max(0, Math.min(navItems.length - 1, Math.floor(((clientX - r.left) / r.width) * navItems.length)));
-    blobW.set(Math.max(44, slot - 8));
-    blobX.set(visual * slot + 4);
-  };
-
-  const onNavPointerMove = (e) => {
-    if (reduceMotion || fabOpen) return;
-    pointOnNav(e.clientX, e.clientY);
-    sheenO.set(1);
-    if (e.buttons || scrubbing) {
-      const pill = pillRef.current?.getBoundingClientRect();
-      if (pill && e.clientX >= pill.left && e.clientX <= pill.right) {
-        didScrub.current = true;
-        setScrubbing(true);
-        placeBlob(e.clientX);
-      }
-    }
-  };
-
-  const onNavPointerDown = (e) => {
-    if (reduceMotion || fabOpen) return;
-    if (e.target.closest('a[href], button')) {
-      setHeld(true);
-      pointOnNav(e.clientX, e.clientY);
-      sheenO.set(1);
-    }
-  };
-
-  const onNavPointerUp = (e) => {
-    if (scrubbing && didScrub.current && pillRef.current) {
-      const i = tabFromClientX(e.clientX);
-      const item = navItems[i];
-      if (item && location.pathname !== item.path) {
-        triggerHaptic('selection');
-        navigate(item.path);
-      }
-    }
-    setHeld(false);
-    setScrubbing(false);
-    sheenO.set(0);
-    window.setTimeout(() => {
-      didScrub.current = false;
-    }, 80);
-  };
-
   return (
     <div
       className="fixed bottom-0 start-0 end-0 z-[90] flex justify-center pb-[max(2rem,env(safe-area-inset-bottom))]"
@@ -189,28 +143,7 @@ export default function BottomNav() {
         aria-label={t('nav.bar')}
         dir="ltr"
         className="relative flex items-center w-[min(22.5rem,calc(100%-24px))] h-12 gap-2 touch-none"
-        style={{ transformOrigin: '50% 100%' }}
-        animate={
-          reduceMotion || fabOpen
-            ? { y: 0, scale: 1 }
-            : { y: held ? -12 : 0, scale: held ? 1.045 : 1 }
-        }
-        transition={spring}
-        onPointerDown={(e) => {
-          if (fabOpen) return;
-          try {
-            e.currentTarget.setPointerCapture(e.pointerId);
-          } catch {
-            /* capture is optional */
-          }
-          onNavPointerDown(e);
-        }}
-        onPointerMove={onNavPointerMove}
-        onPointerUp={onNavPointerUp}
-        onPointerCancel={onNavPointerUp}
-        onPointerLeave={() => {
-          if (!held && !scrubbing) sheenO.set(0);
-        }}
+        {...bindTrack}
       >
         <motion.div
           aria-hidden="true"
@@ -219,15 +152,6 @@ export default function BottomNav() {
         />
         <AnimatePresence initial={false}>
           {fabOpen && (
-            <>
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: reduceMotion ? 0 : fabOpen ? 0.2 : 0.15 }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10"
-                onClick={() => setFabOpen(false)}
-              />
               <div className="absolute bottom-[calc(100%+12px)] start-0 flex flex-col items-start gap-3 z-50">
                 {fabItems.map((item, index) => (
                   <motion.div
@@ -260,7 +184,6 @@ export default function BottomNav() {
                   </motion.div>
                 ))}
               </div>
-            </>
           )}
         </AnimatePresence>
 
@@ -289,24 +212,12 @@ export default function BottomNav() {
         </button>
 
         <div 
-          ref={pillRef}
+          ref={railRef}
           dir={lang === 'ar' ? 'rtl' : 'ltr'}
           className={`relative h-12 flex-1 min-w-0 rounded-[24px] flex justify-between items-center px-1.5 overflow-hidden ${liquidGlassClass}`}
         >
-          {scrubbing && (
-            <motion.div
-              aria-hidden="true"
-              className="absolute top-1 bottom-1 z-0 rounded-full pointer-events-none"
-              style={{
-                x: blobX,
-                width: blobW,
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 100%)',
-                boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.45), inset 0 -2px 6px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.28)',
-                border: '1px solid rgba(255,255,255,0.14)'
-              }}
-            />
-          )}
-          {navItems.map((item) => (
+          {scrubbing && <LiquidBlob x={blobX} width={blobW} />}
+          {navItems.map((item, index) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -321,7 +232,10 @@ export default function BottomNav() {
               }}
               className="relative min-w-11 h-12 flex-1 flex items-center justify-center rounded-full z-10 group focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]"
             >
-              {({ isActive }) => (
+              {({ isActive }) => {
+                const preview = scrubbing && hoverIndex === index;
+                const lit = preview || (isActive && !scrubbing);
+                return (
                 <>
                   {isActive && !scrubbing && (
                     <motion.div
@@ -337,19 +251,20 @@ export default function BottomNav() {
                   )}
                   <motion.span
                     className="relative z-20 inline-flex"
-                    animate={{ scale: isActive && !reduceMotion ? 1.12 : 1 }}
+                    animate={{ scale: lit && !reduceMotion ? 1.12 : 1 }}
                     whileTap={press}
                     transition={iconSpring}
                   >
                     {React.createElement(item.icon, {
                       size: 20,
-                      strokeWidth: isActive ? 2.5 : 2,
-                      className: `transition-colors duration-200 ${isActive ? 'text-[#8D6346] drop-shadow-md' : 'text-white/60 group-hover:text-white'}`,
+                      strokeWidth: lit ? 2.5 : 2,
+                      className: `transition-colors duration-200 ${lit ? 'text-[#8D6346] drop-shadow-md' : 'text-white/60 group-hover:text-white'}`,
                       'aria-hidden': true
                     })}
                   </motion.span>
                 </>
-              )}
+                );
+              }}
             </NavLink>
           ))}
         </div>
@@ -369,6 +284,22 @@ export default function BottomNav() {
           </motion.span>
         </button>
       </motion.nav>
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {fabOpen && (
+            <motion.div
+              key="fab-scrim"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.2 }}
+              className="fixed inset-0 z-[85] bg-black/55"
+              onClick={() => setFabOpen(false)}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

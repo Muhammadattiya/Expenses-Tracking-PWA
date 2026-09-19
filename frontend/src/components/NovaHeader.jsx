@@ -67,15 +67,12 @@ export default function NovaHeader({ side = 'start', onOpenChange }) {
         aria-label={t('nav.nova')}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`fixed z-[80] top-[max(0.75rem,env(safe-area-inset-top))] ${sideClass} w-11 h-11 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]`}
+        className={`fixed z-[90] top-[max(0.75rem,env(safe-area-inset-top))] ${sideClass} w-11 h-11 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]`}
       >
         <div className="absolute inset-0 rounded-full liquidglass pointer-events-none" />
-        <motion.span
-          className="relative z-10 inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#8D6346]/25 border border-[#E8C5A8]/35"
-          whileTap={press}
-        >
+        <motion.span className="relative z-10 inline-flex" whileTap={press}>
           <Sparkle
-            size={16}
+            size={18}
             strokeWidth={2.25}
             aria-hidden="true"
             className="text-[#E8C5A8]"

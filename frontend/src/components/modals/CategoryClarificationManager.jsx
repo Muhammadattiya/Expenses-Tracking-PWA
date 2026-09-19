@@ -120,7 +120,7 @@ export default function CategoryClarificationManager() {
           <motion.div
             key="pill"
             layoutId="clarification-morph"
-            className="fixed top-2.5 sm:top-5 start-1/2 -translate-x-1/2 sm:start-auto sm:end-8 sm:translate-x-0 z-[1000] liquidglass cursor-pointer overflow-hidden border border-white/10 shadow-xl max-w-[90vw]"
+            className="fixed top-2.5 sm:top-5 end-3 sm:end-8 z-[90] liquidglass cursor-pointer overflow-hidden border border-white/10 shadow-xl max-w-[min(16rem,calc(100vw-5.5rem))]"
             style={{ borderRadius: 9999 }}
             onClick={() => setIsModalOpen(true)}
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
