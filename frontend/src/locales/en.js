@@ -212,7 +212,12 @@ export default {
     "revokeWarning": "Revoking will immediately disable any connected shortcuts. Are you sure?"
   },
   "nav": {
+    "bar": "Main",
     "dashboard": "Home",
+    "nova": "Nova",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "quickAdd": "Quick add",
     "add": "Add",
     "investments": "Invest",
     "analytics": "Reports",
@@ -1222,6 +1227,8 @@ export default {
     "welcomeMessage": "Hello! I am Nova, Finova's AI Assistant. How can I help you with your finances today?",
     "title": "Nova",
     "subtitle": "Powered by AI",
+    "close": "Close",
+    "send": "Send",
     "errorMessage": "Sorry, an error occurred while connecting to Nova.",
     "thinking": "Thinking...",
     "placeholder": "Ask about your finances..."

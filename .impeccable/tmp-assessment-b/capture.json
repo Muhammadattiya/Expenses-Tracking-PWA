@@ -1,0 +1,334 @@
+{
+  "url": "http://localhost:5173/",
+  "preflight": {
+    "titleOk": true,
+    "scriptOk": true,
+    "mutation": true,
+    "url": "http://localhost:5173/",
+    "title": "Finova"
+  },
+  "inject": {
+    "injected": true,
+    "already": false,
+    "src": "http://localhost:8400/detect.js"
+  },
+  "screenshots": [
+    "D:\\expenses-tracker\\.impeccable\\tmp-assessment-b\\nav-rest-390.png",
+    "D:\\expenses-tracker\\.impeccable\\tmp-assessment-b\\nav-plus-390.png",
+    "D:\\expenses-tracker\\.impeccable\\tmp-assessment-b\\nav-rest-1280.png",
+    "D:\\expenses-tracker\\.impeccable\\tmp-assessment-b\\nav-plus-1280.png"
+  ],
+  "consoleCount": 27,
+  "impeccableConsole": [
+    {
+      "type": "startGroup",
+      "text": "%c[impeccable] 1 anti-pattern found color: oklch(84% 0.19 80.46); font-weight: bold",
+      "location": {
+        "url": "http://localhost:8400/detect.js",
+        "line": 3491,
+        "column": 12,
+        "lineNumber": 3491,
+        "columnNumber": 12
+      }
+    }
+  ],
+  "consoleSample": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "location": {
+        "url": "http://localhost:5173/@vite/client",
+        "line": 850,
+        "column": 8,
+        "lineNumber": 850,
+        "columnNumber": 8
+      }
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=1dc935e3",
+        "line": 14335,
+        "column": 48,
+        "lineNumber": 14335,
+        "columnNumber": 48
+      }
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "location": {
+        "url": "http://localhost:5173/@vite/client",
+        "line": 954,
+        "column": 11,
+        "lineNumber": 954,
+        "columnNumber": 11
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "location": {
+        "url": "http://localhost:5000/api/auth/me",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "location": {
+        "url": "http://localhost:5000/api/auth/me",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/speed-insights/script.debug.js",
+        "line": 0,
+        "column": 11263,
+        "lineNumber": 0,
+        "columnNumber": 11263
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+        "line": 0,
+        "column": 657,
+        "lineNumber": 0,
+        "columnNumber": 657
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c [view] http://localhost:5173/ color: rgb(120, 120, 120) color: inherit {o: http://localhost:5173/, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, ts: 1789805884807} /_vercel/insights/view",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+        "line": 0,
+        "column": 657,
+        "lineNumber": 0,
+        "columnNumber": 657
+      }
+    },
+    {
+      "type": "warning",
+      "text": "[GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.",
+      "location": {
+        "url": "https://accounts.google.com/gsi/client",
+        "line": 86,
+        "column": 459,
+        "lineNumber": 86,
+        "columnNumber": 459
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()",
+      "location": {
+        "url": "https://accounts.google.com/gsi/button?type=icon&shape=circle&size=large&is_fedcm_supported=true&client_id=757403181829-ol54l24ltjnlqsk8q8ifau2pc2ti9l1t.apps.googleusercontent.com&iframe_id=gsi_887059_121256&cas=Kw21trV%2BH%2BSPHe25hL9UCefkX9Kas2kpH42uBHNzITY",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
+      "location": {
+        "url": "https://ssl.gstatic.com/_/gsi/_/js/k=gsi.gsi.ar.BUikrQ5x_Vk.O/am=AAAAAIIATBME/d=1/rs=AF0KOtWizUABc62H69r_BILSuuM-zGadwQ/m=credential_button_library",
+        "line": 87,
+        "column": 88,
+        "lineNumber": 87,
+        "columnNumber": 88
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Speed Insights]%c [vitals] color: rgb(120, 120, 120) color: inherit {speed: 4g, metrics: Array(3), scriptVersion: 0.1.3, sdkName: @vercel/speed-insights/react, sdkVersion: 2.0.0} /_vercel/speed-insights/vitals",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/speed-insights/script.debug.js",
+        "line": 0,
+        "column": 11263,
+        "lineNumber": 0,
+        "columnNumber": 11263
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c [view] http://localhost:5173/login color: rgb(120, 120, 120) color: inherit {o: http://localhost:5173/login, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, ts: 1789805888233} /_vercel/insights/view",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+        "line": 0,
+        "column": 657,
+        "lineNumber": 0,
+        "columnNumber": 657
+      }
+    },
+    {
+      "type": "warning",
+      "text": "[GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.",
+      "location": {
+        "url": "https://accounts.google.com/gsi/client",
+        "line": 86,
+        "column": 459,
+        "lineNumber": 86,
+        "columnNumber": 459
+      }
+    },
+    {
+      "type": "warning",
+      "text": "[GSI_LOGGER]: google.accounts.id.initialize() is called multiple times. This could cause unexpected behavior and only the last initialized instance will be used.",
+      "location": {
+        "url": "https://accounts.google.com/gsi/client",
+        "line": 86,
+        "column": 459,
+        "lineNumber": 86,
+        "columnNumber": 459
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()",
+      "location": {
+        "url": "https://accounts.google.com/gsi/button?type=icon&shape=circle&size=large&is_fedcm_supported=true&client_id=757403181829-ol54l24ltjnlqsk8q8ifau2pc2ti9l1t.apps.googleusercontent.com&iframe_id=gsi_888273_628071&cas=eLl%2BLY%2FQX9lppHtHl0gMbVuJ4UP3Ct%2FMgpW%2FVnDfKTY",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
+      "location": {
+        "url": "https://ssl.gstatic.com/_/gsi/_/js/k=gsi.gsi.ar.BUikrQ5x_Vk.O/am=AAAAAIIAbBME/d=1/rs=AF0KOtUC-ytoWAD3o29s5zBnWn4zZDsd4Q/m=credential_button_library",
+        "line": 87,
+        "column": 88,
+        "lineNumber": 87,
+        "columnNumber": 88
+      }
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "location": {
+        "url": "http://localhost:5173/@vite/client",
+        "line": 850,
+        "column": 8,
+        "lineNumber": 850,
+        "columnNumber": 8
+      }
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "location": {
+        "url": "http://localhost:5173/@vite/client",
+        "line": 954,
+        "column": 11,
+        "lineNumber": 954,
+        "columnNumber": 11
+      }
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=1dc935e3",
+        "line": 14335,
+        "column": 48,
+        "lineNumber": 14335,
+        "columnNumber": 48
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+        "line": 0,
+        "column": 657,
+        "lineNumber": 0,
+        "columnNumber": 657
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Web Analytics]%c [view] http://localhost:5173/ color: rgb(120, 120, 120) color: inherit {o: http://localhost:5173/, sv: 0.1.3, sdkn: @vercel/analytics/react, sdkv: 2.0.1, ts: 1789805889841} /_vercel/insights/view",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/script.debug.js",
+        "line": 0,
+        "column": 657,
+        "lineNumber": 0,
+        "columnNumber": 657
+      }
+    },
+    {
+      "type": "log",
+      "text": "%c[Vercel Speed Insights]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit",
+      "location": {
+        "url": "https://va.vercel-scripts.com/v1/speed-insights/script.debug.js",
+        "line": 0,
+        "column": 11263,
+        "lineNumber": 0,
+        "columnNumber": 11263
+      }
+    },
+    {
+      "type": "startGroup",
+      "text": "%c[impeccable] 1 anti-pattern found color: oklch(84% 0.19 80.46); font-weight: bold",
+      "location": {
+        "url": "http://localhost:8400/detect.js",
+        "line": 3491,
+        "column": 12,
+        "lineNumber": 3491,
+        "columnNumber": 12
+      }
+    },
+    {
+      "type": "log",
+      "text": "%cdark-glow%c Colored box-shadow glow (#8d6346) on dark background color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node",
+      "location": {
+        "url": "http://localhost:8400/detect.js",
+        "line": 3497,
+        "column": 16,
+        "lineNumber": 3497,
+        "columnNumber": 16
+      }
+    },
+    {
+      "type": "log",
+      "text": "%cgpt-thin-border-wide-shadow%c 1px border + 24px shadow blur color: oklch(84% 0.19 80.46); font-weight: bold color: inherit JSHandle@node",
+      "location": {
+        "url": "http://localhost:8400/detect.js",
+        "line": 3497,
+        "column": 16,
+        "lineNumber": 3497,
+        "columnNumber": 16
+      }
+    },
+    {
+      "type": "endGroup",
+      "text": "console.groupEnd",
+      "location": {
+        "url": "http://localhost:8400/detect.js",
+        "line": 3501,
+        "column": 12,
+        "lineNumber": 3501,
+        "columnNumber": 12
+      }
+    }
+  ]
+}

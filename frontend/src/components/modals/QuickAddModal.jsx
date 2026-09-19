@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, X, Send, Loader2, Trash2, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
@@ -9,6 +9,7 @@ import { getCategories } from '../../api/categories';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
+import useFocusTrap from '../../hooks/useFocusTrap';
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.95, y: 15 },
@@ -28,7 +29,31 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState({ expense: [], income: [] });
   const [defaultAccount, setDefaultAccount] = useState(null);
-  
+  const dialogRef = useRef(null);
+  const textAreaRef = useRef(null);
+  const titleId = 'quick-add-title';
+  useFocusTrap(isOpen, dialogRef);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const id = window.requestAnimationFrame(() => {
+      textAreaRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       setTextInput('');
@@ -119,10 +144,9 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
      setCandidates(prev => prev.filter(c => c.id !== id));
   };
   
-  if (!isOpen) return null;
-  
   return createPortal(
     <AnimatePresence>
+      {isOpen && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         {/* Backdrop */}
         <motion.div 
@@ -135,6 +159,10 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
         
         {/* Modal Container */}
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           variants={modalVariants}
           initial="hidden"
           animate="visible"
@@ -151,15 +179,16 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
               <div className="w-8 h-8 rounded-xl bg-[#8D6346]/20 border border-[#8D6346]/35 flex items-center justify-center text-[#E8C5A8] shadow-inner">
                 <Mic size={16} />
               </div>
-              <h2 className="text-lg font-bold text-white tracking-wide">
+              <h2 id={titleId} className="text-lg font-bold text-white tracking-wide">
                 {t('quickAdd.title')}
               </h2>
             </div>
 
             <button 
               type="button"
-              onClick={onClose} 
-              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
             >
               <X size={15} />
             </button>
@@ -169,6 +198,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
             <div className="flex flex-col gap-4">
               <div className="relative">
                 <textarea 
+                  ref={textAreaRef}
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder={t('quickAdd.placeholder')}
@@ -178,7 +208,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                   <button 
                     type="button"
                     onClick={isListening ? stopListening : startListening}
-                    className={`absolute bottom-3 ${lang === 'ar' ? 'left-3' : 'right-3'} p-3 rounded-2xl transition-all duration-300 ${
+                    className={`absolute bottom-3 end-3 p-3 rounded-2xl transition-all duration-300 ${
                       isListening 
                         ? 'bg-red-500/30 border border-red-500/50 text-red-200 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse' 
                         : 'bg-white/10 hover:bg-white/20 border border-white/10 text-white shadow-lg active:scale-95'
@@ -315,6 +345,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
           
         </motion.div>
       </div>
+      )}
     </AnimatePresence>,
     document.body
   );
