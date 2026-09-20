@@ -3,7 +3,7 @@ import api from './axios';
 export const signInWithGoogle = async (credential) => (await api.post('/auth/google', { credential })).data;
 export const registerUser = async (data) => (await api.post('/auth/register', data)).data;
 export const loginUser = async (data) => (await api.post('/auth/login', data)).data;
-export const getCurrentUser = async () => (await api.get('/auth/me')).data;
+export const getCurrentUser = async (config = {}) => (await api.get('/auth/me', config)).data;
 export const updateProfile = async (data) => (await api.patch('/auth/me', data)).data;
 export const updatePreferences = async (data) => (await api.put('/auth/preferences', data)).data;
 export const completeOnboarding = async () => (await api.put('/auth/complete-onboarding')).data;

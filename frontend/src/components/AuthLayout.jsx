@@ -4,10 +4,19 @@ import { useLanguage } from '../contexts/LanguageContext';
 export default function AuthLayout() {
   const { language } = useLanguage();
   const location = useLocation();
-  const authUser = localStorage.getItem('auth_user');
   const isWelcome = location.pathname === '/welcome';
+  const hasValidAuthUser = (() => {
+    try {
+      const raw = localStorage.getItem('auth_user');
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return Boolean(parsed && (parsed._id || parsed.id || parsed.email));
+    } catch {
+      return false;
+    }
+  })();
 
-  if (authUser) {
+  if (hasValidAuthUser) {
     return <Navigate to="/" replace />;
   }
 
