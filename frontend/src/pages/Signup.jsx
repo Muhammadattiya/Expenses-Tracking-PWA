@@ -59,11 +59,27 @@ export default function Signup() {
         <div className="w-11" /> {/* Spacer */}
       </div>
 
-      <form 
+      <motion.form 
         onSubmit={handleSubmit} 
-        className="w-full bg-[#2B2321]/30 backdrop-blur-xl border border-white/10 border-t-white/25 border-s-white/20 p-5 sm:p-7 rounded-[2rem] sm:rounded-[2.5rem] space-y-5 sm:space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.15)]"
+        initial={shouldReduceMotion ? {} : { opacity: 0, y: 20, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 280, 
+          damping: 24, 
+          mass: 0.85,
+          delay: 0.08 
+        }}
+        className="relative overflow-hidden w-full bg-gradient-to-b from-white/[0.08] via-white/[0.03] to-black/35 backdrop-blur-[32px] border border-white/10 p-6 sm:p-8 rounded-[28px] space-y-5 sm:space-y-6 shadow-[0_24px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2),inset_0_-1px_1px_rgba(0,0,0,0.3)]"
       >
-        <div className="space-y-3.5 sm:space-y-4">
+        {/* Specular top rim light */}
+        <div className="pointer-events-none absolute -top-px inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+        
+        {/* Ambient warm corner glow */}
+        <div className="pointer-events-none absolute -top-16 -end-16 w-36 h-36 bg-[#8D6346]/20 rounded-full blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-16 -start-16 w-36 h-36 bg-[#8D6346]/15 rounded-full blur-2xl" />
+
+        <div className="relative z-10 space-y-3.5 sm:space-y-4">
           <div>
             <label htmlFor="signup-name" className="mb-1.5 block text-xs sm:text-sm font-medium text-white/85 px-1.5 drop-shadow-sm">
               {t('auth.name')}
@@ -75,7 +91,7 @@ export default function Signup() {
               autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-black/30 hover:bg-black/40 hover:border-white/20 border border-white/10 focus:border-[#8D6346] focus:ring-2 focus:ring-[#8D6346]/40 focus:shadow-[0_0_16px_rgba(141,99,70,0.35)] focus:bg-black/50 rounded-2xl sm:rounded-3xl px-4 sm:px-5 py-3.5 sm:py-4 text-sm sm:text-base text-white placeholder-white/40 outline-none transition-all duration-300 shadow-inner" 
+              className="w-full bg-black/30 hover:bg-black/45 hover:border-white/20 border border-white/10 focus:border-[#8D6346] focus:ring-2 focus:ring-[#8D6346]/40 focus:shadow-[0_0_16px_rgba(141,99,70,0.35)] focus:bg-black/55 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-sm sm:text-base text-white placeholder-white/40 outline-none transition-all duration-300 shadow-inner" 
             />
           </div>
           <div>
@@ -89,7 +105,7 @@ export default function Signup() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/30 hover:bg-black/40 hover:border-white/20 border border-white/10 focus:border-[#8D6346] focus:ring-2 focus:ring-[#8D6346]/40 focus:shadow-[0_0_16px_rgba(141,99,70,0.35)] focus:bg-black/50 rounded-2xl sm:rounded-3xl px-4 sm:px-5 py-3.5 sm:py-4 text-sm sm:text-base text-white placeholder-white/40 outline-none transition-all duration-300 shadow-inner" 
+              className="w-full bg-black/30 hover:bg-black/45 hover:border-white/20 border border-white/10 focus:border-[#8D6346] focus:ring-2 focus:ring-[#8D6346]/40 focus:shadow-[0_0_16px_rgba(141,99,70,0.35)] focus:bg-black/55 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-sm sm:text-base text-white placeholder-white/40 outline-none transition-all duration-300 shadow-inner" 
             />
           </div>
           <div>
@@ -104,7 +120,7 @@ export default function Signup() {
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/30 hover:bg-black/40 hover:border-white/20 border border-white/10 focus:border-[#8D6346] focus:ring-2 focus:ring-[#8D6346]/40 focus:shadow-[0_0_16px_rgba(141,99,70,0.35)] focus:bg-black/50 rounded-2xl sm:rounded-3xl ps-4 sm:ps-5 pe-12 py-3.5 sm:py-4 text-sm sm:text-base text-white placeholder-white/40 outline-none transition-all duration-300 shadow-inner" 
+                className="w-full bg-black/30 hover:bg-black/45 hover:border-white/20 border border-white/10 focus:border-[#8D6346] focus:ring-2 focus:ring-[#8D6346]/40 focus:shadow-[0_0_16px_rgba(141,99,70,0.35)] focus:bg-black/55 rounded-2xl ps-4 sm:ps-5 pe-12 py-3.5 sm:py-4 text-sm sm:text-base text-white placeholder-white/40 outline-none transition-all duration-300 shadow-inner" 
               />
               <button
                 type="button"
@@ -125,14 +141,19 @@ export default function Signup() {
           whileTap={{ scale: 0.98 }}
           disabled={loading} 
           type="submit"
-          className="h-12 sm:h-[50px] w-full rounded-full font-semibold text-sm sm:text-base text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md mt-5 sm:mt-6 disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141115]"
+          className="relative z-10 h-12 sm:h-[50px] w-full rounded-full font-semibold text-sm sm:text-base text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md mt-5 sm:mt-6 disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141115]"
         >
           {loading ? <Loader2 size={18} className="animate-spin text-white" /> : null}
           <span>{t('auth.signup')}</span>
         </motion.button>
-      </form>
+      </motion.form>
 
-      <div className="w-full flex flex-col items-center gap-4 mt-6 sm:mt-8">
+      <motion.div 
+        initial={shouldReduceMotion ? {} : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.18, duration: 0.35 }}
+        className="w-full flex flex-col items-center gap-4 mt-6 sm:mt-8"
+      >
         <div className="flex items-center justify-center gap-3 w-full max-w-[220px]">
           <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/5" />
           <span className="text-xs sm:text-sm text-white/50">{t('auth.continueWith')}</span>
@@ -141,7 +162,7 @@ export default function Signup() {
         <div className="flex items-center justify-center mt-1">
           <GoogleLoginButton />
         </div>
-      </div>
+      </motion.div>
 
       <div className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-white/70">
         {t('auth.alreadyHaveAccount')}{' '}
