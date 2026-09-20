@@ -2,6 +2,11 @@ import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
+import { clientsClaim } from 'workbox-core';
+
+// Instant Takeover: activate immediately and claim all clients
+self.skipWaiting();
+clientsClaim();
 
 // Precache the manifest (injected by Vite PWA)
 precacheAndRoute(self.__WB_MANIFEST || []);
@@ -61,16 +66,14 @@ registerRoute(
   })
 );
 
-// CSS and JS cache (Stale While Revalidate)
-registerRoute(
-  ({ request }) => request.destination === 'style' || request.destination === 'script',
-  new StaleWhileRevalidate({
-    cacheName: 'assets-cache',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
-    ],
-  })
-);
+// Clean up legacy runtime assets-cache on activation to avoid stale chunks
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.delete('assets-cache').catch((e) => {
+      console.warn('SW failed to delete legacy assets-cache:', e);
+    })
+  );
+});
 
 // Push Notification Scaffolding
 self.addEventListener('push', (event) => {
