@@ -10,7 +10,14 @@ export default {
     "dontHaveAccount": "Don't have an account?",
     "alreadyHaveAccount": "Already have an account?",
     "invalidCredentials": "Invalid email or password.",
-    "emailInUse": "Email is already in use."
+    "emailInUse": "Email is already in use.",
+    "tagline": "Redefining your money.",
+    "googleConfigMissing": "Please configure VITE_GOOGLE_CLIENT_ID",
+    "appleComingSoon": "Apple Sign-In is coming soon",
+    "signupError": "Unable to complete sign-up. Please ensure the server is running and try again.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "passwordMinLength": "Password must be at least 8 characters."
   },
   "onboarding": {
     "screen1Title": "Your expenses tell a story.",

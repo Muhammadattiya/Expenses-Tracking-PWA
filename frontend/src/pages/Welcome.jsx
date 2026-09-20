@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Globe } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 
 export default function Welcome() {
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
@@ -12,10 +14,51 @@ export default function Welcome() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full flex flex-col items-center justify-center overflow-hidden touch-none select-none my-auto"
+      className="w-full flex flex-col items-center justify-center my-auto py-2 relative"
     >
-      {/* Top Section: Logo & Text */}
-      <div className="flex flex-col items-center justify-center">
+      {/* Top Header Bar: Finova Segmented Glass Language Switcher */}
+      <header className="w-full max-w-sm flex justify-end px-2 mb-3 sm:mb-5">
+        <div className="flex items-center bg-black/30 backdrop-blur-xl border border-white/10 rounded-full p-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_2px_8px_rgba(0,0,0,0.2)]">
+          <Globe size={13} className="text-[#E8C5A8] ms-2 me-1 shrink-0 opacity-80" />
+          <button
+            type="button"
+            onClick={() => setLang('ar')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all relative z-10 select-none ${
+              lang === 'ar' ? 'text-white' : 'text-white/50 hover:text-white/80'
+            }`}
+            aria-label="العربية"
+          >
+            {lang === 'ar' && (
+              <motion.div
+                layoutId="welcomeLangIndicator"
+                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.2)] -z-10"
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
+              />
+            )}
+            عربي
+          </button>
+          <button
+            type="button"
+            onClick={() => setLang('en')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all relative z-10 select-none ${
+              lang === 'en' ? 'text-white' : 'text-white/50 hover:text-white/80'
+            }`}
+            aria-label="English"
+          >
+            {lang === 'en' && (
+              <motion.div
+                layoutId="welcomeLangIndicator"
+                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.2)] -z-10"
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
+              />
+            )}
+            EN
+          </button>
+        </div>
+      </header>
+
+      {/* Hero Group: Brand Mark & Value Proposition */}
+      <section className="flex flex-col items-center justify-center text-center">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -25,70 +68,83 @@ export default function Welcome() {
             damping: 20, 
             duration: 0.8 
           }}
-          className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] relative flex justify-center items-center"
+          className="w-[190px] h-[190px] sm:w-[250px] sm:h-[250px] max-w-[65vw] max-h-[30vh] relative flex justify-center items-center"
         >
           <motion.img 
-             src="/images/finova_logo.png" 
-             alt="Finova Logo" 
-             className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
-             animate={{ y: [0, -8, 0] }}
-             transition={{ 
-               repeat: Infinity, 
-               duration: 4, 
-               ease: "easeInOut" 
-             }}
-           />
+            src="/images/finova_logo.png" 
+            aria-hidden="true"
+            width={280}
+            height={280}
+            className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
+            animate={{ y: shouldReduceMotion ? 0 : [0, -8, 0] }}
+            transition={{ 
+              repeat: Infinity, 
+              duration: 4, 
+              ease: "easeInOut" 
+            }}
+          />
         </motion.div>
         
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="flex flex-col items-center gap-2 mt-2 text-center"
+          className="flex flex-col items-center mt-3 text-center px-4"
         >
-          <h1 className="font-['Exo_2'] font-semibold text-[44px] sm:text-[48px] text-white leading-none tracking-tight">Finova</h1>
-          <p className="font-['Exo_2'] font-semibold text-[16px] text-white tracking-wide">Redefining your money.</p>
+          <h1 className="font-bold text-[40px] sm:text-[46px] text-white leading-none tracking-tight drop-shadow-sm">
+            Finova
+          </h1>
+          <p className="font-medium text-[15px] sm:text-[16px] text-white/70 tracking-wide mt-2 max-w-[280px]">
+            {t('auth.tagline')}
+          </p>
         </motion.div>
-      </div>
+      </section>
 
-      {/* Bottom Section: Buttons */}
-      <motion.div 
+      {/* Actions Group: Primary & Secondary Conversion Buttons */}
+      <motion.nav 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="w-[180px] flex flex-col items-stretch gap-4 mt-8 pointer-events-auto"
+        className="w-full max-w-[300px] flex flex-col items-stretch mt-8 sm:mt-10 pointer-events-auto"
+        aria-label="Authentication"
       >
-        <div className="flex flex-col gap-4">
-          <motion.div whileTap={{ scale: 0.95 }} className="w-full">
-            <Link 
-              to="/login"
-              className="flex h-[48px] w-full items-center justify-center rounded-[40px] bg-[rgba(141,99,70,0.3)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] font-['Exo_2'] text-[18px] text-white transition-all hover:bg-[rgba(141,99,70,0.4)] touch-manipulation"
-            >
-              {t('auth.login')}
-            </Link>
-          </motion.div>
-          <motion.div whileTap={{ scale: 0.95 }} className="w-full">
+        <div className="flex flex-col gap-3">
+          {/* Primary Action: Sign Up (Finova Signature BillCard Button Style) */}
+          <motion.div whileTap={{ scale: 0.98 }} className="w-full">
             <Link 
               to="/signup"
-              className="flex h-[48px] w-full items-center justify-center rounded-[40px] bg-[rgba(141,99,70,0.3)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] font-['Exo_2'] text-[18px] text-white transition-all hover:bg-[rgba(141,99,70,0.4)] touch-manipulation"
+              className="h-[50px] w-full rounded-full font-semibold text-[16px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141115]"
             >
-              {t('auth.signup')}
+              <span>{t('auth.signup')}</span>
+            </Link>
+          </motion.div>
+
+          {/* Secondary Action: Login */}
+          <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+            <Link 
+              to="/login"
+              className="h-[50px] w-full rounded-full font-semibold text-[16px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.12)] transition-all duration-300 active:scale-[0.98] bg-white/10 border border-white/15 hover:bg-white/15 hover:border-white/25 flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141115]"
+            >
+              <span>{t('auth.login')}</span>
             </Link>
           </motion.div>
         </div>
 
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="flex items-center justify-center gap-2 w-full">
-            <div className="h-[0.5px] w-[50px] bg-white/50" />
-            <span className="font-['Exo_2'] text-[14px] text-white/80 whitespace-nowrap">{t('auth.continueWith')}</span>
-            <div className="h-[0.5px] w-[50px] bg-white/50" />
+        {/* Third-Party Alternative Authentication */}
+        <div className="flex flex-col items-center justify-center gap-3 mt-7 sm:mt-8">
+          <div className="flex items-center justify-center gap-3 w-full px-1">
+            <div className="h-px flex-1 bg-white/15" />
+            <span className="text-xs font-medium text-white/50 tracking-wider whitespace-nowrap">
+              {t('auth.continueWith')}
+            </span>
+            <div className="h-px flex-1 bg-white/15" />
           </div>
 
           <div>
             <GoogleLoginButton />
           </div>
         </div>
-      </motion.div>
+      </motion.nav>
     </motion.div>
   );
 }
