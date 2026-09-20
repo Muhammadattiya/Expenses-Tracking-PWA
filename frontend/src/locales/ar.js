@@ -297,7 +297,15 @@ export default {
     "transactionHistory": "سجل المعاملات",
     "addAccount": "إضافة حساب +",
     "thisWk": "هذا الأسبوع",
-    "thisMo": "هذا الشهر"
+    "thisMo": "هذا الشهر",
+    "setupRequired": "تتطلب الإعداد",
+    "setupIncomeProfileDesc": "توقع كم يوماً سيصمد رصيدك حتى موعد الراتب.",
+    "setupIncomeProfileBtn": "تهيئة",
+    "quickAddAction": "تسجيل سريع",
+    "quickAddDesc": "تحدث أو اكتب المعاملة",
+    "quickAddPlaceholder": "سجل معاملة بالصوت أو النص...",
+    "askNovaAction": "Nova",
+    "askNovaDesc": "المستشار المالي الذكي"
   },
   "addTransaction": {
     "title": "إضافة معاملة",

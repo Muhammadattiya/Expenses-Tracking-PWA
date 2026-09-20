@@ -25,13 +25,13 @@ export default function Layout() {
         </div>
       )}
 
-      <main className={`${isComposer ? 'pb-8 pt-8' : 'pb-32 pt-20'} px-5 w-full max-w-7xl mx-auto min-h-screen animate-fade-in`}>
+      <main className={`${isComposer ? 'pb-8 pt-8' : 'pb-32 pt-10 sm:pt-14'} px-5 w-full max-w-7xl mx-auto min-h-screen animate-fade-in`}>
         <PullToRefresh>
           <Outlet />
         </PullToRefresh>
       </main>
       <InstallPrompt />
-      <NovaHeader side={isComposer ? 'end' : 'start'} onOpenChange={setNovaOpen} />
+      <NovaHeader onOpenChange={setNovaOpen} />
       {!isComposer && !novaOpen && <CategoryClarificationManager />}
       
       {!isComposer && !novaOpen && <BottomNav />}
