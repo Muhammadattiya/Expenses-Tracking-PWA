@@ -1305,7 +1305,14 @@ export default {
     "settlementReceived": "Settlement (Received)",
     "deletedAccount": "Deleted Account",
     "noAccount": "No Account",
-    "needsReview": "Needs Review"
+    "needsReview": "Needs Review",
+    "debt": "Debt",
+    "debtBadge": "Debt",
+    "debtBorrowedFrom": "Borrowed from {{name}}",
+    "debtRepaymentTo": "Repaid debt to {{name}}",
+    "debtLentTo": "Lent to {{name}}",
+    "debtRepaymentFrom": "Debt repayment from {{name}}",
+    "groupPaymentFrom": "Payment received from {{name}}"
   },
   "weekdays": {
     "sunday": "Sunday",

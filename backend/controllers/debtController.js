@@ -42,7 +42,7 @@ exports.createDebt = async (req, res, next) => {
     
     await transaction.populate([
       { path: 'account', select: 'name type icon color' },
-      { path: 'debtId', select: 'type' }
+      { path: 'debtId', select: 'personName type' }
     ]);
 
     res.status(201).json({ debt, transaction });
@@ -56,7 +56,7 @@ exports.getDebts = async (req, res, next) => {
   try {
     const debts = await Debt.find({ user: req.user.id }).sort({ createdAt: -1 });
     const debtIds = debts.map(d => d._id);
-    const transactions = await DebtTransaction.find({ user: req.user.id, debtId: { $in: debtIds } }).populate('account', 'name type icon color').populate('debtId', 'type').sort({ date: -1, createdAt: -1 });
+    const transactions = await DebtTransaction.find({ user: req.user.id, debtId: { $in: debtIds } }).populate('account', 'name type icon color').populate('debtId', 'personName type').sort({ date: -1, createdAt: -1 });
     
     res.json({ debts, transactions });
   } catch (err) {
@@ -110,7 +110,7 @@ exports.addTransaction = async (req, res, next) => {
     
     await transaction.populate([
       { path: 'account', select: 'name type icon color' },
-      { path: 'debtId', select: 'type' }
+      { path: 'debtId', select: 'personName type' }
     ]);
     
     res.status(201).json({ debt, transaction });

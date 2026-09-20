@@ -1321,7 +1321,14 @@ export default {
     "settlementReceived": "تسوية (مستلم)",
     "deletedAccount": "حساب محذوف",
     "noAccount": "بدون حساب",
-    "needsReview": "تحتاج مراجعة"
+    "needsReview": "تحتاج مراجعة",
+    "debt": "دين",
+    "debtBadge": "دين",
+    "debtBorrowedFrom": "استدانة من {{name}}",
+    "debtRepaymentTo": "سداد دين لـ {{name}}",
+    "debtLentTo": "إقراض لـ {{name}}",
+    "debtRepaymentFrom": "استرداد دين من {{name}}",
+    "groupPaymentFrom": "تحصيل مستحق من {{name}}"
   },
   "weekdays": {
     "sunday": "الأحد",

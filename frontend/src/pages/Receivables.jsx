@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import GroupExpenses from '../components/debts/GroupExpenses';
@@ -6,7 +7,30 @@ import PersonalDebts from '../components/debts/PersonalDebts';
 
 export default function Receivables() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('group'); // 'group' | 'personal'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') === 'personal' ? 'personal' : 'group';
+  });
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') === 'personal' ? 'personal' : 'group';
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (tab === 'personal') {
+        next.set('tab', 'personal');
+      } else {
+        next.delete('tab');
+      }
+      return next;
+    }, { replace: true });
+  };
 
   return (
     <motion.div 
@@ -47,7 +71,7 @@ export default function Receivables() {
               id={`tab-${tab}`}
               aria-selected={activeTab === tab}
               aria-controls={`panel-${tab}`}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
               className={`relative flex-1 sm:flex-none px-6 h-full min-h-[44px] flex items-center justify-center text-sm sm:text-[15px] font-semibold rounded-full transition-colors duration-300 z-10 ${activeTab === tab ? 'text-white' : 'text-white/50 hover:text-white'}`}
             >
               {activeTab === tab && (
