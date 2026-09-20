@@ -14,7 +14,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
-      registerType: 'prompt', // Better for update detection prompt
+      registerType: 'autoUpdate',
       injectRegister: 'auto',
       pwaAssets: false,
       manifest: {

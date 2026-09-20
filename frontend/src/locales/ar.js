@@ -1254,7 +1254,11 @@ export default {
     "updateBtn": "تحديث",
     "pullToRefresh": "اسحب للتحديث",
     "releaseToRefresh": "أفلت للتحديث",
-    "refreshing": "جاري التحديث..."
+    "refreshing": "جاري التحديث...",
+    "crashTitle": "حدث خطأ غير متوقع",
+    "crashDesc": "واجه Finova مشكلة غير متوقعة. يرجى إعادة التحميل أو تفريغ الذاكرة المؤقتة للمتابعة.",
+    "reloadBtn": "إعادة تحميل التطبيق",
+    "resetCacheBtn": "تفريغ الذاكرة وإعادة التشغيل"
   },
   "calculator": {
     "title": "الحاسبة",

@@ -1238,7 +1238,11 @@ export default {
     "updateBtn": "Update",
     "pullToRefresh": "Pull to refresh",
     "releaseToRefresh": "Release to refresh",
-    "refreshing": "Refreshing..."
+    "refreshing": "Refreshing...",
+    "crashTitle": "Something went wrong",
+    "crashDesc": "Finova encountered an unexpected issue. Please reload or reset local cache to continue.",
+    "reloadBtn": "Reload Application",
+    "resetCacheBtn": "Reset Cache & Restart"
   },
   "calculator": {
     "title": "Calculator",
