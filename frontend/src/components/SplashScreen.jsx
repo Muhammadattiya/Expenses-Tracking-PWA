@@ -1,5 +1,4 @@
 import React from 'react';
-import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -11,16 +10,16 @@ export default function SplashScreen() {
   const { t, lang } = useLanguage();
   const shouldReduceMotion = useReducedMotion();
 
-  return createPortal(
+  return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ 
         opacity: 0, 
-        transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } 
+        transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } 
       }}
       transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-[100] w-full min-h-[100dvh] bg-[#141115] overflow-hidden overscroll-none touch-none select-none flex flex-col items-center justify-center"
+      className="fixed inset-0 z-[100] w-full min-h-[100dvh] bg-[#141115] overflow-hidden select-none flex flex-col items-center justify-center"
       aria-label="Finova Launch"
       role="status"
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
@@ -104,7 +103,6 @@ export default function SplashScreen() {
           </p>
         </div>
       </motion.div>
-    </motion.div>,
-    document.body
+    </motion.div>
   );
 }
