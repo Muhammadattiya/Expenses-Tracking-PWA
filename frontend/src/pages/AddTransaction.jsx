@@ -16,7 +16,7 @@ import { getIconComponent } from "../components/IconPicker";
 import { payBill } from "../api/bills";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
-import SplashScreen from "../components/SplashScreen";
+import { AddTransactionSkeleton } from "../components/ui/Skeletons";
 import { triggerHaptic } from "../utils/haptics";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
@@ -270,9 +270,9 @@ const AddTransaction = () => {
     }
   };
 
-  // شاشة تحميل بسيطة لو البيانات لسه بتيجي من السيرفر
+  // Calm in-place skeleton while data is fetching from server
   if (isLoading) {
-    return <SplashScreen />;
+    return <AddTransactionSkeleton />;
   }
 
   return (

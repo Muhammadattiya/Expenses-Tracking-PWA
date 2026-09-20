@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import SplashScreen from './SplashScreen';
 import { getCurrentUser } from '../api/auth';
 import { handleUserSessionTransition, handleSessionInvalidation } from '../utils/offlineSession';
@@ -10,7 +11,8 @@ export default function AuthGate() {
   const location = useLocation();
 
   useEffect(() => {
-    const minLoadTime = new Promise(resolve => setTimeout(resolve, 2000));
+    // 450ms allows the calm breathing brand mark to be peacefully perceived before smoothly dissolving
+    const minLoadTime = new Promise(resolve => setTimeout(resolve, 450));
     
     // Always attempt to fetch the user (cookie will be sent automatically)
     const fetchUser = getCurrentUser().then(async (u) => {
@@ -38,16 +40,26 @@ export default function AuthGate() {
     Promise.all([fetchUser, minLoadTime]).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <SplashScreen />;
-  if (!user) return <Navigate to="/welcome" replace />;
-  
-  if (user && !user.hasCompletedOnboarding && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  if (user && user.hasCompletedOnboarding && location.pathname === '/onboarding') {
-    return <Navigate to="/" replace />;
-  }
-  
-  return <Outlet />;
+  return (
+    <>
+      <AnimatePresence>
+        {loading && <SplashScreen key="app-launch-splash" />}
+      </AnimatePresence>
+      
+      {!loading && !user && <Navigate to="/welcome" replace />}
+      
+      {!loading && user && !user.hasCompletedOnboarding && location.pathname !== '/onboarding' && (
+        <Navigate to="/onboarding" replace />
+      )}
+      
+      {!loading && user && user.hasCompletedOnboarding && location.pathname === '/onboarding' && (
+        <Navigate to="/" replace />
+      )}
+      
+      {!loading && user && (
+        (user.hasCompletedOnboarding && location.pathname !== '/onboarding') ||
+        (!user.hasCompletedOnboarding && location.pathname === '/onboarding')
+      ) && <Outlet />}
+    </>
+  );
 }
