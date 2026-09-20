@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 
 const VARIANTS = {
   primary:
-    'bg-[#8D6346] text-white hover:bg-[#A37352] active:bg-[#78543B] shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-[#8D6346]/60',
+    'bg-[#8D6346]/30 text-white hover:bg-[#8D6346]/45 active:bg-[#8D6346]/25 border border-[#8D6346]/50 hover:border-[#8D6346]/70 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] backdrop-blur-md',
   secondary:
     'bg-white/10 text-white hover:bg-white/15 active:bg-white/5 border border-white/15 shadow-[0_2px_10px_rgba(0,0,0,0.2)]',
   glass:
