@@ -38,6 +38,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
+  const [allDebts, setAllDebts] = useState([]);
   const [allReceivables, setAllReceivables] = useState(() => {
     try {
       const activeUser = getActiveUserId();
@@ -157,8 +158,9 @@ const Dashboard = () => {
       setAllTransactions(transactionsData);
       setAccounts(accountsData);
       setCategories(categoriesData || []);
-      if (debtsData?.transactions) {
-        setAllDebtTransactions(debtsData.transactions);
+      if (debtsData) {
+        if (debtsData.debts) setAllDebts(debtsData.debts);
+        if (debtsData.transactions) setAllDebtTransactions(debtsData.transactions);
       }
       if (receivablesData && Array.isArray(receivablesData)) {
         setAllReceivables(receivablesData);
@@ -375,7 +377,71 @@ const Dashboard = () => {
       valid.push(t);
     }
 
-    return valid.filter(t => {
+    const resolveAccount = (accField) => {
+      if (accField && typeof accField === 'object') return accField;
+      if (!accField) return null;
+      return accounts.find(a => (a._id || a).toString() === accField.toString()) || accField;
+    };
+
+    const debtsMap = new Map();
+    (allDebts || []).forEach(d => {
+      if (d._id) debtsMap.set(String(d._id), d);
+    });
+
+    const mappedDebtTransactions = [];
+    (allDebtTransactions || []).forEach(dt => {
+      const debtObj = (typeof dt.debtId === 'object' && dt.debtId !== null)
+        ? dt.debtId
+        : debtsMap.get(String(dt.debtId || ''));
+
+      const personName = debtObj?.personName || t('debts.title') || (lang === 'ar' ? 'شخص' : 'Person');
+      const debtType = debtObj?.type || dt.debtType || 'i_owe';
+      const actionType = dt.type;
+
+      let direction = 'outflow';
+      let title = '';
+
+      if (debtType === 'i_owe') {
+        if (actionType === 'loan') {
+          direction = 'inflow';
+          title = t('transactions.debtBorrowedFrom', { name: personName });
+        } else {
+          direction = 'outflow';
+          title = t('transactions.debtRepaymentTo', { name: personName });
+        }
+      } else {
+        if (actionType === 'loan') {
+          direction = 'outflow';
+          title = t('transactions.debtLentTo', { name: personName });
+        } else {
+          direction = 'inflow';
+          title = t('transactions.debtRepaymentFrom', { name: personName });
+        }
+      }
+
+      const rawDate = dt.date || debtObj?.createdAt || dt.createdAt;
+
+      mappedDebtTransactions.push({
+        _id: dt._id,
+        debtId: dt.debtId?._id || dt.debtId,
+        isDebt: true,
+        type: 'debt',
+        debtType,
+        actionType,
+        direction,
+        title,
+        amount: Number(dt.amount) || 0,
+        account: resolveAccount(dt.account),
+        date: rawDate,
+        createdAt: dt.createdAt || rawDate,
+        notes: dt.notes,
+        status: 'completed'
+      });
+    });
+
+    const allCombined = [...valid, ...mappedDebtTransactions];
+
+    return allCombined.filter(t => {
       if (selectedAccount !== 'all') {
         const accMatch = matchesAcc(t.account, selectedAccount);
         const fromMatch = matchesAcc(t.from_account, selectedAccount);
@@ -383,6 +449,7 @@ const Dashboard = () => {
         if (!accMatch && !fromMatch && !toMatch) return false;
       }
       if (selectedCategory !== 'all') {
+        if (t.isDebt) return false;
         const catId = (t.category?._id || t.category)?.toString();
         if (catId !== selectedCategory.toString()) return false;
       }
@@ -392,7 +459,7 @@ const Dashboard = () => {
       }
       return true;
     });
-  }, [allTransactions, selectedAccount, selectedCategory, periodStart, periodEnd]);
+  }, [allTransactions, allDebtTransactions, allDebts, accounts, selectedAccount, selectedCategory, periodStart, periodEnd, t, lang]);
 
   const { groupedTransactions, sortedDates, groupCounts, groupOffsets } = useMemo(() => {
     const getCreationTime = (t) => {
@@ -442,6 +509,11 @@ const Dashboard = () => {
   }, [displayedTransactions, selectedAccount]);
 
   const handleTransactionClick = (transaction) => {
+    if (transaction.isDebt) {
+      triggerHaptic('selection');
+      navigate(transaction.isGroupExpense ? '/receivables' : '/receivables?tab=personal');
+      return;
+    }
     setSelectedTransaction(transaction);
     setEditModalOpen(true);
   };
@@ -793,7 +865,8 @@ const Dashboard = () => {
                className="w-full hide-scrollbar"
                groupContent={(index) => {
                  const dateKey = sortedDates[index];
-                 const dateObj = new Date(dateKey);
+                 const [y, m, d] = dateKey.split('-').map(Number);
+                 const dateObj = new Date(y, m - 1, d);
                  const groupStats = groupedTransactions[dateKey];
                  return (
                    <div className="py-3 z-10 sticky top-0 backdrop-blur-md">

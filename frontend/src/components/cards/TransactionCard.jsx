@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Wallet, Tag, ArrowRightLeft } from "lucide-react";
+import { ArrowDown, ArrowUp, Wallet, Tag, ArrowRightLeft, HandCoins, Users } from "lucide-react";
 import { getIconComponent } from "../IconPicker";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -8,6 +8,9 @@ const TransactionCard = ({ transaction, onClick }) => {
   const categoryObj = transaction.category && typeof transaction.category === 'object' ? transaction.category : null;
   const fromAccountObj = transaction.from_account && typeof transaction.from_account === 'object' ? transaction.from_account : null;
   const toAccountObj = transaction.to_account && typeof transaction.to_account === 'object' ? transaction.to_account : null;
+
+  const isDebt = transaction.isDebt || transaction.type === 'debt';
+  const isDebtInflow = isDebt && transaction.direction === 'inflow';
 
   // Left Icon (Account)
   let LeftIconToRender = Wallet;
@@ -19,11 +22,14 @@ const TransactionCard = ({ transaction, onClick }) => {
   }
   if (leftIconName) LeftIconToRender = getIconComponent(leftIconName, 'Wallet');
 
-  // Right Icon (Category or Destination Account or Investment)
+  // Right Icon (Category or Destination Account or Investment or Debt)
   let RightIconToRender = Tag;
   let rightIconName = categoryObj?.icon;
   let rightColor = transaction.type === "expense" ? '#f87171' : (transaction.type === "income" ? '#4ade80' : '#60a5fa');
-  if (transaction.type === "transfer") {
+  if (isDebt) {
+    RightIconToRender = transaction.isGroupExpense ? Users : HandCoins;
+    rightColor = isDebtInflow ? '#34d399' : '#ff6b6b';
+  } else if (transaction.type === "transfer") {
     if (transaction.investment) {
       rightIconName = "TrendingUp";
       rightColor = "#eab308"; // yellow/gold for investments
@@ -32,21 +38,20 @@ const TransactionCard = ({ transaction, onClick }) => {
       rightColor = toAccountObj?.color || '#3b82f6';
     }
   }
-  if (rightIconName) RightIconToRender = getIconComponent(rightIconName, transaction.type === "transfer" ? 'Wallet' : 'Tag');
+  if (!isDebt && rightIconName) RightIconToRender = getIconComponent(rightIconName, transaction.type === "transfer" ? 'Wallet' : 'Tag');
 
-  const amountStyle =
-    transaction.type === "expense"
-      ? "text-red-400"
-      : transaction.type === "income"
-      ? "text-green-400"
-      : "text-blue-400";
+  const amountColor = isDebt
+    ? (isDebtInflow ? '#34d399' : '#ff6b6b')
+    : (transaction.type === "expense" ? '#ff6b6b' : transaction.type === "income" ? '#34d399' : '#60a5fa');
 
-  const sign =
-    transaction.type === "expense"
-      ? "-"
-      : transaction.type === "income"
-      ? "+"
-      : "";
+  const amountGlow = isDebt
+    ? (isDebtInflow ? '0px 2px 12px rgba(52, 211, 153, 0.4)' : '0px 2px 12px rgba(255, 107, 107, 0.4)')
+    : (transaction.type === "expense" ? '0px 2px 12px rgba(255, 107, 107, 0.4)' : transaction.type === "income" ? '0px 2px 12px rgba(52, 211, 153, 0.4)' : '0px 2px 12px rgba(96, 165, 250, 0.4)');
+
+  const sign = isDebt
+    ? (isDebtInflow ? "+" : "-")
+    : (transaction.type === "expense" ? "-" : transaction.type === "income" ? "+" : "");
+
   const categoryName = categoryObj
     ? (lang === 'ar' ? (categoryObj.nameAr || categoryObj.name || categoryObj.nameEn) : (categoryObj.nameEn || categoryObj.name || categoryObj.nameAr))
     : (typeof transaction.category === 'string' && transaction.category ? transaction.categoryName : null);
@@ -102,7 +107,15 @@ const TransactionCard = ({ transaction, onClick }) => {
             {displayTitle}
           </h3>
           <p className="text-[12px] text-white/50 mt-1 flex items-center gap-1.5 font-medium">
-            {transaction.type === "transfer" ? (
+            {isDebt ? (
+              <span className="flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[#8D6346]/25 border border-[#8D6346]/40 text-[#E8C5A8]">
+                  {t('transactions.debtBadge') || 'دين'}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-white/20 inline-block"></span>
+                <span>{accountName || t('transactions.noAccount')}</span>
+              </span>
+            ) : transaction.type === "transfer" ? (
               <span className="flex items-center gap-1">
                 <span>{fromAccountName || t('transactions.deletedAccount')}</span>
                 <span className="opacity-50">⟶</span>
@@ -117,7 +130,7 @@ const TransactionCard = ({ transaction, onClick }) => {
                 <span>{accountName || t('transactions.noAccount')}</span>
               </>
             )}
-            {(!transaction.category && !categoryName && ['income', 'expense'].includes(transaction.type)) && (
+            {(!transaction.category && !categoryName && !isDebt && ['income', 'expense'].includes(transaction.type)) && (
               <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
                 {t('transactions.needsReview')}
               </span>
@@ -131,8 +144,8 @@ const TransactionCard = ({ transaction, onClick }) => {
         <span 
           className="font-bold text-[16px] tracking-tight whitespace-nowrap tabular-nums"
           style={{
-            color: transaction.type === "expense" ? '#ff6b6b' : transaction.type === "income" ? '#34d399' : '#60a5fa',
-            textShadow: transaction.type === "expense" ? '0px 2px 12px rgba(255, 107, 107, 0.4)' : transaction.type === "income" ? '0px 2px 12px rgba(52, 211, 153, 0.4)' : '0px 2px 12px rgba(96, 165, 250, 0.4)'
+            color: amountColor,
+            textShadow: amountGlow
           }}
         >
           {sign}{transaction.amount.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} <span className="text-[11px] opacity-70 font-medium">{t('nav.currency')}</span>

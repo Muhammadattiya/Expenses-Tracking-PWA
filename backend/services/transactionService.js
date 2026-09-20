@@ -712,18 +712,18 @@ const importTransactions = async (userId, backup) => {
   // Scan all transactions for missing entities
   for (const source of transactions) {
     if (!source) continue;
-    const type = normalizeType(source?.type || source?.transactionType || source?.transaction_type || source?.kind);
+    const type = normalizeType(source?.type || source?.transactionType || source?.transaction_type || source?.kind || source?.Type);
     if (!type) continue;
     
     if (type === 'transfer') {
-      registerAccount(extractName(source?.from_account, source?.fromAccount, source?.fromAccountName, source?.account, source?.accountName), source?.fromAccountType || source?.accountType);
-      registerAccount(extractName(source?.to_account, source?.toAccount, source?.toAccountName), source?.toAccountType);
+      registerAccount(extractName(source?.from_account, source?.fromAccount, source?.fromAccountName, source?.['From Account'], source?.account, source?.accountName, source?.Account), source?.fromAccountType || source?.accountType);
+      registerAccount(extractName(source?.to_account, source?.toAccount, source?.toAccountName, source?.['To Account']), source?.toAccountType);
     } else {
-      registerAccount(extractName(source?.account, source?.accountName), source?.accountType);
+      registerAccount(extractName(source?.account, source?.accountName, source?.Account), source?.accountType);
     }
 
     if (type === 'income' || type === 'expense') {
-      registerCategory(extractName(source?.category, source?.categoryName), type);
+      registerCategory(extractName(source?.category, source?.categoryName, source?.Category), type);
     }
   }
 
@@ -753,10 +753,10 @@ const importTransactions = async (userId, backup) => {
   for (const [index, source] of transactions.entries()) {
     try {
       const type = normalizeType(
-        source?.type || source?.transactionType || source?.transaction_type || source?.kind
+        source?.type || source?.transactionType || source?.transaction_type || source?.kind || source?.Type
       );
       const amount = normalizeAmount(
-        source?.amount ?? source?.amountEGP ?? source?.amount_egp ?? source?.value ?? source?.total
+        source?.amount ?? source?.amountEGP ?? source?.amount_egp ?? source?.value ?? source?.total ?? source?.Amount
       );
 
       if (!source || !type || !Number.isFinite(amount) || amount < 0) {
@@ -764,34 +764,34 @@ const importTransactions = async (userId, backup) => {
         continue;
       }
 
-      const categoryName = extractName(source?.category, source?.categoryName);
+      const categoryName = extractName(source?.category, source?.categoryName, source?.Category);
       const title = String(
         source?.title || source?.description || source?.transaction_name
-        || source?.label || source?.notes || source?.note
+        || source?.label || source?.notes || source?.note || source?.Title || source?.Description
         || categoryName || 'معاملة مستوردة'
       ).trim() || 'معاملة مستوردة';
 
-      let dateVal = source?.date || source?.datetime || source?.createdAt;
+      let dateVal = source?.date || source?.datetime || source?.createdAt || source?.Date;
       if (typeof dateVal === 'string' && /^\d+$/.test(dateVal)) dateVal = Number(dateVal);
       const date = dateVal ? new Date(dateVal) : new Date();
 
       const transaction = { user: userId, title, amount, type, date };
 
       if (type === 'transfer') {
-        const fromName = extractName(source?.from_account, source?.fromAccount, source?.fromAccountName, source?.account, source?.accountName);
-        const toName = extractName(source?.to_account, source?.toAccount, source?.toAccountName);
+        const fromName = extractName(source?.from_account, source?.fromAccount, source?.fromAccountName, source?.['From Account'], source?.account, source?.accountName, source?.Account);
+        const toName = extractName(source?.to_account, source?.toAccount, source?.toAccountName, source?.['To Account']);
         if (!fromName || !toName) { skipped.push(index + 1); continue; }
 
         transaction.from_account = getAccount(fromName)?._id;
         transaction.to_account = getAccount(toName)?._id;
 
       } else if (type === 'settlement') {
-        const accName = extractName(source?.account, source?.accountName);
+        const accName = extractName(source?.account, source?.accountName, source?.Account);
         if (!accName) { skipped.push(index + 1); continue; }
         transaction.account = getAccount(accName)?._id;
 
       } else {
-        const accName = extractName(source?.account, source?.accountName);
+        const accName = extractName(source?.account, source?.accountName, source?.Account);
         if (!accName) { skipped.push(index + 1); continue; }
         transaction.account = getAccount(accName)?._id;
 
