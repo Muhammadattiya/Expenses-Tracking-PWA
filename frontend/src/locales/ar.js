@@ -10,7 +10,10 @@ export default {
     "dontHaveAccount": "ليس لديك حساب؟",
     "alreadyHaveAccount": "لديك حساب بالفعل؟",
     "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-    "emailInUse": "البريد الإلكتروني مستخدم بالفعل."
+    "emailInUse": "البريد الإلكتروني مستخدم بالفعل.",
+    "tagline": "صياغة جديدة لتعاملك مع المال.",
+    "googleConfigMissing": "يرجى تهيئة VITE_GOOGLE_CLIENT_ID",
+    "appleComingSoon": "تسجيل الدخول عبر Apple قريباً"
   },
   "onboarding": {
     "screen1Title": "فلوسك",

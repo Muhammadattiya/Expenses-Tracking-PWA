@@ -10,7 +10,10 @@ export default {
     "dontHaveAccount": "Don't have an account?",
     "alreadyHaveAccount": "Already have an account?",
     "invalidCredentials": "Invalid email or password.",
-    "emailInUse": "Email is already in use."
+    "emailInUse": "Email is already in use.",
+    "tagline": "Redefining your money.",
+    "googleConfigMissing": "Please configure VITE_GOOGLE_CLIENT_ID",
+    "appleComingSoon": "Apple Sign-In is coming soon"
   },
   "onboarding": {
     "screen1Title": "Your expenses tell a story.",
