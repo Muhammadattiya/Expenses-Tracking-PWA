@@ -54,6 +54,13 @@ import {
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
+import ExportModal from "../components/modals/ExportModal";
+import { 
+  generateTransactionsCsv, 
+  downloadCsvFile, 
+  downloadJsonFile, 
+  parseAndNormalizeCsv 
+} from "../utils/csvExport";
 import { SettingsSkeleton } from "../components/ui/Skeletons";
 import { AmbientBackground } from "../components/ui";
 import { useNotification } from "../contexts/NotificationContext";
@@ -148,6 +155,8 @@ const Settings = () => {
   const [pushStatus, setPushStatus] = useState('');
   const [dataStatus, setDataStatus] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef(null);
 
   const urlBase64ToUint8Array = (base64String) => {
@@ -244,23 +253,40 @@ const Settings = () => {
     }
   };
 
-  const handleExport = async () => {
+  const handleExportCsv = async () => {
     try {
+      setIsExporting(true);
       const backup = await exportTransactionsApi();
-
-      const dataStr = JSON.stringify(backup, null, 2);
-      const dataBlob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `expenses_backup_${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const csvContent = generateTransactionsCsv(backup);
+      const dateStr = new Date().toISOString().split("T")[0];
+      downloadCsvFile(csvContent, `finova_transactions_${dateStr}.csv`);
       setDataStatus(t('settings.exportSuccess'));
+      showToast(t('settings.exportSuccess'), 'success');
+      setExportModalOpen(false);
     } catch (error) {
-      setDataStatus(error.response?.data?.message || t('settings.exportError'));
+      const errMsg = error.response?.data?.message || t('settings.exportError');
+      setDataStatus(errMsg);
+      showToast(errMsg, 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportJson = async () => {
+    try {
+      setIsExporting(true);
+      const backup = await exportTransactionsApi();
+      const dateStr = new Date().toISOString().split("T")[0];
+      downloadJsonFile(backup, `finova_backup_${dateStr}.json`);
+      setDataStatus(t('settings.exportSuccess'));
+      showToast(t('settings.exportSuccess'), 'success');
+      setExportModalOpen(false);
+    } catch (error) {
+      const errMsg = error.response?.data?.message || t('settings.exportError');
+      setDataStatus(errMsg);
+      showToast(errMsg, 'error');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -269,7 +295,7 @@ const Settings = () => {
   };
 
   const handleImportFile = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const fileType = file.name.split('.').pop().toLowerCase();
@@ -283,35 +309,29 @@ const Settings = () => {
         let importedData;
         if (fileType === 'csv') {
           const text = event.target.result;
-          const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-          if (lines.length < 2) throw new Error(t('settings.importCsvError'));
-
-          const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-          importedData = [];
-
-          for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
-            const obj = {};
-            headers.forEach((header, index) => {
-              if (values[index] !== undefined) {
-                obj[header] = values[index];
-              }
-            });
-            importedData.push(obj);
+          const normalizedRows = parseAndNormalizeCsv(text);
+          if (!normalizedRows || normalizedRows.length === 0) {
+            throw new Error(t('settings.importCsvError'));
           }
+          importedData = normalizedRows;
         } else {
           importedData = JSON.parse(event.target.result);
         }
 
-        const result = await importTransactions(importedData);
+        await importTransactions(importedData);
         let msg = t('settings.importSuccessMsg');
         setDataStatus(msg);
+        showToast(msg, 'success');
         fetchData();
       } catch (error) {
-        setDataStatus(error.response?.data?.message || t('settings.importFormatError'));
+        const errMsg = error.response?.data?.message || error.message || t('settings.importFormatError');
+        setDataStatus(errMsg);
+        showToast(errMsg, 'error');
       } finally {
         setIsImporting(false);
-        e.target.value = null;
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     };
     reader.readAsText(file);
@@ -620,10 +640,10 @@ const Settings = () => {
             <div className="flex gap-3">
               <motion.button 
                 whileTap={{ scale: 0.95 }}
-                onClick={handleExport} 
+                onClick={() => setExportModalOpen(true)} 
                 className="flex-1 flex flex-col items-center justify-center gap-2 bg-[#8D6346]/10 text-[#8D6346] border border-[#8D6346]/30 py-5 rounded-2xl hover:bg-[#8D6346]/20 transition-colors shadow-inner"
               >
-                <Upload className="w-6 h-6" />
+                <Download className="w-6 h-6" />
                 <span className="text-sm font-bold">{t('settings.exportBtn')}</span>
               </motion.button>
 
@@ -635,7 +655,7 @@ const Settings = () => {
                 disabled={isImporting} 
                 className="flex-1 flex flex-col items-center justify-center gap-2 bg-[#8D6346]/10 text-[#8D6346] border border-[#8D6346]/30 py-5 rounded-2xl hover:bg-[#8D6346]/20 transition-colors disabled:opacity-50 shadow-inner"
               >
-                <Download className="w-6 h-6" />
+                {isImporting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
                 <span className="text-sm font-bold">{t('settings.importBtn')}</span>
               </motion.button>
             </div>
@@ -874,6 +894,14 @@ const Settings = () => {
         message={t('settings.wipeWarning')}
         confirmText={t('settings.wipeBtn')}
         isDanger={true}
+      />
+
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onExportCsv={handleExportCsv}
+        onExportJson={handleExportJson}
+        loading={isExporting}
       />
 
     </motion.div>
