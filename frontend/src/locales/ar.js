@@ -13,7 +13,10 @@ export default {
     "emailInUse": "البريد الإلكتروني مستخدم بالفعل.",
     "tagline": "صياغة جديدة لتعاملك مع المال.",
     "googleConfigMissing": "يرجى تهيئة VITE_GOOGLE_CLIENT_ID",
-    "appleComingSoon": "تسجيل الدخول عبر Apple قريباً"
+    "appleComingSoon": "تسجيل الدخول عبر Apple قريباً",
+    "signupError": "تعذر إكمال إنشاء الحساب. تأكد أن الخادم يعمل ثم حاول مجددًا.",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور"
   },
   "onboarding": {
     "screen1Title": "فلوسك",
