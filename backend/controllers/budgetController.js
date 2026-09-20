@@ -115,3 +115,74 @@ exports.getRecommendation = async (req, res, next) => {
     next(err);
   }
 };
+
+// Batch import budgets
+exports.importBudgets = async (req, res, next) => {
+  try {
+    const rawBudgets = Array.isArray(req.body) ? req.body : req.body?.budgets || [];
+    if (!Array.isArray(rawBudgets) || rawBudgets.length === 0) {
+      return res.status(400).json({ message: 'No budgets data provided.' });
+    }
+
+    const processedBudgets = [];
+    for (const item of rawBudgets) {
+      const catName = String(item.category || item.categoryName || '').trim();
+      if (!catName) continue;
+
+      const amount = Math.abs(Number(item.amount ?? item.budgetLimit ?? item['budget limit'] ?? 0));
+      if (!amount || amount <= 0) continue;
+
+      const period = ['weekly', 'monthly', 'custom'].includes(item.period?.toLowerCase())
+        ? item.period.toLowerCase()
+        : 'monthly';
+
+      // Find or create category
+      let categoryDoc = await Category.findOne({
+        user: req.user.id,
+        name: new RegExp('^' + catName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+      });
+
+      if (!categoryDoc) {
+        categoryDoc = await Category.create({
+          user: req.user.id,
+          name: catName,
+          type: 'expense'
+        });
+      }
+
+      let budget = await Budget.findOne({
+        user: req.user.id,
+        category: categoryDoc._id,
+        period
+      });
+
+      if (budget) {
+        budget.amount = amount;
+        if (item.startDate) budget.startDate = new Date(item.startDate);
+        if (item.endDate) budget.endDate = new Date(item.endDate);
+        await budget.save();
+      } else {
+        budget = new Budget({
+          user: req.user.id,
+          category: categoryDoc._id,
+          amount,
+          period,
+          startDate: item.startDate ? new Date(item.startDate) : undefined,
+          endDate: item.endDate ? new Date(item.endDate) : undefined
+        });
+        await budget.save();
+      }
+
+      processedBudgets.push(budget);
+    }
+
+    res.status(201).json({
+      message: 'Budgets imported successfully',
+      count: processedBudgets.length,
+      budgets: processedBudgets
+    });
+  } catch (err) {
+    console.error('[ERROR] importBudgets:', err);
+    next(err);
+  }
+};

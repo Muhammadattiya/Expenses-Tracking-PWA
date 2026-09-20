@@ -897,6 +897,7 @@ export default {
     "importReading": "Reading and importing file...",
     "importCsvError": "CSV file is empty or invalid.",
     "importSuccessMsg": "Transactions imported successfully.",
+    "importDetailedSuccess": "Successfully imported: {{transactions}} transactions, {{debts}} debts, and {{budgets}} budgets.",
     "importFormatError": "Make sure the file is a valid JSON or CSV.",
     "pushDesc": "Get alerts and notifications even when the app is closed.",
     "pushActivateBtn": "Enable Notifications on this Device",

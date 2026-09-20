@@ -54,3 +54,8 @@ export const updateDebt = async (debtId, debtData) => {
   const response = await api.put(`/debts/${debtId}`, debtData);
   return response.data;
 };
+
+export const importDebts = async (debtsData) => {
+  const response = await api.post('/debts/import', debtsData);
+  return response.data;
+};

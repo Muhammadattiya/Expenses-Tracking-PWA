@@ -153,3 +153,76 @@ exports.updateDebt = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.importDebts = async (req, res, next) => {
+  try {
+    const rawDebts = Array.isArray(req.body) ? req.body : req.body?.debts || [];
+    if (!Array.isArray(rawDebts) || rawDebts.length === 0) {
+      return res.status(400).json({ message: 'No debts data provided.' });
+    }
+
+    let defaultAccount = await Account.findOne({ user: req.user.id });
+    if (!defaultAccount) {
+      defaultAccount = await Account.create({
+        user: req.user.id,
+        name: 'كاش',
+        type: 'cash'
+      });
+    }
+
+    const insertedDebts = [];
+    for (const item of rawDebts) {
+      const personName = String(item.personName || item.name || item.person || '').trim();
+      if (!personName) continue;
+
+      const rawType = String(item.type || '').trim().toLowerCase();
+      let type = 'i_owe';
+      if (['owed_to_me', 'owed to me', 'دين لي', 'لي', 'owed'].includes(rawType)) {
+        type = 'owed_to_me';
+      } else if (['i_owe', 'i owe', 'دين علي', 'علي', 'owe'].includes(rawType)) {
+        type = 'i_owe';
+      }
+
+      const initialAmount = Math.abs(Number(item.initialAmount ?? item.amount ?? 0)) || 0;
+      const remainingAmount = item.remainingAmount !== undefined 
+        ? Math.abs(Number(item.remainingAmount)) 
+        : initialAmount;
+
+      const status = (item.status === 'settled' || remainingAmount <= 0) ? 'settled' : 'active';
+      const date = item.date ? new Date(item.date) : new Date();
+
+      const debt = new Debt({
+        user: req.user.id,
+        personName,
+        type,
+        initialAmount,
+        remainingAmount,
+        status,
+        createdAt: date
+      });
+      await debt.save();
+
+      const debtTx = new DebtTransaction({
+        user: req.user.id,
+        debtId: debt._id,
+        amount: initialAmount,
+        type: 'loan',
+        account: defaultAccount._id,
+        date,
+        notes: item.notes || 'Imported debt'
+      });
+      await debtTx.save();
+
+      insertedDebts.push(debt);
+    }
+
+    res.status(201).json({
+      message: 'Debts imported successfully',
+      count: insertedDebts.length,
+      debts: insertedDebts
+    });
+  } catch (err) {
+    console.error('[ERROR] importDebts:', err);
+    next(err);
+  }
+};

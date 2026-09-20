@@ -54,6 +54,11 @@ export const budgetService = {
     await db.budgets.delete(id);
   },
 
+  importBudgets: async (budgetsData) => {
+    const response = await api.post('/budgets/import', budgetsData);
+    return response.data;
+  },
+
   getRecommendation: async (categoryId, period) => {
     try {
       const response = await api.get('/budgets/recommendation', {
