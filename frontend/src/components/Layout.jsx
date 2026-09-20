@@ -25,7 +25,7 @@ export default function Layout() {
         </div>
       )}
 
-      <main className={`${isComposer ? 'pb-8 pt-8' : 'pb-32 pt-10 sm:pt-14'} px-5 w-full max-w-7xl mx-auto min-h-screen animate-fade-in`}>
+      <main className={`${isComposer ? 'pb-32 pt-4 sm:pt-6' : 'pb-32 pt-10 sm:pt-14'} px-5 w-full max-w-7xl mx-auto min-h-screen animate-fade-in`}>
         <PullToRefresh>
           <Outlet />
         </PullToRefresh>
@@ -34,7 +34,7 @@ export default function Layout() {
       <NovaHeader onOpenChange={setNovaOpen} />
       {!isComposer && !novaOpen && <CategoryClarificationManager />}
       
-      {!isComposer && !novaOpen && <BottomNav />}
+      {!novaOpen && <BottomNav />}
     </div>
   );
 }

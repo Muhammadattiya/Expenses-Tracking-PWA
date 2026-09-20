@@ -21,9 +21,15 @@ import LiquidBlob from './dock/LiquidBlob';
 const dockControlClass =
   'relative w-12 h-12 rounded-full flex items-center justify-center text-white group shrink-0 focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]';
 
-function GlassDisc() {
+function GlassDisc({ isActive = false }) {
   return (
-    <div className="absolute inset-0 rounded-full liquidglass group-active:bg-white/10 transition-colors pointer-events-none" />
+    <div
+      className={`absolute inset-0 rounded-full liquidglass transition-all duration-200 pointer-events-none ${
+        isActive
+          ? 'bg-[#8D6346]/20 border border-[#8D6346]/60 shadow-[0_0_12px_rgba(141,99,70,0.35)]'
+          : 'group-active:bg-white/10'
+      }`}
+    />
   );
 }
 
@@ -132,6 +138,7 @@ export default function BottomNav() {
   const liquidGlassClass = 'liquidglass';
   const overflowActive = OVERFLOW_PATHS.some((p) => pathInFamily(location.pathname, p));
   const plusMarked = overflowActive && !fabOpen;
+  const isAddActive = pathInFamily(location.pathname, '/add');
 
   return (
     <div
@@ -198,7 +205,7 @@ export default function BottomNav() {
           aria-current={plusMarked ? 'true' : undefined}
           className={dockControlClass}
         >
-          <GlassDisc />
+          <GlassDisc isActive={plusMarked} />
           <motion.span
             className="relative z-10 inline-flex"
             animate={{ rotate: fabOpen ? 45 : 0, scale: plusMarked && !reduceMotion ? 1.08 : 1 }}
@@ -272,15 +279,28 @@ export default function BottomNav() {
         <button 
           type="button"
           onClick={() => {
-            triggerHaptic('selection');
-            navigate('/add');
+            if (!isAddActive) {
+              triggerHaptic('selection');
+              navigate('/add');
+            }
           }}
           aria-label={t('nav.add')}
+          aria-current={isAddActive ? 'page' : undefined}
           className={dockControlClass}
         >
-          <GlassDisc />
-          <motion.span className="relative z-10 inline-flex" whileTap={press} transition={iconSpring}>
-            <Plus size={22} strokeWidth={2.5} aria-hidden="true" className="text-white" />
+          <GlassDisc isActive={isAddActive} />
+          <motion.span 
+            className="relative z-10 inline-flex" 
+            animate={{ scale: isAddActive && !reduceMotion ? 1.08 : 1 }}
+            whileTap={press} 
+            transition={iconSpring}
+          >
+            <Plus 
+              size={22} 
+              strokeWidth={isAddActive ? 2.8 : 2.5} 
+              aria-hidden="true" 
+              className={`transition-colors duration-200 ${isAddActive ? 'text-[#8D6346] drop-shadow-md' : 'text-white'}`} 
+            />
           </motion.span>
         </button>
       </motion.nav>
