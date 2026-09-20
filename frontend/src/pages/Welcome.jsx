@@ -12,7 +12,7 @@ export default function Welcome() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full flex flex-col items-center justify-center overflow-hidden touch-none select-none my-auto"
+      className="w-full flex flex-col items-center justify-center my-auto py-4"
     >
       {/* Top Section: Logo & Text */}
       <div className="flex flex-col items-center justify-center">
@@ -25,7 +25,7 @@ export default function Welcome() {
             damping: 20, 
             duration: 0.8 
           }}
-          className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] relative flex justify-center items-center"
+          className="w-[220px] h-[220px] sm:w-[280px] sm:h-[280px] max-w-[70vw] max-h-[35vh] relative flex justify-center items-center"
         >
           <motion.img 
              src="/images/finova_logo.png" 
@@ -56,7 +56,7 @@ export default function Welcome() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="w-[180px] flex flex-col items-stretch gap-4 mt-8 pointer-events-auto"
+        className="w-full max-w-[280px] sm:max-w-xs flex flex-col items-stretch gap-4 mt-8 pointer-events-auto"
       >
         <div className="flex flex-col gap-4">
           <motion.div whileTap={{ scale: 0.95 }} className="w-full">
@@ -79,9 +79,9 @@ export default function Welcome() {
 
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="flex items-center justify-center gap-2 w-full">
-            <div className="h-[0.5px] w-[50px] bg-white/50" />
+            <div className="h-px flex-1 bg-white/20" />
             <span className="font-['Exo_2'] text-[14px] text-white/80 whitespace-nowrap">{t('auth.continueWith')}</span>
-            <div className="h-[0.5px] w-[50px] bg-white/50" />
+            <div className="h-px flex-1 bg-white/20" />
           </div>
 
           <div>

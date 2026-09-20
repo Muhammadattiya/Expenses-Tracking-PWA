@@ -49,11 +49,11 @@ export default function GoogleLoginButton() {
   return (
     <div className="flex flex-col items-center">
       <div className="flex gap-3 mt-1">
-        <motion.div whileTap={{ scale: 0.95 }} className="relative flex h-[40px] w-[40px] items-center justify-center rounded-full bg-[rgba(76,43,54,0.3)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(76,43,54,0.5)] transition-colors overflow-hidden cursor-pointer">
+        <motion.div whileTap={{ scale: 0.95 }} className="relative flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[rgba(76,43,54,0.3)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(76,43,54,0.5)] transition-colors overflow-hidden cursor-pointer">
           <img src="/images/google_icon.png" alt="Google" className="w-[18px] h-[18px] object-contain pointer-events-none absolute" />
           <div ref={googleBtnRef} className="absolute inset-0 opacity-[0.01] z-10 w-full h-full flex items-center justify-center" />
         </motion.div>
-        <motion.button whileTap={{ scale: 0.95 }} className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-[rgba(76,43,54,0.3)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(76,43,54,0.5)] transition-colors">
+        <motion.button whileTap={{ scale: 0.95 }} className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[rgba(76,43,54,0.3)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(76,43,54,0.5)] transition-colors">
           <img src="/images/apple_icon.png" alt="Apple" className="w-[18px] h-[18px] object-contain" />
         </motion.button>
       </div>

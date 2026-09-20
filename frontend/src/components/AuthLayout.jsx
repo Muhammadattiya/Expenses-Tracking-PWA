@@ -14,9 +14,9 @@ export default function AuthLayout() {
   return (
     <main 
       dir={language === 'ar' ? 'rtl' : 'ltr'} 
-      className={`w-full max-w-full bg-[#141115] relative text-white flex flex-col justify-center items-center overflow-hidden ${
+      className={`w-full max-w-full bg-[#141115] relative text-white flex flex-col justify-center items-center ${
         isWelcome 
-          ? 'fixed inset-0 top-0 bottom-0 left-0 right-0 min-h-screen overscroll-none touch-none select-none' 
+          ? 'min-h-[100dvh] py-8' 
           : 'min-h-screen py-6'
       }`}
     >
@@ -27,7 +27,7 @@ export default function AuthLayout() {
       <div 
         className={`w-full max-w-sm px-6 relative z-10 flex flex-col items-center ${
           isWelcome 
-            ? 'h-full justify-center pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-hidden' 
+            ? 'h-full justify-center pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]' 
             : ''
         }`}
       >
