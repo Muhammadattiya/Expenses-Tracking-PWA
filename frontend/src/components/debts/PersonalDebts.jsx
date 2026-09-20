@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { User, Plus, CheckCircle2, Trash2, Edit2, Wallet, ArrowDownRight, ArrowUpRight, Clock, X, PartyPopper, ShieldCheck, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ListSkeleton } from '../ui/Skeletons';
+import { DebtsSectionSkeleton } from '../ui/Skeletons';
 import { getAccounts } from '../../api/accounts';
 import { getDebts, createDebt, addDebtTransaction, deleteDebt, updateDebt } from '../../api/debts';
 import CustomSelect from '../ui/CustomSelect';
@@ -112,11 +112,7 @@ export default function PersonalDebts() {
   };
 
   if (isLoading) {
-    return (
-      <div className="animate-fade-in space-y-6">
-        <ListSkeleton count={4} />
-      </div>
-    );
+    return <DebtsSectionSkeleton />;
   }
 
   // Calculate Totals for Hero Card

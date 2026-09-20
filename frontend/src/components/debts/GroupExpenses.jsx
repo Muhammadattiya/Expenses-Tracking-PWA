@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HandCoins, Plus, CheckCircle2, Pencil, Trash2, Users, Clock, X, PartyPopper, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ListSkeleton } from '../ui/Skeletons';
+import { DebtsSectionSkeleton } from '../ui/Skeletons';
 import { getAccounts } from '../../api/accounts';
 import { getCategories } from '../../api/categories';
 import { createReceivable, getReceivables, recordPayment, updateReceivable, deleteReceivable } from '../../api/receivables';
@@ -131,11 +131,7 @@ export default function GroupExpenses() {
   };
 
   if (isLoading) {
-    return (
-      <div className="animate-fade-in space-y-6">
-        <ListSkeleton count={4} />
-      </div>
-    );
+    return <DebtsSectionSkeleton />;
   }
 
   // Calculate Totals for Hero Card

@@ -54,7 +54,7 @@ import {
 import api from "../api/axios";
 
 import ConfirmModal from "../components/modals/ConfirmModal";
-import SplashScreen from "../components/SplashScreen";
+import { SettingsSkeleton } from "../components/ui/Skeletons";
 import { AmbientBackground } from "../components/ui";
 import { useNotification } from "../contexts/NotificationContext";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -318,7 +318,7 @@ const Settings = () => {
   };
 
   if (isLoading) {
-    return <SplashScreen />;
+    return <SettingsSkeleton />;
   }
 
   return (

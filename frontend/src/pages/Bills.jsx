@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Receipt, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { ListSkeleton } from '../components/ui/Skeletons';
+import { BillsSkeleton } from '../components/ui/Skeletons';
 import { getAccounts } from '../api/accounts';
 import { getCategories } from '../api/categories';
 import { getBills, createBill, updateBill, deleteBill, ignoreBill } from '../api/bills';
@@ -130,11 +130,7 @@ export default function Bills() {
     : null;
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <ListSkeleton count={4} />
-      </div>
-    );
+    return <BillsSkeleton />;
   }
 
   return (
