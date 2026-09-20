@@ -127,7 +127,10 @@ export default {
     "missingFields": "Please complete the missing fields.",
     "success": "Transactions saved successfully!",
     "confirmError": "An error occurred while saving.",
-    "date": "Date"
+    "date": "Date",
+    "voiceLang": "Voice Language",
+    "langArabic": "Arabic",
+    "langEnglish": "English"
   },
   "appleShortcuts": {
     "shortcutsGuideTitle": "iOS Shortcuts Setup Guide",

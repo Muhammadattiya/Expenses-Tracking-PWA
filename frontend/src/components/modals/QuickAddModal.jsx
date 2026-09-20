@@ -22,7 +22,30 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   const { t, lang } = useLanguage();
   const { showToast } = useNotification();
   
-  const { isListening, transcript, interimTranscript, setTranscript, startListening, stopListening, isSupported, error: speechError } = useSpeechRecognition(lang === 'ar' ? 'ar-EG' : 'en-US');
+  const preferredVoiceLang = localStorage.getItem('finova-voice-lang') || (lang === 'en' ? 'en-US' : 'ar-EG');
+  const { 
+    isListening, 
+    transcript, 
+    interimTranscript, 
+    setTranscript, 
+    startListening, 
+    stopListening, 
+    isSupported, 
+    error: speechError,
+    voiceLang,
+    setVoiceLang
+  } = useSpeechRecognition(preferredVoiceLang);
+  
+  const handleToggleVoiceLang = (targetLang) => {
+    if (voiceLang === targetLang) return;
+    setVoiceLang(targetLang);
+    if (isListening) {
+      stopListening();
+      setTimeout(() => {
+        startListening(targetLang);
+      }, 200);
+    }
+  };
   
   const [textInput, setTextInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -194,14 +217,49 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
               </h2>
             </div>
 
-            <button 
-              type="button"
-              onClick={onClose}
-              aria-label={t('common.close')}
-              className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
-            >
-              <X size={15} />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Voice Language Switcher */}
+              {isSupported && (
+                <div 
+                  className="flex items-center bg-black/40 border border-white/10 rounded-full p-0.5 shadow-inner"
+                  dir="ltr"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVoiceLang('ar-EG')}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+                      voiceLang.startsWith('ar')
+                        ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
+                        : 'text-white/50 hover:text-white/80'
+                    }`}
+                    aria-label={t('quickAdd.langArabic')}
+                  >
+                    عربي
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVoiceLang('en-US')}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+                      voiceLang === 'en-US'
+                        ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
+                        : 'text-white/50 hover:text-white/80'
+                    }`}
+                    aria-label={t('quickAdd.langEnglish')}
+                  >
+                    EN
+                  </button>
+                </div>
+              )}
+
+              <button 
+                type="button"
+                onClick={onClose}
+                aria-label={t('common.close')}
+                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+              >
+                <X size={15} />
+              </button>
+            </div>
           </div>
           
           {candidates.length === 0 ? (
@@ -217,7 +275,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 {isSupported && (
                   <button 
                     type="button"
-                    onClick={isListening ? stopListening : startListening}
+                    onClick={isListening ? stopListening : () => startListening(voiceLang)}
                     aria-label={isListening ? t('quickAdd.stopListening') : t('quickAdd.listen')}
                     aria-pressed={isListening}
                     className={`absolute bottom-3 end-3 p-3 rounded-2xl transition-all duration-300 ${
@@ -231,9 +289,15 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 )}
               </div>
               {isListening && (
-                <p className="text-xs text-[#E8C5A8] px-1" aria-live="polite">
-                  {t('quickAdd.listening')}
-                </p>
+                <div className="flex items-center justify-between px-1" aria-live="polite">
+                  <p className="text-xs text-[#E8C5A8] flex items-center gap-1.5 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" />
+                    {t('quickAdd.listening')}
+                  </p>
+                  <span className="text-[11px] text-white/50 font-medium">
+                    {voiceLang.startsWith('ar') ? `🇪🇬 ${t('quickAdd.langArabic')}` : `🇺🇸 ${t('quickAdd.langEnglish')}`}
+                  </span>
+                </div>
               )}
               
               <button 

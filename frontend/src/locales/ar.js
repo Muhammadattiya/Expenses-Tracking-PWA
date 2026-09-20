@@ -126,7 +126,10 @@ export default {
     "missingFields": "يرجى استكمال الحقول الناقصة (مثل الفئة).",
     "success": "تم حفظ المعاملات بنجاح!",
     "confirmError": "حدث خطأ أثناء الحفظ.",
-    "date": "التاريخ"
+    "date": "التاريخ",
+    "voiceLang": "لغة الصوت",
+    "langArabic": "العربية",
+    "langEnglish": "English"
   },
   "appleShortcuts": {
     "shortcutsGuideTitle": "خطوات إعداد iOS Shortcuts",
