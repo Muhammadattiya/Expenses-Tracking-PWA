@@ -390,12 +390,11 @@ const Dashboard = () => {
 
     const mappedDebtTransactions = [];
     (allDebtTransactions || []).forEach(dt => {
-      const debtObj = (typeof dt.debtId === 'object' && dt.debtId !== null)
-        ? dt.debtId
-        : debtsMap.get(String(dt.debtId || ''));
-
-      const personName = debtObj?.personName || t('debts.title') || (lang === 'ar' ? 'شخص' : 'Person');
-      const debtType = debtObj?.type || dt.debtType || 'i_owe';
+      const debtIdStr = String(dt.debtId?._id || dt.debtId || '');
+      const baseDebt = debtsMap.get(debtIdStr);
+      const personName = dt.debtId?.personName || baseDebt?.personName || (lang === 'ar' ? 'شخص' : 'Person');
+      const debtType = dt.debtId?.type || baseDebt?.type || dt.debtType || 'i_owe';
+      const debtObj = baseDebt || (typeof dt.debtId === 'object' ? dt.debtId : null);
       const actionType = dt.type;
 
       let direction = 'outflow';
