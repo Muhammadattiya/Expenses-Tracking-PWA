@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic, ShieldCheck, ShieldAlert, AlertTriangle } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic, ShieldCheck, ShieldAlert, AlertTriangle, Wallet, Sparkles } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
@@ -22,6 +22,7 @@ import { getActiveUserId } from "../utils/offlineSession";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
 import QuickAddModal from "../components/modals/QuickAddModal";
+import SmartCaptureBar from "../components/dashboard/SmartCaptureBar";
 import CustomSelect from "../components/ui/CustomSelect";
 import { AmbientBackground, MetricPill } from "../components/ui";
 import { useNotification } from "../contexts/NotificationContext";
@@ -29,6 +30,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { triggerHaptic } from '../utils/haptics';
 import * as LucideIcons from 'lucide-react';
 
 const Dashboard = () => {
@@ -587,56 +589,128 @@ const Dashboard = () => {
         </div>
 
         {/* Payday Survival Box */}
-        {survival && survival.hasIncomeProfile && (
-           <div 
-             onClick={() => navigate('/analytics?tab=insights&focus=payday')}
-             className="w-full relative overflow-hidden rounded-[24px] p-4 cursor-pointer active:scale-95 transition-transform border mb-4"
+        {survival?.hasIncomeProfile ? (
+           <motion.div 
+             whileHover={{ scale: 1.01 }}
+             whileTap={{ scale: 0.98 }}
+             onClick={() => {
+               triggerHaptic('selection');
+               navigate('/analytics?tab=insights&focus=payday');
+             }}
+             className="w-full relative overflow-hidden rounded-[26px] p-4 cursor-pointer border mb-3 group liquidglass"
              style={{
-               background: survival.risk === 'Safe' ? 'rgba(16, 185, 129, 0.15)' : 
-                           survival.risk === 'Low Risk' ? 'rgba(59, 130, 246, 0.15)' : 
-                           survival.risk === 'Medium Risk' ? 'rgba(245, 158, 11, 0.15)' : 
-                           'rgba(255, 0, 0, 0.2)',
-               borderColor: survival.risk === 'Safe' ? 'rgba(16, 185, 129, 0.3)' : 
-                            survival.risk === 'Low Risk' ? 'rgba(59, 130, 246, 0.3)' : 
-                            survival.risk === 'Medium Risk' ? 'rgba(245, 158, 11, 0.3)' : 
-                            'rgba(255, 0, 0, 0.3)',
+               background: survival.risk === 'Safe' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(20, 17, 21, 0.6) 100%)' : 
+                           survival.risk === 'Low Risk' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(20, 17, 21, 0.6) 100%)' : 
+                           survival.risk === 'Medium Risk' ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(20, 17, 21, 0.6) 100%)' : 
+                           'linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(20, 17, 21, 0.6) 100%)',
+               borderColor: survival.risk === 'Safe' ? 'rgba(16, 185, 129, 0.35)' : 
+                            survival.risk === 'Low Risk' ? 'rgba(59, 130, 246, 0.35)' : 
+                            survival.risk === 'Medium Risk' ? 'rgba(245, 158, 11, 0.35)' : 
+                            'rgba(239, 68, 68, 0.4)',
                backdropFilter: 'blur(32px) saturate(1.4)',
                WebkitBackdropFilter: 'blur(32px) saturate(1.4)',
-               boxShadow: 'inset 0 0 2px 1px lab(100% 0 0 / .35), inset 0 0 10px 4px lab(100% 0 0 / .15), inset 0 4px 16px lab(5.32203% 1.61424 -5.88284 / .0509804), 0 4px 16px rgba(0,0,0,0.3)'
+               boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.2), 0 8px 30px rgba(0,0,0,0.35)'
              }}
            >
+             {/* Top Subtle Shimmer */}
+             <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
+
              <div className="flex items-center justify-between w-full">
-               <div className="flex flex-col gap-0.5 pr-3">
-                   <h3 className="text-white font-semibold text-base">{t('dashboard.paydaySurvival')}</h3>
+               <div className="flex flex-col gap-1 pr-3 flex-1 min-w-0">
+                   <h3 className="text-white font-bold text-base tracking-wide drop-shadow-sm">{t('dashboard.paydaySurvival')}</h3>
                    
                    {survival.risk === 'High Risk' ? (
-                     <p className="text-white/80 text-[12px] leading-snug mt-1">
+                     <p className="text-white/85 text-[12.5px] leading-snug mt-0.5">
                        {t('dashboard.balanceRunsOut', { days: survival.daysUntilIncome - (survival.remainingSurvivalDays || 0) })}
                        <span className="text-[#ff4444] font-bold ml-1">({t('dashboard.riskHigh')})</span>
                      </p>
                    ) : (
-                     <p className="text-white/80 text-[12px] leading-snug mt-1">
+                     <p className="text-white/85 text-[12.5px] leading-snug mt-0.5">
                        {t('dashboard.balanceSurvives', { days: survival.daysUntilIncome })}
                        <span className={`font-bold ml-1 ${survival.risk === 'Safe' ? 'text-emerald-400' : survival.risk === 'Low Risk' ? 'text-blue-400' : 'text-amber-400'}`}>({survival.risk})</span>
                      </p>
                    )}
                </div>
 
-               {/* Dynamic Risk Icon */}
-               <div className="flex-shrink-0 flex items-center justify-center p-2.5 bg-black/10 rounded-full border border-white/5 shadow-inner">
-                 {survival.risk === 'Safe' ? (
-                   <ShieldCheck className="w-6 h-6 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                 ) : survival.risk === 'Low Risk' ? (
-                   <ShieldCheck className="w-6 h-6 text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
-                 ) : survival.risk === 'Medium Risk' ? (
-                   <AlertTriangle className="w-6 h-6 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
-                 ) : (
-                   <ShieldAlert className="w-6 h-6 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                 )}
+               {/* Dynamic Risk Icon with Breathing Aura */}
+               <div className="relative flex items-center justify-center shrink-0">
+                 <div className="w-11 h-11 flex items-center justify-center bg-black/30 rounded-full border border-white/10 shadow-inner group-hover:scale-105 transition-transform">
+                   {survival.risk === 'Safe' ? (
+                     <ShieldCheck className="w-6 h-6 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                   ) : survival.risk === 'Low Risk' ? (
+                     <ShieldCheck className="w-6 h-6 text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
+                   ) : survival.risk === 'Medium Risk' ? (
+                     <AlertTriangle className="w-6 h-6 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                   ) : (
+                     <ShieldAlert className="w-6 h-6 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                   )}
+                 </div>
                </div>
              </div>
-           </div>
+           </motion.div>
+        ) : (
+           <motion.div 
+             whileHover={{ scale: 1.01 }}
+             whileTap={{ scale: 0.98 }}
+             onClick={() => {
+               triggerHaptic('light');
+               navigate('/profile?view=income');
+             }}
+             className="w-full relative overflow-hidden rounded-[26px] p-4 sm:p-5 cursor-pointer border mb-3 group liquidglass"
+             style={{
+               background: 'linear-gradient(145deg, rgba(42, 30, 26, 0.78) 0%, rgba(20, 16, 18, 0.92) 100%)',
+               borderColor: 'rgba(232, 197, 168, 0.4)',
+               backdropFilter: 'blur(40px) saturate(1.45)',
+               WebkitBackdropFilter: 'blur(40px) saturate(1.45)',
+               boxShadow: 'inset 0 1px 2px rgba(232,197,168,0.22), 0 16px 40px rgba(0,0,0,0.55), 0 2px 10px rgba(141,99,70,0.2)'
+             }}
+           >
+             {/* Top Subtle Shimmer */}
+             <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8C5A8]/50 to-transparent pointer-events-none" />
+
+             <div className="flex items-center justify-between w-full gap-3">
+               <div className="flex flex-col gap-1.5 pr-2 flex-1 min-w-0">
+                 <div className="flex items-center gap-2">
+                   <Sparkles className="w-4 h-4 text-[#E8C5A8] animate-pulse shrink-0" />
+                   <h3 className="text-white font-bold text-base sm:text-lg tracking-wide drop-shadow-sm">
+                     {t('dashboard.paydaySurvival')}
+                   </h3>
+                 </div>
+                 <p className="text-white/75 text-xs sm:text-[13px] leading-relaxed max-w-sm sm:max-w-md">
+                   {t('dashboard.setupIncomeProfileDesc')}
+                 </p>
+                 <div className="inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full bg-gradient-to-r from-[#8D6346]/35 to-[#8D6346]/20 hover:from-[#8D6346]/50 hover:to-[#8D6346]/30 border border-[#E8C5A8]/40 text-[#E8C5A8] text-xs font-semibold self-start shadow-sm transition-colors">
+                   <span>{t('dashboard.setupIncomeProfileBtn')}</span>
+                   <ChevronRight className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+                 </div>
+               </div>
+
+               {/* Setup Icon with Ambient Glow */}
+               <div className="relative flex items-center justify-center shrink-0">
+                 <motion.div
+                   animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.35, 0.15] }}
+                   transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                   className="absolute w-12 h-12 rounded-full bg-[#8D6346] blur-md pointer-events-none"
+                 />
+                 <div className="relative w-12 h-12 rounded-2xl bg-black/40 border border-white/15 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                   <Wallet className="w-6 h-6 text-[#E8C5A8] drop-shadow-[0_0_10px_rgba(232,197,168,0.5)]" />
+                 </div>
+               </div>
+             </div>
+           </motion.div>
         )}
+
+        {/* Smart Capture Bar (Quick Add + Ask Nova) */}
+        <SmartCaptureBar 
+          onQuickAdd={() => {
+            triggerHaptic('selection');
+            setQuickAddOpen(true);
+          }}
+          onOpenNova={() => {
+            triggerHaptic('selection');
+            window.dispatchEvent(new CustomEvent('open-nova-agent'));
+          }}
+        />
         
         {/* Filters: Month & Categories */}
         <div className="flex items-center gap-2 justify-center w-full px-1">

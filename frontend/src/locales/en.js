@@ -296,7 +296,15 @@ export default {
     "transactionHistory": "Transaction History",
     "addAccount": "Add Account +",
     "thisWk": "This Wk",
-    "thisMo": "This Mo"
+    "thisMo": "This Mo",
+    "setupRequired": "Setup",
+    "setupIncomeProfileDesc": "Predict how long your balance will last until payday.",
+    "setupIncomeProfileBtn": "Set Up",
+    "quickAddAction": "Quick Log",
+    "quickAddDesc": "Speak or type an expense",
+    "quickAddPlaceholder": "Tap to record an expense...",
+    "askNovaAction": "Nova",
+    "askNovaDesc": "AI Financial Advisor"
   },
   "addTransaction": {
     "title": "Add Transaction",
