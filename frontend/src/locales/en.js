@@ -130,7 +130,11 @@ export default {
     "date": "Date",
     "voiceLang": "Voice Language",
     "langArabic": "Arabic",
-    "langEnglish": "English"
+    "langEgyptian": "Egyptian",
+    "langStandardArabic": "Standard Arabic",
+    "langEnglish": "English",
+    "micPermissionDenied": "Microphone access blocked. Please allow access in browser settings.",
+    "speechNetworkError": "Could not connect to speech service. Check your internet connection."
   },
   "appleShortcuts": {
     "shortcutsGuideTitle": "iOS Shortcuts Setup Guide",

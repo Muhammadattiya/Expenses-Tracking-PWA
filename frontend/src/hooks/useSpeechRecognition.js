@@ -11,6 +11,10 @@ export const useSpeechRecognition = (initialLang = 'ar-EG') => {
   const [isSupported, setIsSupported] = useState(true);
   
   const recognitionRef = useRef(null);
+  const activeRef = useRef(false);
+  const accumulatedTranscriptRef = useRef('');
+  const voiceLangRef = useRef(voiceLang);
+  voiceLangRef.current = voiceLang;
 
   // Synchronize when initialLang changes explicitly
   useEffect(() => {
@@ -29,7 +33,15 @@ export const useSpeechRecognition = (initialLang = 'ar-EG') => {
       return;
     }
     
-    const recognition = new SpeechRecognition();
+    let recognition;
+    try {
+      recognition = new SpeechRecognition();
+    } catch (e) {
+      console.warn("SpeechRecognition init error:", e);
+      setIsSupported(false);
+      return;
+    }
+    
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = voiceLang;
@@ -40,49 +52,95 @@ export const useSpeechRecognition = (initialLang = 'ar-EG') => {
     };
     
     recognition.onresult = (event) => {
-      let finalText = '';
-      let interimText = '';
+      let sessionFinal = '';
+      let sessionInterim = '';
       
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalText += result[0].transcript + ' ';
+          sessionFinal += result[0].transcript + ' ';
         } else {
-          interimText += result[0].transcript;
+          sessionInterim += result[0].transcript;
         }
       }
       
-      setTranscript(finalText);
-      setInterimTranscript(interimText);
+      const fullFinal = (accumulatedTranscriptRef.current + ' ' + sessionFinal).trim();
+      setTranscript(fullFinal);
+      setInterimTranscript(sessionInterim.trim());
     };
     
     recognition.onerror = (event) => {
+      console.warn("Speech recognition error:", event.error);
+      
+      // Benign silence timeout - keep-alive in onend will restart if user hasn't stopped
+      if (event.error === 'no-speech') {
+        return;
+      }
+      
       // If ar-EG is not supported by the device/engine, try standard Arabic ar-SA fallback
       if (event.error === 'language-not-supported' && recognition.lang === 'ar-EG') {
         console.warn("Speech recognition: 'ar-EG' not supported, falling back to 'ar-SA'");
         recognition.lang = 'ar-SA';
-        try {
-          recognition.start();
-          return;
-        } catch (e) {
-          console.warn("Fallback recognition start error:", e);
+        if (activeRef.current) {
+          try {
+            recognition.start();
+            return;
+          } catch (e) {}
         }
       }
       
-      // 'no-speech' is a standard timeout, not an actual error
-      if (event.error !== 'no-speech') {
-        setError(event.error);
+      if (event.error === 'not-allowed') {
+        setError('not-allowed');
+        activeRef.current = false;
+        setIsListening(false);
+        return;
       }
+
+      if (event.error === 'network') {
+        setError('network');
+        activeRef.current = false;
+        setIsListening(false);
+        return;
+      }
+
+      setError(event.error);
       setIsListening(false);
     };
     
     recognition.onend = () => {
+      // If the user intended to keep listening (not manually stopped), restart on silence pause
+      if (activeRef.current) {
+        setTranscript(prev => {
+          accumulatedTranscriptRef.current = prev;
+          return prev;
+        });
+        setInterimTranscript('');
+        
+        try {
+          recognition.start();
+          return;
+        } catch (e) {
+          setTimeout(() => {
+            if (activeRef.current) {
+              try {
+                recognition.start();
+              } catch (err) {
+                console.warn("Speech recognition restart notice:", err);
+                setIsListening(false);
+              }
+            }
+          }, 150);
+          return;
+        }
+      }
+      
       setIsListening(false);
     };
     
     recognitionRef.current = recognition;
     
     return () => {
+      activeRef.current = false;
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -105,7 +163,9 @@ export const useSpeechRecognition = (initialLang = 'ar-EG') => {
 
   const startListening = useCallback((langOverride) => {
     if (!isSupported) return;
-    const targetLang = langOverride || voiceLang;
+    const targetLang = langOverride || voiceLangRef.current;
+    activeRef.current = true;
+    accumulatedTranscriptRef.current = '';
     setTranscript('');
     setInterimTranscript('');
     setError(null);
@@ -117,14 +177,15 @@ export const useSpeechRecognition = (initialLang = 'ar-EG') => {
       try {
         recognitionRef.current.start();
       } catch (e) {
-        // Recognition might already be running or initializing
         console.warn("Speech recognition start notice:", e);
       }
     }
-  }, [isSupported, voiceLang]);
+  }, [isSupported]);
 
   const stopListening = useCallback(() => {
     if (!isSupported) return;
+    activeRef.current = false;
+    setIsListening(false);
     try {
       recognitionRef.current?.stop();
     } catch (e) {

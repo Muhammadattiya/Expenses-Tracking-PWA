@@ -129,7 +129,11 @@ export default {
     "date": "التاريخ",
     "voiceLang": "لغة الصوت",
     "langArabic": "العربية",
-    "langEnglish": "English"
+    "langEgyptian": "مصري",
+    "langStandardArabic": "عربي (عام)",
+    "langEnglish": "English",
+    "micPermissionDenied": "تم حظر الميكروفون. يرجى السماح بالوصول من إعدادات المتصفح.",
+    "speechNetworkError": "تعذر الاتصال بخدمة الصوت. تحقق من اتصال الإنترنت."
   },
   "appleShortcuts": {
     "shortcutsGuideTitle": "خطوات إعداد iOS Shortcuts",
