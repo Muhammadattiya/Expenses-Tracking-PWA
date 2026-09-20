@@ -41,6 +41,8 @@ import {
   createTransaction,
   exportTransactionsApi,
 } from "../api/transactions";
+import { getDebts, importDebts } from "../api/debts";
+import { budgetService } from "../services/budgetService";
 import { getAccounts } from "../api/accounts";
 import { getCategories } from "../api/categories";
 
@@ -253,13 +255,48 @@ const Settings = () => {
     }
   };
 
+  const calculateBudgetCycleSpent = (budget, allTransactions = []) => {
+    const catName = String(budget.category?.name || budget.category || '').trim().toLowerCase();
+    if (!catName) return 0;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    return allTransactions.reduce((sum, tx) => {
+      if (tx.type !== 'expense') return sum;
+      const txCatName = String(tx.category?.name || tx.category || '').trim().toLowerCase();
+      if (txCatName !== catName) return sum;
+      const txDate = new Date(tx.date);
+      if (txDate >= startOfMonth && txDate <= endOfMonth) {
+        return sum + (Number(tx.amount) || 0);
+      }
+      return sum;
+    }, 0);
+  };
+
   const handleExportCsv = async () => {
     try {
       setIsExporting(true);
-      const backup = await exportTransactionsApi();
-      const csvContent = generateTransactionsCsv(backup);
+      const [txBackup, debtsData, budgetsData] = await Promise.all([
+        exportTransactionsApi(),
+        getDebts().catch(() => ({ debts: [] })),
+        budgetService.getBudgets().catch(() => [])
+      ]);
+
+      const rawBudgets = Array.isArray(budgetsData) ? budgetsData : [];
+      const populatedBudgets = rawBudgets.map((b) => ({
+        ...b,
+        spent: calculateBudgetCycleSpent(b, txBackup?.transactions || [])
+      }));
+
+      const csvContent = generateTransactionsCsv({
+        transactions: txBackup?.transactions || [],
+        debts: debtsData?.debts || [],
+        budgets: populatedBudgets
+      });
+
       const dateStr = new Date().toISOString().split("T")[0];
-      downloadCsvFile(csvContent, `finova_transactions_${dateStr}.csv`);
+      downloadCsvFile(csvContent, `finova_backup_${dateStr}.csv`);
       setDataStatus(t('settings.exportSuccess'));
       showToast(t('settings.exportSuccess'), 'success');
       setExportModalOpen(false);
@@ -275,9 +312,31 @@ const Settings = () => {
   const handleExportJson = async () => {
     try {
       setIsExporting(true);
-      const backup = await exportTransactionsApi();
+      const [txBackup, debtsData, budgetsData] = await Promise.all([
+        exportTransactionsApi(),
+        getDebts().catch(() => ({ debts: [] })),
+        budgetService.getBudgets().catch(() => [])
+      ]);
+
+      const rawBudgets = Array.isArray(budgetsData) ? budgetsData : [];
+      const populatedBudgets = rawBudgets.map((b) => ({
+        ...b,
+        spent: calculateBudgetCycleSpent(b, txBackup?.transactions || [])
+      }));
+
+      const fullBackup = {
+        formatVersion: 2,
+        exportedAt: new Date().toISOString(),
+        accounts: txBackup?.accounts || [],
+        categories: txBackup?.categories || [],
+        transactions: txBackup?.transactions || [],
+        debts: debtsData?.debts || [],
+        debtTransactions: debtsData?.transactions || [],
+        budgets: populatedBudgets
+      };
+
       const dateStr = new Date().toISOString().split("T")[0];
-      downloadJsonFile(backup, `finova_backup_${dateStr}.json`);
+      downloadJsonFile(fullBackup, `finova_backup_${dateStr}.json`);
       setDataStatus(t('settings.exportSuccess'));
       showToast(t('settings.exportSuccess'), 'success');
       setExportModalOpen(false);
@@ -306,20 +365,49 @@ const Settings = () => {
         setIsImporting(true);
         setDataStatus(t('settings.importReading'));
 
-        let importedData;
+        let txList = [];
+        let debtsList = [];
+        let budgetsList = [];
+
         if (fileType === 'csv') {
           const text = event.target.result;
-          const normalizedRows = parseAndNormalizeCsv(text);
-          if (!normalizedRows || normalizedRows.length === 0) {
-            throw new Error(t('settings.importCsvError'));
-          }
-          importedData = normalizedRows;
+          const parsed = parseAndNormalizeCsv(text);
+          txList = parsed.transactions || [];
+          debtsList = parsed.debts || [];
+          budgetsList = parsed.budgets || [];
         } else {
-          importedData = JSON.parse(event.target.result);
+          const parsedJson = JSON.parse(event.target.result);
+          if (Array.isArray(parsedJson)) {
+            txList = parsedJson;
+          } else {
+            txList = parsedJson.transactions || [];
+            debtsList = parsedJson.debts || [];
+            budgetsList = parsedJson.budgets || [];
+          }
         }
 
-        await importTransactions(importedData);
-        let msg = t('settings.importSuccessMsg');
+        if (txList.length === 0 && debtsList.length === 0 && budgetsList.length === 0) {
+          throw new Error(t('settings.importCsvError'));
+        }
+
+        const promises = [];
+        if (txList.length > 0) {
+          promises.push(importTransactions(txList));
+        }
+        if (debtsList.length > 0) {
+          promises.push(importDebts(debtsList));
+        }
+        if (budgetsList.length > 0) {
+          promises.push(budgetService.importBudgets(budgetsList));
+        }
+
+        await Promise.all(promises);
+
+        const msg = t('settings.importDetailedSuccess', {
+          transactions: txList.length,
+          debts: debtsList.length,
+          budgets: budgetsList.length
+        });
         setDataStatus(msg);
         showToast(msg, 'success');
         fetchData();

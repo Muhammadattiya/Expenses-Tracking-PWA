@@ -916,6 +916,7 @@ export default {
     "importReading": "جارٍ قراءة واستيراد الملف...",
     "importCsvError": "ملف CSV فارغ أو غير صالح.",
     "importSuccessMsg": "تم استيراد المعاملات بنجاح.",
+    "importDetailedSuccess": "تم الاستيراد بنجاح: {{transactions}} معاملة، و {{debts}} دين، و {{budgets}} ميزانية.",
     "importFormatError": "تأكد من أن الملف بصيغة صالحة (JSON أو CSV).",
     "pushDesc": "احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.",
     "pushActivateBtn": "تفعيل استلام الإشعارات على هذا الجهاز",
