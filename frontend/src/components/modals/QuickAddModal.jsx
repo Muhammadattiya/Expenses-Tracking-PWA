@@ -80,11 +80,17 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
       textAreaRef.current?.focus();
     });
     return () => window.cancelAnimationFrame(id);
-  }, [isOpen, isSupported, startListening]);
+  }, [isOpen, isSupported]);
 
   useEffect(() => {
     if (!isOpen || !speechError) return;
-    showToast(t('quickAdd.speechError'), 'warning');
+    if (speechError === 'not-allowed') {
+      showToast(t('quickAdd.micPermissionDenied'), 'error');
+    } else if (speechError === 'network') {
+      showToast(t('quickAdd.speechNetworkError'), 'error');
+    } else {
+      showToast(t('quickAdd.speechError'), 'warning');
+    }
   }, [speechError, isOpen, showToast, t]);
 
   useEffect(() => {
@@ -111,10 +117,11 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   }, [isOpen]);
   
   useEffect(() => {
-     if (isListening) {
-        setTextInput(transcript + interimTranscript);
-     }
-  }, [transcript, interimTranscript, isListening]);
+    const combined = (transcript + (interimTranscript ? ' ' + interimTranscript : '')).trim();
+    if (combined) {
+      setTextInput(combined);
+    }
+  }, [transcript, interimTranscript]);
   
   const handleParse = async () => {
     if (!textInput.trim()) return;
@@ -227,19 +234,31 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                   <button
                     type="button"
                     onClick={() => handleToggleVoiceLang('ar-EG')}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
-                      voiceLang.startsWith('ar')
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+                      voiceLang === 'ar-EG'
                         ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
                         : 'text-white/50 hover:text-white/80'
                     }`}
-                    aria-label={t('quickAdd.langArabic')}
+                    aria-label={t('quickAdd.langEgyptian')}
                   >
-                    عربي
+                    مصري
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVoiceLang('ar-SA')}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+                      voiceLang === 'ar-SA'
+                        ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
+                        : 'text-white/50 hover:text-white/80'
+                    }`}
+                    aria-label={t('quickAdd.langStandardArabic')}
+                  >
+                    عام
                   </button>
                   <button
                     type="button"
                     onClick={() => handleToggleVoiceLang('en-US')}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200 ${
                       voiceLang === 'en-US'
                         ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
                         : 'text-white/50 hover:text-white/80'
@@ -294,8 +313,12 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" />
                     {t('quickAdd.listening')}
                   </p>
-                  <span className="text-[11px] text-white/50 font-medium">
-                    {voiceLang.startsWith('ar') ? `🇪🇬 ${t('quickAdd.langArabic')}` : `🇺🇸 ${t('quickAdd.langEnglish')}`}
+                  <span className="text-[11px] text-white/60 font-medium">
+                    {voiceLang === 'ar-EG'
+                      ? `🇪🇬 ${t('quickAdd.langEgyptian')}`
+                      : voiceLang === 'ar-SA'
+                      ? `🇸🇦 ${t('quickAdd.langStandardArabic')}`
+                      : `🇺🇸 ${t('quickAdd.langEnglish')}`}
                   </span>
                 </div>
               )}
