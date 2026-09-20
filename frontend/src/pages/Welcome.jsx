@@ -91,7 +91,7 @@ export default function Welcome() {
           transition={{ delay: 0.2, duration: 0.6 }}
           className="flex flex-col items-center mt-3 text-center px-4"
         >
-          <h1 className="font-bold text-[40px] sm:text-[46px] text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/80 leading-none tracking-tight drop-shadow-sm">
+          <h1 className="font-bold text-[40px] sm:text-[46px] text-white leading-none tracking-tight drop-shadow-sm">
             Finova
           </h1>
           <p className="font-medium text-[15px] sm:text-[16px] text-white/70 tracking-wide mt-2 max-w-[280px]">
