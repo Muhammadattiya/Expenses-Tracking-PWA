@@ -24,8 +24,17 @@ export default function Signup() {
     setLoading(true);
     setError('');
     
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (password.length < 8) {
+      setError(t('auth.passwordMinLength'));
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const result = await registerUser({ name, email, password });
+      const result = await registerUser({ name: cleanName, email: cleanEmail, password });
       await handleUserSessionTransition(result.user);
       localStorage.setItem('auth_user', JSON.stringify(result.user));
       window.location.assign('/'); 
@@ -117,6 +126,7 @@ export default function Signup() {
                 id="signup-password"
                 type={showPassword ? "text" : "password"}
                 required 
+                minLength={8}
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

@@ -23,8 +23,10 @@ export default function Login() {
     setLoading(true);
     setError('');
     
+    const cleanEmail = email.trim().toLowerCase();
+    
     try {
-      const result = await loginUser({ email, password });
+      const result = await loginUser({ email: cleanEmail, password });
       await handleUserSessionTransition(result.user);
       localStorage.setItem('auth_user', JSON.stringify(result.user));
       window.location.assign('/'); 

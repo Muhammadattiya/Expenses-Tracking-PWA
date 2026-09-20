@@ -69,7 +69,7 @@ export default function GoogleLoginButton() {
           whileTap={{ scale: 0.95 }} 
           className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-[40px] border border-white/10 border-t-white/20 border-s-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141115]"
           aria-label="Sign in with Apple"
-          onClick={() => alert(t('auth.appleComingSoon', 'Apple Sign-In is coming soon'))}
+          onClick={() => setSignInError(t('auth.appleComingSoon', 'Apple Sign-In is coming soon'))}
         >
           <img src="/images/apple_icon.png" alt="Apple" className="w-[18px] h-[18px] object-contain" />
         </motion.button>

@@ -16,7 +16,8 @@ export default {
     "appleComingSoon": "تسجيل الدخول عبر Apple قريباً",
     "signupError": "تعذر إكمال إنشاء الحساب. تأكد أن الخادم يعمل ثم حاول مجددًا.",
     "showPassword": "إظهار كلمة المرور",
-    "hidePassword": "إخفاء كلمة المرور"
+    "hidePassword": "إخفاء كلمة المرور",
+    "passwordMinLength": "كلمة المرور يجب أن تتكون من 8 أحرف على الأقل."
   },
   "onboarding": {
     "screen1Title": "فلوسك",

@@ -16,7 +16,8 @@ export default {
     "appleComingSoon": "Apple Sign-In is coming soon",
     "signupError": "Unable to complete sign-up. Please ensure the server is running and try again.",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "passwordMinLength": "Password must be at least 8 characters."
   },
   "onboarding": {
     "screen1Title": "Your expenses tell a story.",
