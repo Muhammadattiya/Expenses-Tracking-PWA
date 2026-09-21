@@ -244,7 +244,7 @@ export default function Onboarding() {
           transition={{ duration: 0.35, type: 'spring', bounce: 0 }}
           className="flex-1 flex flex-col w-full min-h-0 overflow-hidden"
         >
-          <div className="fixed inset-0 h-[50dvh] my-auto w-full overflow-hidden flex-1 flex flex-col min-h-0 relative z-20 hide-scrollbar">
+          <div className="fixed inset-0 h-[100dvh] my-auto w-full overflow-hidden flex-1 flex flex-col min-h-0 relative z-20 hide-scrollbar">
             {stepData.type === 'income_profile' ? (
               <IncomeProfileStep stepData={stepData} handleNext={handleNext} setLoadingGlobal={setLoading} setIsOverlayActive={setIsOverlayActive} onRegisterNext={setNextAction} />
             ) : stepData.type === 'tracking_cycle' ? (
