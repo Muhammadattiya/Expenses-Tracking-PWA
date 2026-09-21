@@ -51,6 +51,10 @@ db.version(8).stores({
   await tx.syncQueue.clear();
 });
 
+db.version(9).stores({
+  accounts: '_id, userId, name, type, order',
+  categories: '_id, userId, name, type, order'
+});
 
 export async function clearOfflineData() {
   await db.transactions.clear();

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic, ShieldCheck, ShieldAlert, AlertTriangle, Wallet, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic, ShieldCheck, ShieldAlert, AlertTriangle, Wallet, Sparkles, TrendingUp, Coins, LineChart, Banknote } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
@@ -55,6 +55,7 @@ const Dashboard = () => {
       return cached ? Number(cached) : 0;
     } catch (e) { return 0; }
   });
+  const [allInvestments, setAllInvestments] = useState([]);
   const [uncategorizedTransactions, setUncategorizedTransactions] = useState([]);
   const [skippedTransactionIds, setSkippedTransactionIds] = useState(new Set());
   const [accounts, setAccounts] = useState([]);
@@ -173,6 +174,7 @@ const Dashboard = () => {
       }
       
       if (investmentsData && investmentsData.length > 0) {
+        setAllInvestments(investmentsData);
         let invValue = 0;
         investmentsData.forEach(inv => {
           if (inv.type === 'gold' && goldPriceData) {
@@ -189,6 +191,8 @@ const Dashboard = () => {
             localStorage.setItem(`finova_cache_investments_val_${activeUser}`, String(invValue));
           }
         } catch(e){}
+      } else {
+        setAllInvestments([]);
       }
       if (survivalData) {
         setSurvival(survivalData);
@@ -297,8 +301,10 @@ const Dashboard = () => {
       }
     });
 
+    const isInvAcc = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
+
     const getAccountBalance = (account) => {
-      if (account.type === 'investment') return investmentsValue;
+      if (isInvAcc(account)) return investmentsValue;
       let bal = Number(account.balance_adjustment) || 0;
       const targetId = account._id?.toString();
 
@@ -507,6 +513,12 @@ const Dashboard = () => {
     return { groupedTransactions: grouped, sortedDates: sorted, groupCounts: counts, groupOffsets: offsets };
   }, [displayedTransactions, selectedAccount]);
 
+  const isSelectedAccountInvestment = useMemo(() => {
+    if (selectedAccount === 'all') return false;
+    const acc = accounts.find(a => a._id === selectedAccount);
+    return acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات';
+  }, [selectedAccount, accounts]);
+
   const handleTransactionClick = (transaction) => {
     if (transaction.isDebt) {
       triggerHaptic('selection');
@@ -609,7 +621,15 @@ const Dashboard = () => {
                   {/* Bank/Account Name and Icon */}
                   <div className="flex justify-between items-center w-full">
                     <h2 className="text-white/90 text-xl font-medium tracking-wide">
-                      {selectedAccount === 'all' ? t('common.allAccounts') : accounts.find(a => a._id === selectedAccount)?.name}
+                      {selectedAccount === 'all' 
+                        ? t('common.allAccounts') 
+                        : (() => {
+                            const acc = accounts.find(a => a._id === selectedAccount);
+                            return (acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات') 
+                              ? t('settings.investmentsAccount') 
+                              : acc?.name;
+                          })()
+                      }
                     </h2>
                     
                     {/* Selected Account Icon */}
@@ -619,7 +639,9 @@ const Dashboard = () => {
                            color: selectedAccount === 'all' ? '#8D6346' : accounts.find(a => a._id === selectedAccount)?.color || '#8D6346' 
                          }}>
                       {(() => {
-                        const iconName = selectedAccount === 'all' ? 'Globe' : accounts.find(a => a._id === selectedAccount)?.icon;
+                        const acc = accounts.find(a => a._id === selectedAccount);
+                        const isInv = acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات';
+                        const iconName = selectedAccount === 'all' ? 'Globe' : isInv ? 'TrendingUp' : (acc?.icon || 'Wallet');
                         const Icon = LucideIcons[iconName] || LucideIcons.Wallet;
                         return <Icon className="w-6 h-6" />;
                       })()}
@@ -850,14 +872,67 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* If selectedAccount is an Investment Account, show a clean, sleek direct shortcut to the Investments Portfolio */}
+        {isSelectedAccountInvestment && (
+          <motion.div 
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              triggerHaptic('light');
+              navigate('/investments');
+            }}
+            className="w-full relative overflow-hidden rounded-[26px] p-5 cursor-pointer border mb-4 group liquidglass"
+            style={{
+              background: 'linear-gradient(145deg, rgba(42, 30, 26, 0.85) 0%, rgba(20, 16, 18, 0.95) 100%)',
+              borderColor: 'rgba(232, 197, 168, 0.35)',
+              backdropFilter: 'blur(40px) saturate(1.45)',
+              WebkitBackdropFilter: 'blur(40px) saturate(1.45)',
+              boxShadow: 'inset 0 1px 2px rgba(232,197,168,0.2), 0 16px 40px rgba(0,0,0,0.55), 0 2px 10px rgba(141,99,70,0.2)'
+            }}
+          >
+            {/* Top Subtle Shimmer */}
+            <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8C5A8]/50 to-transparent pointer-events-none" />
+
+            <div className="flex items-center justify-between w-full gap-4">
+              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2.5">
+                  <TrendingUp className="w-5 h-5 text-[#E8C5A8] shrink-0" />
+                  <h3 className="text-white font-bold text-base sm:text-lg tracking-wide drop-shadow-sm">
+                    {t('investments.portfolioHoldings')}
+                  </h3>
+                </div>
+                <p className="text-white/80 text-xs sm:text-[13px] leading-relaxed max-w-sm sm:max-w-md font-medium">
+                  {t('investments.portfolioBannerDesc')}
+                </p>
+                <div className="inline-flex items-center gap-1.5 mt-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#8D6346]/40 to-[#8D6346]/25 hover:from-[#8D6346]/55 hover:to-[#8D6346]/35 border border-[#E8C5A8]/40 text-[#E8C5A8] text-xs font-bold self-start shadow-sm transition-all">
+                  <span>{t('investments.viewPortfolio')}</span>
+                  <ChevronRight className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+
+              {/* Ambient Glow Icon on right */}
+              <div className="relative flex items-center justify-center shrink-0">
+                <motion.div
+                  animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.35, 0.15] }}
+                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                  className="absolute w-12 h-12 rounded-full bg-[#8D6346] blur-md pointer-events-none"
+                />
+                <div className="relative w-12 h-12 rounded-2xl bg-black/40 border border-white/15 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                  <TrendingUp className="w-6 h-6 text-[#E8C5A8] drop-shadow-[0_0_10px_rgba(232,197,168,0.5)]" />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Transactions List */}
         <div className="w-full">
            <h2 className="text-white font-extrabold text-[22px] mb-4 pl-2 drop-shadow-md">{t('dashboard.transactionHistory') || 'Transaction History'}</h2>
-           {displayedTransactions.length === 0 ? (
-             <div className="text-center text-white/50 py-12 bg-white/5 rounded-[2rem] font-medium flex flex-col items-center gap-3">
-               <p>{t('dashboard.noTransactions')}</p>
-             </div>
-           ) : (
+             {displayedTransactions.length === 0 ? (
+               <div className="text-center text-white/50 py-12 bg-white/5 rounded-[2rem] font-medium flex flex-col items-center gap-3">
+                 <p>{t('dashboard.noTransactions')}</p>
+               </div>
+             ) : (
              <GroupedVirtuoso
                useWindowScroll
                groupCounts={groupCounts}
@@ -921,9 +996,9 @@ const Dashboard = () => {
                    </div>
                  );
                }}
-             />
-           )}
-        </div>
+              />
+            )}
+          </div>
       </div>
 
       <EditTransactionModal

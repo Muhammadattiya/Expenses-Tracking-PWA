@@ -4,11 +4,11 @@ const { classifyCategoryIntent } = require("./categoryIntentClassifier");
 const { INTENTS } = require("./quickAdd/intentTaxonomy");
 
 const getCategories = async (userId) => {
-  return Category.find({ user: userId }).sort({ type: 1, name: 1 }).lean();
+  return Category.find({ user: userId }).sort({ type: 1, order: 1, createdAt: 1 }).lean();
 };
 
 // Whitelist allowed fields to prevent mass assignment
-const CATEGORY_ALLOWED_KEYS = ['name', 'type', 'icon', 'color', 'intentId'];
+const CATEGORY_ALLOWED_KEYS = ['name', 'type', 'icon', 'color', 'intentId', 'order'];
 const pickCategoryFields = (data) => {
   const safe = {};
   for (const key of CATEGORY_ALLOWED_KEYS) {
@@ -21,6 +21,10 @@ const createCategory = async (userId, data) => {
   const safeData = pickCategoryFields(data);
   if (safeData.name) {
     safeData.intentId = classifyCategoryIntent(safeData.name) || null;
+  }
+  if (safeData.order === undefined && safeData.type) {
+    const lastCategory = await Category.findOne({ user: userId, type: safeData.type }).sort({ order: -1 }).select('order').lean();
+    safeData.order = (lastCategory && typeof lastCategory.order === 'number') ? lastCategory.order + 1 : 0;
   }
   const category = new Category({ ...safeData, user: userId });
   return await category.save();
@@ -76,9 +80,26 @@ const hasTransactions = await Transaction.exists({
   await Category.deleteOne({ _id: id, user: userId });
 };
 
+const reorderCategories = async (userId, orderedIds) => {
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return getCategories(userId);
+  }
+
+  const bulkOps = orderedIds.map((id, index) => ({
+    updateOne: {
+      filter: { _id: id, user: userId },
+      update: { $set: { order: index } }
+    }
+  }));
+
+  await Category.bulkWrite(bulkOps);
+  return getCategories(userId);
+};
+
 module.exports = {
   getCategories,
   createCategory,
   updateCategory,
   deleteCategory,
+  reorderCategories,
 };

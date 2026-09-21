@@ -53,9 +53,26 @@ const deleteCategory = async (req, res, next) => {
   }
 };
 
+const reorderCategories = async (req, res, next) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({
+        message: "orderedIds must be an array of category IDs."
+      });
+    }
+
+    const categories = await categoryService.reorderCategories(req.user.id, orderedIds);
+    res.status(200).json(categories);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCategories,
   createCategory,
   updateCategory,
   deleteCategory,
+  reorderCategories,
 };

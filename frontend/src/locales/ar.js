@@ -501,7 +501,14 @@ export default {
     "holdingsBreakdown": "توزيع الأصول",
     "stocks": "الأسهم",
     "real_estate": "العقارات",
-    "crypto": "العملات الرقمية"
+    "crypto": "العملات الرقمية",
+    "viewPortfolio": "عرض المحفظة الاستثمارية",
+    "viewInvestmentPortfolio": "عرض المحفظة الاستثمارية",
+    "portfolioHoldings": "أصول المحفظة",
+    "portfolioBannerDesc": "متابعة وإدارة جميع أصولك واستثماراتك في الذهب والأسهم والعملات.",
+    "investmentsCount": "{count} استثمارات",
+    "noHoldingsYet": "لا توجد استثمارات في المحفظة حالياً.",
+    "investmentAccountNotice": "هذا الحساب يتابع قيمة محفظتك الاستثمارية. تسجيل الشراء بالخصم من حساب آخر يظهر كمعاملة هنا."
   },
   "receivables": {
     "loadError": "تعذر تحميل المبالغ المستحقة.",
@@ -932,6 +939,10 @@ export default {
     "pushDesc": "احصل على تنبيهات وإشعارات حتى لو كان التطبيق مغلقاً.",
     "pushActivateBtn": "تفعيل استلام الإشعارات على هذا الجهاز",
     "accountsTitle": "الحسابات",
+    "arrange": "ترتيب",
+    "doneArranging": "تم",
+    "reorderSuccess": "تم حفظ الترتيب بنجاح",
+    "reorderError": "تعذر حفظ الترتيب",
     "cash": "كاش",
     "bank": "بنك",
     "wallet": "محفظة",

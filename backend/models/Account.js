@@ -49,6 +49,10 @@ const accountSchema = new mongoose.Schema({
     trim: true,
     match: [/^\d{4}$/, 'Card must be exactly 4 digits']
   },
+  order: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -57,5 +61,6 @@ const accountSchema = new mongoose.Schema({
 
 accountSchema.index({ user: 1, name: 1 }, { unique: true });
 accountSchema.index({ user: 1, type: 1 });
+accountSchema.index({ user: 1, order: 1 });
 
 module.exports = mongoose.model('Account', accountSchema);
