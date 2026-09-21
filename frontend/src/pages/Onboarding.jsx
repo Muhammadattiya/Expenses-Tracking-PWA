@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { completeOnboarding } from '../api/auth';
@@ -104,6 +104,18 @@ export default function Onboarding() {
   const [isOverlayActive, setIsOverlayActive] = useState(false);
   const [nextAction, setNextAction] = useState(null);
 
+  // Lock document scroll on iOS Safari while on onboarding screen
+  useEffect(() => {
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+    };
+  }, []);
+
   const handleNext = async () => {
     if (nextAction) {
       setLoading(true);
@@ -173,33 +185,31 @@ export default function Onboarding() {
   const isRTL = language === 'ar';
   const stepData = onboardingSteps[currentStep];
 
-  // Normal document flow layout — same approach as Layout.jsx, AuthLayout.jsx,
-  // and every other page in the app. No fixed positioning, no portals.
   return (
-    <main className="relative w-full min-h-screen bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
+    <main className="relative w-full h-[100dvh] max-h-[100dvh] bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
 
       {/* Background Glowing Ambient Spheres Contained */}
-      <div className="absolute pointer-events-none -z-20relative w-full overflow-hidden select-none flex flex-col hide-scrollbar">
-        <div className="relative w-full min-h-screen bg-[#8D6346] opacity-15 blur-[120px] rounded-full" />
-        <div className="relative w-full min-h-screen bg-[#8D6346] opacity-20 blur-[140px] rounded-full" />
-        <div className="relative w-full min-h-screen bg-[#8D6346] opacity-15 blur-[150px] rounded-full" />
+      <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden select-none">
+        <div className="absolute -top-16 -left-16 w-72 h-72 bg-[#8D6346] opacity-35 blur-[100px] rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#8D6346] opacity-25 blur-[120px] rounded-full" />
+        <div className="absolute -bottom-16 -right-16 w-72 h-72 bg-[#8D6346] opacity-30 blur-[110px] rounded-full" />
       </div>
 
       {/* Top Bar with Skip/Next Arrow */}
       {!isOverlayActive && (
-        <header className="relative top-0 left-0 right-0 pt-[max(1.5rem,env(safe-area-inset-top))] px-6 z-30 flex justify-between items-center shrink-0">
+        <header className="relative top-0 left-0 right-0 pt-[max(0.75rem,env(safe-area-inset-top))] px-5 pb-1 z-30 flex justify-between items-center shrink-0">
           {currentStep > 0 ? (
             <motion.button
               type="button"
               whileTap={{ scale: 0.95 }}
               onClick={handleBack}
               aria-label={t('common.previous', 'Previous step')}
-              className="w-12 h-12 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
+              className="w-11 h-11 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
             >
-              <ArrowLeft size={20} className={`text-white/90 ${isRTL ? 'rotate-180' : ''}`} />
+              <ArrowLeft size={19} className={`text-white/90 ${isRTL ? 'rotate-180' : ''}`} />
             </motion.button>
           ) : (
-            <div className="w-12 h-12" />
+            <div className="w-11 h-11" />
           )}
 
           <motion.button
@@ -214,21 +224,21 @@ export default function Onboarding() {
                   ? t('onboarding.skip')
                   : t('common.next', 'Next step')
             }
-            className={`h-12 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors z-50 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${currentStep === onboardingSteps.length - 1
-              ? 'px-6 bg-[#8D6346] hover:bg-[#a67a5b] border-white/20'
+            className={`h-11 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors z-50 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${currentStep === onboardingSteps.length - 1
+              ? 'px-5 bg-[#8D6346] hover:bg-[#a67a5b] border-white/20'
               : stepData.type === 'income_profile'
-                ? 'px-4 w-auto min-w-[54px]'
-                : 'w-12'
+                ? 'px-4 w-auto min-w-[50px]'
+                : 'w-11'
               }`}
           >
             {loading ? (
-              <Loader2 size={20} className="animate-spin text-white/90" />
+              <Loader2 size={19} className="animate-spin text-white/90" />
             ) : currentStep === onboardingSteps.length - 1 ? (
-              <span className="text-white font-bold text-[14px] font-['Exo_2']">{t('onboarding.finish')}</span>
+              <span className="text-white font-bold text-[13.5px] font-['Exo_2']">{t('onboarding.finish')}</span>
             ) : stepData.type === 'income_profile' ? (
-              <span className="text-white/90 text-[14px] font-medium font-['Exo_2']">{t('onboarding.skip')}</span>
+              <span className="text-white/90 text-[13.5px] font-medium font-['Exo_2']">{t('onboarding.skip')}</span>
             ) : (
-              <ArrowRight size={20} className={`text-white/90 ${isRTL ? 'rotate-180' : ''}`} />
+              <ArrowRight size={19} className={`text-white/90 ${isRTL ? 'rotate-180' : ''}`} />
             )}
           </motion.button>
         </header>
@@ -244,124 +254,122 @@ export default function Onboarding() {
           transition={{ duration: 0.35, type: 'spring', bounce: 0 }}
           className="flex-1 flex flex-col w-full min-h-0 overflow-hidden"
         >
-          <div className="fixed inset-0 h-[100dvh] my-auto w-full overflow-hidden flex-1 flex flex-col min-h-0 relative z-20 hide-scrollbar">
-            {stepData.type === 'income_profile' ? (
-              <IncomeProfileStep stepData={stepData} handleNext={handleNext} setLoadingGlobal={setLoading} setIsOverlayActive={setIsOverlayActive} onRegisterNext={setNextAction} />
-            ) : stepData.type === 'tracking_cycle' ? (
-              <TrackingCycleStep stepData={stepData} onRegisterNext={setNextAction} setLoadingGlobal={setLoading} />
-            ) : stepData.type === 'setup_initial_data' ? (
-              <SetupInitialDataStep stepData={stepData} handleNext={handleNext} />
-            ) : stepData.type === 'nova_agent_mockup' ? (
-              <NovaAgentMockupStep stepData={stepData} />
-            ) : stepData.type === 'smart_budget_mockup' ? (
-              <SmartBudgetMockupStep stepData={stepData} />
-            ) : stepData.type === 'effortless_tracking_mockup' ? (
-              <EffortlessTrackingStep stepData={stepData} />
-            ) : stepData.type === 'push_notifications' ? (
-              <PushNotificationsStep stepData={stepData} onRegisterNext={setNextAction} setLoadingGlobal={setLoading} />
-            ) : stepData.type === 'voice_mockup' ? (
-              <VoiceMockupStep stepData={stepData} />
-            ) : currentStep === 1 ? (
-              /* Step 2: Make It to Payday */
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pb-4 px-6 z-10 w-full max-w-md mx-auto">
-                <div className="flex-1 min-h-0 flex items-center justify-center relative w-full pt-4">
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0, y: 50 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, type: 'spring' }}
-                    className="w-full max-w-[280px] aspect-square relative flex items-center justify-center"
-                  >
-                    <div className="absolute inset-4 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/15 to-transparent blur-[50px] rounded-full -z-10" />
-                    <motion.img
-                      src={stepData.image}
-                      alt="Payday Prediction"
-                      width={240}
-                      height={240}
-                      style={{ transform: 'rotate(39.01deg)' }}
-                      className="max-w-full max-h-full object-contain"
-                      animate={stepData.floatingAnimation && !shouldReduceMotion ? { y: [0, -8, 0] } : {}}
-                      transition={stepData.floatingAnimation && !shouldReduceMotion ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
-                    />
-
-                    {/* Integrated Cash Flow Prediction Card - Completely Upright and Sharp */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3, duration: 0.4 }}
-                      className="absolute -bottom-2 inset-x-0 bg-[#1F1918]/90 backdrop-blur-2xl border border-white/20 rounded-2xl p-3 shadow-[0_12px_32px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.25)] flex items-center justify-between z-20"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="size-8 rounded-xl bg-[#8D6346]/50 flex items-center justify-center text-[#E8C5A8] shadow-inner border border-white/10">
-                          <span className="text-sm font-bold">✦</span>
-                        </div>
-                        <div className="flex flex-col text-start">
-                          <span className="text-[10px] text-white/60 font-medium font-['Exo_2']">{isRTL ? 'توقع التدفق النقدي' : 'Cash Flow Prediction'}</span>
-                          <span className="text-[13.5px] font-bold text-white font-['Exo_2'] tabular-nums tracking-tight">{isRTL ? 'الراتب بعد 14 يوم' : 'Payday in 14 days'}</span>
-                        </div>
-                      </div>
-                      <div className="px-2.5 py-1 rounded-full bg-[#34C759]/20 border border-[#34C759]/40 text-[#34C759] text-[10.5px] font-bold flex items-center gap-1.5 shadow-sm">
-                        <span className="size-1.5 rounded-full bg-[#34C759] animate-pulse" />
-                        <span>{isRTL ? 'آمن ومستقر' : 'On Track'}</span>
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                </div>
-
-                {/* Pure Floating Typography - No Enclosing Container */}
+          {stepData.type === 'income_profile' ? (
+            <IncomeProfileStep stepData={stepData} handleNext={handleNext} setLoadingGlobal={setLoading} setIsOverlayActive={setIsOverlayActive} onRegisterNext={setNextAction} />
+          ) : stepData.type === 'tracking_cycle' ? (
+            <TrackingCycleStep stepData={stepData} onRegisterNext={setNextAction} setLoadingGlobal={setLoading} />
+          ) : stepData.type === 'setup_initial_data' ? (
+            <SetupInitialDataStep stepData={stepData} handleNext={handleNext} />
+          ) : stepData.type === 'nova_agent_mockup' ? (
+            <NovaAgentMockupStep stepData={stepData} />
+          ) : stepData.type === 'smart_budget_mockup' ? (
+            <SmartBudgetMockupStep stepData={stepData} />
+          ) : stepData.type === 'effortless_tracking_mockup' ? (
+            <EffortlessTrackingStep stepData={stepData} />
+          ) : stepData.type === 'push_notifications' ? (
+            <PushNotificationsStep stepData={stepData} onRegisterNext={setNextAction} setLoadingGlobal={setLoading} />
+          ) : stepData.type === 'voice_mockup' ? (
+            <VoiceMockupStep stepData={stepData} />
+          ) : currentStep === 1 ? (
+            /* Step 2: Make It to Payday */
+            <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-1 px-4 sm:px-6 z-10 w-full max-w-md mx-auto">
+              <div className="flex-1 min-h-0 flex items-center justify-center relative w-full py-1">
                 <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                  className="w-full max-w-[340px] px-1 text-start shrink-0 mt-2 bg-transparent"
+                  initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, type: 'spring' }}
+                  className="w-full max-w-[250px] aspect-square relative flex items-center justify-center"
                 >
-                  <h2 className="font-['Exo_2'] font-bold text-white text-[22px] sm:text-[24px] leading-tight tracking-tight mb-2">
-                    {t(stepData.titleKey, stepData.defaultTitle)}
-                  </h2>
-                  <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[15px] leading-relaxed">
-                    {t(stepData.descKey, stepData.defaultDesc)}
-                  </p>
+                  <div className="absolute inset-2 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/15 to-transparent blur-[40px] rounded-full -z-10" />
+                  <motion.img
+                    src={stepData.image}
+                    alt="Payday Prediction"
+                    width={210}
+                    height={210}
+                    style={{ transform: 'rotate(39.01deg)' }}
+                    className="max-w-full max-h-full object-contain drop-shadow-md"
+                    animate={stepData.floatingAnimation && !shouldReduceMotion ? { y: [0, -6, 0] } : {}}
+                    transition={stepData.floatingAnimation && !shouldReduceMotion ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
+                  />
+
+                  {/* Integrated Cash Flow Prediction Card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.4 }}
+                    className="absolute -bottom-1 inset-x-0 bg-[#1F1918]/90 backdrop-blur-2xl border border-white/20 rounded-2xl p-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.25)] flex items-center justify-between z-20"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="size-7 rounded-xl bg-[#8D6346]/50 flex items-center justify-center text-[#E8C5A8] shadow-inner border border-white/10">
+                        <span className="text-xs font-bold">✦</span>
+                      </div>
+                      <div className="flex flex-col text-start">
+                        <span className="text-[9.5px] text-white/60 font-medium font-['Exo_2']">{isRTL ? 'توقع التدفق النقدي' : 'Cash Flow Prediction'}</span>
+                        <span className="text-[12.5px] font-bold text-white font-['Exo_2'] tabular-nums tracking-tight">{isRTL ? 'الراتب بعد 14 يوم' : 'Payday in 14 days'}</span>
+                      </div>
+                    </div>
+                    <div className="px-2 py-0.5 rounded-full bg-[#34C759]/20 border border-[#34C759]/40 text-[#34C759] text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                      <span className="size-1.5 rounded-full bg-[#34C759] animate-pulse" />
+                      <span>{isRTL ? 'آمن ومستقر' : 'On Track'}</span>
+                    </div>
+                  </motion.div>
                 </motion.div>
               </div>
-            ) : (
-              /* Step 1: Welcome */
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pb-4 px-6 z-10 w-full max-w-md mx-auto">
-                <div className="flex-1 min-h-0 flex items-center justify-center relative w-full pt-4">
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0, y: 50 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, type: 'spring' }}
-                    className="w-full max-w-[280px] aspect-square relative flex items-center justify-center"
-                  >
-                    <div className="absolute inset-4 bg-gradient-to-tr from-[#8D6346]/45 via-[#E8C5A8]/20 to-transparent blur-[60px] rounded-full -z-10" />
-                    <motion.img
-                      src={stepData.image}
-                      alt="Finova"
-                      width={240}
-                      height={240}
-                      className="max-w-full max-h-full object-contain"
-                      animate={stepData.floatingAnimation && !shouldReduceMotion ? { y: [0, -8, 0] } : {}}
-                      transition={stepData.floatingAnimation && !shouldReduceMotion ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
-                    />
-                  </motion.div>
-                </div>
 
-                {/* Pure Floating Typography - No Enclosing Container */}
+              {/* Pure Floating Typography */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="w-full max-w-[340px] px-1 text-start shrink-0 my-1 bg-transparent"
+              >
+                <h2 className="font-['Exo_2'] font-bold text-white text-[21px] sm:text-[23px] leading-tight tracking-tight mb-1.5">
+                  {t(stepData.titleKey, stepData.defaultTitle)}
+                </h2>
+                <p className="font-['Exo_2'] font-normal text-white/85 text-[13.5px] sm:text-[14.5px] leading-relaxed">
+                  {t(stepData.descKey, stepData.defaultDesc)}
+                </p>
+              </motion.div>
+            </div>
+          ) : (
+            /* Step 1: Welcome */
+            <div className="flex-1 min-h-0 flex flex-col items-center justify-between py-1 px-4 sm:px-6 z-10 w-full max-w-md mx-auto">
+              <div className="flex-1 min-h-0 flex items-center justify-center relative w-full py-1">
                 <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                  className="w-full max-w-[340px] px-1 text-start shrink-0 mt-2 bg-transparent"
+                  initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, type: 'spring' }}
+                  className="w-full max-w-[250px] aspect-square relative flex items-center justify-center"
                 >
-                  <h2 className="font-['Exo_2'] font-bold text-white text-[22px] sm:text-[24px] leading-tight tracking-tight mb-2">
-                    {t(stepData.titleKey, stepData.defaultTitle)}
-                  </h2>
-                  <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[15px] leading-relaxed">
-                    {t(stepData.descKey, stepData.defaultDesc)}
-                  </p>
+                  <div className="absolute inset-2 bg-gradient-to-tr from-[#8D6346]/45 via-[#E8C5A8]/20 to-transparent blur-[50px] rounded-full -z-10" />
+                  <motion.img
+                    src={stepData.image}
+                    alt="Finova"
+                    width={210}
+                    height={210}
+                    className="max-w-full max-h-full object-contain"
+                    animate={stepData.floatingAnimation && !shouldReduceMotion ? { y: [0, -6, 0] } : {}}
+                    transition={stepData.floatingAnimation && !shouldReduceMotion ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
+                  />
                 </motion.div>
               </div>
-            )}
-          </div>
+
+              {/* Pure Floating Typography */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="w-full max-w-[340px] px-1 text-start shrink-0 my-1 bg-transparent"
+              >
+                <h2 className="font-['Exo_2'] font-bold text-white text-[21px] sm:text-[23px] leading-tight tracking-tight mb-1.5">
+                  {t(stepData.titleKey, stepData.defaultTitle)}
+                </h2>
+                <p className="font-['Exo_2'] font-normal text-white/85 text-[13.5px] sm:text-[14.5px] leading-relaxed">
+                  {t(stepData.descKey, stepData.defaultDesc)}
+                </p>
+              </motion.div>
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -369,7 +377,7 @@ export default function Onboarding() {
       {!isOverlayActive && (
         <nav
           aria-label="Progress"
-          className="shrink-0 w-full flex justify-center px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 z-20"
+          className="shrink-0 w-full flex justify-center px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 z-20"
         >
           <div
             role="group"
@@ -382,13 +390,13 @@ export default function Onboarding() {
                   key={`active-${idx}`}
                   layoutId="activeDot"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  className="flex-shrink-0 flex items-center justify-center h-[32px] px-6 rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)]"
+                  className="flex-shrink-0 flex items-center justify-center h-[28px] px-5 rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)]"
                 >
                   <motion.span
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1, duration: 0.2 }}
-                    className="font-['Exo_2'] text-[15px] font-medium text-white/90"
+                    className="font-['Exo_2'] text-[13.5px] font-medium text-white/90"
                   >
                     {idx + 1}
                   </motion.span>
@@ -398,7 +406,7 @@ export default function Onboarding() {
                   key={`dot-${idx}`}
                   layout
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  className="h-[8px] flex-1 max-w-[32px] min-w-[8px] rounded-[30px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner"
+                  className="h-[6px] flex-1 max-w-[28px] min-w-[6px] rounded-[30px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner"
                 />
               )
             ))}

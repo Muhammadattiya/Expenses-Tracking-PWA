@@ -10,17 +10,17 @@ const MonthlyCalendar = ({ value, onChange, isRTL, t }) => {
     : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   return (
-    <div className="w-full bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[22px] border border-white/10 p-3 sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.15)]">
+    <div className="w-full bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[22px] border border-white/10 p-2.5 sm:p-3 shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.15)]">
       {/* Day of week column headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="grid grid-cols-7 gap-1 mb-1 text-center" dir={isRTL ? 'rtl' : 'ltr'}>
         {weekDayHeaders.map((head, idx) => (
-          <span key={idx} className="text-[10.5px] font-semibold text-white/40 uppercase tracking-wider">
+          <span key={idx} className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
             {head}
           </span>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="grid grid-cols-7 gap-1" dir={isRTL ? 'rtl' : 'ltr'}>
         {days.map(day => {
           const isSelected = day === value;
           return (
@@ -31,7 +31,7 @@ const MonthlyCalendar = ({ value, onChange, isRTL, t }) => {
               onClick={() => onChange(day)}
               aria-label={`${day} ${t('onboarding.ofEveryMonth')}`}
               aria-pressed={isSelected}
-              className={`w-7 h-7 sm:w-8 sm:h-8 mx-auto rounded-full flex items-center justify-center text-[12px] sm:text-[13px] font-medium transition-all touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
+              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 mx-auto rounded-full flex items-center justify-center text-[11.5px] sm:text-[12px] font-medium transition-all touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
                 isSelected 
                   ? 'bg-[#8D6346] text-white shadow-[0_3px_10px_rgba(141,99,70,0.4),inset_0_1px_1px_rgba(255,255,255,0.2)] font-bold scale-105' 
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
@@ -127,21 +127,21 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pt-12 pb-12 min-h-0 overflow-hidden"
+        className="w-full flex-1 flex flex-col items-center justify-between px-4 sm:px-6 py-1 min-h-0 overflow-hidden"
       >
         {/* Compact Illustration */}
-        <div className="w-full flex justify-center items-center relative shrink-0 mb-3">
+        <div className="w-full flex justify-center items-center relative shrink-0 mb-1.5">
           <motion.div 
-            className="w-[100px] h-[100px] sm:w-[115px] sm:h-[115px] relative flex justify-center items-center"
-            animate={{ y: [0, -6, 0] }}
+            className="w-[80px] h-[80px] sm:w-[96px] sm:h-[96px] relative flex justify-center items-center"
+            animate={{ y: [0, -4, 0] }}
             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/45 via-[#E8C5A8]/15 to-transparent blur-2xl rounded-full -z-10" />
             <img 
               src="/images/onboarding2.png" 
               alt={t('onboarding.trackingIllustrationAlt', 'Tracking cycle illustration')}
-              width={115}
-              height={115}
+              width={96}
+              height={96}
               className="w-full h-full object-contain"
             />
           </motion.div>
@@ -149,16 +149,16 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
 
         {/* Content Area */}
         <div className="flex flex-col w-full max-w-[340px] items-center shrink-0">
-          <h2 className="text-[19px] sm:text-[21px] font-bold text-white text-center font-['Exo_2'] mb-3 leading-snug">
+          <h2 className="text-[18px] sm:text-[20px] font-bold text-white text-center font-['Exo_2'] mb-2 leading-snug">
             {t('onboarding.trackingCycleTitle')}
           </h2>
 
           {/* Segmented Period Switcher */}
-          <div className="w-full max-w-[260px] p-1 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 flex relative mb-3">
+          <div className="w-full max-w-[260px] p-1 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 flex relative mb-2">
             <button
               type="button"
               onClick={() => setPeriod('monthly')}
-              className={`relative flex-1 py-1.5 rounded-full text-[13px] font-semibold transition-colors z-10 font-['Exo_2'] ${
+              className={`relative flex-1 py-1.5 rounded-full text-[12.5px] font-semibold transition-colors z-10 font-['Exo_2'] ${
                 period === 'monthly' ? 'text-white' : 'text-white/50 hover:text-white/80'
               }`}
             >
@@ -174,7 +174,7 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
             <button
               type="button"
               onClick={() => setPeriod('weekly')}
-              className={`relative flex-1 py-1.5 rounded-full text-[13px] font-semibold transition-colors z-10 font-['Exo_2'] ${
+              className={`relative flex-1 py-1.5 rounded-full text-[12.5px] font-semibold transition-colors z-10 font-['Exo_2'] ${
                 period === 'weekly' ? 'text-white' : 'text-white/50 hover:text-white/80'
               }`}
             >
@@ -189,7 +189,7 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
             </button>
           </div>
 
-          <div className="w-full relative min-h-[155px]">
+          <div className="w-full relative min-h-[145px]">
             <AnimatePresence mode="wait">
               {period === 'monthly' ? (
                 <motion.div
@@ -209,9 +209,9 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.25 }}
-                  className="w-full bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[22px] border border-white/10 p-3 sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col gap-2.5"
+                  className="w-full bg-[#2B2321]/30 backdrop-blur-[32px] rounded-[22px] border border-white/10 p-3 sm:p-4 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col gap-2"
                 >
-                  <p className="text-[11.5px] text-white/60 text-center font-['Exo_2']">
+                  <p className="text-[11px] text-white/60 text-center font-['Exo_2']">
                     {isRTL ? 'اختر يوم بدء الدورة الأسبوعية' : 'Select cycle start day'}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -223,7 +223,7 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
                           type="button"
                           whileTap={{ scale: 0.95 }}
                           onClick={() => setWeekDay(opt.value)}
-                          className={`h-9 px-2 rounded-xl text-[12px] font-semibold transition-all flex items-center justify-center gap-1.5 border font-['Exo_2'] ${
+                          className={`h-8.5 px-2 rounded-xl text-[11.5px] font-semibold transition-all flex items-center justify-center gap-1.5 border font-['Exo_2'] ${
                             isSelected
                               ? 'bg-[#8D6346] border-[#8D6346] text-white shadow-[0_2px_10px_rgba(141,99,70,0.4)]'
                               : 'bg-black/20 border-white/5 text-white/65 hover:text-white hover:bg-white/5'
@@ -241,10 +241,10 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
           </div>
 
           {/* Cycle Preview Badge */}
-          <div className="text-center w-full mt-3">
+          <div className="text-center w-full mt-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-              <span className="text-white/50 text-[11px] font-normal font-['Exo_2']">{t('onboarding.currentCycleLabel')}</span>
-              <span className="text-[#E8C5A8] text-[13px] font-bold tracking-tight font-['Exo_2'] tabular-nums">{getCyclePreview()}</span>
+              <span className="text-white/50 text-[10.5px] font-normal font-['Exo_2']">{t('onboarding.currentCycleLabel')}</span>
+              <span className="text-[#E8C5A8] text-[12.5px] font-bold tracking-tight font-['Exo_2'] tabular-nums">{getCyclePreview()}</span>
             </div>
           </div>
         </div>

@@ -13,14 +13,14 @@ export default function SetupInitialDataStep({ stepData }) {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   return (
-    <div className="flex-1 flex flex-col w-full min-h-0 pt-12 pb-12 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex-1 flex flex-col w-full min-h-0 py-1 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Starter Accounts & Categories Canvas */}
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center relative z-10 pt-2">
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center relative z-10 py-1">
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ duration: 0.5, type: 'spring' }}
-          className="w-full max-w-[320px] aspect-[4/3] relative flex items-center justify-center"
+          className="w-full max-w-[290px] aspect-[4/3] relative flex items-center justify-center"
         >
           {/* Ambient Glow (Softened, deep copper, no high-brightness wash) */}
           <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/25 to-transparent blur-2xl rounded-full -z-10 opacity-70" />
@@ -105,12 +105,12 @@ export default function SetupInitialDataStep({ stepData }) {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.4 }}
-        className="w-full max-w-[340px] px-1 text-start shrink-0 my-1.5 bg-transparent"
+        className="w-full max-w-[340px] px-1 text-start shrink-0 my-1 bg-transparent"
       >
         <h2 className="font-['Exo_2'] font-bold text-white text-[21px] sm:text-[23px] leading-tight tracking-tight mb-1.5">
           {t('onboarding.setupInitialDataTitle')}
         </h2>
-        <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[14.5px] leading-relaxed">
+        <p className="font-['Exo_2'] font-normal text-white/85 text-[13.5px] sm:text-[14.5px] leading-relaxed">
           {t('onboarding.setupInitialDataDesc')}
         </p>
       </motion.div>
@@ -120,17 +120,17 @@ export default function SetupInitialDataStep({ stepData }) {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.4 }}
-        className="w-full flex items-center gap-2.5 shrink-0 z-20 max-w-[340px] mx-auto"
+        className="w-full flex items-center gap-2.5 shrink-0 z-20 max-w-[340px] mx-auto mt-1"
       >
         {/* Add Account Button */}
         <motion.button
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={() => setIsAccountModalOpen(true)}
-          className="flex-1 h-[48px] flex items-center justify-center rounded-2xl bg-[#2B2321]/40 backdrop-blur-[32px] border border-white/15 hover:border-[#8D6346]/50 hover:bg-[#8D6346]/25 transition-all relative z-50 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] group touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
+          className="flex-1 h-[44px] flex items-center justify-center rounded-2xl bg-[#2B2321]/40 backdrop-blur-[32px] border border-white/15 hover:border-[#8D6346]/50 hover:bg-[#8D6346]/25 transition-all relative z-50 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] group touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
         >
-          <span className="text-white font-['Exo_2'] font-semibold text-[13.5px] tracking-wide flex items-center gap-1.5">
-            <Plus size={16} className="text-[#E8C5A8]" />
+          <span className="text-white font-['Exo_2'] font-semibold text-[13px] tracking-wide flex items-center gap-1.5">
+            <Plus size={15} className="text-[#E8C5A8]" />
             {t('onboarding.addAccountBtn')}
           </span>
         </motion.button>
@@ -140,10 +140,10 @@ export default function SetupInitialDataStep({ stepData }) {
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={() => setIsCategoryModalOpen(true)}
-          className="flex-1 h-[48px] flex items-center justify-center rounded-2xl bg-[#2B2321]/40 backdrop-blur-[32px] border border-white/15 hover:border-[#8D6346]/50 hover:bg-[#8D6346]/25 transition-all relative z-50 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] group touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
+          className="flex-1 h-[44px] flex items-center justify-center rounded-2xl bg-[#2B2321]/40 backdrop-blur-[32px] border border-white/15 hover:border-[#8D6346]/50 hover:bg-[#8D6346]/25 transition-all relative z-50 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] group touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
         >
-          <span className="text-white font-['Exo_2'] font-semibold text-[13.5px] tracking-wide flex items-center gap-1.5">
-            <Tag size={15} className="text-[#E8C5A8]" />
+          <span className="text-white font-['Exo_2'] font-semibold text-[13px] tracking-wide flex items-center gap-1.5">
+            <Tag size={14} className="text-[#E8C5A8]" />
             {t('onboarding.addCategoryBtn')}
           </span>
         </motion.button>
