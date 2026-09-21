@@ -175,7 +175,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
               alt="Finova"
               width={224}
               height={224}
-              className="w-full h-full object-contain drop-shadow-[0_0_45px_rgba(141,99,70,0.45)] opacity-95" 
+              className="w-full h-full object-contain opacity-95" 
               style={{ transform: 'rotate(39.01deg)' }} 
             />
           </motion.div>
@@ -184,7 +184,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.25, duration: 0.4 }}
-            className="text-[23px] sm:text-[26px] font-bold text-center text-white font-['Exo_2'] max-w-[320px] leading-snug drop-shadow-lg"
+            className="text-[23px] sm:text-[26px] font-bold text-center text-white font-['Exo_2'] max-w-[320px] leading-snug"
           >
             {t('onboarding.screen3Overlay')}
           </motion.h2>
@@ -202,10 +202,10 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
       >
         {/* Floating Top Header - Clear deliberate spacing below header bar */}
         <motion.div variants={itemVariants} className="text-center shrink-0 mb-1 px-3">
-          <h2 className="text-[20px] sm:text-[22px] font-bold text-white font-['Exo_2'] tracking-tight drop-shadow-md">
+          <h2 className="text-[20px] sm:text-[22px] font-bold text-white font-['Exo_2'] tracking-tight">
             {t('onboarding.screen3Title', 'المرتب الأساسي')}
           </h2>
-          <p className="text-[12px] sm:text-[13px] text-white/60 font-['Exo_2'] mt-0.5 max-w-[300px] mx-auto leading-relaxed drop-shadow-sm">
+          <p className="text-[12px] sm:text-[13px] text-white/60 font-['Exo_2'] mt-0.5 max-w-[300px] mx-auto leading-relaxed">
             {t('onboarding.screen3Subtitle', 'حدد دخلك الأساسي وموعد استلامه لبدء خطتك المالية الذكية')}
           </p>
         </motion.div>
