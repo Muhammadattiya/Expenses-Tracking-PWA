@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { completeOnboarding } from '../api/auth';
@@ -104,6 +104,40 @@ export default function Onboarding() {
   const [isOverlayActive, setIsOverlayActive] = useState(false);
   const [nextAction, setNextAction] = useState(null);
 
+  // Bulletproof iOS PWA viewport height fix.
+  // On iOS standalone PWA, 100vh / 100dvh / -webkit-fill-available are all
+  // unreliable due to WebKit bugs (https://webkit.org/b/254868).
+  // window.innerHeight is the ONLY value that returns the actual visual
+  // viewport height, correctly accounting for the home indicator safe area.
+  const updateVH = useCallback(() => {
+    const vh = window.innerHeight;
+    document.documentElement.style.setProperty('--app-vh', `${vh}px`);
+  }, []);
+
+  useEffect(() => {
+    updateVH();
+
+    // visualViewport API is more reliable than 'resize' on iOS Safari/PWA
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', updateVH);
+    }
+    window.addEventListener('resize', updateVH);
+
+    // iOS fires orientationchange before layout settles — re-measure after paint
+    const onOrientation = () => {
+      updateVH();
+      requestAnimationFrame(() => setTimeout(updateVH, 100));
+    };
+    window.addEventListener('orientationchange', onOrientation);
+
+    return () => {
+      if (vv) vv.removeEventListener('resize', updateVH);
+      window.removeEventListener('resize', updateVH);
+      window.removeEventListener('orientationchange', onOrientation);
+    };
+  }, [updateVH]);
+
   const handleNext = async () => {
     if (nextAction) {
       setLoading(true);
@@ -176,7 +210,7 @@ export default function Onboarding() {
   return (
     <main
       className="fixed top-0 left-0 right-0 w-full bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar"
-      style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
+      style={{ height: 'var(--app-vh, 100dvh)' }}
     >
       {/* Background Glowing Ambient Spheres Contained */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">

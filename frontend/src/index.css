@@ -136,8 +136,6 @@
 
 html {
   background-color: #141115;
-  height: 100%;
-  height: -webkit-fill-available;
 }
 
 body {
@@ -149,9 +147,6 @@ body {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   transition: background-color 0.3s ease, color 0.3s ease;
-  min-height: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
 }
 
 ::selection {
