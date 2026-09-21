@@ -198,14 +198,14 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="w-full flex-1 flex flex-col items-center justify-between px-4 sm:px-6 pt-14 sm:pt-16 pb-2 min-h-0 overflow-hidden select-none max-w-md mx-auto"
+        className="w-full flex-1 flex flex-col items-center justify-between px-4 sm:px-6 py-1 min-h-0 overflow-hidden select-none max-w-md mx-auto"
       >
         {/* Floating Top Header - Clear deliberate spacing below header bar */}
         <motion.div variants={itemVariants} className="text-center shrink-0 mb-1 px-3">
-          <h2 className="text-[20px] sm:text-[22px] font-bold text-white font-['Exo_2'] tracking-tight">
+          <h2 className="text-[19px] sm:text-[21px] font-bold text-white font-['Exo_2'] tracking-tight">
             {t('onboarding.screen3Title', 'المرتب الأساسي')}
           </h2>
-          <p className="text-[12px] sm:text-[13px] text-white/60 font-['Exo_2'] mt-0.5 max-w-[300px] mx-auto leading-relaxed">
+          <p className="text-[11.5px] sm:text-[12.5px] text-white/60 font-['Exo_2'] mt-0.5 max-w-[300px] mx-auto leading-relaxed">
             {t('onboarding.screen3Subtitle', 'حدد دخلك الأساسي وموعد استلامه لبدء خطتك المالية الذكية')}
           </p>
         </motion.div>
@@ -225,7 +225,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
             rotateX: { repeat: Infinity, duration: 4.5, ease: "easeInOut" },
             rotateY: { repeat: Infinity, duration: 5.5, ease: "easeInOut" }
           }}
-          className="w-full max-w-[295px] sm:max-w-[325px] aspect-[1.8/1] sm:aspect-[1.7/1] rounded-[22px] relative p-3 sm:p-3.5 flex flex-col justify-between select-none overflow-hidden shrink-0 shadow-[0_16px_40px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.22)] border border-[#8D6346]/45 bg-gradient-to-br from-[#2B2321]/95 via-[#191413]/95 to-[#100E11]/95 my-0.5 sm:my-1"
+          className="w-full max-w-[285px] sm:max-w-[315px] aspect-[1.85/1] sm:aspect-[1.8/1] rounded-[22px] relative p-3 flex flex-col justify-between select-none overflow-hidden shrink-0 shadow-[0_16px_40px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.22)] border border-[#8D6346]/45 bg-gradient-to-br from-[#2B2321]/95 via-[#191413]/95 to-[#100E11]/95 my-0.5"
         >
           {/* Ambient Card Glow Spheres */}
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#8D6346]/25 blur-2xl rounded-full pointer-events-none -z-0" />
@@ -330,10 +330,10 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
         </motion.div>
 
         {/* Generous Tactile Control Deck - Prominent, Easy-to-Tap Buttons */}
-        <motion.div variants={itemVariants} className="w-full max-w-[310px] sm:max-w-[340px] flex flex-col items-center gap-2.5 sm:gap-3 shrink-0 my-auto py-1">
-          {/* Row 1: Direct Numeric Input & Sliding Frequency Toggle (48px Height) */}
+        <motion.div variants={itemVariants} className="w-full max-w-[310px] sm:max-w-[340px] flex flex-col items-center gap-2 sm:gap-2.5 shrink-0 my-auto py-0.5">
+          {/* Row 1: Direct Numeric Input & Sliding Frequency Toggle (44px Height) */}
           <div className="w-full flex items-center gap-2">
-            <div className="flex-1 flex items-center justify-between h-12 px-3.5 rounded-2xl bg-white/5 border border-white/15 focus-within:border-[#8D6346] focus-within:shadow-[0_0_16px_rgba(141,99,70,0.35)] transition-all">
+            <div className="flex-1 flex items-center justify-between h-11 px-3.5 rounded-2xl bg-white/5 border border-white/15 focus-within:border-[#8D6346] focus-within:shadow-[0_0_16px_rgba(141,99,70,0.35)] transition-all">
               <input
                 id="income-amount"
                 type="number"
@@ -343,19 +343,19 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
                 placeholder={isRTL ? "أدخل الراتب..." : "Enter salary..."}
                 step="any"
                 min="0"
-                className="w-full text-start text-[18px] sm:text-[19px] font-black text-white bg-transparent outline-none tabular-nums placeholder:text-white/30 focus:ring-0 font-['Exo_2']"
+                className="w-full text-start text-[17px] sm:text-[18px] font-black text-white bg-transparent outline-none tabular-nums placeholder:text-white/30 focus:ring-0 font-['Exo_2']"
               />
-              <span className="text-[14px] font-bold text-[#E8C5A8] font-['Exo_2'] select-none shrink-0 ms-1.5">
+              <span className="text-[13px] font-bold text-[#E8C5A8] font-['Exo_2'] select-none shrink-0 ms-1.5">
                 {isRTL ? 'ج.م' : '$'}
               </span>
             </div>
 
-            {/* Sliding Segmented Frequency Pill (48px Height) */}
-            <div className="inline-flex bg-black/40 backdrop-blur-xl p-1 rounded-2xl border border-white/15 shrink-0 h-12 items-center relative shadow-sm">
+            {/* Sliding Segmented Frequency Pill (44px Height) */}
+            <div className="inline-flex bg-black/40 backdrop-blur-xl p-1 rounded-2xl border border-white/15 shrink-0 h-11 items-center relative shadow-sm">
               <button
                 type="button"
                 onClick={() => setFormData(p => ({ ...p, frequency: 'monthly' }))}
-                className={`relative px-3.5 sm:px-4 py-2 rounded-xl text-[12.5px] font-bold font-['Exo_2'] transition-colors z-10 touch-manipulation ${
+                className={`relative px-3 sm:px-3.5 py-1.5 rounded-xl text-[12px] font-bold font-['Exo_2'] transition-colors z-10 touch-manipulation ${
                   formData.frequency === 'monthly'
                     ? 'text-white'
                     : 'text-white/55 hover:text-white'
@@ -373,7 +373,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
               <button
                 type="button"
                 onClick={() => setFormData(p => ({ ...p, frequency: 'weekly' }))}
-                className={`relative px-3.5 sm:px-4 py-2 rounded-xl text-[12.5px] font-bold font-['Exo_2'] transition-colors z-10 touch-manipulation ${
+                className={`relative px-3 sm:px-3.5 py-1.5 rounded-xl text-[12px] font-bold font-['Exo_2'] transition-colors z-10 touch-manipulation ${
                   formData.frequency === 'weekly'
                     ? 'text-white'
                     : 'text-white/55 hover:text-white'
@@ -391,8 +391,8 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
             </div>
           </div>
 
-          {/* Row 2: Quick Amount Presets (Generous 40px-44px Height & 13px+ Typography) */}
-          <div className="grid grid-cols-4 gap-2 w-full">
+          {/* Row 2: Quick Amount Presets */}
+          <div className="grid grid-cols-4 gap-1.5 w-full">
             {quickPresets.map((preset) => {
               const numericVal = preset.replace(/,/g, '');
               const isSelected = formData.amount === numericVal;
@@ -403,7 +403,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
                   whileTap={{ scale: 0.93 }}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => setFormData(p => ({ ...p, amount: numericVal }))}
-                  className={`h-10 sm:h-11 rounded-xl text-[12.5px] sm:text-[13px] font-extrabold font-['Exo_2'] transition-all flex items-center justify-center border relative overflow-hidden touch-manipulation ${
+                  className={`h-9.5 sm:h-10 rounded-xl text-[12px] sm:text-[12.5px] font-extrabold font-['Exo_2'] transition-all flex items-center justify-center border relative overflow-hidden touch-manipulation ${
                     isSelected
                       ? 'bg-[#8D6346] border-[#E8C5A8]/70 text-white shadow-[0_4px_14px_rgba(141,99,70,0.5)] scale-[1.02]'
                       : 'bg-white/5 border-white/10 text-white/75 hover:bg-white/10 hover:text-white shadow-sm'
@@ -415,11 +415,11 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
             })}
           </div>
 
-          {/* Row 3: Payday Selector Strip (Generous 40px-44px Height Chips) */}
+          {/* Row 3: Payday Selector Strip */}
           <div className="w-full flex flex-col items-center">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Calendar size={13} className="text-[#E8C5A8]" />
-              <span className="text-[12px] sm:text-[12.5px] font-bold text-white/80 font-['Exo_2']">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Calendar size={12} className="text-[#E8C5A8]" />
+              <span className="text-[11px] sm:text-[11.5px] font-bold text-white/80 font-['Exo_2']">
                 {t('onboarding.paydayLabel', 'موعد استلام الراتب')}
               </span>
             </div>
@@ -432,7 +432,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
                   transition={{ duration: 0.2 }}
-                  className="grid grid-cols-4 gap-2 w-full"
+                  className="grid grid-cols-4 gap-1.5 w-full"
                 >
                   {paydayPresets.map(preset => (
                     <motion.button
@@ -441,7 +441,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
                       whileTap={{ scale: 0.93 }}
                       whileHover={{ scale: 1.02 }}
                       onClick={() => setFormData(p => ({ ...p, monthDay: preset.day }))}
-                      className={`h-10 sm:h-11 px-1 rounded-xl text-[11.5px] sm:text-[12px] font-bold font-['Exo_2'] border transition-all flex items-center justify-center text-center touch-manipulation ${
+                      className={`h-9 sm:h-9.5 px-1 rounded-xl text-[11px] sm:text-[11.5px] font-bold font-['Exo_2'] border transition-all flex items-center justify-center text-center touch-manipulation ${
                         formData.monthDay === preset.day
                           ? 'bg-[#8D6346] border-white/30 text-white shadow-[0_4px_14px_rgba(141,99,70,0.45)] scale-[1.02]'
                           : 'bg-white/5 border-white/10 text-white/75 hover:bg-white/10 hover:text-white shadow-sm'
@@ -458,13 +458,13 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
                   transition={{ duration: 0.2 }}
-                  className="flex bg-black/40 border border-white/15 rounded-2xl overflow-hidden w-full h-10 sm:h-11 px-3.5 items-center shadow-sm"
+                  className="flex bg-black/40 border border-white/15 rounded-2xl overflow-hidden w-full h-9 sm:h-9.5 px-3.5 items-center shadow-sm"
                 >
                   <select
                     id="income-weekday-select"
                     value={formData.weekDay}
                     onChange={(e) => setFormData(p => ({ ...p, weekDay: Number(e.target.value) }))}
-                    className="w-full bg-transparent text-white text-[13px] font-bold py-1 outline-none cursor-pointer text-center font-['Exo_2']"
+                    className="w-full bg-transparent text-white text-[12.5px] font-bold py-1 outline-none cursor-pointer text-center font-['Exo_2']"
                   >
                     {weekOptions.map(opt => (
                       <option key={opt.value} value={opt.value} className="bg-[#2B2321] text-white">
@@ -477,7 +477,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
             </AnimatePresence>
           </div>
 
-          {/* Row 4: Primary Action Button (Generous 48px-52px Hero Size) */}
+          {/* Row 4: Primary Action Button */}
           <motion.button
             whileTap={{ scale: 0.97 }}
             whileHover={{ scale: 1.01 }}
@@ -487,10 +487,10 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
               handleNext();
             }}
             disabled={loading}
-            className="w-full h-12 sm:h-12.5 flex items-center justify-center rounded-2xl bg-[#8D6346] hover:bg-[#9E7151] border border-white/20 shadow-[0_8px_24px_rgba(141,99,70,0.5),inset_0_1px_2px_rgba(255,255,255,0.25)] transition-all text-white font-bold text-[14.5px] sm:text-[15px] cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] mt-1"
+            className="w-full h-11 sm:h-11.5 flex items-center justify-center rounded-2xl bg-[#8D6346] hover:bg-[#9E7151] border border-white/20 shadow-[0_8px_24px_rgba(141,99,70,0.5),inset_0_1px_2px_rgba(255,255,255,0.25)] transition-all text-white font-bold text-[14px] sm:text-[14.5px] cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] mt-0.5"
           >
             {loading ? (
-              <Loader2 size={20} className="animate-spin text-white/90" />
+              <Loader2 size={19} className="animate-spin text-white/90" />
             ) : (
               <AnimatePresence mode="wait">
                 <motion.span 
@@ -499,7 +499,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -3 }}
                   transition={{ duration: 0.15 }}
-                  className="text-white font-bold text-[14.5px] sm:text-[15px] font-['Exo_2'] tracking-wide"
+                  className="text-white font-bold text-[14px] sm:text-[14.5px] font-['Exo_2'] tracking-wide"
                 >
                   {formData.amount && Number(formData.amount) > 0 
                     ? (isRTL ? 'حفظ ومتابعة' : 'Save & Continue') 

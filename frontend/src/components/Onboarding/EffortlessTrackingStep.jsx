@@ -58,15 +58,15 @@ export default function EffortlessTrackingStep({ stepData }) {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col w-full min-h-0 pt-12 pb-12 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex-1 flex flex-col w-full min-h-0 py-1 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Interactive Mockup Container */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative w-full pt-2">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative w-full py-1">
         {/* Mockup Phone Frame */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ duration: 0.5, type: 'spring' }}
-          className="relative z-10 w-full max-w-[310px] h-[270px] bg-[#2B2321]/45 backdrop-blur-[32px] border border-white/15 rounded-[2.2rem] shadow-[0_16px_48px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.2)] overflow-hidden flex flex-col justify-between p-4"
+          className="relative z-10 w-full max-w-[310px] h-[240px] bg-[#2B2321]/45 backdrop-blur-[32px] border border-white/15 rounded-[2.2rem] shadow-[0_16px_48px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.2)] overflow-hidden flex flex-col justify-between p-3.5"
         >
           {/* Ambient Glow */}
           <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/35 via-[#E8C5A8]/10 to-transparent blur-2xl rounded-full -z-10" />
