@@ -179,7 +179,7 @@ export default function Onboarding() {
     <main className="relative w-full min-h-screen bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
 
       {/* Background Glowing Ambient Spheres Contained */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10relative w-full min-h-screen overflow-hidden select-none flex flex-col hide-scrollbar">
+      <div className="absolute pointer-events-none -z-20relative w-full min-h-screen overflow-hidden select-none flex flex-col hide-scrollbar">
         <div className="relative w-full min-h-screen bg-[#8D6346] opacity-15 blur-[120px] rounded-full" />
         <div className="relative w-full min-h-screen bg-[#8D6346] opacity-20 blur-[140px] rounded-full" />
         <div className="relative w-full min-h-screen bg-[#8D6346] opacity-15 blur-[150px] rounded-full" />
