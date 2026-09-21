@@ -174,7 +174,10 @@ export default function Onboarding() {
   const stepData = onboardingSteps[currentStep];
 
   return (
-    <main className="fixed inset-0 w-full h-full bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
+    <main
+      className="fixed top-0 left-0 right-0 w-full bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar"
+      style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
+    >
       {/* Background Glowing Ambient Spheres Contained */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-50px] left-[-50px] w-[260px] h-[260px] bg-[#8D6346] opacity-35 blur-[120px] rounded-full" />
@@ -366,7 +369,7 @@ export default function Onboarding() {
       {!isOverlayActive && (
         <nav 
           aria-label="Progress"
-          className="absolute bottom-0 left-0 right-0 w-full flex justify-center px-6 pb-[max(1rem,env(safe-area-inset-bottom))] z-20 pointer-events-none"
+          className="absolute bottom-0 left-0 right-0 w-full flex justify-center px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] z-20 pointer-events-none"
         >
           <div 
             role="group"

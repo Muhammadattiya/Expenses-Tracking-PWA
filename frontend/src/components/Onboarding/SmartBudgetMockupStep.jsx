@@ -38,7 +38,7 @@ export default function SmartBudgetMockupStep({ stepData }) {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col w-full min-h-0 pt-12 pb-12 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="w-full max-w-md mx-auto flex-1 flex flex-col min-h-0 pt-20 pb-32 px-5 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Interactive Mockup Container */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative w-full pt-2">
         {/* Mockup Phone Frame */}
