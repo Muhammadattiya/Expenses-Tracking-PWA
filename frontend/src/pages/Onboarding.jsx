@@ -179,10 +179,10 @@ export default function Onboarding() {
     <main className="relative w-full min-h-screen bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
 
       {/* Background Glowing Ambient Spheres Contained */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-50px] left-[-50px] w-[260px] h-[260px] bg-[#8D6346] opacity-35 blur-[120px] rounded-full" />
-        <div className="absolute top-[35%] right-[-60px] w-[280px] h-[280px] bg-[#8D6346] opacity-25 blur-[140px] rounded-full" />
-        <div className="absolute bottom-[-50px] left-[-50px] w-[300px] h-[300px] bg-[#8D6346] opacity-30 blur-[150px] rounded-full" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10relative w-full min-h-screen overflow-hidden select-none flex flex-col hide-scrollbar">
+        <div className="relative w-full min-h-screen bg-[#8D6346] opacity-15 blur-[120px] rounded-full" />
+        <div className="relative w-full min-h-screen bg-[#8D6346] opacity-20 blur-[140px] rounded-full" />
+        <div className="relative w-full min-h-screen bg-[#8D6346] opacity-15 blur-[150px] rounded-full" />
       </div>
 
       {/* Top Bar with Skip/Next Arrow */}
@@ -208,19 +208,18 @@ export default function Onboarding() {
             onClick={handleNext}
             disabled={loading}
             aria-label={
-              currentStep === onboardingSteps.length - 1 
-                ? t('onboarding.finish') 
-                : stepData.type === 'income_profile' 
-                  ? t('onboarding.skip') 
+              currentStep === onboardingSteps.length - 1
+                ? t('onboarding.finish')
+                : stepData.type === 'income_profile'
+                  ? t('onboarding.skip')
                   : t('common.next', 'Next step')
             }
-            className={`h-12 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors z-50 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
-              currentStep === onboardingSteps.length - 1 
-                ? 'px-6 bg-[#8D6346] hover:bg-[#a67a5b] border-white/20' 
-                : stepData.type === 'income_profile'
-                  ? 'px-4 w-auto min-w-[54px]'
-                  : 'w-12'
-            }`}
+            className={`h-12 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors z-50 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${currentStep === onboardingSteps.length - 1
+              ? 'px-6 bg-[#8D6346] hover:bg-[#a67a5b] border-white/20'
+              : stepData.type === 'income_profile'
+                ? 'px-4 w-auto min-w-[54px]'
+                : 'w-12'
+              }`}
           >
             {loading ? (
               <Loader2 size={20} className="animate-spin text-white/90" />
@@ -368,11 +367,11 @@ export default function Onboarding() {
 
       {/* Pagination Indicator — normal flex child at the bottom */}
       {!isOverlayActive && (
-        <nav 
+        <nav
           aria-label="Progress"
           className="shrink-0 w-full flex justify-center px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 z-20"
         >
-          <div 
+          <div
             role="group"
             aria-label={t('onboarding.stepProgress', { current: currentStep + 1, total: onboardingSteps.length }, `Step ${currentStep + 1} of ${onboardingSteps.length}`)}
             className="flex items-center justify-center w-full max-w-[340px] gap-[6px]"
@@ -385,7 +384,7 @@ export default function Onboarding() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   className="flex-shrink-0 flex items-center justify-center h-[32px] px-6 rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)]"
                 >
-                  <motion.span 
+                  <motion.span
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1, duration: 0.2 }}
@@ -395,11 +394,11 @@ export default function Onboarding() {
                   </motion.span>
                 </motion.div>
               ) : (
-                <motion.div 
-                  key={`dot-${idx}`} 
+                <motion.div
+                  key={`dot-${idx}`}
                   layout
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  className="h-[8px] flex-1 max-w-[32px] min-w-[8px] rounded-[30px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner" 
+                  className="h-[8px] flex-1 max-w-[32px] min-w-[8px] rounded-[30px] bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner"
                 />
               )
             ))}
