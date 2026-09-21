@@ -174,7 +174,7 @@ export default function Onboarding() {
   const stepData = onboardingSteps[currentStep];
 
   return (
-    <main className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
+    <main className="fixed inset-0 w-full h-full bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
       {/* Background Glowing Ambient Spheres Contained */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-50px] left-[-50px] w-[260px] h-[260px] bg-[#8D6346] opacity-35 blur-[120px] rounded-full" />
@@ -260,7 +260,7 @@ export default function Onboarding() {
               <VoiceMockupStep stepData={stepData} />
             ) : currentStep === 1 ? (
               /* Step 2: Make It to Payday */
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pt-16 pb-20 px-6 z-10 w-full max-w-md mx-auto">
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pt-16 pb-12 px-6 z-10 w-full max-w-md mx-auto">
                 <div className="flex-1 min-h-0 flex items-center justify-center relative w-full pt-4">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 50 }}
@@ -268,14 +268,14 @@ export default function Onboarding() {
                     transition={{ duration: 0.5, type: 'spring' }}
                     className="w-full max-w-[280px] aspect-square relative flex items-center justify-center"
                   >
-                    <div className="absolute inset-4 bg-gradient-to-tr from-[#8D6346]/35 via-[#E8C5A8]/10 to-transparent blur-[50px] rounded-full -z-10" />
+                    <div className="absolute inset-4 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/15 to-transparent blur-[50px] rounded-full -z-10" />
                     <motion.img
                       src={stepData.image}
                       alt="Payday Prediction"
                       width={240}
                       height={240}
                       style={{ transform: 'rotate(39.01deg)' }}
-                      className="max-w-full max-h-full object-contain drop-shadow-[0_0_35px_rgba(141,99,70,0.35)]"
+                      className="max-w-full max-h-full object-contain"
                       animate={stepData.floatingAnimation && !shouldReduceMotion ? { y: [0, -8, 0] } : {}}
                       transition={stepData.floatingAnimation && !shouldReduceMotion ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
                     />
@@ -309,19 +309,19 @@ export default function Onboarding() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
-                  className="w-full max-w-[340px] px-3 py-2 text-start shrink-0 mt-3 z-20"
+                  className="w-full max-w-[340px] px-1 text-start shrink-0 mt-2 bg-transparent"
                 >
-                  <h2 className="font-['Exo_2'] font-bold text-white text-[22px] sm:text-[24px] leading-tight tracking-tight mb-2 drop-shadow-md">
+                  <h2 className="font-['Exo_2'] font-bold text-white text-[22px] sm:text-[24px] leading-tight tracking-tight mb-2">
                     {t(stepData.titleKey, stepData.defaultTitle)}
                   </h2>
-                  <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[15px] leading-relaxed drop-shadow-sm">
+                  <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[15px] leading-relaxed">
                     {t(stepData.descKey, stepData.defaultDesc)}
                   </p>
                 </motion.div>
               </div>
             ) : (
               /* Step 1: Welcome */
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pt-16 pb-20 px-6 z-10 w-full max-w-md mx-auto">
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pt-16 pb-12 px-6 z-10 w-full max-w-md mx-auto">
                 <div className="flex-1 min-h-0 flex items-center justify-center relative w-full pt-4">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 50 }}
@@ -329,13 +329,13 @@ export default function Onboarding() {
                     transition={{ duration: 0.5, type: 'spring' }}
                     className="w-full max-w-[280px] aspect-square relative flex items-center justify-center"
                   >
-                    <div className="absolute inset-4 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/20 to-transparent blur-[60px] rounded-full -z-10" />
+                    <div className="absolute inset-4 bg-gradient-to-tr from-[#8D6346]/45 via-[#E8C5A8]/20 to-transparent blur-[60px] rounded-full -z-10" />
                     <motion.img
                       src={stepData.image}
                       alt="Finova"
                       width={240}
                       height={240}
-                      className="max-w-full max-h-full object-contain drop-shadow-[0_0_40px_rgba(141,99,70,0.35)]"
+                      className="max-w-full max-h-full object-contain"
                       animate={stepData.floatingAnimation && !shouldReduceMotion ? { y: [0, -8, 0] } : {}}
                       transition={stepData.floatingAnimation && !shouldReduceMotion ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
                     />
@@ -347,20 +347,17 @@ export default function Onboarding() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
-                  className="w-full max-w-[340px] px-3 py-2 text-start shrink-0 mt-3 z-20"
+                  className="w-full max-w-[340px] px-1 text-start shrink-0 mt-2 bg-transparent"
                 >
-                  <h2 className="font-['Exo_2'] font-bold text-white text-[22px] sm:text-[24px] leading-tight tracking-tight mb-2 drop-shadow-md">
+                  <h2 className="font-['Exo_2'] font-bold text-white text-[22px] sm:text-[24px] leading-tight tracking-tight mb-2">
                     {t(stepData.titleKey, stepData.defaultTitle)}
                   </h2>
-                  <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[15px] leading-relaxed drop-shadow-sm">
+                  <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[15px] leading-relaxed">
                     {t(stepData.descKey, stepData.defaultDesc)}
                   </p>
                 </motion.div>
               </div>
             )}
-
-            {/* Spacer to preserve layout where the pagination indicator is positioned */}
-            <div className="w-full h-[56px] mt-auto shrink-0 pointer-events-none" />
           </div>
         </motion.div>
       </AnimatePresence>
@@ -369,7 +366,7 @@ export default function Onboarding() {
       {!isOverlayActive && (
         <nav 
           aria-label="Progress"
-          className="absolute bottom-0 left-0 right-0 w-full flex justify-center px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] z-20 pointer-events-none"
+          className="absolute bottom-0 left-0 right-0 w-full flex justify-center px-6 pb-[max(1rem,env(safe-area-inset-bottom))] z-20 pointer-events-none"
         >
           <div 
             role="group"

@@ -103,7 +103,7 @@ export default function PushNotificationsStep({ stepData, onRegisterNext, setLoa
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col w-full min-h-0 pt-12 pb-16 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex-1 flex flex-col w-full min-h-0 pt-12 pb-12 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Interactive Mockup Container */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative w-full pt-2">
         {/* Mockup Phone Frame */}
@@ -169,12 +169,12 @@ export default function PushNotificationsStep({ stepData, onRegisterNext, setLoa
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.4 }}
-        className="w-full max-w-[340px] px-3 py-2 z-20 text-start shrink-0 my-2"
+        className="w-full max-w-[340px] px-1 text-start shrink-0 my-1.5 bg-transparent"
       >
-        <h2 className="font-['Exo_2'] font-bold text-white text-[21px] sm:text-[23px] leading-tight tracking-tight mb-1.5 drop-shadow-md">
+        <h2 className="font-['Exo_2'] font-bold text-white text-[21px] sm:text-[23px] leading-tight tracking-tight mb-1.5">
           {t(stepData.titleKey, stepData.defaultTitle)}
         </h2>
-        <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[14.5px] leading-relaxed drop-shadow-sm">
+        <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[14.5px] leading-relaxed">
           {t(stepData.descKey, stepData.defaultDesc)}
         </p>
       </motion.div>

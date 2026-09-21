@@ -127,7 +127,7 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pt-12 pb-16 min-h-0 overflow-hidden"
+        className="w-full flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pt-12 pb-12 min-h-0 overflow-hidden"
       >
         {/* Compact Illustration */}
         <div className="w-full flex justify-center items-center relative shrink-0 mb-3">
@@ -136,20 +136,20 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
             animate={{ y: [0, -6, 0] }}
             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/30 to-transparent blur-xl rounded-full -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/45 via-[#E8C5A8]/15 to-transparent blur-2xl rounded-full -z-10" />
             <img 
               src="/images/onboarding2.png" 
               alt={t('onboarding.trackingIllustrationAlt', 'Tracking cycle illustration')}
               width={115}
               height={115}
-              className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+              className="w-full h-full object-contain"
             />
           </motion.div>
         </div>
 
         {/* Content Area */}
         <div className="flex flex-col w-full max-w-[340px] items-center shrink-0">
-          <h2 className="text-[19px] sm:text-[21px] font-bold text-white text-center font-['Exo_2'] drop-shadow-sm mb-3 leading-snug">
+          <h2 className="text-[19px] sm:text-[21px] font-bold text-white text-center font-['Exo_2'] mb-3 leading-snug">
             {t('onboarding.trackingCycleTitle')}
           </h2>
 
