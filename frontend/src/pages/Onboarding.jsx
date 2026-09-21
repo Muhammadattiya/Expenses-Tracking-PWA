@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { completeOnboarding } from '../api/auth';
@@ -73,7 +72,7 @@ const onboardingSteps = [
     titleKey: "onboarding.screen5TitleMain",
     descKey: "onboarding.screen5DescMain",
     defaultTitle: "Your Spending Has a Pattern.",
-    defaultDesc: "Finova’s AI finds it, learns from it, and turns it into smarter budgets you can actually stick to. All Based on your spending ✦",
+    defaultDesc: "Finova's AI finds it, learns from it, and turns it into smarter budgets you can actually stick to. All Based on your spending ✦",
     textFormat: "inline"
   },
   {
@@ -104,7 +103,6 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isOverlayActive, setIsOverlayActive] = useState(false);
   const [nextAction, setNextAction] = useState(null);
-
 
   const handleNext = async () => {
     if (nextAction) {
@@ -175,14 +173,10 @@ export default function Onboarding() {
   const isRTL = language === 'ar';
   const stepData = onboardingSteps[currentStep];
 
-  // Portal the entire onboarding to document.body to escape the Framer Motion
-  // containing block in AuthGate. Framer Motion's motion.div wrapper applies
-  // will-change:transform even for opacity-only animations, which creates a new
-  // CSS containing block — making position:fixed behave like position:absolute
-  // relative to the collapsed wrapper div. This is the same portal pattern used
-  // for modals throughout the app (AGENTS.md rule #8).
-  return createPortal(
-    <main className="fixed inset-0 w-full h-full bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar z-[99]">
+  // Normal document flow layout — same approach as Layout.jsx, AuthLayout.jsx,
+  // and every other page in the app. No fixed positioning, no portals.
+  return (
+    <main className="relative w-full min-h-screen bg-[#100E11] overflow-hidden select-none flex flex-col hide-scrollbar">
 
       {/* Background Glowing Ambient Spheres Contained */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
@@ -193,7 +187,7 @@ export default function Onboarding() {
 
       {/* Top Bar with Skip/Next Arrow */}
       {!isOverlayActive && (
-        <header className="absolute top-[max(1.5rem,env(safe-area-inset-top))] left-6 right-6 z-30 flex justify-between items-center">
+        <header className="relative top-0 left-0 right-0 pt-[max(1.5rem,env(safe-area-inset-top))] px-6 z-30 flex justify-between items-center shrink-0">
           {currentStep > 0 ? (
             <motion.button
               type="button"
@@ -241,6 +235,7 @@ export default function Onboarding() {
         </header>
       )}
 
+      {/* Step Content — flex-1 fills remaining space naturally */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
@@ -248,9 +243,9 @@ export default function Onboarding() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: isRTL ? 20 : -20 }}
           transition={{ duration: 0.35, type: 'spring', bounce: 0 }}
-          className="flex-1 flex flex-col w-full h-full absolute inset-0 overflow-hidden"
+          className="flex-1 flex flex-col w-full min-h-0 overflow-hidden"
         >
-          <div className="flex-1 flex flex-col w-full h-full absolute inset-0 overflow-hidden">
+          <div className="flex-1 flex flex-col w-full min-h-0 overflow-hidden">
             {stepData.type === 'income_profile' ? (
               <IncomeProfileStep stepData={stepData} handleNext={handleNext} setLoadingGlobal={setLoading} setIsOverlayActive={setIsOverlayActive} onRegisterNext={setNextAction} />
             ) : stepData.type === 'tracking_cycle' ? (
@@ -269,7 +264,7 @@ export default function Onboarding() {
               <VoiceMockupStep stepData={stepData} />
             ) : currentStep === 1 ? (
               /* Step 2: Make It to Payday */
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pt-16 pb-12 px-6 z-10 w-full max-w-md mx-auto">
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pb-4 px-6 z-10 w-full max-w-md mx-auto">
                 <div className="flex-1 min-h-0 flex items-center justify-center relative w-full pt-4">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 50 }}
@@ -330,7 +325,7 @@ export default function Onboarding() {
               </div>
             ) : (
               /* Step 1: Welcome */
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pt-16 pb-12 px-6 z-10 w-full max-w-md mx-auto">
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-between pb-4 px-6 z-10 w-full max-w-md mx-auto">
                 <div className="flex-1 min-h-0 flex items-center justify-center relative w-full pt-4">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 50 }}
@@ -371,11 +366,11 @@ export default function Onboarding() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Pagination Indicator (Persistent) */}
+      {/* Pagination Indicator — normal flex child at the bottom */}
       {!isOverlayActive && (
         <nav 
           aria-label="Progress"
-          className="absolute bottom-0 left-0 right-0 w-full flex justify-center px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] z-20 pointer-events-none"
+          className="shrink-0 w-full flex justify-center px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 z-20"
         >
           <div 
             role="group"
@@ -411,7 +406,6 @@ export default function Onboarding() {
           </div>
         </nav>
       )}
-    </main>,
-    document.body
+    </main>
   );
 }
