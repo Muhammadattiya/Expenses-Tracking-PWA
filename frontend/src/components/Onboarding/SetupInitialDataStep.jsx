@@ -22,16 +22,27 @@ export default function SetupInitialDataStep({ stepData }) {
           transition={{ duration: 0.5, type: 'spring' }}
           className="w-full max-w-[320px] aspect-[4/3] relative flex items-center justify-center"
         >
-          {/* Ambient Glow */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/35 via-[#E8C5A8]/15 to-transparent blur-3xl rounded-full -z-10" />
+          {/* Ambient Glow (Softened, deep copper, no high-brightness wash) */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/25 to-transparent blur-2xl rounded-full -z-10 opacity-70" />
 
-          {/* Central Finova Core Emblem */}
+          {/* Central Finova Core Emblem - Deep Obsidian Glass with Copper F */}
           <motion.div
-            animate={{ scale: [1, 1.03, 1] }}
+            animate={{ scale: [1, 1.04, 1] }}
             transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-            className="size-16 rounded-2xl bg-gradient-to-br from-[#8D6346]/80 to-[#2B2321] backdrop-blur-2xl border border-white/20 shadow-[0_12px_32px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.3)] flex items-center justify-center z-10"
+            className="size-16 sm:size-[72px] rounded-2xl bg-gradient-to-br from-[#2B2321] to-[#141115] backdrop-blur-2xl border border-[#8D6346]/50 shadow-[0_16px_36px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.15)] flex items-center justify-center z-10 p-3.5"
           >
-            <Sparkles className="size-8 text-[#E8C5A8]" />
+            <svg 
+              viewBox="50 50 188 188" 
+              className="w-full h-full select-none pointer-events-none drop-shadow-[0_2px_10px_rgba(232,197,168,0.45)]"
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              aria-label="Finova"
+            >
+              <path 
+                d="M154.4 63.1719C143.835 63.1719 135.334 66.1431 128.896 72.0859C122.457 77.8637 119.238 85.9525 119.238 96.3525V131.239C113.585 125.523 109.06 118.79 105.904 111.395C104.647 108.476 103.63 105.473 102.853 102.385C102.598 101.374 101.693 100.667 100.657 100.667C100.152 100.668 99.6623 100.837 99.2646 101.148C98.867 101.46 98.5847 101.895 98.4619 102.385C95.6287 113.369 89.9059 123.395 81.8887 131.423C76.1301 137.163 69.3283 141.752 61.8486 144.941C58.9294 146.198 55.9247 147.215 52.8359 147.992C52.3509 148.12 51.9215 148.404 51.6152 148.801C51.3088 149.198 51.1426 149.686 51.1426 150.188C51.1427 150.689 51.309 151.176 51.6152 151.573C51.9215 151.97 52.3509 152.254 52.8359 152.382C63.8251 155.218 73.8563 160.941 81.8887 168.957C89.9069 176.986 95.6297 187.015 98.4619 198.002C98.5848 198.491 98.8671 198.925 99.2646 199.235C99.6624 199.545 100.153 199.714 100.657 199.714C101.162 199.714 101.652 199.545 102.05 199.235C102.447 198.925 102.73 198.491 102.853 198.002C105.665 187.102 111.321 177.147 119.238 169.147V234.523H150.19V159.248H218.533V136.467H150.19V102.543C150.19 97.5907 151.428 93.9586 153.904 91.6475C156.38 89.3363 160.095 88.1807 165.048 88.1807H227.942L229.429 65.4004C222.165 64.575 214.241 64.0791 205.657 63.9141C197.238 63.5839 188.654 63.4189 179.904 63.4189C171.32 63.2539 162.819 63.1719 154.4 63.1719Z" 
+                fill="#E8C5A8" 
+              />
+            </svg>
           </motion.div>
 
           {/* Orbiting Starter Chips */}

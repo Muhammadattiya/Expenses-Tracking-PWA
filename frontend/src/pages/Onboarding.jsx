@@ -212,7 +212,11 @@ export default function Onboarding() {
                   : t('common.next', 'Next step')
             }
             className={`h-12 flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.4)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[rgba(141,99,70,0.6)] transition-colors z-50 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
-              currentStep === onboardingSteps.length - 1 ? 'px-6 bg-[#8D6346] hover:bg-[#a67a5b] border-white/20' : 'w-12'
+              currentStep === onboardingSteps.length - 1 
+                ? 'px-6 bg-[#8D6346] hover:bg-[#a67a5b] border-white/20' 
+                : stepData.type === 'income_profile'
+                  ? 'px-4 w-auto min-w-[54px]'
+                  : 'w-12'
             }`}
           >
             {loading ? (
@@ -239,7 +243,7 @@ export default function Onboarding() {
         >
           <div className="flex-1 flex flex-col w-full h-full absolute inset-0 overflow-hidden">
             {stepData.type === 'income_profile' ? (
-              <IncomeProfileStep stepData={stepData} handleNext={handleNext} setLoadingGlobal={setLoading} setIsOverlayActive={setIsOverlayActive} />
+              <IncomeProfileStep stepData={stepData} handleNext={handleNext} setLoadingGlobal={setLoading} setIsOverlayActive={setIsOverlayActive} onRegisterNext={setNextAction} />
             ) : stepData.type === 'tracking_cycle' ? (
               <TrackingCycleStep stepData={stepData} onRegisterNext={setNextAction} setLoadingGlobal={setLoading} />
             ) : stepData.type === 'setup_initial_data' ? (
