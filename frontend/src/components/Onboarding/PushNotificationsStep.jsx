@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, AlertCircle, ArrowRight } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { subscribeToNotifications } from '../../api/notifications';
 
@@ -22,134 +22,160 @@ export default function PushNotificationsStep({ stepData, onRegisterNext, setLoa
   const { t, language } = useLanguage();
   const isRTL = language === 'ar';
 
-  const [notifState, setNotifState] = useState('idle'); // idle, animating
+  const [notifState, setNotifState] = useState('animating'); // animating, pulse
+  const timersRef = useRef([]);
+
+  const addTimer = (timerId) => {
+    timersRef.current.push(timerId);
+    return timerId;
+  };
 
   const handleFinish = async () => {
     setLoadingGlobal(true);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        const registration = await navigator.serviceWorker.ready;
-        const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey)
-        });
-        await subscribeToNotifications(subscription);
+      if (typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator) {
+        // Strict 2s timeout on Notification.requestPermission()
+        const permission = await Promise.race([
+          Notification.requestPermission().catch(() => 'default'),
+          new Promise(resolve => setTimeout(() => resolve('timeout'), 2000))
+        ]);
+
+        if (permission === 'granted') {
+          // Strict 1.5s timeout on navigator.serviceWorker.ready to prevent hanging if SW is not active
+          const registration = await Promise.race([
+            navigator.serviceWorker.ready.catch(() => null),
+            new Promise(resolve => setTimeout(() => resolve(null), 1500))
+          ]);
+
+          if (registration && registration.pushManager) {
+            const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+            if (vapidKey) {
+              try {
+                const subscription = await Promise.race([
+                  registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidKey)
+                  }),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+                ]);
+                if (subscription) {
+                  await subscribeToNotifications(subscription).catch(err => {
+                    console.warn('Backend push registration warn:', err);
+                  });
+                }
+              } catch (subErr) {
+                console.warn('Push subscription failed:', subErr);
+              }
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Push error:', error);
+    } finally {
+      setLoadingGlobal(false);
     }
-    setLoadingGlobal(false);
-    return true; // proceed with finish
+    return true; // Always proceed with finish
   };
 
   useEffect(() => {
     if (onRegisterNext) {
-      onRegisterNext(() => handleFinish);
+      // Pass handleFinish directly so await nextAction() actually calls it!
+      onRegisterNext(handleFinish);
     }
   }, [onRegisterNext]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setNotifState('animating');
-      const interval = setInterval(() => {
-        setNotifState('idle');
-        setTimeout(() => setNotifState('animating'), 1000);
-      }, 4000);
-      return () => clearInterval(interval);
-    }, 1000);
-    return () => clearTimeout(timer);
+    const pulseInterval = setInterval(() => {
+      setNotifState('pulse');
+      const reset = setTimeout(() => setNotifState('animating'), 1200);
+      timersRef.current.push(reset);
+    }, 4000);
+    timersRef.current.push(pulseInterval);
+
+    return () => {
+      timersRef.current.forEach(id => {
+        clearTimeout(id);
+        clearInterval(id);
+      });
+      timersRef.current = [];
+    };
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col w-full min-h-0 pt-[60px] px-6 z-10" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="flex-1 flex flex-col w-full min-h-0 pt-12 pb-16 px-4 sm:px-6 relative z-10 items-center justify-between" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Interactive Mockup Container */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative mb-4 mt-2">
-
-        <motion.div
-          className="w-[100px] h-[100px] mb-4 self-center"
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, type: 'spring', delay: 0.3 }}
-        >
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="w-full h-full"
-          >
-            <img 
-              src="/images/onboarding1.png"
-              alt="Voice Illustration"
-              className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-              style={{ transform: "rotate(39.01deg)" }}
-            />
-          </motion.div>
-        </motion.div>
-
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative w-full pt-2">
         {/* Mockup Phone Frame */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 40 }}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, type: 'spring', delay: 0.1 }}
-          className="relative z-10 w-full max-w-[230px] h-[250px] bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] overflow-hidden flex flex-col justify-end"
+          transition={{ duration: 0.5, type: 'spring' }}
+          className="relative z-10 w-full max-w-[310px] h-[270px] bg-[#2B2321]/50 backdrop-blur-[32px] border border-white/20 rounded-[2.2rem] shadow-[0_16px_48px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.2)] overflow-hidden flex flex-col justify-between"
         >
-          {/* Content Area */}
-          <div className="flex-1 p-4 flex flex-col justify-start pt-8 overflow-hidden relative z-10 w-full">
-            <AnimatePresence>
-              {notifState === 'animating' && (
-                <motion.div
-                  key="popup"
-                  initial={{ opacity: 0, y: -20, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9, filter: 'blur(4px)' }}
-                  transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-                  className="w-full bg-black/30 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[16px] p-3 flex items-start gap-3"
-                >
-                  <div className="w-10 h-10 rounded-full bg-transparent flex items-center justify-center shrink-0 overflow-hidden shadow-inner border border-white/10">
-                    <img src="/images/finova-logo-dark.png" className="w-full h-full object-cover" alt="Finova" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-[11px] font-bold text-white/90 font-['Exo_2'] uppercase tracking-wide">{t('onboarding.pushMockupAgent')}</span>
-                      <span className="text-[10px] text-white/50 font-medium">{t('onboarding.pushMockupNow')}</span>
-                    </div>
-                    <p className="text-[13px] font-semibold text-white/95 leading-tight mb-1">{t('onboarding.pushMockupAlert')}</p>
-                    <p className="text-[12px] text-white/70 leading-[1.3em]">
-                      {t('onboarding.pushMockupBody')}
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Ambient Glow */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/15 to-transparent blur-2xl rounded-full -z-10" />
+
+          {/* Lockscreen Header / Clock */}
+          <div className="pt-3 px-4 flex flex-col items-center relative z-20">
+            <span className="text-[10px] font-semibold text-white/60 tracking-wider font-['Exo_2']">
+              {isRTL ? 'الإثنين، ٢١ سبتمبر' : 'Monday, September 21'}
+            </span>
+            <span className="text-[28px] font-black text-white/95 tracking-tight font-['Exo_2'] tabular-nums leading-none mt-0.5">
+              9:41
+            </span>
           </div>
 
-          {/* Magic Overlay Glow */}
-          <div className="absolute inset-x-0 top-0 h-[50%] bg-gradient-to-b from-[#8D6346]/10 to-transparent flex flex-col items-center justify-start z-0 pointer-events-none" />
+          {/* Content Area / Notification Layer */}
+          <div className="flex-1 px-3.5 flex flex-col justify-center overflow-hidden relative z-10 w-full">
+            <motion.div
+              key="popup"
+              initial={{ opacity: 0, y: -15, scale: 0.94 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: notifState === 'pulse' ? 1.02 : 1 
+              }}
+              transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+              className="w-full bg-[#1F1918]/90 backdrop-blur-2xl border border-white/20 shadow-[0_14px_32px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.25)] rounded-2xl p-3 flex items-start gap-2.5 cursor-pointer"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#8D6346]/50 flex items-center justify-center shrink-0 shadow-inner border border-white/20 text-[#E8C5A8]">
+                <Bell size={16} className={notifState === 'pulse' ? 'animate-bounce' : ''} />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1 text-start">
+                <div className="flex justify-between items-center mb-0.5">
+                  <span className="text-[10px] font-bold text-[#E8C5A8] font-['Exo_2'] uppercase tracking-wider">{t('onboarding.pushMockupAgent')}</span>
+                  <span className="text-[9px] text-white/60 font-medium font-['Exo_2']">{t('onboarding.pushMockupNow')}</span>
+                </div>
+                <p className="text-[12.5px] font-bold text-white leading-tight mb-0.5 font-['Exo_2']">{t('onboarding.pushMockupAlert')}</p>
+                <p className="text-[11px] text-white/80 leading-[1.3em] font-['Exo_2']">
+                  {t('onboarding.pushMockupBody')}
+                </p>
+              </div>
+            </motion.div>
+          </div>
 
-          {/* Mock Nav Bar */}
-          <div className="h-16 bg-[#1a1412]/60 backdrop-blur-xl border-t border-white/10 flex items-center justify-center px-6 relative z-20">
-            <div className="absolute -top-6 size-14 rounded-full flex items-center justify-center border-2 border-[#8D6346]/30 bg-gradient-to-br from-[#4a3424] to-[#2a1d15] shadow-[0_8px_20px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(255,255,255,0.2)]">
-              <Bell size={24} className="text-[#e2b897] animate-pulse" />
-            </div>
+          {/* Mock Bottom Home Indicator & Quick Action */}
+          <div className="h-11 bg-black/50 backdrop-blur-xl border-t border-white/10 flex items-center justify-center px-6 relative z-20">
+            <div className="w-16 h-1 bg-white/20 rounded-full" />
           </div>
         </motion.div>
       </div>
 
-      {/* Text Area */}
+      {/* Pure Floating Typography */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="w-full flex flex-col items-start pb-4 z-20"
+        transition={{ delay: 0.15, duration: 0.4 }}
+        className="w-full max-w-[340px] px-3 py-2 z-20 text-start shrink-0 my-2"
       >
-        <p className="font-['Exo_2'] text-left" dir={isRTL ? 'rtl' : 'ltr'}>
-          <span className="font-bold text-white tracking-tight drop-shadow-sm text-[22px] block mb-2">
-            {t(stepData.titleKey, stepData.defaultTitle)}
-          </span>
-          <span className="block font-medium tracking-[-0.01em] text-[15px] leading-[1.5em] text-white/70">
-            {t(stepData.descKey, stepData.defaultDesc)}
-          </span>
+        <h2 className="font-['Exo_2'] font-bold text-white text-[21px] sm:text-[23px] leading-tight tracking-tight mb-1.5 drop-shadow-md">
+          {t(stepData.titleKey, stepData.defaultTitle)}
+        </h2>
+        <p className="font-['Exo_2'] font-normal text-white/85 text-[14px] sm:text-[14.5px] leading-relaxed drop-shadow-sm">
+          {t(stepData.descKey, stepData.defaultDesc)}
         </p>
       </motion.div>
     </div>

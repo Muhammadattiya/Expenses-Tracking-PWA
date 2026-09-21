@@ -48,7 +48,7 @@ export const LanguageProvider = ({ children }) => {
 
     if (typeof result === 'string' && vars) {
       Object.keys(vars).forEach(v => {
-        result = result.replace(new RegExp(`{{${v}}}`, 'g'), vars[v]);
+        result = result.replace(new RegExp(`(?:{{${v}}}|{${v}})`, 'g'), vars[v]);
       });
     }
 

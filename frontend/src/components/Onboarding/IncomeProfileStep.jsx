@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getAccounts } from '../../api/accounts';
 import { getCategories } from '../../api/categories';
 import { createIncomeProfile } from '../../api/incomeProfiles';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles, Building2, Tag, Calendar } from 'lucide-react';
 
 export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlobal, setIsOverlayActive }) {
   const { t, language } = useLanguage();
@@ -15,7 +16,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
   const [categories, setCategories] = useState([]);
   
   const [formData, setFormData] = useState({
-    name: '',
+    name: 'المرتب الأساسي',
     amount: '',
     frequency: 'monthly',
     monthDay: 1,
@@ -27,19 +28,17 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
 
   useEffect(() => {
     if (setIsOverlayActive) setIsOverlayActive(true);
-    
-    // 2.5 second overlay
+
     const timer = setTimeout(() => {
       setShowOverlay(false);
       if (setIsOverlayActive) setIsOverlayActive(false);
-    }, 2500);
+    }, 2400);
 
     // Fetch accounts and categories
     const fetchData = async () => {
       try {
         const [accs, cats] = await Promise.all([getAccounts(), getCategories()]);
         setAccounts(accs);
-        // Try to filter income categories if applicable, else show all
         const incomeCats = cats.filter(c => c.type === 'income' || c.type === 'both' || !c.type);
         setCategories(incomeCats.length > 0 ? incomeCats : cats);
         
@@ -57,249 +56,317 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
     };
 
     fetchData();
-    return () => clearTimeout(timer);
-  }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    return () => {
+      clearTimeout(timer);
+      if (setIsOverlayActive) setIsOverlayActive(false);
+    };
+  }, [setIsOverlayActive]);
+
+  const dismissOverlay = () => {
+    setShowOverlay(false);
+    if (setIsOverlayActive) setIsOverlayActive(false);
   };
 
   const handleSave = async (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.amount || !formData.account || !formData.category) return;
+    if (e) e.preventDefault();
+    if (!formData.amount || Number(formData.amount) <= 0) return;
     
     setLoading(true);
     setLoadingGlobal(true);
     try {
       await createIncomeProfile({
-        name: formData.name,
+        name: formData.name || (isRTL ? 'المرتب الأساسي' : 'Primary Salary'),
         amount: Number(formData.amount),
         frequency: formData.frequency,
         monthDay: Number(formData.monthDay),
         weekDay: Number(formData.weekDay),
-        account: formData.account,
-        category: formData.category
+        account: formData.account || (accounts[0] ? accounts[0]._id : undefined),
+        category: formData.category || (categories[0] ? categories[0]._id : undefined)
       });
-      // On success, go to next step
-      setLoading(false);
-      setLoadingGlobal(false);
       handleNext();
     } catch (err) {
       console.error("Error creating income profile:", err);
-      // Even if it fails (e.g. offline), we might want to proceed or show error
+      // Proceed even if network/offline fallback
+      handleNext();
+    } finally {
       setLoading(false);
       setLoadingGlobal(false);
     }
   };
 
-  const inputClasses = "w-full h-[36px] bg-black/30 backdrop-blur-[20px] rounded-[14px] border border-white/5 shadow-inner text-white/90 px-3 text-[12px] font-['Exo_2'] focus:outline-none focus:border-white/20 transition-colors appearance-none";
-  const labelClasses = "block text-[11px] font-medium text-white/70 mb-0.5 font-['Exo_2']";
+  const quickPresets = ['5,000', '10,000', '20,000', '35,000'];
+  const paydayPresets = [
+    { day: 1, label: isRTL ? '1 (أول الشهر)' : '1st (Start)' },
+    { day: 10, label: isRTL ? '10' : '10th' },
+    { day: 25, label: isRTL ? '25' : '25th' },
+    { day: 30, label: isRTL ? '30 (آخر الشهر)' : '30th (End)' },
+  ];
+
+  const weekOptions = [
+    { value: 0, label: t('weekdays.sunday') },
+    { value: 1, label: t('weekdays.monday') },
+    { value: 2, label: t('weekdays.tuesday') },
+    { value: 3, label: t('weekdays.wednesday') },
+    { value: 4, label: t('weekdays.thursday') },
+    { value: 5, label: t('weekdays.friday') },
+    { value: 6, label: t('weekdays.saturday') },
+  ];
 
   return (
-    <div className="flex-1 flex flex-col w-full min-h-0 pt-[90px] px-6 z-10" dir={isRTL ? 'rtl' : 'ltr'}>
-      <AnimatePresence mode="wait">
-        {showOverlay ? (
+    <div className="flex-1 flex flex-col w-full h-full min-h-0 relative z-10" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* 1. Transition Full-Viewport Overlay via React Portal (Eliminates bottom 56px mismatch) */}
+      {showOverlay && typeof document !== 'undefined' && createPortal(
+        <motion.div
+          key="overlay"
+          id="income-overlay"
+          role="region"
+          aria-label={t('onboarding.screen3Overlay')}
+          onClick={dismissOverlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35 }}
+          className="fixed inset-0 z-[100] w-screen h-[100dvh] flex flex-col items-center justify-center bg-[#100E11]/95 backdrop-blur-[28px] cursor-pointer px-6 select-none"
+        >
+          {/* Ambient Glow behind logo */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/10 to-transparent blur-[120px] rounded-full pointer-events-none -z-10" />
+
+          {/* Logo with clean 39.01deg rotation */}
           <motion.div
-            key="overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-black/40 backdrop-blur-[10px]"
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, type: 'spring', bounce: 0.3 }}
+            className="w-52 h-52 sm:w-56 sm:h-56 mb-8 relative flex items-center justify-center pointer-events-none"
           >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
-              className="w-56 h-56 mb-8"
-            >
-              <img src="/images/onboarding1.png" alt="Finova Logo" className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] opacity-90 mix-blend-screen" style={{ filter: 'brightness(0.5) sepia(1) hue-rotate(-30deg) saturate(2)', transform: 'rotate(39.01deg)' }} />
-            </motion.div>
-            <motion.h2
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-[28px] font-bold text-center text-white/90 font-['Exo_2'] max-w-[300px] leading-snug drop-shadow-lg"
-            >
-              {t('onboarding.screen3Overlay')}
-            </motion.h2>
+            <img 
+              src="/images/onboarding1.png" 
+              alt="Finova"
+              width={224}
+              height={224}
+              className="w-full h-full object-contain drop-shadow-[0_0_45px_rgba(141,99,70,0.45)] opacity-95" 
+              style={{ transform: 'rotate(39.01deg)' }} 
+            />
           </motion.div>
-        ) : (
-          <motion.div
-            key="form"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full flex-1 flex flex-col pb-2 min-h-0"
+
+          <motion.h2
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.25, duration: 0.4 }}
+            className="text-[23px] sm:text-[26px] font-bold text-center text-white font-['Exo_2'] max-w-[320px] leading-snug drop-shadow-lg"
           >
-            <h2 className="text-[18px] font-bold text-white text-center font-['Exo_2'] drop-shadow-sm mb-3">
-              {t('onboarding.screen3Title')}
-            </h2>
+            {t('onboarding.screen3Overlay')}
+          </motion.h2>
+        </motion.div>,
+        document.body
+      )}
 
-            <form onSubmit={handleSave} className="flex-1 flex flex-col px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              
-              <div className="flex flex-col gap-3 pb-4">
-                  {/* Income Name */}
-                  <div>
-                    <label className={labelClasses}>{t('onboarding.incomeName')}</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder={t('onboarding.incomeNamePlaceholder')}
-                      className={inputClasses}
-                      required
-                    />
-                  </div>
+      {/* 2. Premium Fintech Hero Salary Layout */}
+      <motion.div
+        key="form-content"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full flex-1 flex flex-col items-center justify-between px-4 sm:px-6 pt-10 pb-16 min-h-0 overflow-hidden"
+      >
+        {/* Top Header */}
+        <div className="text-center shrink-0 mb-2">
+          <h2 className="text-[22px] sm:text-[24px] font-bold text-white font-['Exo_2'] tracking-tight drop-shadow-sm">
+            {t('onboarding.screen3Title')}
+          </h2>
+          <p className="text-[12.5px] text-white/65 font-['Exo_2'] mt-1 max-w-[310px] leading-normal">
+            {t('onboarding.screen3Subtitle', 'حدد دخلك الأساسي وموعد استلامه لبدء خطتك المالية الذكية')}
+          </p>
+        </div>
 
-                  {/* Amount */}
-                  <div>
-                    <label className={labelClasses}>{t('onboarding.howMuch')}</label>
-                    <input
-                      type="number"
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                      className={inputClasses}
-                      required
-                    />
-                  </div>
+        {/* Hero Salary Card */}
+        <form 
+          onSubmit={handleSave} 
+          className="w-full max-w-[340px] flex flex-col shrink-0"
+        >
+          <div className="bg-[#2B2321]/45 backdrop-blur-[32px] border border-white/15 rounded-[2rem] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] flex flex-col gap-3.5">
+            
+            {/* Row 1: Label & Frequency Segmented Pill */}
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-bold text-[#E8C5A8] font-['Exo_2'] flex items-center gap-1.5">
+                <Sparkles size={13} className="text-[#E8C5A8]" />
+                {t('onboarding.heroIncomeLabel', 'دخلك الأساسي')}
+              </span>
 
-                  {/* Frequency */}
-                  <div>
-                    <label className={labelClasses}>{t('onboarding.howOften')}</label>
-                    <select
-                      name="frequency"
-                      value={formData.frequency}
-                      onChange={handleChange}
-                      className={inputClasses}
-                      required
-                    >
-                      <option value="monthly" className="bg-[#2a1d15]">{t('onboarding.monthly')}</option>
-                      <option value="weekly" className="bg-[#2a1d15]">{t('onboarding.weekly')}</option>
-                    </select>
-                  </div>
-
-                  {/* Pay Date */}
-                  <div>
-                    <label className={labelClasses}>{t('onboarding.whenPaid')}</label>
-                    <div className="flex items-center gap-4">
-                      {formData.frequency === 'monthly' ? (
-                        <>
-                          <input
-                            type="number"
-                            name="monthDay"
-                            value={formData.monthDay}
-                            onChange={handleChange}
-                            min="1"
-                            max="31"
-                            className={`${inputClasses} w-24 text-center`}
-                            required
-                          />
-                          <span className="text-white/60 text-[13px] font-medium font-['Exo_2']">{t('onboarding.ofEveryMonth')}</span>
-                        </>
-                      ) : (
-                        <select
-                          name="weekDay"
-                          value={formData.weekDay}
-                          onChange={handleChange}
-                          className={inputClasses}
-                          required
-                        >
-                          <option value="0" className="bg-[#2a1d15]">Sunday</option>
-                          <option value="1" className="bg-[#2a1d15]">Monday</option>
-                          <option value="2" className="bg-[#2a1d15]">Tuesday</option>
-                          <option value="3" className="bg-[#2a1d15]">Wednesday</option>
-                          <option value="4" className="bg-[#2a1d15]">Thursday</option>
-                          <option value="5" className="bg-[#2a1d15]">Friday</option>
-                          <option value="6" className="bg-[#2a1d15]">Saturday</option>
-                        </select>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Account */}
-                  <div>
-                    <label className={labelClasses}>{t('onboarding.whereItGoes')}</label>
-                    <select
-                      name="account"
-                      value={formData.account}
-                      onChange={handleChange}
-                      className={inputClasses}
-                      required
-                    >
-                      <option value="" disabled className="bg-[#2a1d15]">{t('onboarding.selectAccount')}</option>
-                      {accounts.map(acc => (
-                        <option key={acc._id} value={acc._id} className="bg-[#2a1d15]">{acc.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Category */}
-                  <div>
-                    <label className={labelClasses}>{t('onboarding.whatKind')}</label>
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className={inputClasses}
-                      required
-                    >
-                      <option value="" disabled className="bg-[#2a1d15]">{t('onboarding.selectCategory')}</option>
-                      {categories.map(cat => (
-                        <option key={cat._id} value={cat._id} className="bg-[#2a1d15]">{isRTL ? cat.nameAr || cat.name : cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-              </div>
-
-              {/* Decorative Logo */}
-              <div className="flex-1 flex flex-col justify-center items-center min-h-[100px] py-4 pointer-events-none">
-                <motion.div
-                  className="w-[120px] h-[120px]"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.6, type: 'spring' }}
+              {/* Segmented Pill Toggle */}
+              <div className="flex bg-black/40 p-0.5 rounded-full border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, frequency: 'monthly' }))}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold font-['Exo_2'] transition-all ${
+                    formData.frequency === 'monthly'
+                      ? 'bg-[#8D6346] text-white shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                  }`}
                 >
-                  <motion.div
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                    className="w-full h-full"
+                  {t('onboarding.monthly')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, frequency: 'weekly' }))}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold font-['Exo_2'] transition-all ${
+                    formData.frequency === 'weekly'
+                      ? 'bg-[#8D6346] text-white shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  {t('onboarding.weekly')}
+                </button>
+              </div>
+            </div>
+
+            {/* Row 2: Hero Large Amount Input */}
+            <div className="flex items-baseline justify-center gap-1.5 py-1.5 border-b border-white/10">
+              <span className="text-[17px] sm:text-[19px] font-bold text-[#E8C5A8] font-['Exo_2'] select-none">
+                {isRTL ? 'ج.م' : '$'}
+              </span>
+              <input
+                id="income-amount"
+                type="number"
+                name="amount"
+                value={formData.amount}
+                onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))}
+                placeholder="0.00"
+                step="any"
+                min="0"
+                autoFocus
+                className="w-full max-w-[200px] text-center text-[34px] sm:text-[38px] font-black text-white bg-transparent outline-none tabular-nums tracking-tight placeholder:text-white/20 focus:ring-0"
+                required
+              />
+            </div>
+
+            {/* Row 3: Quick Preset Chips */}
+            <div className="flex items-center justify-between gap-1.5 pt-0.5">
+              {quickPresets.map((preset) => {
+                const numericVal = preset.replace(/,/g, '');
+                const isSelected = formData.amount === numericVal;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, amount: numericVal }))}
+                    className={`flex-1 py-1 rounded-xl text-[10.5px] font-semibold font-['Exo_2'] border transition-all ${
+                      isSelected
+                        ? 'bg-[#8D6346]/50 border-[#E8C5A8]/50 text-white'
+                        : 'bg-black/20 border-white/10 text-white/65 hover:bg-white/10 hover:text-white'
+                    }`}
                   >
-                    <img 
-                      src="/images/onboarding1.png"
-                      alt="Decoration"
-                      className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] opacity-40"
-                      style={{ transform: "rotate(15deg)" }}
-                    />
-                  </motion.div>
-                </motion.div>
+                    {preset}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Row 4: Payday Selector */}
+            <div className="pt-1">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-medium text-white/70 font-['Exo_2'] flex items-center gap-1">
+                  <Calendar size={12} className="text-[#E8C5A8]" />
+                  {t('onboarding.paydayLabel', 'يوم القبض')}
+                </span>
+                <span className="text-[10px] text-white/50 font-['Exo_2']">
+                  {formData.frequency === 'monthly' ? t('onboarding.ofEveryMonth') : t('onboarding.dayOfWeek')}
+                </span>
               </div>
 
-              {/* Save Button */}
-              <div className="pt-1 flex justify-center mt-auto pb-2 shrink-0">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  type="submit"
-                  disabled={loading}
-                  className="w-full max-w-[160px] h-[36px] flex items-center justify-center rounded-[2rem] bg-[rgba(141,99,70,0.6)] backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:text-white hover:bg-[rgba(141,99,70,0.8)] transition-colors relative z-50"
+              {formData.frequency === 'monthly' ? (
+                <div className="grid grid-cols-4 gap-1.5">
+                  {paydayPresets.map(preset => (
+                    <button
+                      key={preset.day}
+                      type="button"
+                      onClick={() => setFormData(p => ({ ...p, monthDay: preset.day }))}
+                      className={`py-1.5 px-1 rounded-xl text-[10.5px] font-medium font-['Exo_2'] border transition-all text-center ${
+                        formData.monthDay === preset.day
+                          ? 'bg-[#8D6346] border-white/30 text-white shadow-inner font-bold'
+                          : 'bg-black/25 border-white/10 text-white/60 hover:text-white'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex bg-black/30 border border-white/10 rounded-xl overflow-hidden">
+                  <select
+                    id="income-weekday-select"
+                    value={formData.weekDay}
+                    onChange={(e) => setFormData(p => ({ ...p, weekDay: Number(e.target.value) }))}
+                    className="w-full bg-transparent text-white text-[12px] p-2 outline-none"
+                  >
+                    {weekOptions.map(opt => (
+                      <option key={opt.value} value={opt.value} className="bg-[#2B2321] text-white">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Row 5: Deposit Account & Category (Compact Chips) */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Account Selector */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/30 border border-white/10">
+                <Building2 size={13} className="text-[#E8C5A8] shrink-0" />
+                <select
+                  aria-label={t('onboarding.whereItGoes')}
+                  value={formData.account}
+                  onChange={(e) => setFormData(p => ({ ...p, account: e.target.value }))}
+                  className="w-full bg-transparent text-white/85 text-[11px] font-medium font-['Exo_2'] outline-none cursor-pointer truncate"
                 >
-                  {loading ? (
-                    <Loader2 size={16} className="animate-spin text-white/90" />
-                  ) : (
-                    <span className="text-white/90 font-medium text-[13px] font-['Exo_2'] tracking-wide">{t('onboarding.save')}</span>
-                  )}
-                </motion.button>
+                  {accounts.map(acc => (
+                    <option key={acc._id} value={acc._id} className="bg-[#2B2321] text-white">
+                      {acc.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              {/* Category Selector */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/30 border border-white/10">
+                <Tag size={13} className="text-[#E8C5A8] shrink-0" />
+                <select
+                  aria-label={t('onboarding.whatKind')}
+                  value={formData.category}
+                  onChange={(e) => setFormData(p => ({ ...p, category: e.target.value }))}
+                  className="w-full bg-transparent text-white/85 text-[11px] font-medium font-['Exo_2'] outline-none cursor-pointer truncate"
+                >
+                  {categories.map(cat => (
+                    <option key={cat._id} value={cat._id} className="bg-[#2B2321] text-white">
+                      {isRTL ? cat.nameAr || cat.name : cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Primary Action Button */}
+          <div className="pt-3">
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={loading}
+              className="w-full h-[48px] flex items-center justify-center rounded-2xl bg-[#8D6346] hover:bg-[#a67a5b] border border-white/20 shadow-[0_4px_20px_rgba(141,99,70,0.4),inset_0_1px_2px_rgba(255,255,255,0.25)] transition-all text-white font-bold text-[14.5px] cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
+            >
+              {loading ? (
+                <Loader2 size={19} className="animate-spin text-white/90" />
+              ) : (
+                <span className="text-white font-bold text-[14.5px] font-['Exo_2'] tracking-wide">
+                  {t('onboarding.save')}
+                </span>
+              )}
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
     </div>
   );
 }
