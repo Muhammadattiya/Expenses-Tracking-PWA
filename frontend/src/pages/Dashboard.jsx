@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic, ShieldCheck, ShieldAlert, AlertTriangle, Wallet, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, ChevronLeft, ChevronDown, Info, ArrowRight, Mic, ShieldCheck, ShieldAlert, AlertTriangle, Wallet, Sparkles, TrendingUp, Coins, LineChart, Banknote } from "lucide-react";
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { DashboardSummarySkeleton, ListSkeleton } from "../components/ui/Skeletons";
 
@@ -513,6 +513,12 @@ const Dashboard = () => {
     return { groupedTransactions: grouped, sortedDates: sorted, groupCounts: counts, groupOffsets: offsets };
   }, [displayedTransactions, selectedAccount]);
 
+  const isSelectedAccountInvestment = useMemo(() => {
+    if (selectedAccount === 'all') return false;
+    const acc = accounts.find(a => a._id === selectedAccount);
+    return acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات';
+  }, [selectedAccount, accounts]);
+
   const handleTransactionClick = (transaction) => {
     if (transaction.isDebt) {
       triggerHaptic('selection');
@@ -866,88 +872,67 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* If selectedAccount is an Investment Account, show the Portfolio Holdings Card */}
-        {selectedAccount !== 'all' && (() => {
-          const acc = accounts.find(a => a._id === selectedAccount);
-          return acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات';
-        })() && (
-          <div className="mb-6 p-5 rounded-[2rem] bg-[#2B2321]/30 backdrop-blur-[32px] border border-[#8D6346]/40 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 shrink-0 rounded-2xl bg-[#8D6346]/25 border border-[#8D6346]/40 flex items-center justify-center text-[#E8C5A8] shadow-inner">
-                  <LucideIcons.TrendingUp className="w-5 h-5 text-[#E8C5A8]" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-white font-bold text-base leading-tight drop-shadow-sm truncate">
+        {/* If selectedAccount is an Investment Account, show a clean, sleek direct shortcut to the Investments Portfolio */}
+        {isSelectedAccountInvestment && (
+          <motion.div 
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              triggerHaptic('light');
+              navigate('/investments');
+            }}
+            className="w-full relative overflow-hidden rounded-[26px] p-5 cursor-pointer border mb-4 group liquidglass"
+            style={{
+              background: 'linear-gradient(145deg, rgba(42, 30, 26, 0.85) 0%, rgba(20, 16, 18, 0.95) 100%)',
+              borderColor: 'rgba(232, 197, 168, 0.35)',
+              backdropFilter: 'blur(40px) saturate(1.45)',
+              WebkitBackdropFilter: 'blur(40px) saturate(1.45)',
+              boxShadow: 'inset 0 1px 2px rgba(232,197,168,0.2), 0 16px 40px rgba(0,0,0,0.55), 0 2px 10px rgba(141,99,70,0.2)'
+            }}
+          >
+            {/* Top Subtle Shimmer */}
+            <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8C5A8]/50 to-transparent pointer-events-none" />
+
+            <div className="flex items-center justify-between w-full gap-4">
+              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2.5">
+                  <TrendingUp className="w-5 h-5 text-[#E8C5A8] shrink-0" />
+                  <h3 className="text-white font-bold text-base sm:text-lg tracking-wide drop-shadow-sm">
                     {t('investments.portfolioHoldings')}
                   </h3>
-                  <p className="text-white/80 font-medium text-xs mt-0.5 truncate">
-                    {allInvestments.length > 0 
-                      ? `${allInvestments.length} ${t('investments.title')}` 
-                      : t('investments.noHoldingsYet')}
-                  </p>
+                </div>
+                <p className="text-white/80 text-xs sm:text-[13px] leading-relaxed max-w-sm sm:max-w-md font-medium">
+                  {t('investments.portfolioBannerDesc')}
+                </p>
+                <div className="inline-flex items-center gap-1.5 mt-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#8D6346]/40 to-[#8D6346]/25 hover:from-[#8D6346]/55 hover:to-[#8D6346]/35 border border-[#E8C5A8]/40 text-[#E8C5A8] text-xs font-bold self-start shadow-sm transition-all">
+                  <span>{t('investments.viewPortfolio')}</span>
+                  <ChevronRight className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
                 </div>
               </div>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  triggerHaptic('selection');
-                  navigate('/investments');
-                }}
-                className="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full bg-[#8D6346]/35 border border-[#8D6346]/50 hover:bg-[#8D6346]/50 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-              >
-                <span>{t('investments.viewPortfolio')}</span>
-                <ChevronRight className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-              </motion.button>
-            </div>
 
-            {/* Holdings items pills */}
-            {allInvestments.length > 0 ? (
-              <div className="flex flex-col gap-2 pt-1 border-t border-white/5">
-                {allInvestments.map(inv => (
-                  <div key={inv._id} className="flex items-center justify-between p-3.5 rounded-2xl bg-black/30 border border-white/10 shadow-inner">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-[#8D6346]/20 border border-[#8D6346]/30 flex items-center justify-center text-[#E8C5A8] shrink-0">
-                        {inv.type === 'gold' ? <LucideIcons.Coins size={17} /> : <LucideIcons.LineChart size={17} />}
-                      </div>
-                      <div>
-                        <p className="font-bold text-white text-sm leading-tight drop-shadow-sm">{inv.name}</p>
-                        <p className="text-xs text-white/80 font-medium mt-0.5">
-                          {inv.quantity} {inv.type === 'gold' ? t('investments.gram') : t('investments.shareUnit')} • @ {Number(inv.purchasePrice).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right rtl:text-left flex items-baseline gap-1 shrink-0">
-                      <span className="text-base font-extrabold text-white tabular-nums tracking-tight drop-shadow-sm">
-                        {(Number(inv.quantity) * Number(inv.currentPrice || inv.purchasePrice)).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}
-                      </span>
-                      <span className="text-xs text-[#E8C5A8] font-bold">{t('nav.currency')}</span>
-                    </div>
-                  </div>
-                ))}
+              {/* Ambient Glow Icon on right */}
+              <div className="relative flex items-center justify-center shrink-0">
+                <motion.div
+                  animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.35, 0.15] }}
+                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                  className="absolute w-12 h-12 rounded-full bg-[#8D6346] blur-md pointer-events-none"
+                />
+                <div className="relative w-12 h-12 rounded-2xl bg-black/40 border border-white/15 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                  <TrendingUp className="w-6 h-6 text-[#E8C5A8] drop-shadow-[0_0_10px_rgba(232,197,168,0.5)]" />
+                </div>
               </div>
-            ) : (
-              <p className="text-xs text-white/70 font-medium italic">
-                {t('investments.noHoldingsYet')}
-              </p>
-            )}
-
-            <div className="p-3.5 rounded-2xl bg-black/25 border border-white/10 backdrop-blur-md">
-              <p className="text-xs text-white/85 leading-relaxed font-medium">
-                {t('investments.investmentAccountNotice')}
-              </p>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Transactions List */}
         <div className="w-full">
            <h2 className="text-white font-extrabold text-[22px] mb-4 pl-2 drop-shadow-md">{t('dashboard.transactionHistory') || 'Transaction History'}</h2>
-           {displayedTransactions.length === 0 ? (
-             <div className="text-center text-white/50 py-12 bg-white/5 rounded-[2rem] font-medium flex flex-col items-center gap-3">
-               <p>{t('dashboard.noTransactions')}</p>
-             </div>
-           ) : (
+             {displayedTransactions.length === 0 ? (
+               <div className="text-center text-white/50 py-12 bg-white/5 rounded-[2rem] font-medium flex flex-col items-center gap-3">
+                 <p>{t('dashboard.noTransactions')}</p>
+               </div>
+             ) : (
              <GroupedVirtuoso
                useWindowScroll
                groupCounts={groupCounts}
@@ -1011,9 +996,9 @@ const Dashboard = () => {
                    </div>
                  );
                }}
-             />
-           )}
-        </div>
+              />
+            )}
+          </div>
       </div>
 
       <EditTransactionModal

@@ -33,6 +33,10 @@ const categorySchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  order: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -41,5 +45,6 @@ const categorySchema = new mongoose.Schema({
 
 // عشان نمنع تكرار نفس اسم الفئة في نفس النوع
 categorySchema.index({ user: 1, name: 1, type: 1 }, { unique: true });
+categorySchema.index({ user: 1, type: 1, order: 1 });
 
 module.exports = mongoose.model('Category', categorySchema);

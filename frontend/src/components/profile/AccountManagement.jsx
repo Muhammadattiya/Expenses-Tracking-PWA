@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Wallet, Pencil, Trash2, X, Star, ArrowLeft, Loader2 } from "lucide-react";
+import { Plus, Wallet, Pencil, Trash2, X, Star, ArrowLeft, Loader2, ArrowUpDown, Check, GripVertical } from "lucide-react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { getAccounts, createAccount, updateAccount, deleteAccount } from "../../api/accounts";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { getAccounts, createAccount, updateAccount, deleteAccount, reorderAccounts } from "../../api/accounts";
 import { getTransactions } from "../../api/transactions";
 import { getDebts } from "../../api/debts";
 import { getReceivables } from "../../api/receivables";
@@ -11,6 +11,7 @@ import ConfirmModal from "../modals/ConfirmModal";
 import IconPicker, { getIconComponent } from "../IconPicker";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { triggerHaptic } from "../../utils/haptics";
 
 export default function AccountManagement({ onBack }) {
   const { showToast } = useNotification();
@@ -51,6 +52,46 @@ export default function AccountManagement({ onBack }) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Arrange / Reorder State
+  const [isArranging, setIsArranging] = useState(false);
+  const [hasOrderChanged, setHasOrderChanged] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  const activeAccounts = useMemo(() => accounts.filter(a => !a.isArchived), [accounts]);
+
+  const handleToggleArrange = async () => {
+    triggerHaptic('light');
+    if (isArranging) {
+      if (hasOrderChanged) {
+        setIsSavingOrder(true);
+        try {
+          const orderedIds = activeAccounts.map(a => a._id);
+          await reorderAccounts(orderedIds);
+          showToast(t('settings.reorderSuccess') || 'Order saved successfully', 'success');
+        } catch (error) {
+          console.error("Error saving account order:", error);
+          showToast(t('settings.reorderError') || 'Failed to save order', 'error');
+        } finally {
+          setIsSavingOrder(false);
+        }
+      }
+      setIsArranging(false);
+      setHasOrderChanged(false);
+    } else {
+      setIsArranging(true);
+      setHasOrderChanged(false);
+    }
+  };
+
+  const handleReorder = (newActiveAccounts) => {
+    setAccounts(prev => {
+      const archived = prev.filter(a => a.isArchived);
+      return [...newActiveAccounts, ...archived];
+    });
+    setHasOrderChanged(true);
+    triggerHaptic('selection');
+  };
 
   const fetchData = async () => {
     try {
@@ -279,95 +320,167 @@ export default function AccountManagement({ onBack }) {
 
   return (
     <section className="relative z-10 flex flex-col w-full h-full">
-      <div className="flex items-center gap-3 mb-4">
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={onBack}
-          aria-label={t('common.back')}
-          className="w-12 h-12 flex shrink-0 items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
-        >
-          <ArrowLeft size={20} className="text-white/90 rtl:rotate-180" />
-        </motion.button>
-        <h3 className="text-xl font-bold flex items-center gap-2 text-white drop-shadow-sm">
-          <Wallet className="w-6 h-6 text-[#8D6346]" /> {t('settings.accountsTitle')}
-        </h3>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onBack}
+            aria-label={t('common.back')}
+            className="w-12 h-12 flex shrink-0 items-center justify-center rounded-[2rem] bg-[#8D6346]/40 backdrop-blur-[32px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] hover:bg-[#8D6346]/60 transition-colors"
+          >
+            <ArrowLeft size={20} className="text-white/90 rtl:rotate-180" />
+          </motion.button>
+          <h3 className="text-xl font-bold flex items-center gap-2 text-white drop-shadow-sm">
+            <Wallet className="w-6 h-6 text-[#8D6346]" /> {t('settings.accountsTitle')}
+          </h3>
+        </div>
+
+        {activeAccounts.length > 1 && (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleToggleArrange}
+            disabled={isSavingOrder}
+            className={`px-3.5 py-2 rounded-2xl flex items-center gap-1.5 text-xs font-bold transition-all ${
+              isArranging
+                ? 'bg-[#8D6346] text-white shadow-[0_4px_16px_rgba(141,99,70,0.4)]'
+                : 'bg-[#8D6346]/20 text-[#E8C5A8] border border-[#8D6346]/30 hover:bg-[#8D6346]/30'
+            }`}
+          >
+            {isSavingOrder ? (
+              <Loader2 size={15} className="animate-spin text-white" />
+            ) : isArranging ? (
+              <>
+                <Check size={15} />
+                <span>{t('settings.doneArranging')}</span>
+              </>
+            ) : (
+              <>
+                <ArrowUpDown size={15} />
+                <span>{t('settings.arrange')}</span>
+              </>
+            )}
+          </motion.button>
+        )}
       </div>
 
-      <ul className="flex flex-col gap-4 mb-8">
-        {accounts.filter(a => !a.isArchived).map((acc) => {
-          const AccIcon = getIconComponent(acc.icon, 'Wallet');
-          return (
-            <li key={acc._id} className="py-4 px-2 flex items-center justify-between gap-3 group">
-              <div className="p-3 rounded-2xl shadow-inner transition-transform group-hover:scale-110" style={{ backgroundColor: `${acc.color || '#3b82f6'}20`, color: acc.color || '#3b82f6', border: `1px solid ${acc.color || '#3b82f6'}30` }}>
-                <AccIcon size={22} />
-              </div>
-              <div className="flex flex-col flex-1">
-                <span className="text-white/90 font-bold text-base">{isInvestmentAccount(acc) ? t('settings.investmentsAccount') : acc.name}</span>
-                <span className="text-xs text-white/50 capitalize">{acc.type === 'cash' ? t('settings.cash') : acc.type === 'bank' ? t('settings.bank') : isInvestmentAccount(acc) ? t('investments.title') : t('settings.wallet')}</span>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                  <span className="font-black text-[#8D6346] tabular-nums tracking-tight text-lg drop-shadow-sm">{getAccountBalance(acc).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
-                  <span className="text-xs text-[#8D6346]/80 font-bold">{t('settings.egp')}</span>
+      {isArranging ? (
+        <Reorder.Group
+          axis="y"
+          values={activeAccounts}
+          onReorder={handleReorder}
+          className="flex flex-col gap-3 mb-8"
+        >
+          {activeAccounts.map((acc) => {
+            const AccIcon = getIconComponent(acc.icon, 'Wallet');
+            return (
+              <Reorder.Item
+                key={acc._id}
+                value={acc}
+                className="py-3.5 px-3 flex items-center justify-between gap-3 bg-[#8D6346]/10 border border-[#8D6346]/30 rounded-2xl shadow-md select-none touch-none cursor-grab active:cursor-grabbing group"
+                whileDrag={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="p-2.5 rounded-xl shadow-inner transition-transform group-hover:scale-105" style={{ backgroundColor: `${acc.color || '#3b82f6'}20`, color: acc.color || '#3b82f6', border: `1px solid ${acc.color || '#3b82f6'}30` }}>
+                    <AccIcon size={20} />
+                  </div>
+                  <div className="flex flex-col truncate">
+                    <span className="text-white/90 font-bold text-sm truncate">{isInvestmentAccount(acc) ? t('settings.investmentsAccount') : acc.name}</span>
+                    <span className="text-[11px] text-white/50 capitalize truncate">{acc.type === 'cash' ? t('settings.cash') : acc.type === 'bank' ? t('settings.bank') : isInvestmentAccount(acc) ? t('investments.title') : t('settings.wallet')}</span>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={async () => {
-                      if (acc.isDefault) return;
-                      try {
-                        await updateAccount(acc._id, { isDefault: true });
-                        fetchData();
-                      } catch (e) {
-                        showToast(t('settings.updateError'), 'error');
-                      }
-                    }}
-                    aria-label={t('settings.setAsDefault')}
-                    className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors rounded-xl border ${acc.isDefault ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30 shadow-inner' : 'bg-white/5 border-transparent hover:bg-white/10 text-white/40 hover:text-yellow-500'}`}
-                    title={t('settings.setAsDefault')}
-                  >
-                    <Star size={18} fill={acc.isDefault ? "currentColor" : "none"} />
-                  </motion.button>
-                  {!acc.isSystemAccount && !isInvestmentAccount(acc) && (
-                    <>
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => openEditModal(acc)}
-                        aria-label={t('common.edit')}
-                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
-                      >
-                        <Pencil size={18} />
-                      </motion.button>
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handleDeleteAccount(acc)}
-                        aria-label={t('common.delete')}
-                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
-                      >
-                        <Trash2 size={18} />
-                      </motion.button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </li>
-          )
-        })}
-        {accounts.filter(a => !a.isArchived).length === 0 && (
-          <div className="py-16 flex flex-col items-center justify-center text-center opacity-70 bg-white/5 rounded-[2rem] border border-white/5 p-6">
-            <Wallet size={40} className="mb-4 text-[#8D6346]/60" />
-            <p className="text-white/80 font-bold text-base mb-1">{t('settings.noAccounts')}</p>
-          </div>
-        )}
-      </ul>
 
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setAddAccountModalOpen(true)}
-        className="bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] w-full py-4 flex items-center justify-center rounded-[24px] text-[#8D6346] hover:bg-[#8D6346]/20 transition-all duration-300 gap-2 mt-2 font-bold min-h-[48px]"
-      >
-        <Plus className="w-5 h-5" /> {t('settings.addAccountBtn')}
-      </motion.button>
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/20 border border-white/5">
+                    <span className="font-bold text-[#8D6346] tabular-nums tracking-tight text-sm">{getAccountBalance(acc).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                    <span className="text-[10px] text-[#8D6346]/80 font-bold">{t('settings.egp')}</span>
+                  </div>
+                  <div className="p-1.5 text-[#E8C5A8] opacity-80 group-hover:opacity-100 transition-opacity">
+                    <GripVertical size={20} />
+                  </div>
+                </div>
+              </Reorder.Item>
+            );
+          })}
+        </Reorder.Group>
+      ) : (
+        <ul className="flex flex-col gap-4 mb-8">
+          {activeAccounts.map((acc) => {
+            const AccIcon = getIconComponent(acc.icon, 'Wallet');
+            return (
+              <li key={acc._id} className="py-4 px-2 flex items-center justify-between gap-3 group">
+                <div className="p-3 rounded-2xl shadow-inner transition-transform group-hover:scale-110" style={{ backgroundColor: `${acc.color || '#3b82f6'}20`, color: acc.color || '#3b82f6', border: `1px solid ${acc.color || '#3b82f6'}30` }}>
+                  <AccIcon size={22} />
+                </div>
+                <div className="flex flex-col flex-1">
+                  <span className="text-white/90 font-bold text-base">{isInvestmentAccount(acc) ? t('settings.investmentsAccount') : acc.name}</span>
+                  <span className="text-xs text-white/50 capitalize">{acc.type === 'cash' ? t('settings.cash') : acc.type === 'bank' ? t('settings.bank') : isInvestmentAccount(acc) ? t('investments.title') : t('settings.wallet')}</span>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                    <span className="font-black text-[#8D6346] tabular-nums tracking-tight text-lg drop-shadow-sm">{getAccountBalance(acc).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                    <span className="text-xs text-[#8D6346]/80 font-bold">{t('settings.egp')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={async () => {
+                        if (acc.isDefault) return;
+                        try {
+                          await updateAccount(acc._id, { isDefault: true });
+                          fetchData();
+                        } catch (e) {
+                          showToast(t('settings.updateError'), 'error');
+                        }
+                      }}
+                      aria-label={t('settings.setAsDefault')}
+                      className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors rounded-xl border ${acc.isDefault ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30 shadow-inner' : 'bg-white/5 border-transparent hover:bg-white/10 text-white/40 hover:text-yellow-500'}`}
+                      title={t('settings.setAsDefault')}
+                    >
+                      <Star size={18} fill={acc.isDefault ? "currentColor" : "none"} />
+                    </motion.button>
+                    {!acc.isSystemAccount && !isInvestmentAccount(acc) && (
+                      <>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => openEditModal(acc)}
+                          aria-label={t('common.edit')}
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 transition-colors rounded-xl text-white/40 hover:text-white"
+                        >
+                          <Pencil size={18} />
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleDeleteAccount(acc)}
+                          aria-label={t('common.delete')}
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-red-500/5 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-colors rounded-xl text-red-400/60 hover:text-red-400"
+                        >
+                          <Trash2 size={18} />
+                        </motion.button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+          {activeAccounts.length === 0 && (
+            <div className="py-16 flex flex-col items-center justify-center text-center opacity-70 bg-white/5 rounded-[2rem] border border-white/5 p-6">
+              <Wallet size={40} className="mb-4 text-[#8D6346]/60" />
+              <p className="text-white/80 font-bold text-base mb-1">{t('settings.noAccounts')}</p>
+            </div>
+          )}
+        </ul>
+      )}
+
+      {!isArranging && (
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setAddAccountModalOpen(true)}
+          className="bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)] w-full py-4 flex items-center justify-center rounded-[24px] text-[#8D6346] hover:bg-[#8D6346]/20 transition-all duration-300 gap-2 mt-2 font-bold min-h-[48px]"
+        >
+          <Plus className="w-5 h-5" /> {t('settings.addAccountBtn')}
+        </motion.button>
+      )}
 
       {/* Edit Modal */}
       {editModalOpen && createPortal(

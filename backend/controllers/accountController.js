@@ -53,9 +53,26 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
+const reorderAccounts = async (req, res, next) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({
+        message: "orderedIds must be an array of account IDs."
+      });
+    }
+
+    const accounts = await accountService.reorderAccounts(req.user.id, orderedIds);
+    res.status(200).json(accounts);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAccounts,
   createAccount,
   updateAccount,
   deleteAccount,
+  reorderAccounts,
 };

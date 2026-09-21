@@ -6,8 +6,9 @@ export const getCategories = async () => {
   const userId = getActiveUserId();
   try {
     const response = await api.get("/categories");
+    const sortedData = (response.data || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     if (userId) {
-      const serverCategories = response.data.map(cat => ({ ...cat, userId }));
+      const serverCategories = sortedData.map(cat => ({ ...cat, userId }));
       await db.transaction('rw', db.categories, async () => {
         const localCategories = await db.categories.where({ userId }).toArray();
         const serverIds = new Set(serverCategories.map(c => c._id));
@@ -18,11 +19,12 @@ export const getCategories = async () => {
         await db.categories.bulkPut(serverCategories);
       });
     }
-    return response.data;
+    return sortedData;
   } catch (error) {
     if (!error.response || !navigator.onLine || (error.code === 'ERR_NETWORK') || error.response?.status === 401 || error.response?.status === 403 || error.response?.status >= 500) {
       if (!userId) return [];
-      return await db.categories.where({ userId }).toArray();
+      const offline = await db.categories.where({ userId }).toArray();
+      return offline.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
     throw error;
   }
@@ -41,4 +43,16 @@ export const updateCategory = async (id, data) => {
 export const deleteCategory = async (id) => {
   const response = await api.delete(`/categories/${id}`);
   return response.data;
+};
+
+export const reorderCategories = async (orderedIds) => {
+  const response = await api.put("/categories/reorder", { orderedIds });
+  const userId = getActiveUserId();
+  const sortedData = (response.data || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  if (userId && Array.isArray(sortedData)) {
+    const serverCategories = sortedData.map(cat => ({ ...cat, userId }));
+    await db.categories.bulkPut(serverCategories);
+  }
+  window.dispatchEvent(new CustomEvent('finova-data-updated', { detail: { action: 'CATEGORIES_REORDERED' } }));
+  return sortedData;
 };

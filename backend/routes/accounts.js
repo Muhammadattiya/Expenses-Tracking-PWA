@@ -8,11 +8,14 @@ const {
   createAccount,
   updateAccount,
   deleteAccount,
+  reorderAccounts,
 } = require("../controllers/accountController");
 
 router.get("/", getAccounts);
 
 router.post("/", createAccount);
+
+router.put("/reorder", reorderAccounts);
 
 router.put("/:id", updateAccount);
 
