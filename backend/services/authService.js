@@ -26,6 +26,35 @@ const seedDefaultData = async (userId) => {
       { user: userId, name: 'Visa', type: 'bank', icon: 'CreditCard' },
       { user: userId, name: 'Investments', type: 'investment', icon: 'TrendingUp', color: '#eab308', isSystemAccount: true, excludeFromTotal: true }
     ]);
+  } else {
+    const hasInvestmentAccount = await Account.findOne({
+      user: userId,
+      $or: [{ type: 'investment' }, { name: 'Investments' }, { name: 'استثمارات' }]
+    });
+    if (!hasInvestmentAccount) {
+      await Account.create({
+        user: userId,
+        name: 'Investments',
+        type: 'investment',
+        icon: 'TrendingUp',
+        color: '#eab308',
+        isSystemAccount: true,
+        excludeFromTotal: true
+      });
+    } else if (hasInvestmentAccount.type !== 'investment') {
+      await Account.updateOne(
+        { _id: hasInvestmentAccount._id },
+        {
+          $set: {
+            type: 'investment',
+            isSystemAccount: true,
+            excludeFromTotal: true,
+            icon: 'TrendingUp',
+            color: '#eab308'
+          }
+        }
+      );
+    }
   }
 
   const hasCategories = await Category.exists({ user: userId });

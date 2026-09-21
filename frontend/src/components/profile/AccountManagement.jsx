@@ -90,12 +90,14 @@ export default function AccountManagement({ onBack }) {
     fetchData();
   }, []);
 
+  const isInvestmentAccount = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
+
   const accountBalances = useMemo(() => {
     const balances = new Map();
     accounts.forEach(account => {
       const accId = account._id?.toString();
       if (!accId) return;
-      if (account.type === 'investment') {
+      if (isInvestmentAccount(account)) {
         balances.set(accId, investmentsValue);
         return;
       }
@@ -300,8 +302,8 @@ export default function AccountManagement({ onBack }) {
                 <AccIcon size={22} />
               </div>
               <div className="flex flex-col flex-1">
-                <span className="text-white/90 font-bold text-base">{acc.type === 'investment' ? t('settings.investmentsAccount') : acc.name}</span>
-                <span className="text-xs text-white/50 capitalize">{acc.type === 'cash' ? t('settings.cash') : acc.type === 'bank' ? t('settings.bank') : acc.type === 'investment' ? t('investments.title') : t('settings.wallet')}</span>
+                <span className="text-white/90 font-bold text-base">{isInvestmentAccount(acc) ? t('settings.investmentsAccount') : acc.name}</span>
+                <span className="text-xs text-white/50 capitalize">{acc.type === 'cash' ? t('settings.cash') : acc.type === 'bank' ? t('settings.bank') : isInvestmentAccount(acc) ? t('investments.title') : t('settings.wallet')}</span>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#8D6346]/10 border border-[#8D6346]/20 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.1)]">
@@ -326,7 +328,7 @@ export default function AccountManagement({ onBack }) {
                   >
                     <Star size={18} fill={acc.isDefault ? "currentColor" : "none"} />
                   </motion.button>
-                  {!acc.isSystemAccount && (
+                  {!acc.isSystemAccount && !isInvestmentAccount(acc) && (
                     <>
                       <motion.button
                         whileTap={{ scale: 0.9 }}
@@ -381,7 +383,7 @@ export default function AccountManagement({ onBack }) {
             </div>
 
             <form onSubmit={submitEdit} className="flex flex-col gap-4 mt-2">
-              {editingItem?.isSystemAccount ? (
+              {(editingItem?.isSystemAccount || isInvestmentAccount(editingItem)) ? (
                 <div className="flex flex-col gap-3">
                   <p className="text-xs text-white/50">{t('settings.systemAccountNotice')}</p>
                   <label className="flex items-center w-full justify-between gap-2 px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">

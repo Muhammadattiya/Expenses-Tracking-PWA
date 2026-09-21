@@ -453,7 +453,11 @@ export default {
     "holdingsBreakdown": "Asset Allocation",
     "stocks": "Stocks",
     "real_estate": "Real Estate",
-    "crypto": "Crypto"
+    "crypto": "Crypto",
+    "viewPortfolio": "View Portfolio",
+    "portfolioHoldings": "Portfolio Holdings",
+    "noHoldingsYet": "No investments in portfolio yet.",
+    "investmentAccountNotice": "This account tracks your investment portfolio value. Adding purchases with deductions from other accounts will record transactions here."
   },
   "incomeProfiles": {
     "title": "Income Profiles",

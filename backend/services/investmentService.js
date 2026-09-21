@@ -77,13 +77,32 @@ const create = async (userId, input) => {
   if (input.from_account) {
     const totalAmount = (Number(safeData.quantity) || 0) * (Number(safeData.purchasePrice) || 0);
     if (totalAmount > 0) {
-      const transactionTitle = input.transferTitle || `Investment: ${safeData.name}`;
-      const invAccount = await Account.findOne({ user: userId, type: 'investment' });
+      let invAccount = await Account.findOne({ 
+        user: userId, 
+        $or: [{ type: 'investment' }, { name: 'Investments' }, { name: 'استثمارات' }] 
+      });
+      if (!invAccount) {
+        invAccount = await Account.create({
+          user: userId,
+          name: 'Investments',
+          type: 'investment',
+          icon: 'TrendingUp',
+          color: '#eab308',
+          isSystemAccount: true,
+          excludeFromTotal: true
+        });
+      } else if (invAccount.type !== 'investment') {
+        invAccount.type = 'investment';
+        invAccount.isSystemAccount = true;
+        invAccount.excludeFromTotal = true;
+        await invAccount.save();
+      }
+
       await transactionService.createTransaction(userId, {
         type: 'transfer',
         amount: totalAmount,
         from_account: input.from_account,
-        to_account: invAccount ? invAccount._id : undefined,
+        to_account: invAccount._id,
         investment: investment._id,
         title: transactionTitle,
         date: safeData.purchasedAt || new Date()

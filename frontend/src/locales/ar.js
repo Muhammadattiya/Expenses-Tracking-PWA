@@ -501,7 +501,11 @@ export default {
     "holdingsBreakdown": "توزيع الأصول",
     "stocks": "الأسهم",
     "real_estate": "العقارات",
-    "crypto": "العملات الرقمية"
+    "crypto": "العملات الرقمية",
+    "viewPortfolio": "عرض المحفظة الاستثمارية",
+    "portfolioHoldings": "أصول المحفظة",
+    "noHoldingsYet": "لا توجد استثمارات في المحفظة حالياً.",
+    "investmentAccountNotice": "هذا الحساب يتابع قيمة محفظتك الاستثمارية. تسجيل الشراء بالخصم من حساب آخر يظهر كمعاملة هنا."
   },
   "receivables": {
     "loadError": "تعذر تحميل المبالغ المستحقة.",

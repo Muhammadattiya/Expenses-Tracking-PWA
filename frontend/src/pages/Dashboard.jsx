@@ -55,6 +55,7 @@ const Dashboard = () => {
       return cached ? Number(cached) : 0;
     } catch (e) { return 0; }
   });
+  const [allInvestments, setAllInvestments] = useState([]);
   const [uncategorizedTransactions, setUncategorizedTransactions] = useState([]);
   const [skippedTransactionIds, setSkippedTransactionIds] = useState(new Set());
   const [accounts, setAccounts] = useState([]);
@@ -173,6 +174,7 @@ const Dashboard = () => {
       }
       
       if (investmentsData && investmentsData.length > 0) {
+        setAllInvestments(investmentsData);
         let invValue = 0;
         investmentsData.forEach(inv => {
           if (inv.type === 'gold' && goldPriceData) {
@@ -189,6 +191,8 @@ const Dashboard = () => {
             localStorage.setItem(`finova_cache_investments_val_${activeUser}`, String(invValue));
           }
         } catch(e){}
+      } else {
+        setAllInvestments([]);
       }
       if (survivalData) {
         setSurvival(survivalData);
@@ -297,8 +301,10 @@ const Dashboard = () => {
       }
     });
 
+    const isInvAcc = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
+
     const getAccountBalance = (account) => {
-      if (account.type === 'investment') return investmentsValue;
+      if (isInvAcc(account)) return investmentsValue;
       let bal = Number(account.balance_adjustment) || 0;
       const targetId = account._id?.toString();
 
@@ -609,7 +615,15 @@ const Dashboard = () => {
                   {/* Bank/Account Name and Icon */}
                   <div className="flex justify-between items-center w-full">
                     <h2 className="text-white/90 text-xl font-medium tracking-wide">
-                      {selectedAccount === 'all' ? t('common.allAccounts') : accounts.find(a => a._id === selectedAccount)?.name}
+                      {selectedAccount === 'all' 
+                        ? t('common.allAccounts') 
+                        : (() => {
+                            const acc = accounts.find(a => a._id === selectedAccount);
+                            return (acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات') 
+                              ? t('settings.investmentsAccount') 
+                              : acc?.name;
+                          })()
+                      }
                     </h2>
                     
                     {/* Selected Account Icon */}
@@ -619,7 +633,9 @@ const Dashboard = () => {
                            color: selectedAccount === 'all' ? '#8D6346' : accounts.find(a => a._id === selectedAccount)?.color || '#8D6346' 
                          }}>
                       {(() => {
-                        const iconName = selectedAccount === 'all' ? 'Globe' : accounts.find(a => a._id === selectedAccount)?.icon;
+                        const acc = accounts.find(a => a._id === selectedAccount);
+                        const isInv = acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات';
+                        const iconName = selectedAccount === 'all' ? 'Globe' : isInv ? 'TrendingUp' : (acc?.icon || 'Wallet');
                         const Icon = LucideIcons[iconName] || LucideIcons.Wallet;
                         return <Icon className="w-6 h-6" />;
                       })()}
@@ -846,6 +862,80 @@ const Dashboard = () => {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* If selectedAccount is an Investment Account, show the Portfolio Holdings Card */}
+        {selectedAccount !== 'all' && (() => {
+          const acc = accounts.find(a => a._id === selectedAccount);
+          return acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات';
+        })() && (
+          <div className="mb-6 p-5 rounded-[2rem] bg-[#2B2321]/30 backdrop-blur-[32px] border border-[#8D6346]/40 shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-2xl bg-[#8D6346]/25 border border-[#8D6346]/40 flex items-center justify-center text-[#E8C5A8] shadow-inner">
+                  <LucideIcons.TrendingUp className="w-5 h-5 text-[#E8C5A8]" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-white font-bold text-base leading-tight drop-shadow-sm truncate">
+                    {t('investments.portfolioHoldings')}
+                  </h3>
+                  <p className="text-white/80 font-medium text-xs mt-0.5 truncate">
+                    {allInvestments.length > 0 
+                      ? `${allInvestments.length} ${t('investments.title')}` 
+                      : t('investments.noHoldingsYet')}
+                  </p>
+                </div>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  triggerHaptic('selection');
+                  navigate('/investments');
+                }}
+                className="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full bg-[#8D6346]/35 border border-[#8D6346]/50 hover:bg-[#8D6346]/50 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <span>{t('investments.viewPortfolio')}</span>
+                <ChevronRight className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+              </motion.button>
+            </div>
+
+            {/* Holdings items pills */}
+            {allInvestments.length > 0 ? (
+              <div className="flex flex-col gap-2 pt-1 border-t border-white/5">
+                {allInvestments.map(inv => (
+                  <div key={inv._id} className="flex items-center justify-between p-3.5 rounded-2xl bg-black/30 border border-white/10 shadow-inner">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-[#8D6346]/20 border border-[#8D6346]/30 flex items-center justify-center text-[#E8C5A8] shrink-0">
+                        {inv.type === 'gold' ? <LucideIcons.Coins size={17} /> : <LucideIcons.LineChart size={17} />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm leading-tight drop-shadow-sm">{inv.name}</p>
+                        <p className="text-xs text-white/80 font-medium mt-0.5">
+                          {inv.quantity} {inv.type === 'gold' ? t('investments.gram') : t('investments.shareUnit')} • @ {Number(inv.purchasePrice).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} {t('nav.currency')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right rtl:text-left flex items-baseline gap-1 shrink-0">
+                      <span className="text-base font-extrabold text-white tabular-nums tracking-tight drop-shadow-sm">
+                        {(Number(inv.quantity) * Number(inv.currentPrice || inv.purchasePrice)).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}
+                      </span>
+                      <span className="text-xs text-[#E8C5A8] font-bold">{t('nav.currency')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-white/70 font-medium italic">
+                {t('investments.noHoldingsYet')}
+              </p>
+            )}
+
+            <div className="p-3.5 rounded-2xl bg-black/25 border border-white/10 backdrop-blur-md">
+              <p className="text-xs text-white/85 leading-relaxed font-medium">
+                {t('investments.investmentAccountNotice')}
+              </p>
             </div>
           </div>
         )}

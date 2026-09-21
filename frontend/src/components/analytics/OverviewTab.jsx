@@ -13,11 +13,12 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
   const accountBalances = useMemo(() => {
     const balances = {};
     const totalInvestmentsValue = (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
+    const isInvAcc = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
 
     const accountsMap = new Map();
     (accounts || []).forEach(acc => {
       accountsMap.set(String(acc._id), acc);
-      balances[acc._id] = acc.type === 'investment' ? totalInvestmentsValue : (acc.balance_adjustment || 0);
+      balances[acc._id] = isInvAcc(acc) ? totalInvestmentsValue : (acc.balance_adjustment || 0);
     });
 
     (allTransactions || []).forEach(t => {
@@ -31,12 +32,12 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
       const toObj = accountsMap.get(toId);
 
       if (t.type === 'income') {
-        if (accId && accObj?.type !== 'investment') balances[accId] = (balances[accId] || 0) + amount;
+        if (accId && !isInvAcc(accObj)) balances[accId] = (balances[accId] || 0) + amount;
       } else if (t.type === 'expense') {
-        if (accId && accObj?.type !== 'investment') balances[accId] = (balances[accId] || 0) - amount;
+        if (accId && !isInvAcc(accObj)) balances[accId] = (balances[accId] || 0) - amount;
       } else if (t.type === 'transfer') {
-        if (fromId && fromObj?.type !== 'investment') balances[fromId] = (balances[fromId] || 0) - amount;
-        if (toId && toObj?.type !== 'investment') balances[toId] = (balances[toId] || 0) + amount;
+        if (fromId && !isInvAcc(fromObj)) balances[fromId] = (balances[fromId] || 0) - amount;
+        if (toId && !isInvAcc(toObj)) balances[toId] = (balances[toId] || 0) + amount;
       }
     });
     
@@ -69,7 +70,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
 
     // Ensure investment account balance always reflects live market value of investments
     (accounts || []).forEach(acc => {
-      if (acc.type === 'investment') {
+      if (isInvAcc(acc)) {
         balances[acc._id] = totalInvestmentsValue;
       }
     });
@@ -79,14 +80,15 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
 
   const totalAssets = useMemo(() => {
     let total = 0;
+    const isInvAcc = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
     (accounts || []).forEach(acc => {
-      if (!acc.isArchived && (!acc.excludeFromTotal || acc.type === 'investment')) {
+      if (!acc.isArchived && (!acc.excludeFromTotal || isInvAcc(acc))) {
         total += (accountBalances[acc._id] || 0);
       }
     });
 
     // Fallback if no account has type === 'investment'
-    const hasInvestmentAccount = (accounts || []).some(a => a.type === 'investment');
+    const hasInvestmentAccount = (accounts || []).some(a => isInvAcc(a));
     if (!hasInvestmentAccount) {
       total += (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
     }
