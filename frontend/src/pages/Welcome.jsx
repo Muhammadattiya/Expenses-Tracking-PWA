@@ -23,7 +23,7 @@ export default function Welcome() {
           <button
             type="button"
             onClick={() => setLang('ar')}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all relative z-10 select-none ${
+            className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all relative z-10 select-none flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
               lang === 'ar' ? 'text-white' : 'text-white/50 hover:text-white/80'
             }`}
             aria-label="العربية"
@@ -31,7 +31,7 @@ export default function Welcome() {
             {lang === 'ar' && (
               <motion.div
                 layoutId="welcomeLangIndicator"
-                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.2)] -z-10"
+                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] -z-10"
                 transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
               />
             )}
@@ -40,7 +40,7 @@ export default function Welcome() {
           <button
             type="button"
             onClick={() => setLang('en')}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all relative z-10 select-none ${
+            className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all relative z-10 select-none flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
               lang === 'en' ? 'text-white' : 'text-white/50 hover:text-white/80'
             }`}
             aria-label="English"
@@ -48,7 +48,7 @@ export default function Welcome() {
             {lang === 'en' && (
               <motion.div
                 layoutId="welcomeLangIndicator"
-                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.2)] -z-10"
+                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] -z-10"
                 transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
               />
             )}
