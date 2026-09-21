@@ -19,6 +19,10 @@ export default {
     "hidePassword": "Hide password",
     "passwordMinLength": "Password must be at least 8 characters."
   },
+  "splash": {
+    "loading": "Loading Finova...",
+    "ariaLabel": "Finova Application Launch"
+  },
   "onboarding": {
     "screen1Title": "Your expenses tell a story.",
     "screen1Desc": "Finova uses AI to read it, finding patterns, predicting what’s next, and turning your financial data into something you can act on.",
