@@ -1,0 +1,8 @@
+- generic [active]:
+  - generic:
+    - status "بدء تشغيل تطبيق فينوفا" [ref=e1]:
+      - generic [ref=e2]: جاري تحميل تطبيق فينوفا...
+      - generic [ref=e5]:
+        - heading "Finova" [level=1] [ref=e6]
+        - paragraph [ref=e7]: صياغة جديدة لتعاملك مع المال.
+    - region "الإشعارات"

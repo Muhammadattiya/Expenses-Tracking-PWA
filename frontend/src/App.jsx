@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { Loader2 } from 'lucide-react';
-import SplashScreen from './components/SplashScreen';
 import Layout from './components/Layout';
 import AuthGate from './components/AuthGate';
 import AuthLayout from './components/AuthLayout';
@@ -37,7 +36,7 @@ function App() {
           <BrowserRouter>
             <PWABadge />
             <Analytics />
-            <Suspense fallback={<SplashScreen />}>
+            <Suspense fallback={<div className="fixed inset-0 bg-[#141115]" />}>
               <Routes>
                 {/* Public Routes */}
                 <Route element={<AuthLayout />}>

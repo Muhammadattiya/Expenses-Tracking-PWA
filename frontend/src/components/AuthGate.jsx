@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import SplashScreen from './SplashScreen';
 import { getCurrentUser } from '../api/auth';
-import { handleUserSessionTransition, handleSessionInvalidation } from '../utils/offlineSession';
+import { getTransactions } from '../api/transactions';
+import { getAccounts } from '../api/accounts';
+import { getActiveUserId, handleUserSessionTransition, handleSessionInvalidation } from '../utils/offlineSession';
 
 export default function AuthGate() {
   const [user, setUser] = useState(() => {
@@ -19,10 +22,10 @@ export default function AuthGate() {
   useEffect(() => {
     let isMounted = true;
     
-    // Smooth aesthetic mark exposure (350ms)
-    const minLoadTime = new Promise(resolve => setTimeout(resolve, 350));
-    // Hard ceiling: NEVER freeze user on splash for more than 1200ms
-    const maxSplashTimeout = new Promise(resolve => setTimeout(resolve, 1200));
+    // Extended minimum exposure (1000ms) to showcase the brand mark and cover backend latency
+    const minLoadTime = new Promise(resolve => setTimeout(resolve, 1000));
+    // Safe maximum ceiling (2500ms) to ensure the user is never indefinitely blocked
+    const maxSplashTimeout = new Promise(resolve => setTimeout(resolve, 2500));
     
     // Attempt backend session validation without indefinite hang
     const fetchUser = getCurrentUser({
@@ -53,8 +56,16 @@ export default function AuthGate() {
       }
     });
 
+    // If an authenticated user session is detected, pre-warm core data during the splash
+    const activeUserId = getActiveUserId();
+    const dataTasks = [];
+    if (activeUserId) {
+      dataTasks.push(getTransactions().catch(() => []));
+      dataTasks.push(getAccounts().catch(() => []));
+    }
+
     Promise.race([
-      Promise.all([fetchUser, minLoadTime]),
+      Promise.all([fetchUser, ...dataTasks, minLoadTime]),
       maxSplashTimeout
     ]).finally(() => {
       if (isMounted) {
@@ -67,21 +78,27 @@ export default function AuthGate() {
     };
   }, []);
 
-  if (loading) {
-    return <SplashScreen />;
-  }
-
-  if (!user) {
-    return <Navigate to="/welcome" replace />;
-  }
-
-  if (!user.hasCompletedOnboarding && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  if (user.hasCompletedOnboarding && location.pathname === '/onboarding') {
-    return <Navigate to="/" replace />;
-  }
-
-  return <Outlet />;
+  return (
+    <AnimatePresence mode="wait">
+      {loading ? (
+        <SplashScreen key="splash-screen" />
+      ) : !user ? (
+        <Navigate to="/welcome" replace key="nav-welcome" />
+      ) : !user.hasCompletedOnboarding && location.pathname !== '/onboarding' ? (
+        <Navigate to="/onboarding" replace key="nav-onboarding" />
+      ) : user.hasCompletedOnboarding && location.pathname === '/onboarding' ? (
+        <Navigate to="/" replace key="nav-dashboard" />
+      ) : (
+        <motion.div
+          key="auth-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="contents"
+        >
+          <Outlet />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
