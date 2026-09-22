@@ -1,5 +1,6 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { AmbientBackground } from './ui';
 
 export default function AuthLayout() {
   const { language } = useLanguage();
@@ -23,20 +24,13 @@ export default function AuthLayout() {
   return (
     <main
       dir={language === 'ar' ? 'rtl' : 'ltr'}
-      className={`w-full max-w-full bg-[#141115] relative text-white flex flex-col justify-center items-center ${isWelcome
-          ? 'min-h-[100dvh] py-8'
-          : 'min-h-[100dvh] py-4 sm:py-8'
-        }`}
+      className="w-full min-h-[100dvh] min-h-[-webkit-fill-available] relative text-white flex flex-col justify-between items-center overflow-x-hidden"
     >
-      {/* Background Orbs */}
-      <div className="absolute -top-10 -left-10 w-64 h-64 bg-[#8D6346] rounded-full filter blur-[140px] opacity-75 pointer-events-none" />
-      <div className="absolute -bottom-16 -right-16 w-64 h-64 bg-[#8D6346] rounded-full filter blur-[160px] opacity-75 pointer-events-none" />
+      {/* Universal Pure CSS Ambient Glow (Dashboard theme) */}
+      <AmbientBackground variant="dashboard" />
 
       <div
-        className={`w-full max-w-[420px] px-4 sm:px-6 relative z-10 flex flex-col items-center my-auto ${isWelcome
-            ? 'h-full justify-center pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]'
-            : 'pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]'
-          }`}
+        className="w-full max-w-[420px] px-4 sm:px-6 relative z-10 flex-1 flex flex-col items-center justify-between pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       >
         <Outlet />
       </div>

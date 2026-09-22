@@ -12,7 +12,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
   const isRTL = language === 'ar';
   const shouldReduceMotion = useReducedMotion();
 
-  const [showOverlay, setShowOverlay] = useState(true);
+  const [showOverlay, setShowOverlay] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   
@@ -28,12 +28,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (setIsOverlayActive) setIsOverlayActive(true);
-
-    const timer = setTimeout(() => {
-      setShowOverlay(false);
-      if (setIsOverlayActive) setIsOverlayActive(false);
-    }, 2400);
+    if (setIsOverlayActive) setIsOverlayActive(false);
 
     // Fetch accounts and categories
     const fetchData = async () => {
@@ -147,51 +142,6 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
   return (
     <div className="flex-1 flex flex-col w-full min-h-0 relative z-10" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* 1. Transition Full-Viewport Overlay via React Portal */}
-      {showOverlay && typeof document !== 'undefined' && createPortal(
-        <motion.div
-          key="overlay"
-          id="income-overlay"
-          role="region"
-          aria-label={t('onboarding.screen3Overlay')}
-          onClick={dismissOverlay}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-          className="fixed inset-0 z-[100] w-screen h-[100dvh] flex flex-col items-center justify-center bg-[#100E11]/95 backdrop-blur-[28px] cursor-pointer px-6 select-none"
-        >
-          {/* Ambient Glow behind logo */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/10 to-transparent blur-[120px] rounded-full pointer-events-none -z-10" />
-
-          {/* Logo with clean 39.01deg rotation */}
-          <motion.div
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, type: 'spring', bounce: 0.3 }}
-            className="w-52 h-52 sm:w-56 sm:h-56 mb-8 relative flex items-center justify-center pointer-events-none"
-          >
-            <img 
-              src="/images/onboarding1.png" 
-              alt="Finova"
-              width={224}
-              height={224}
-              className="w-full h-full object-contain opacity-95" 
-              style={{ transform: 'rotate(39.01deg)' }} 
-            />
-          </motion.div>
-
-          <motion.h2
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.25, duration: 0.4 }}
-            className="text-[23px] sm:text-[26px] font-bold text-center text-white font-['Exo_2'] max-w-[320px] leading-snug"
-          >
-            {t('onboarding.screen3Overlay')}
-          </motion.h2>
-        </motion.div>,
-        document.body
-      )}
-
       {/* 2. Holographic Finova Salary Card Experience */}
       <motion.div
         key="card-experience"
