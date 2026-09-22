@@ -21,7 +21,8 @@ export default {
   },
   "splash": {
     "loading": "Loading Finova...",
-    "ariaLabel": "Finova Application Launch"
+    "ariaLabel": "Finova Application Launch",
+    "secureEngine": "Intelligent Wealth Engine • Offline-First"
   },
   "onboarding": {
     "screen1Title": "Your expenses tell a story.",
