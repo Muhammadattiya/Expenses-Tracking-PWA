@@ -45,13 +45,13 @@ export default function SplashScreen() {
           }}
           className="absolute w-[min(460px,85vw)] h-[min(460px,85vw)] rounded-full bg-[#8D6346] blur-[120px] will-change-transform" 
         />
-        {/* Atmospheric start-side glow (adapts naturally in RTL/LTR) */}
+        {/* Atmospheric start-side glow (adapts naturally in RTL/LTR - static, no will-change) */}
         <div 
-          className="absolute -top-16 start-[-10%] w-[320px] h-[320px] rounded-full bg-[#8D6346] opacity-30 blur-[130px] will-change-transform" 
+          className="absolute -top-16 start-[-10%] w-[320px] h-[320px] rounded-full bg-[#8D6346] opacity-30 blur-[130px]" 
         />
-        {/* Counter ambient end-side glow */}
+        {/* Counter ambient end-side glow (static, no will-change) */}
         <div 
-          className="absolute -bottom-20 end-[-10%] w-[360px] h-[360px] rounded-full bg-[#8D6346] opacity-35 blur-[140px] will-change-transform" 
+          className="absolute -bottom-20 end-[-10%] w-[360px] h-[360px] rounded-full bg-[#8D6346] opacity-35 blur-[140px]" 
         />
       </div>
 
@@ -62,21 +62,22 @@ export default function SplashScreen() {
         transition={{ duration: shouldReduceMotion ? 0.2 : 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 flex flex-col items-center gap-6 w-full max-w-[320px]"
       >
-        {/* Responsive Liquid Glass Medallion Housing */}
+        {/* Perfectly Symmetric Circular Liquid Glass Medallion Housing */}
         <motion.div 
           animate={shouldReduceMotion ? {} : {
             borderColor: ['rgba(255,255,255,0.1)', 'rgba(141,99,70,0.3)', 'rgba(255,255,255,0.1)']
           }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-[min(288px,65vw)] h-[min(288px,65vw)] max-h-[36vh] max-w-[288px] aspect-square rounded-full relative shrink-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-md bg-[#2B2321]/30 flex items-center justify-center overflow-hidden"
+          className="w-[min(288px,65vw,36vh)] h-[min(288px,65vw,36vh)] aspect-square rounded-full relative shrink-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-md bg-[#2B2321]/30 flex items-center justify-center overflow-hidden"
         >
           <svg 
             width="100%" 
             height="100%" 
             viewBox="0 0 288 288" 
+            preserveAspectRatio="xMidYMid meet"
             fill="none" 
             xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full select-none pointer-events-none"
+            className="w-full h-full aspect-square select-none pointer-events-none"
             aria-hidden="true"
           >
             <defs>
@@ -95,12 +96,34 @@ export default function SplashScreen() {
 
         {/* Typographic Text Group */}
         <div className="flex flex-col items-center gap-2 text-center px-4">
-          <h1 className="text-white font-['Exo_2'] font-bold text-[clamp(2rem,6vw,2.5rem)] leading-tight tracking-tight select-none drop-shadow-sm">
+          <h1 className="text-white font-bold text-[clamp(2rem,6vw,2.5rem)] leading-tight tracking-tight select-none drop-shadow-sm">
             Finova
           </h1>
-          <p className="text-white/60 font-['Exo_2'] font-normal text-sm sm:text-base leading-snug tracking-normal select-none max-w-[280px]">
+          <p className="text-white/85 font-normal text-sm sm:text-base leading-snug tracking-normal select-none max-w-[280px] drop-shadow-sm">
             {t('auth.tagline')}
           </p>
+
+          {/* Elegant Indeterminate Hairline Progress Gleam for Sighted Users */}
+          <div 
+            aria-hidden="true" 
+            className="w-24 h-[2px] rounded-full bg-white/10 overflow-hidden relative mt-2"
+          >
+            {shouldReduceMotion ? (
+              <div className="w-full h-full bg-[#8D6346]/50 rounded-full" />
+            ) : (
+              <motion.div
+                className="w-10 h-full bg-gradient-to-r from-transparent via-[#E8C5A8] to-transparent rounded-full"
+                animate={{
+                  x: lang === 'ar' ? ['96px', '-40px'] : ['-40px', '96px']
+                }}
+                transition={{
+                  duration: 1.4,
+                  repeat: Infinity,
+                  ease: [0.4, 0, 0.2, 1]
+                }}
+              />
+            )}
+          </div>
         </div>
       </motion.div>
     </motion.div>

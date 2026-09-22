@@ -4,7 +4,7 @@
 
 @theme {
 
-  --font-sans: 'Exo 2', sans-serif;
+  --font-sans: 'Exo 2', 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   --color-brand-copper: #8D6346;
 

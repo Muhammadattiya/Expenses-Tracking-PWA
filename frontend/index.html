@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#141115" />
     <meta name="application-name" content="Finova" />
@@ -16,7 +17,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet">
     <meta property="og:title" content="Finova" />
     <meta property="og:description" content="مدير المصروفات والاستثمارات الشخصي" />
     <meta property="og:image" content="/pwa-512x512.png" />
@@ -24,7 +25,67 @@
     <title>Finova</title>
   </head>
   <body class="bg-[#141115] text-white overflow-x-hidden">
-    <div id="root"></div>
+    <div id="root">
+      <div id="finova-static-splash" style="position:fixed;inset:0;background-color:#141115;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;z-index:999;user-select:none;-webkit-user-select:none;">
+        <style>
+          @keyframes finovaStaticPulse {
+            0%, 100% { transform: scale(1); opacity: 0.38; }
+            50% { transform: scale(1.06); opacity: 0.48; }
+          }
+          .finova-static-glow {
+            position: absolute;
+            width: min(460px, 85vw);
+            height: min(460px, 85vw);
+            border-radius: 9999px;
+            background-color: #8D6346;
+            filter: blur(120px);
+            -webkit-filter: blur(120px);
+            animation: finovaStaticPulse 2.8s ease-in-out infinite;
+            pointer-events: none;
+          }
+          .finova-static-medallion {
+            width: min(288px, 65vw, 36vh);
+            height: min(288px, 65vw, 36vh);
+            border-radius: 9999px;
+            position: relative;
+            background-color: rgba(43, 35, 33, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+          }
+          .finova-static-title {
+            color: #ffffff;
+            font-family: 'Exo 2', 'Cairo', system-ui, -apple-system, sans-serif;
+            font-weight: 700;
+            font-size: clamp(2rem, 6vw, 2.5rem);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin-top: 24px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+          }
+        </style>
+        <div class="finova-static-glow" aria-hidden="true"></div>
+        <div class="finova-static-medallion" aria-hidden="true">
+          <svg width="100%" height="100%" viewBox="0 0 288 288" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="finova_copper_static" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8D6346" stop-opacity="0.75" />
+                <stop offset="50%" stop-color="#A47553" stop-opacity="0.65" />
+                <stop offset="100%" stop-color="#4A3427" stop-opacity="0.55" />
+              </linearGradient>
+            </defs>
+            <path d="M144 0C223.529 0 288 64.471 288 144C288 223.529 223.529 288 144 288C64.471 288 0 223.529 0 144C0 64.471 64.471 0 144 0ZM154.4 63.1719C143.835 63.1719 135.334 66.1431 128.896 72.0859C122.457 77.8637 119.238 85.9525 119.238 96.3525V131.239C113.585 125.523 109.06 118.79 105.904 111.395C104.647 108.476 103.63 105.473 102.853 102.385C102.598 101.374 101.693 100.667 100.657 100.667C100.152 100.668 99.6623 100.837 99.2646 101.148C98.867 101.46 98.5847 101.895 98.4619 102.385C95.6287 113.369 89.9059 123.395 81.8887 131.423C76.1301 137.163 69.3283 141.752 61.8486 144.941C58.9294 146.198 55.9247 147.215 52.8359 147.992C52.3509 148.12 51.9215 148.404 51.6152 148.801C51.3088 149.198 51.1426 149.686 51.1426 150.188C51.1427 150.689 51.309 151.176 51.6152 151.573C51.9215 151.97 52.3509 152.254 52.8359 152.382C63.8251 155.218 73.8563 160.941 81.8887 168.957C89.9069 176.986 95.6297 187.015 98.4619 198.002C98.5848 198.491 98.8671 198.925 99.2646 199.235C99.6624 199.545 100.153 199.714 100.657 199.714C101.162 199.714 101.652 199.545 102.05 199.235C102.447 198.925 102.73 198.491 102.853 198.002C105.665 187.102 111.321 177.147 119.238 169.147V234.523H150.19V159.248H218.533V136.467H150.19V102.543C150.19 97.5907 151.428 93.9586 153.904 91.6475C156.38 89.3363 160.095 88.1807 165.048 88.1807H227.942L229.429 65.4004C222.165 64.575 214.241 64.0791 205.657 63.9141C197.238 63.5839 188.654 63.4189 179.904 63.4189C171.32 63.2539 162.819 63.1719 154.4 63.1719Z" fill="url(#finova_copper_static)" />
+          </svg>
+        </div>
+        <div class="finova-static-title">Finova</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
