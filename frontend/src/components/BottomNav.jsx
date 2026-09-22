@@ -149,7 +149,8 @@ export default function BottomNav() {
         ref={trackRef}
         aria-label={t('nav.bar')}
         dir="ltr"
-        className="relative flex items-center w-[min(22.5rem,calc(100%-24px))] h-12 gap-2 touch-none"
+        className="relative flex items-center w-[min(22.5rem,calc(100%-24px))] h-12 gap-2 touch-none select-none"
+        onDragStart={(e) => e.preventDefault()}
         {...bindTrack}
       >
         <motion.div
@@ -221,7 +222,8 @@ export default function BottomNav() {
         <div 
           ref={railRef}
           dir={lang === 'ar' ? 'rtl' : 'ltr'}
-          className={`relative h-12 flex-1 min-w-0 rounded-[24px] flex justify-between items-center px-1.5 overflow-hidden ${liquidGlassClass}`}
+          onDragStart={(e) => e.preventDefault()}
+          className={`relative h-12 flex-1 min-w-0 rounded-[24px] flex justify-between items-center px-1.5 overflow-visible select-none touch-none ${liquidGlassClass}`}
         >
           {scrubbing && <LiquidBlob x={blobX} width={blobW} />}
           {navItems.map((item, index) => (
@@ -229,6 +231,8 @@ export default function BottomNav() {
               key={item.path}
               to={item.path}
               end={item.end}
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
               aria-label={item.label}
               onClick={(e) => {
                 if (didScrub.current) {
@@ -258,14 +262,17 @@ export default function BottomNav() {
                   )}
                   <motion.span
                     className="relative z-20 inline-flex"
-                    animate={{ scale: lit && !reduceMotion ? 1.12 : 1 }}
+                    animate={{
+                      scale: preview && !reduceMotion ? 1.25 : (lit && !reduceMotion ? 1.12 : 1),
+                      y: preview && !reduceMotion ? -2 : 0,
+                    }}
                     whileTap={press}
                     transition={iconSpring}
                   >
                     {React.createElement(item.icon, {
                       size: 20,
-                      strokeWidth: lit ? 2.5 : 2,
-                      className: `transition-colors duration-200 ${lit ? 'text-[#8D6346] drop-shadow-md' : 'text-white/60 group-hover:text-white'}`,
+                      strokeWidth: lit ? 2.6 : 2,
+                      className: `transition-colors duration-200 ${lit ? 'text-[#8D6346] drop-shadow-[0_2px_8px_rgba(141,99,70,0.6)]' : 'text-white/60 group-hover:text-white'}`,
                       'aria-hidden': true
                     })}
                   </motion.span>
