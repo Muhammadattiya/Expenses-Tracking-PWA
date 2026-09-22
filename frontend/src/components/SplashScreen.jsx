@@ -20,59 +20,68 @@ export default function SplashScreen() {
         transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } 
       }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[100] w-full h-full min-h-[100dvh] bg-[#141115] overflow-hidden select-none flex flex-col items-center justify-between p-6 pt-[max(1.75rem,env(safe-area-inset-top))] pb-[max(1.75rem,env(safe-area-inset-bottom))]"
-      aria-label={t('splash.ariaLabel')}
+      className="fixed inset-0 z-[100] w-full h-full min-h-screen bg-[#141115] overflow-hidden select-none flex flex-col items-center justify-between px-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]"
+      aria-label={t('splash.ariaLabel', 'Finova Loading Screen')}
       role="status"
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
-      <span className="sr-only">{t('splash.loading')}</span>
+      <span className="sr-only">{t('splash.loading', 'Loading...')}</span>
 
-      {/* 1. Finova Ambient Copper Glow Spheres (Full-Atmosphere Coverage) */}
+      {/* 1. Finova Ambient Copper Glow Atmosphere */}
       <div 
         aria-hidden="true" 
         className="absolute inset-0 pointer-events-none overflow-hidden select-none"
       >
         {/* Primary central brand glow with authored breathing cadence */}
         <motion.div 
-          animate={shouldReduceMotion ? { scale: 1, opacity: 0.4 } : {
-            scale: [1, 1.06, 1],
-            opacity: [0.36, 0.48, 0.36]
+          animate={shouldReduceMotion ? { scale: 1, opacity: 0.45 } : {
+            scale: [1, 1.08, 1],
+            opacity: [0.38, 0.52, 0.38]
           }}
           transition={shouldReduceMotion ? {} : {
-            duration: 2.8,
+            duration: 3,
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(460px,85vw)] h-[min(460px,85vw)] rounded-full bg-[#8D6346] blur-[120px] will-change-transform" 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(500px,90vw)] h-[min(500px,90vw)] rounded-full bg-[#8D6346] blur-[120px] will-change-transform" 
         />
         {/* Atmospheric start-side top glow */}
         <div 
-          className="absolute -top-16 start-[-10%] w-[320px] h-[320px] rounded-full bg-[#8D6346] opacity-30 blur-[130px]" 
+          className="absolute -top-20 start-[-10%] w-[340px] h-[340px] rounded-full bg-[#8D6346] opacity-30 blur-[130px]" 
         />
-        {/* Ambient bottom copper glow - radiates warm copper light into the lower viewport */}
+        {/* Ambient bottom copper glow */}
         <div 
           className="absolute -bottom-24 inset-x-0 mx-auto w-[min(500px,95vw)] h-[280px] rounded-full bg-[#8D6346] opacity-35 blur-[130px]" 
         />
       </div>
 
-      {/* Top optical balance spacer */}
-      <div className="w-full h-2 shrink-0 pointer-events-none" aria-hidden="true" />
+      {/* Top spacer for optical balance */}
+      <div className="w-full h-4 shrink-0 pointer-events-none" aria-hidden="true" />
 
-      {/* 2. Main Centered Brand Column (Positioned at optical center) */}
+      {/* 2. Main Centered Brand Column */}
       <motion.div
-        initial={shouldReduceMotion ? { opacity: 1 } : { scale: 0.97, opacity: 1 }}
+        initial={shouldReduceMotion ? { opacity: 1 } : { scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: shouldReduceMotion ? 0.2 : 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 flex flex-col items-center gap-6 w-full max-w-[320px] my-auto"
+        transition={{ duration: shouldReduceMotion ? 0.2 : 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 flex flex-col items-center w-full max-w-sm my-auto px-4"
       >
         {/* Perfectly Symmetric Circular Liquid Glass Medallion Housing */}
         <motion.div 
           animate={shouldReduceMotion ? {} : {
-            borderColor: ['rgba(255,255,255,0.1)', 'rgba(141,99,70,0.3)', 'rgba(255,255,255,0.1)']
+            borderColor: ['rgba(255,255,255,0.15)', 'rgba(141,99,70,0.45)', 'rgba(255,255,255,0.15)']
           }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-[min(288px,65vw,36vh)] h-[min(288px,65vw,36vh)] aspect-square rounded-full relative shrink-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-md bg-[#2B2321]/30 flex items-center justify-center overflow-hidden"
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          className="size-52 sm:size-60 aspect-square rounded-full relative shrink-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_20px_50px_rgba(0,0,0,0.7)] border border-white/20 backdrop-blur-2xl bg-[#2B2321]/45 flex items-center justify-center p-8 sm:p-9 overflow-hidden"
         >
+          {/* Subtle metallic sweep shimmer */}
+          {!shouldReduceMotion && (
+            <motion.div
+              className="absolute -inset-full w-[200%] h-[200%] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent pointer-events-none -skew-x-12"
+              animate={{ x: ['-100%', '150%'] }}
+              transition={{ repeat: Infinity, repeatDelay: 3, duration: 2, ease: "easeInOut" }}
+            />
+          )}
+
           <svg 
             width="100%" 
             height="100%" 
@@ -80,14 +89,14 @@ export default function SplashScreen() {
             preserveAspectRatio="xMidYMid meet"
             fill="none" 
             xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full aspect-square select-none pointer-events-none"
+            className="w-full h-full aspect-square select-none pointer-events-none relative z-10"
             aria-hidden="true"
           >
             <defs>
               <linearGradient id="finova_copper_medallion" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#8D6346" stopOpacity="0.75" />
-                <stop offset="50%" stopColor="#A47553" stopOpacity="0.65" />
-                <stop offset="100%" stopColor="#4A3427" stopOpacity="0.55" />
+                <stop offset="0%" stopColor="#E8C5A8" stopOpacity="0.95" />
+                <stop offset="50%" stopColor="#8D6346" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#3D2E2B" stopOpacity="0.8" />
               </linearGradient>
             </defs>
             <path 
@@ -98,29 +107,29 @@ export default function SplashScreen() {
         </motion.div>
 
         {/* Typographic Text Group */}
-        <div className="flex flex-col items-center gap-2 text-center px-4">
-          <h1 className="text-white font-bold text-[clamp(2rem,6vw,2.5rem)] leading-tight tracking-tight select-none drop-shadow-sm">
+        <div className="flex flex-col items-center text-center mt-6">
+          <h1 className="text-white font-extrabold text-[42px] sm:text-[48px] leading-none tracking-tight select-none drop-shadow-md font-['Exo_2']">
             Finova
           </h1>
-          <p className="text-white/85 font-normal text-sm sm:text-base leading-snug tracking-normal select-none max-w-[280px] drop-shadow-sm">
-            {t('auth.tagline')}
+          <p className="text-white/80 font-medium text-[15px] sm:text-[16.5px] leading-relaxed select-none max-w-[320px] font-['Exo_2'] mt-2.5">
+            {t('auth.tagline', 'صياغة جديدة لتعاملك مع المال')}
           </p>
 
-          {/* Elegant Indeterminate Hairline Progress Gleam for Sighted Users */}
+          {/* Elegant Indeterminate Hairline Progress Gleam */}
           <div 
             aria-hidden="true" 
-            className="w-24 h-[2px] rounded-full bg-white/10 overflow-hidden relative mt-2"
+            className="w-28 h-[2.5px] rounded-full bg-white/10 overflow-hidden relative mt-4"
           >
             {shouldReduceMotion ? (
-              <div className="w-full h-full bg-[#8D6346]/50 rounded-full" />
+              <div className="w-full h-full bg-[#8D6346]/60 rounded-full" />
             ) : (
               <motion.div
-                className="w-10 h-full bg-gradient-to-r from-transparent via-[#E8C5A8] to-transparent rounded-full"
+                className="w-12 h-full bg-gradient-to-r from-transparent via-[#E8C5A8] to-transparent rounded-full"
                 animate={{
-                  x: lang === 'ar' ? ['96px', '-40px'] : ['-40px', '96px']
+                  x: lang === 'ar' ? ['112px', '-48px'] : ['-48px', '112px']
                 }}
                 transition={{
-                  duration: 1.4,
+                  duration: 1.5,
                   repeat: Infinity,
                   ease: [0.4, 0, 0.2, 1]
                 }}
@@ -130,17 +139,17 @@ export default function SplashScreen() {
         </div>
       </motion.div>
 
-      {/* 3. Bottom Hallmark Anchor (Eliminates bottom void & anchors layout) */}
+      {/* 3. Bottom Hallmark Anchor (Anchored firmly above safe area) */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: shouldReduceMotion ? 0.2 : 0.4, delay: shouldReduceMotion ? 0 : 0.2 }}
-        className="relative z-10 flex flex-col items-center gap-1.5 shrink-0 select-none pointer-events-none pb-1"
+        className="relative z-10 flex flex-col items-center shrink-0 select-none pointer-events-none"
       >
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-[0_2px_10px_rgba(0,0,0,0.2)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#34C759]" />
-          <span className="text-[11px] sm:text-xs font-medium text-white/50 tracking-wider">
-            {t('splash.secureEngine')}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
+          <span className="size-2 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.7)] animate-pulse" />
+          <span className="text-xs font-semibold text-white/70 tracking-wide font-['Exo_2']">
+            {t('splash.secureEngine', 'المنظومة المالية الذكية • دون اتصال')}
           </span>
         </div>
       </motion.div>

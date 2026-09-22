@@ -14,16 +14,16 @@ export default function Welcome() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full flex flex-col items-center justify-center my-auto py-2 relative"
+      className="w-full flex-1 flex flex-col justify-between items-center relative select-none py-1"
     >
       {/* Top Header Bar: Finova Segmented Glass Language Switcher */}
-      <header className="w-full max-w-sm flex justify-end px-2 mb-3 sm:mb-5">
+      <header className="w-full flex justify-end shrink-0 pt-1">
         <div className="flex items-center bg-black/30 backdrop-blur-xl border border-white/10 rounded-full p-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_2px_8px_rgba(0,0,0,0.2)]">
           <Globe size={13} className="text-[#E8C5A8] ms-2 me-1 shrink-0 opacity-80" />
           <button
             type="button"
             onClick={() => setLang('ar')}
-            className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all relative z-10 select-none flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
+            className={`min-h-[32px] px-3.5 py-1 rounded-full text-xs font-semibold transition-all relative z-10 select-none flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
               lang === 'ar' ? 'text-white' : 'text-white/50 hover:text-white/80'
             }`}
             aria-label="العربية"
@@ -31,7 +31,7 @@ export default function Welcome() {
             {lang === 'ar' && (
               <motion.div
                 layoutId="welcomeLangIndicator"
-                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] -z-10"
+                className="absolute inset-0 bg-[#8D6346]/50 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] -z-10"
                 transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
               />
             )}
@@ -40,7 +40,7 @@ export default function Welcome() {
           <button
             type="button"
             onClick={() => setLang('en')}
-            className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all relative z-10 select-none flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
+            className={`min-h-[32px] px-3.5 py-1 rounded-full text-xs font-semibold transition-all relative z-10 select-none flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] ${
               lang === 'en' ? 'text-white' : 'text-white/50 hover:text-white/80'
             }`}
             aria-label="English"
@@ -48,7 +48,7 @@ export default function Welcome() {
             {lang === 'en' && (
               <motion.div
                 layoutId="welcomeLangIndicator"
-                className="absolute inset-0 bg-[#8D6346]/40 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] -z-10"
+                className="absolute inset-0 bg-[#8D6346]/50 border border-[#8D6346]/60 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.2)] -z-10"
                 transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
               />
             )}
@@ -57,27 +57,26 @@ export default function Welcome() {
         </div>
       </header>
 
-      {/* Hero Group: Brand Mark & Value Proposition */}
-      <section className="flex flex-col items-center justify-center text-center">
+      {/* Hero Group: Commanding Liquid Glass Brand Mark */}
+      <section className="flex-1 flex flex-col items-center justify-center text-center my-auto py-4 w-full">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ scale: 1, scale: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.92, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ 
             type: 'spring', 
-            stiffness: 100, 
-            damping: 20, 
-            duration: 0.8 
+            stiffness: 120, 
+            damping: 20 
           }}
-          className="w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] aspect-square relative flex justify-center items-center"
+          className="size-52 sm:size-60 aspect-square relative flex justify-center items-center"
         >
           {/* Ambient copper backing blur */}
-          <div className="absolute inset-0 bg-[#8D6346]/40 blur-[50px] rounded-full -z-10" />
+          <div className="absolute inset-0 bg-[#8D6346]/45 blur-[60px] rounded-full -z-10 animate-pulse" style={{ animationDuration: '3.5s' }} />
 
           {/* Liquid Glass Circular Housing */}
           <motion.div
             animate={{ y: shouldReduceMotion ? 0 : [0, -6, 0] }}
             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="w-full h-full rounded-full border border-white/15 bg-[#2B2321]/40 backdrop-blur-xl shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_12px_36px_rgba(0,0,0,0.5)] flex items-center justify-center p-7"
+            className="w-full h-full rounded-full border border-white/20 bg-[#2B2321]/40 backdrop-blur-2xl shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_16px_40px_rgba(0,0,0,0.6)] flex items-center justify-center p-8 sm:p-9"
           >
             <svg 
               viewBox="0 0 288 288" 
@@ -104,50 +103,48 @@ export default function Welcome() {
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="flex flex-col items-center mt-3 text-center px-4"
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="flex flex-col items-center mt-5 text-center px-4"
         >
-          <h1 className="font-bold text-[40px] sm:text-[46px] text-white leading-none tracking-tight drop-shadow-sm">
+          <h1 className="font-extrabold text-[42px] sm:text-[48px] text-white leading-none tracking-tight drop-shadow-md font-['Exo_2']">
             Finova
           </h1>
-          <p className="font-medium text-[15px] sm:text-[16px] text-white/70 tracking-wide mt-2 max-w-[280px]">
+          <p className="font-medium text-[15px] sm:text-[16.5px] text-white/75 tracking-wide mt-2.5 max-w-[320px] leading-relaxed">
             {t('auth.tagline')}
           </p>
         </motion.div>
       </section>
 
-      {/* Actions Group: Primary & Secondary Conversion Buttons */}
+      {/* Actions Group: Full-Width Mobile Action Buttons */}
       <motion.nav 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-        className="w-full max-w-[300px] flex flex-col items-stretch mt-8 sm:mt-10 pointer-events-auto"
+        transition={{ delay: 0.3, duration: 0.5 }}
+        className="w-full max-w-sm flex flex-col items-stretch gap-3 shrink-0 pb-2"
         aria-label="Authentication"
       >
-        <div className="flex flex-col gap-3">
-          {/* Primary Action: Sign Up (Finova Signature BillCard Button Style) */}
-          <motion.div whileTap={{ scale: 0.98 }} className="w-full">
-            <Link 
-              to="/signup"
-              className="h-[50px] w-full rounded-full font-semibold text-[16px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141115]"
-            >
-              <span>{t('auth.signup')}</span>
-            </Link>
-          </motion.div>
+        {/* Primary Action: Sign Up */}
+        <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+          <Link 
+            to="/signup"
+            className="h-14 w-full rounded-2xl font-bold text-base text-white shadow-[0_8px_25px_rgba(141,99,70,0.45),inset_0_1px_1px_rgba(255,255,255,0.3)] transition-all duration-300 active:scale-[0.98] bg-gradient-to-r from-[#8D6346] via-[#9E7252] to-[#A47553] hover:brightness-110 border border-white/20 flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
+          >
+            <span>{t('auth.signup')}</span>
+          </Link>
+        </motion.div>
 
-          {/* Secondary Action: Login */}
-          <motion.div whileTap={{ scale: 0.98 }} className="w-full">
-            <Link 
-              to="/login"
-              className="h-[50px] w-full rounded-full font-semibold text-[16px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.12)] transition-all duration-300 active:scale-[0.98] bg-white/10 border border-white/15 hover:bg-white/15 hover:border-white/25 flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141115]"
-            >
-              <span>{t('auth.login')}</span>
-            </Link>
-          </motion.div>
-        </div>
+        {/* Secondary Action: Login */}
+        <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+          <Link 
+            to="/login"
+            className="h-14 w-full rounded-2xl font-semibold text-base text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] transition-all duration-300 active:scale-[0.98] bg-white/10 border border-white/15 hover:bg-white/15 flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346]"
+          >
+            <span>{t('auth.login')}</span>
+          </Link>
+        </motion.div>
 
         {/* Third-Party Alternative Authentication */}
-        <div className="flex flex-col items-center justify-center gap-3 mt-7 sm:mt-8">
+        <div className="flex flex-col items-center justify-center gap-3 mt-2">
           <div className="flex items-center justify-center gap-3 w-full px-1">
             <div className="h-px flex-1 bg-white/15" />
             <span className="text-xs font-medium text-white/50 tracking-wider whitespace-nowrap">

@@ -138,6 +138,8 @@ html {
   height: 100%;
   height: -webkit-fill-available;
   background-color: #141115;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -151,6 +153,8 @@ body {
   background-color: var(--color-background);
   color: var(--color-text-main);
   transition: background-color 0.3s ease, color 0.3s ease;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
 }
 
 #root {
