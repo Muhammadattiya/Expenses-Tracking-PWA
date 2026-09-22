@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
+import { AmbientBackground } from './ui';
 
 /**
  * Finova Refined Splash Screen
- * Aligned with Liquid Glass & Ambient Copper Design System (DESIGN.md)
+ * Aligned with Liquid Glass & Ambient Copper Design System from Dashboard & Onboarding
  */
 export default function SplashScreen() {
   const { t, lang } = useLanguage();
@@ -20,59 +21,31 @@ export default function SplashScreen() {
         transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } 
       }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[100] w-full h-full min-h-screen bg-[#141115] overflow-hidden select-none flex flex-col items-center justify-between px-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]"
+      dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      className="fixed inset-0 z-[100] w-full min-h-screen text-white flex flex-col justify-between selection:bg-[#8D6346]/40 overflow-x-hidden select-none"
       aria-label={t('splash.ariaLabel', 'Finova Loading Screen')}
       role="status"
-      dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
       <span className="sr-only">{t('splash.loading', 'Loading...')}</span>
 
-      {/* 1. Finova Ambient Copper Glow Atmosphere */}
-      <div 
-        aria-hidden="true" 
-        className="absolute inset-0 pointer-events-none overflow-hidden select-none"
-      >
-        {/* Primary central brand glow with authored breathing cadence */}
-        <motion.div 
-          animate={shouldReduceMotion ? { scale: 1, opacity: 0.45 } : {
-            scale: [1, 1.08, 1],
-            opacity: [0.38, 0.52, 0.38]
-          }}
-          transition={shouldReduceMotion ? {} : {
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(500px,90vw)] h-[min(500px,90vw)] rounded-full bg-[#8D6346] blur-[120px] will-change-transform" 
-        />
-        {/* Atmospheric start-side top glow */}
-        <div 
-          className="absolute -top-20 start-[-10%] w-[340px] h-[340px] rounded-full bg-[#8D6346] opacity-30 blur-[130px]" 
-        />
-        {/* Ambient bottom copper glow */}
-        <div 
-          className="absolute -bottom-24 inset-x-0 mx-auto w-[min(500px,95vw)] h-[280px] rounded-full bg-[#8D6346] opacity-35 blur-[130px]" 
-        />
-      </div>
+      {/* Universal Ambient Copper Glow (Exact Theme from Dashboard & Onboarding) */}
+      <AmbientBackground variant="dashboard" />
 
-      {/* Top spacer for optical balance */}
-      <div className="w-full h-4 shrink-0 pointer-events-none" aria-hidden="true" />
+      {/* Top Header / Optical Balance Spacer */}
+      <header className="w-full max-w-md mx-auto pt-[max(1.25rem,env(safe-area-inset-top))] px-4 shrink-0 flex justify-center items-center pointer-events-none" />
 
-      {/* 2. Main Centered Brand Column */}
-      <motion.div
-        initial={shouldReduceMotion ? { opacity: 1 } : { scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: shouldReduceMotion ? 0.2 : 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 flex flex-col items-center w-full max-w-sm my-auto px-4"
-      >
+      {/* Main Flow Canvas — Natural Full-Height Proportions (Matching Onboarding) */}
+      <main className="flex-1 w-full max-w-md mx-auto px-4 py-4 flex flex-col justify-center items-center">
         {/* Perfectly Symmetric Circular Liquid Glass Medallion Housing */}
         <motion.div 
-          animate={shouldReduceMotion ? {} : {
-            borderColor: ['rgba(255,255,255,0.15)', 'rgba(141,99,70,0.45)', 'rgba(255,255,255,0.15)']
-          }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          initial={shouldReduceMotion ? { opacity: 1 } : { scale: 0.94, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: shouldReduceMotion ? 0.2 : 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="size-52 sm:size-60 aspect-square rounded-full relative shrink-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_20px_50px_rgba(0,0,0,0.7)] border border-white/20 backdrop-blur-2xl bg-[#2B2321]/45 flex items-center justify-center p-8 sm:p-9 overflow-hidden"
         >
+          {/* Ambient copper backing blur */}
+          <div className="absolute inset-0 bg-[#8D6346]/40 blur-[50px] rounded-full -z-10 animate-pulse" style={{ animationDuration: '3.5s' }} />
+
           {/* Subtle metallic sweep shimmer */}
           {!shouldReduceMotion && (
             <motion.div
@@ -111,7 +84,7 @@ export default function SplashScreen() {
           <h1 className="text-white font-extrabold text-[42px] sm:text-[48px] leading-none tracking-tight select-none drop-shadow-md font-['Exo_2']">
             Finova
           </h1>
-          <p className="text-white/80 font-medium text-[15px] sm:text-[16.5px] leading-relaxed select-none max-w-[320px] font-['Exo_2'] mt-2.5">
+          <p className="text-white/80 font-medium text-[15.5px] sm:text-[17px] leading-relaxed select-none max-w-[320px] font-['Exo_2'] mt-2.5">
             {t('auth.tagline', 'صياغة جديدة لتعاملك مع المال')}
           </p>
 
@@ -137,22 +110,17 @@ export default function SplashScreen() {
             )}
           </div>
         </div>
-      </motion.div>
+      </main>
 
-      {/* 3. Bottom Hallmark Anchor (Anchored firmly above safe area) */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: shouldReduceMotion ? 0.2 : 0.4, delay: shouldReduceMotion ? 0 : 0.2 }}
-        className="relative z-10 flex flex-col items-center shrink-0 select-none pointer-events-none"
-      >
+      {/* Bottom Hallmark Anchor (Anchored firmly above safe area) */}
+      <footer className="w-full max-w-md mx-auto pb-[max(1.75rem,env(safe-area-inset-bottom))] px-5 pt-3 shrink-0 flex flex-col items-center select-none pointer-events-none">
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
           <span className="size-2 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.7)] animate-pulse" />
           <span className="text-xs font-semibold text-white/70 tracking-wide font-['Exo_2']">
             {t('splash.secureEngine', 'المنظومة المالية الذكية • دون اتصال')}
           </span>
         </div>
-      </motion.div>
+      </footer>
     </motion.div>
   );
 }
