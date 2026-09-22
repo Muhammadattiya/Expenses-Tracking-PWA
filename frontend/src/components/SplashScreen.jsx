@@ -22,7 +22,7 @@ export default function SplashScreen() {
       }}
       transition={{ duration: 0.2 }}
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-[100] w-full min-h-screen text-white flex flex-col justify-between selection:bg-[#8D6346]/40 overflow-x-hidden select-none"
+      className="fixed inset-0 z-[100] w-full h-[100dvh] max-h-[100dvh] bg-[#141115] text-white flex flex-col justify-between selection:bg-[#8D6346]/40 overflow-hidden select-none"
       aria-label={t('splash.ariaLabel', 'Finova Loading Screen')}
       role="status"
     >
@@ -112,11 +112,11 @@ export default function SplashScreen() {
         </div>
       </main>
 
-      {/* Bottom Hallmark Anchor (Anchored firmly above safe area) */}
-      <footer className="w-full max-w-md mx-auto pb-[max(1.75rem,env(safe-area-inset-bottom))] px-5 pt-3 shrink-0 flex flex-col items-center select-none pointer-events-none">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-xl shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
-          <span className="size-2 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.7)] animate-pulse" />
-          <span className="text-xs font-semibold text-white/70 tracking-wide font-['Exo_2']">
+      {/* Bottom Hallmark Anchor (Anchored firmly with safe area breathing room) */}
+      <footer className="w-full max-w-md mx-auto pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1.5rem))] px-5 pt-2 shrink-0 flex flex-col items-center select-none pointer-events-none z-20">
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/50 border border-white/15 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+          <span className="size-2 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.7)] animate-pulse shrink-0" />
+          <span className="text-xs font-semibold text-white/80 tracking-wide font-['Exo_2'] whitespace-nowrap">
             {t('splash.secureEngine', 'المنظومة المالية الذكية • دون اتصال')}
           </span>
         </div>
