@@ -151,10 +151,10 @@ export default function PullToRefresh({ children, onRefresh }) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Pull Indicator Container - Fixed height with flex-center ensures it drops below the notch */}
+      {/* Pull Indicator Container - Positioned below notch safe area to eliminate iOS system status bar blur */}
       <div 
         ref={indicatorRef}
-        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center pointer-events-none"
+        className="fixed top-[max(0.75rem,env(safe-area-inset-top))] left-0 right-0 z-[100] flex items-center justify-center pointer-events-none"
         style={{ 
           height: `${MAX_PULL}px`, 
           transform: `translate3d(0, -${MAX_PULL}px, 0)`,

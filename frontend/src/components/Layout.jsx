@@ -25,7 +25,7 @@ export default function Layout() {
         </div>
       )}
 
-      <main className={`${isComposer ? 'pb-32 pt-4 sm:pt-6' : 'pb-32 pt-10 sm:pt-14'} px-5 w-full max-w-7xl mx-auto min-h-screen animate-fade-in`}>
+      <main className={`${isComposer ? 'pb-32 pt-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] sm:pt-6' : 'pb-32 pt-[max(2.5rem,calc(env(safe-area-inset-top)+0.75rem))] sm:pt-14'} px-5 w-full max-w-7xl mx-auto min-h-screen animate-fade-in`}>
         <PullToRefresh>
           <Outlet />
         </PullToRefresh>
