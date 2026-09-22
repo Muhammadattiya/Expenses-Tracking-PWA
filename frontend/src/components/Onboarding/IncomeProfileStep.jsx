@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getAccounts } from '../../api/accounts';
 import { getCategories } from '../../api/categories';
 import { createIncomeProfile } from '../../api/incomeProfiles';
-import { Loader2, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlobal, setIsOverlayActive, onRegisterNext }) {
   const { t, language } = useLanguage();
   const isRTL = language === 'ar';
   const shouldReduceMotion = useReducedMotion();
 
-  const [showOverlay, setShowOverlay] = useState(true);
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   
@@ -28,28 +26,25 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (setIsOverlayActive) setIsOverlayActive(true);
+    if (setIsOverlayActive) setIsOverlayActive(false);
 
-    const timer = setTimeout(() => {
-      setShowOverlay(false);
-      if (setIsOverlayActive) setIsOverlayActive(false);
-    }, 2400);
-
-    // Fetch accounts and categories
+    // Fetch accounts and categories defensively
     const fetchData = async () => {
       try {
         const [accs, cats] = await Promise.all([getAccounts(), getCategories()]);
-        setAccounts(accs);
-        const incomeCats = cats.filter(c => c.type === 'income' || c.type === 'both' || !c.type);
-        setCategories(incomeCats.length > 0 ? incomeCats : cats);
+        const safeAccs = Array.isArray(accs) ? accs : [];
+        const safeCats = Array.isArray(cats) ? cats : [];
+        setAccounts(safeAccs);
+        const incomeCats = safeCats.filter(c => c.type === 'income' || c.type === 'both' || !c.type);
+        setCategories(incomeCats.length > 0 ? incomeCats : safeCats);
         
-        if (accs.length > 0) {
-          setFormData(prev => ({ ...prev, account: accs[0]._id }));
+        if (safeAccs.length > 0) {
+          setFormData(prev => ({ ...prev, account: safeAccs[0]._id }));
         }
         if (incomeCats.length > 0) {
           setFormData(prev => ({ ...prev, category: incomeCats[0]._id }));
-        } else if (cats.length > 0) {
-          setFormData(prev => ({ ...prev, category: cats[0]._id }));
+        } else if (safeCats.length > 0) {
+          setFormData(prev => ({ ...prev, category: safeCats[0]._id }));
         }
       } catch (err) {
         console.error("Failed to fetch data:", err);
@@ -59,15 +54,9 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
     fetchData();
 
     return () => {
-      clearTimeout(timer);
       if (setIsOverlayActive) setIsOverlayActive(false);
     };
   }, [setIsOverlayActive]);
-
-  const dismissOverlay = () => {
-    setShowOverlay(false);
-    if (setIsOverlayActive) setIsOverlayActive(false);
-  };
 
   const handleSave = async () => {
     if (!formData.amount || Number(formData.amount) <= 0) {
@@ -75,7 +64,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
     }
     
     setLoading(true);
-    setLoadingGlobal(true);
+    if (typeof setLoadingGlobal === 'function') setLoadingGlobal(true);
     try {
       await createIncomeProfile({
         name: formData.name || (isRTL ? 'المرتب الأساسي' : 'Primary Salary'),
@@ -92,7 +81,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
       return true;
     } finally {
       setLoading(false);
-      setLoadingGlobal(false);
+      if (typeof setLoadingGlobal === 'function') setLoadingGlobal(false);
     }
   };
 
@@ -103,7 +92,7 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
     return () => {
       if (onRegisterNext) onRegisterNext(null);
     };
-  }, [formData, onRegisterNext]);
+  }, [formData, accounts, categories, isRTL, onRegisterNext]);
 
   const quickPresets = ['5,000', '10,000', '20,000', '35,000'];
   const paydayPresets = [
@@ -147,51 +136,6 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
   return (
     <div className="flex-1 flex flex-col w-full min-h-0 relative z-10" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* 1. Transition Full-Viewport Overlay via React Portal */}
-      {showOverlay && typeof document !== 'undefined' && createPortal(
-        <motion.div
-          key="overlay"
-          id="income-overlay"
-          role="region"
-          aria-label={t('onboarding.screen3Overlay')}
-          onClick={dismissOverlay}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-          className="fixed inset-0 z-[100] w-screen h-[100dvh] flex flex-col items-center justify-center bg-[#100E11]/95 backdrop-blur-[28px] cursor-pointer px-6 select-none"
-        >
-          {/* Ambient Glow behind logo */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/40 via-[#E8C5A8]/10 to-transparent blur-[120px] rounded-full pointer-events-none -z-10" />
-
-          {/* Logo with clean 39.01deg rotation */}
-          <motion.div
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, type: 'spring', bounce: 0.3 }}
-            className="w-52 h-52 sm:w-56 sm:h-56 mb-8 relative flex items-center justify-center pointer-events-none"
-          >
-            <img 
-              src="/images/onboarding1.png" 
-              alt="Finova"
-              width={224}
-              height={224}
-              className="w-full h-full object-contain opacity-95" 
-              style={{ transform: 'rotate(39.01deg)' }} 
-            />
-          </motion.div>
-
-          <motion.h2
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.25, duration: 0.4 }}
-            className="text-[23px] sm:text-[26px] font-bold text-center text-white font-['Exo_2'] max-w-[320px] leading-snug"
-          >
-            {t('onboarding.screen3Overlay')}
-          </motion.h2>
-        </motion.div>,
-        document.body
-      )}
-
       {/* 2. Holographic Finova Salary Card Experience */}
       <motion.div
         key="card-experience"
@@ -476,38 +420,6 @@ export default function IncomeProfileStep({ stepData, handleNext, setLoadingGlob
               )}
             </AnimatePresence>
           </div>
-
-          {/* Row 4: Primary Action Button */}
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            whileHover={{ scale: 1.01 }}
-            type="button"
-            onClick={async () => {
-              await handleSave();
-              handleNext();
-            }}
-            disabled={loading}
-            className="w-full h-11 sm:h-11.5 flex items-center justify-center rounded-2xl bg-[#8D6346] hover:bg-[#9E7151] border border-white/20 shadow-[0_8px_24px_rgba(141,99,70,0.5),inset_0_1px_2px_rgba(255,255,255,0.25)] transition-all text-white font-bold text-[14px] sm:text-[14.5px] cursor-pointer touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D6346] mt-0.5"
-          >
-            {loading ? (
-              <Loader2 size={19} className="animate-spin text-white/90" />
-            ) : (
-              <AnimatePresence mode="wait">
-                <motion.span 
-                  key={Boolean(formData.amount && Number(formData.amount) > 0)}
-                  initial={{ opacity: 0, y: 3 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -3 }}
-                  transition={{ duration: 0.15 }}
-                  className="text-white font-bold text-[14px] sm:text-[14.5px] font-['Exo_2'] tracking-wide"
-                >
-                  {formData.amount && Number(formData.amount) > 0 
-                    ? (isRTL ? 'حفظ ومتابعة' : 'Save & Continue') 
-                    : (isRTL ? 'متابعة بدون حفظ' : 'Continue without saving')}
-                </motion.span>
-              </AnimatePresence>
-            )}
-          </motion.button>
         </motion.div>
       </motion.div>
     </div>

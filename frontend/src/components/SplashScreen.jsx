@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
+import { AmbientBackground } from './ui';
 
 /**
  * Finova Refined Splash Screen
- * Aligned with Liquid Glass & Ambient Copper Design System (DESIGN.md)
+ * Aligned with Liquid Glass & Ambient Copper Design System from Dashboard & Onboarding
  */
 export default function SplashScreen() {
   const { t, lang } = useLanguage();
@@ -20,70 +21,55 @@ export default function SplashScreen() {
         transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } 
       }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[100] w-full min-h-[100dvh] bg-[#141115] overflow-hidden select-none flex flex-col items-center justify-center p-4 [contain:strict]"
-      aria-label={t('splash.ariaLabel')}
-      role="status"
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      className="fixed inset-0 z-[100] w-full h-[100dvh] max-h-[100dvh] bg-[#141115] text-white flex flex-col justify-between selection:bg-[#8D6346]/40 overflow-hidden select-none"
+      aria-label={t('splash.ariaLabel', 'Finova Loading Screen')}
+      role="status"
     >
-      <span className="sr-only">{t('splash.loading')}</span>
+      <span className="sr-only">{t('splash.loading', 'Loading...')}</span>
 
-      {/* 1. Finova Ambient Copper Glow Spheres (Pure GPU CSS, Bidi-Symmetric) */}
-      <div 
-        aria-hidden="true" 
-        className="absolute inset-0 pointer-events-none overflow-hidden select-none flex items-center justify-center"
-      >
-        {/* Primary central brand glow with authored breathing cadence */}
-        <motion.div 
-          animate={shouldReduceMotion ? { scale: 1, opacity: 0.4 } : {
-            scale: [1, 1.06, 1],
-            opacity: [0.36, 0.48, 0.36]
-          }}
-          transition={shouldReduceMotion ? {} : {
-            duration: 2.8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute w-[min(460px,85vw)] h-[min(460px,85vw)] rounded-full bg-[#8D6346] blur-[120px] will-change-transform" 
-        />
-        {/* Atmospheric start-side glow (adapts naturally in RTL/LTR) */}
-        <div 
-          className="absolute -top-16 start-[-10%] w-[320px] h-[320px] rounded-full bg-[#8D6346] opacity-30 blur-[130px] will-change-transform" 
-        />
-        {/* Counter ambient end-side glow */}
-        <div 
-          className="absolute -bottom-20 end-[-10%] w-[360px] h-[360px] rounded-full bg-[#8D6346] opacity-35 blur-[140px] will-change-transform" 
-        />
-      </div>
+      {/* Universal Ambient Copper Glow (Exact Theme from Dashboard & Onboarding) */}
+      <AmbientBackground variant="dashboard" />
 
-      {/* 2. Main Centered Brand Column */}
-      <motion.div
-        initial={shouldReduceMotion ? { opacity: 1 } : { scale: 0.97, opacity: 1 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: shouldReduceMotion ? 0.2 : 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 flex flex-col items-center gap-6 w-full max-w-[320px]"
-      >
-        {/* Responsive Liquid Glass Medallion Housing */}
+      {/* Top Header / Optical Balance Spacer */}
+      <header className="w-full max-w-md mx-auto pt-[max(1.25rem,env(safe-area-inset-top))] px-4 shrink-0 flex justify-center items-center pointer-events-none" />
+
+      {/* Main Flow Canvas — Natural Full-Height Proportions (Matching Onboarding) */}
+      <main className="flex-1 w-full max-w-md mx-auto px-4 py-4 flex flex-col justify-center items-center">
+        {/* Perfectly Symmetric Circular Liquid Glass Medallion Housing */}
         <motion.div 
-          animate={shouldReduceMotion ? {} : {
-            borderColor: ['rgba(255,255,255,0.1)', 'rgba(141,99,70,0.3)', 'rgba(255,255,255,0.1)']
-          }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-[min(288px,65vw)] h-[min(288px,65vw)] max-h-[36vh] max-w-[288px] aspect-square rounded-full relative shrink-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_8px_32px_rgba(0,0,0,0.5)] border border-white/10 backdrop-blur-md bg-[#2B2321]/30 flex items-center justify-center overflow-hidden"
+          initial={shouldReduceMotion ? { opacity: 1 } : { scale: 0.94, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: shouldReduceMotion ? 0.2 : 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="size-52 sm:size-60 aspect-square rounded-full relative shrink-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_20px_50px_rgba(0,0,0,0.7)] border border-white/20 backdrop-blur-2xl bg-[#2B2321]/45 flex items-center justify-center p-8 sm:p-9 overflow-hidden"
         >
+          {/* Ambient copper backing blur */}
+          <div className="absolute inset-0 bg-[#8D6346]/40 blur-[50px] rounded-full -z-10 animate-pulse" style={{ animationDuration: '3.5s' }} />
+
+          {/* Subtle metallic sweep shimmer */}
+          {!shouldReduceMotion && (
+            <motion.div
+              className="absolute -inset-full w-[200%] h-[200%] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent pointer-events-none -skew-x-12"
+              animate={{ x: ['-100%', '150%'] }}
+              transition={{ repeat: Infinity, repeatDelay: 3, duration: 2, ease: "easeInOut" }}
+            />
+          )}
+
           <svg 
             width="100%" 
             height="100%" 
             viewBox="0 0 288 288" 
+            preserveAspectRatio="xMidYMid meet"
             fill="none" 
             xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full select-none pointer-events-none"
+            className="w-full h-full aspect-square select-none pointer-events-none relative z-10"
             aria-hidden="true"
           >
             <defs>
               <linearGradient id="finova_copper_medallion" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#8D6346" stopOpacity="0.75" />
-                <stop offset="50%" stopColor="#A47553" stopOpacity="0.65" />
-                <stop offset="100%" stopColor="#4A3427" stopOpacity="0.55" />
+                <stop offset="0%" stopColor="#E8C5A8" stopOpacity="0.95" />
+                <stop offset="50%" stopColor="#8D6346" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#3D2E2B" stopOpacity="0.8" />
               </linearGradient>
             </defs>
             <path 
@@ -94,15 +80,47 @@ export default function SplashScreen() {
         </motion.div>
 
         {/* Typographic Text Group */}
-        <div className="flex flex-col items-center gap-2 text-center px-4">
-          <h1 className="text-white font-['Exo_2'] font-bold text-[clamp(2rem,6vw,2.5rem)] leading-tight tracking-tight select-none drop-shadow-sm">
+        <div className="flex flex-col items-center text-center mt-6">
+          <h1 className="text-white font-extrabold text-[42px] sm:text-[48px] leading-none tracking-tight select-none drop-shadow-md font-['Exo_2']">
             Finova
           </h1>
-          <p className="text-white/60 font-['Exo_2'] font-normal text-sm sm:text-base leading-snug tracking-normal select-none max-w-[280px]">
-            {t('auth.tagline')}
+          <p className="text-white/80 font-medium text-[15.5px] sm:text-[17px] leading-relaxed select-none max-w-[320px] font-['Exo_2'] mt-2.5">
+            {t('auth.tagline', 'صياغة جديدة لتعاملك مع المال')}
           </p>
+
+          {/* Elegant Indeterminate Hairline Progress Gleam */}
+          <div 
+            aria-hidden="true" 
+            className="w-28 h-[2.5px] rounded-full bg-white/10 overflow-hidden relative mt-4"
+          >
+            {shouldReduceMotion ? (
+              <div className="w-full h-full bg-[#8D6346]/60 rounded-full" />
+            ) : (
+              <motion.div
+                className="w-12 h-full bg-gradient-to-r from-transparent via-[#E8C5A8] to-transparent rounded-full"
+                animate={{
+                  x: lang === 'ar' ? ['112px', '-48px'] : ['-48px', '112px']
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: [0.4, 0, 0.2, 1]
+                }}
+              />
+            )}
+          </div>
         </div>
-      </motion.div>
+      </main>
+
+      {/* Bottom Hallmark Anchor (Anchored firmly with safe area breathing room) */}
+      <footer className="w-full max-w-md mx-auto pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1.5rem))] px-5 pt-2 shrink-0 flex flex-col items-center select-none pointer-events-none z-20">
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/50 border border-white/15 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+          <span className="size-2 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.7)] animate-pulse shrink-0" />
+          <span className="text-xs font-semibold text-white/80 tracking-wide font-['Exo_2'] whitespace-nowrap">
+            {t('splash.secureEngine', 'المنظومة المالية الذكية • دون اتصال')}
+          </span>
+        </div>
+      </footer>
     </motion.div>
   );
 }

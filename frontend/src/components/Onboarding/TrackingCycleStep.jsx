@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { updatePreferences } from '../../api/auth';
 
@@ -129,21 +130,17 @@ export default function TrackingCycleStep({ stepData, onRegisterNext, setLoading
         transition={{ duration: 0.4 }}
         className="w-full flex-1 flex flex-col items-center justify-between px-4 sm:px-6 py-1 min-h-0 overflow-hidden"
       >
-        {/* Compact Illustration */}
-        <div className="w-full flex justify-center items-center relative shrink-0 mb-1.5">
+        {/* Compact Vector Glass Emblem */}
+        <div className="w-full flex justify-center items-center relative shrink-0 mb-2">
           <motion.div 
-            className="w-[80px] h-[80px] sm:w-[96px] sm:h-[96px] relative flex justify-center items-center"
+            className="size-16 sm:size-20 relative flex justify-center items-center"
             animate={{ y: [0, -4, 0] }}
             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#8D6346]/45 via-[#E8C5A8]/15 to-transparent blur-2xl rounded-full -z-10" />
-            <img 
-              src="/images/onboarding2.png" 
-              alt={t('onboarding.trackingIllustrationAlt', 'Tracking cycle illustration')}
-              width={96}
-              height={96}
-              className="w-full h-full object-contain"
-            />
+            <div className="absolute inset-0 bg-[#8D6346]/40 blur-xl rounded-full -z-10" />
+            <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#8D6346]/40 via-[#2B2321]/80 to-[#141115] border border-white/20 backdrop-blur-xl shadow-[0_10px_24px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.3)] flex items-center justify-center text-[#E8C5A8]">
+              <Calendar size={28} className="text-[#E8C5A8]" />
+            </div>
           </motion.div>
         </div>
 

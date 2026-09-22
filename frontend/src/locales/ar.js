@@ -21,7 +21,8 @@ export default {
   },
   "splash": {
     "loading": "جاري تحميل تطبيق فينوفا...",
-    "ariaLabel": "بدء تشغيل تطبيق فينوفا"
+    "ariaLabel": "بدء تشغيل تطبيق فينوفا",
+    "secureEngine": "المنظومة المالية الذكية • دون اتصال"
   },
   "onboarding": {
     "screen1Title": "فلوسك.. أخيراً بتشتغل عشانك",
