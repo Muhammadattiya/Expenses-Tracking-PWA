@@ -42,6 +42,7 @@
 | **Nested Stat Container**| `bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-5 py-3` | Inset translucent well | Inner stats, total amounts |
 | **Gain / Loss Pill** | `bg-white/5 rounded-[20px] py-2 px-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_2px_4px_rgba(0,0,0,0.1)]` | Raised micro-glass | Quick metrics on cards |
 | **Action Pill (Active)** | `bg-[#8D6346]/20 border border-[#8D6346]/30 text-white rounded-[24px]` | Warm glass highlight | Segmented tab indicator |
+| **Action Button (Bill Card Style)** | `bg-[#8D6346]/30 backdrop-blur-md border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 rounded-full` | Translucent Copper Glass with dual specular/ambient shadow | Primary card action buttons ("Pay Now", "Ignore", Auth actions) |
 
 ### 2.4 Semantic Financial Colors
 | Meaning | Value | Tailwind | Contrast vs Dark BG |
@@ -99,7 +100,7 @@
 
 | Component | Export Path | Key Features |
 |-----------|-------------|--------------|
-| **Button** | `src/components/ui/Button.jsx` | Tactile spring physics (`whileTap={{ scale: 0.95/0.98 }}`), variants: `primary` (copper), `secondary` / `glass` (translucent), `subtle`, `danger`, `ghost`, loading spinners, icon slots. |
+| **Button** | `src/components/ui/Button.jsx` | Tactile spring physics (`whileTap={{ scale: 0.95/0.98 }}`), primary variant matches signature Bill Card ("Pay Now" / "Ignore") Copper Glass (`bg-[#8D6346]/30`, `border-[#8D6346]/50`, `backdrop-blur-md`, dual specular/ambient shadow); secondary, glass, subtle, danger, ghost variants, loading spinners, icon slots. |
 | **SegmentedControl** | `src/components/ui/SegmentedControl.jsx` | Fluid sliding pill tab indicator using Framer Motion `layoutId`, recessed glass track (`bg-black/25 backdrop-blur-[12px]`), RTL-compatible keyboard/touch navigation. |
 | **MetricPill** | `src/components/ui/MetricPill.jsx` | Strict `tabular-nums tracking-tight` formatting for financial numbers, semantic color variants (`gain`, `loss`, `warning`, `info`, `copper`, `neutral`), stacked & inline variants. |
 | **AmbientBackground** | `src/components/ui/AmbientBackground.jsx` | Fixed atmospheric background copper glows (`#8D6346 blur-[120px] opacity-60`), variants: `dashboard`, `debts`, `minimal`. |

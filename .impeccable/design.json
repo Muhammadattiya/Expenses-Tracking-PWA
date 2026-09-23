@@ -167,6 +167,11 @@
         "name": "copper-focus-glow",
         "value": "0 0 12px rgba(141, 99, 70, 0.3)",
         "purpose": "Tactile focus glow on active inputs and buttons."
+      },
+      {
+        "name": "copper-glass-action",
+        "value": "0 4px 20px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.18)",
+        "purpose": "Signature dual specular top rim and obsidian drop shadow on action buttons (Bill Card Pay Now/Ignore, Auth forms)."
       }
     ],
     "motion": [
@@ -190,12 +195,12 @@
   },
   "components": [
     {
-      "name": "Primary Copper Button",
+      "name": "Copper Glass Action Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Tactile pill button for primary actions and confirmations.",
-      "html": "<button class=\"ds-btn-primary\"><span>Save Changes</span></button>",
-      "css": ".ds-btn-primary { background: #8D6346; color: #ffffff; padding: 12px 24px; border-radius: 9999px; font-family: 'Exo 2', sans-serif; font-size: 0.95rem; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 14px rgba(141, 99, 70, 0.3); cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); outline: none; display: inline-flex; align-items: center; justify-content: center; } .ds-btn-primary:hover { background: #E8C5A8; color: #3D2E2B; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(141, 99, 70, 0.4); } .ds-btn-primary:active { transform: scale(0.95); background: #8D6346; color: #ffffff; }"
+      "description": "Signature translucent copper glass pill button with specular rim, backdrop blur, and dual ambient/specular shadow as seen in Bill Card ('Pay Now' / 'Ignore').",
+      "html": "<button class=\"ds-btn-copper-glass\"><span>Pay Now</span></button>",
+      "css": ".ds-btn-copper-glass { background: rgba(141, 99, 70, 0.3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #ffffff; padding: 12px 24px; border-radius: 9999px; font-family: 'Exo 2', sans-serif; font-size: 13.5px; font-weight: 600; border: 1px solid rgba(141, 99, 70, 0.5); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.18); cursor: pointer; transition: all 0.3s ease; outline: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; } .ds-btn-copper-glass:hover { background: rgba(141, 99, 70, 0.45); border-color: rgba(141, 99, 70, 0.7); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25); } .ds-btn-copper-glass:active { transform: scale(0.98); }"
     },
     {
       "name": "Liquid Glass Hero Card",
@@ -269,16 +274,17 @@
     ],
     "dos": [
       "Do enforce pure CSS Liquid Glass (backdrop-blur-[32px], bg-[#2B2321]/30, border-white/10) so underlying background glows remain vividly visible.",
+      "Do style primary and card action buttons using the signature translucent Copper Glass aesthetic (bg-[#8D6346]/30, border-[#8D6346]/50, backdrop-blur-md, shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)], active:scale-[0.98]).",
       "Do format all financial metrics and balances with tabular-nums tracking-tight.",
-      "Do apply physical spring physics (whileTap={{ scale: 0.95 }}) to all interactive buttons and cards.",
+      "Do apply physical spring physics (whileTap={{ scale: 0.95 }} or 0.98) to all interactive buttons and cards.",
       "Do use logical CSS classes (ms-, me-, start-, end-) for dynamic RTL/LTR support.",
       "Do mount all modals into document.body via React Portals to prevent z-index stacking conflicts with BottomNav.",
       "Do keep long virtualized lists bound to window scroll (useWindowScroll={true}) to prevent double scrollbars."
     ],
     "donts": [
       "Don't use SVG displacement filters or chromatic aberration filters (#glass-filter-_r_b_); surfaces rely strictly on pure, performant CSS.",
+      "Don't use generic flat opaque buttons for primary card actions; buttons must feature translucent Copper Glass, tactile feedback, and specular inset highlights.",
       "Don't make glass surfaces opaque or muddy grey; keep opacity under 35% on dark surfaces so depth remains optical.",
-      "Don't use generic flat primary buttons; buttons must feature tactile feedback and refined copper highlights.",
       "Don't hardcode physical layout directions (left-, right-, ml-, mr-) in UI components.",
       "Don't use native window.confirm for destructive operations.",
       "Don't expose technical variable names or raw localization keys in the user interface."

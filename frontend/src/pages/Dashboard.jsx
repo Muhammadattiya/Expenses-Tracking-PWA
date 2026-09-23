@@ -14,6 +14,7 @@ import {
 } from "../api/transactions";
 import { getCategories } from "../api/categories";
 import { getDebts } from "../api/debts";
+import { getInstallments } from "../api/installments";
 import { getSurvival } from "../api/forecast";
 import { getReceivables } from "../api/receivables";
 import { getCurrentUser, resetOnboarding } from "../api/auth";
@@ -39,6 +40,8 @@ const Dashboard = () => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
   const [allDebts, setAllDebts] = useState([]);
+  const [allInstallmentTransactions, setAllInstallmentTransactions] = useState([]);
+  const [allInstallments, setAllInstallments] = useState([]);
   const [allReceivables, setAllReceivables] = useState(() => {
     try {
       const activeUser = getActiveUserId();
@@ -144,7 +147,7 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [transactionsData, accountsData, userData, debtsData, survivalData, receivablesData, categoriesData, investmentsData, goldPriceData] = await Promise.all([
+      const [transactionsData, accountsData, userData, debtsData, survivalData, receivablesData, categoriesData, investmentsData, goldPriceData, installmentsData] = await Promise.all([
         getTransactions(),
         getAccounts(),
         getCurrentUser().catch(() => null),
@@ -153,7 +156,8 @@ const Dashboard = () => {
         getReceivables().catch(() => null),
         getCategories().catch(() => []),
         getInvestments().catch(() => null),
-        getGoldPrice().catch(() => null)
+        getGoldPrice().catch(() => null),
+        getInstallments().catch(() => ({ summary: {}, installments: [], transactions: [] }))
       ]);
 
       setAllTransactions(transactionsData);
@@ -162,6 +166,10 @@ const Dashboard = () => {
       if (debtsData) {
         if (debtsData.debts) setAllDebts(debtsData.debts);
         if (debtsData.transactions) setAllDebtTransactions(debtsData.transactions);
+      }
+      if (installmentsData) {
+        if (installmentsData.installments) setAllInstallments(installmentsData.installments);
+        if (installmentsData.transactions) setAllInstallmentTransactions(installmentsData.transactions);
       }
       if (receivablesData && Array.isArray(receivablesData)) {
         setAllReceivables(receivablesData);
@@ -335,6 +343,12 @@ const Dashboard = () => {
         }
       });
 
+      allInstallmentTransactions.forEach(it => {
+        if (matchesAcc(it.account, targetId)) {
+          bal -= (Number(it.amount) || 0);
+        }
+      });
+
       allReceivables.forEach(r => {
         if (matchesAcc(r.paidFrom, targetId)) bal -= (Number(r.paidAmount) || 0);
         if (matchesAcc(r.receivedTo, targetId)) bal += (Number(r.receivedAmount) || 0);
@@ -444,7 +458,47 @@ const Dashboard = () => {
       });
     });
 
-    const allCombined = [...valid, ...mappedDebtTransactions];
+    const installmentsMap = new Map();
+    (allInstallments || []).forEach(inst => {
+      if (inst._id) installmentsMap.set(String(inst._id), inst);
+    });
+
+    const mappedInstallmentTransactions = [];
+    (allInstallmentTransactions || []).forEach(it => {
+      const instIdStr = String(it.installmentId?._id || it.installmentId || '');
+      const baseInst = installmentsMap.get(instIdStr) || (typeof it.installmentId === 'object' ? it.installmentId : null);
+      const instTitle = baseInst?.title || (lang === 'ar' ? 'قسط' : 'Installment');
+      const actionType = it.type;
+      const paymentNum = it.paymentNumber || 1;
+      const totalMonths = baseInst?.totalMonths || 12;
+
+      let title = '';
+      if (actionType === 'down_payment') {
+        title = t('transactions.installmentDownPayment', { title: instTitle });
+      } else {
+        title = t('transactions.installmentPayment', { title: instTitle, current: paymentNum, total: totalMonths });
+      }
+
+      const rawDate = it.date || it.createdAt;
+
+      mappedInstallmentTransactions.push({
+        _id: it._id,
+        installmentId: baseInst?._id || it.installmentId,
+        isInstallment: true,
+        type: 'installment',
+        actionType,
+        direction: 'outflow',
+        title,
+        amount: Number(it.amount) || 0,
+        account: resolveAccount(it.account),
+        date: rawDate,
+        createdAt: it.createdAt || rawDate,
+        notes: it.notes,
+        status: 'completed'
+      });
+    });
+
+    const allCombined = [...valid, ...mappedDebtTransactions, ...mappedInstallmentTransactions];
 
     return allCombined.filter(t => {
       if (selectedAccount !== 'all') {
@@ -454,7 +508,7 @@ const Dashboard = () => {
         if (!accMatch && !fromMatch && !toMatch) return false;
       }
       if (selectedCategory !== 'all') {
-        if (t.isDebt) return false;
+        if (t.isDebt || t.isInstallment) return false;
         const catId = (t.category?._id || t.category)?.toString();
         if (catId !== selectedCategory.toString()) return false;
       }
@@ -464,7 +518,7 @@ const Dashboard = () => {
       }
       return true;
     });
-  }, [allTransactions, allDebtTransactions, allDebts, accounts, selectedAccount, selectedCategory, periodStart, periodEnd, t, lang]);
+  }, [allTransactions, allDebtTransactions, allDebts, allInstallmentTransactions, allInstallments, accounts, selectedAccount, selectedCategory, periodStart, periodEnd, t, lang]);
 
   const { groupedTransactions, sortedDates, groupCounts, groupOffsets } = useMemo(() => {
     const getCreationTime = (t) => {
@@ -523,6 +577,11 @@ const Dashboard = () => {
     if (transaction.isDebt) {
       triggerHaptic('selection');
       navigate(transaction.isGroupExpense ? '/receivables' : '/receivables?tab=personal');
+      return;
+    }
+    if (transaction.isInstallment || transaction.type === 'installment') {
+      triggerHaptic('selection');
+      navigate('/receivables?tab=installments');
       return;
     }
     setSelectedTransaction(transaction);

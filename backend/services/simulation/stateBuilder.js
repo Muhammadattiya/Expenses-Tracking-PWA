@@ -7,6 +7,10 @@ const RecurringTransaction = require('../../models/RecurringTransaction');
 const Investment = require('../../models/Investment');
 const User = require('../../models/User');
 const Receivable = require('../../models/Receivable');
+const Installment = require('../../models/Installment');
+const SavingsGoal = require('../../models/SavingsGoal');
+const EmergencyFund = require('../../models/EmergencyFund');
+const IncomeProfile = require('../../models/IncomeProfile');
 
 class StateBuilder {
   /**
@@ -23,7 +27,11 @@ class StateBuilder {
       recurring,
       investments,
       user,
-      receivables
+      receivables,
+      installments,
+      savingsGoals,
+      emergencyFund,
+      incomeProfiles
     ] = await Promise.all([
       Transaction.find({ user: userId }).lean(),
       Account.find({ user: userId }).lean(),
@@ -33,8 +41,29 @@ class StateBuilder {
       RecurringTransaction.find({ user: userId }).lean(),
       Investment.find({ user: userId }).lean(),
       User.findById(userId).lean(),
-      Receivable.find({ user: userId }).lean()
+      Receivable.find({ user: userId }).lean(),
+      Installment.find({ user: userId, status: 'active' }).lean(),
+      SavingsGoal.find({ user: userId }).lean(),
+      EmergencyFund.findOne({ user: userId }).lean(),
+      IncomeProfile.find({ user: userId, isActive: true }).lean()
     ]);
+
+    let userMonthlyIncome = 0;
+    if (incomeProfiles && incomeProfiles.length > 0) {
+      for (const p of incomeProfiles) {
+        if (p.frequency === 'daily') userMonthlyIncome += p.amount * 30;
+        else if (p.frequency === 'weekly') userMonthlyIncome += p.amount * (52 / 12);
+        else if (p.frequency === 'yearly') userMonthlyIncome += p.amount / 12;
+        else userMonthlyIncome += p.amount;
+      }
+      userMonthlyIncome = Math.round(userMonthlyIncome);
+    } else {
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+      const pastIncomeTotal = (transactions || [])
+        .filter(t => t.type === 'income' && new Date(t.date) >= sixtyDaysAgo)
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      userMonthlyIncome = pastIncomeTotal > 0 ? Math.round(pastIncomeTotal / 2) : 10000;
+    }
 
     return {
       userId,
@@ -46,6 +75,10 @@ class StateBuilder {
       recurring,
       investments,
       receivables,
+      installments: installments || [],
+      savingsGoals: savingsGoals || [],
+      emergencyFund: emergencyFund || null,
+      userMonthlyIncome,
       userPrefs: user?.preferences || {}
     };
   }

@@ -4,7 +4,35 @@ const { classifyCategoryIntent } = require("./categoryIntentClassifier");
 const { INTENTS } = require("./quickAdd/intentTaxonomy");
 
 const getCategories = async (userId) => {
-  return Category.find({ user: userId }).sort({ type: 1, order: 1, createdAt: 1 }).lean();
+  const categories = await Category.find({ user: userId }).sort({ type: 1, order: 1, createdAt: 1 }).lean();
+
+  // Self-healing: if any category lacks an intentId, attempt deterministic classification
+  const updates = [];
+  for (const cat of categories) {
+    if (!cat.intentId) {
+      const resolvedIntent = classifyCategoryIntent(cat.name);
+      if (resolvedIntent) {
+        cat.intentId = resolvedIntent;
+        cat.intentSource = 'automatic';
+        cat.intentConfidence = 1.0;
+        updates.push({
+          updateOne: {
+            filter: { _id: cat._id, user: userId },
+            update: { $set: { intentId: resolvedIntent, intentSource: 'automatic', intentConfidence: 1.0 } }
+          }
+        });
+      }
+    }
+  }
+
+  // Persist healed categories in the background asynchronously without blocking the read
+  if (updates.length > 0) {
+    Category.bulkWrite(updates).catch(err => {
+      console.error('[CATEGORY] Failed to persist self-healed category intents:', err.message);
+    });
+  }
+
+  return categories;
 };
 
 // Whitelist allowed fields to prevent mass assignment
@@ -19,8 +47,12 @@ const pickCategoryFields = (data) => {
 
 const createCategory = async (userId, data) => {
   const safeData = pickCategoryFields(data);
-  if (safeData.name) {
+  if (safeData.name && !safeData.intentId) {
     safeData.intentId = classifyCategoryIntent(safeData.name) || null;
+  }
+  if (safeData.intentId && !safeData.intentSource) {
+    safeData.intentSource = 'automatic';
+    safeData.intentConfidence = 1.0;
   }
   if (safeData.order === undefined && safeData.type) {
     const lastCategory = await Category.findOne({ user: userId, type: safeData.type }).sort({ order: -1 }).select('order').lean();

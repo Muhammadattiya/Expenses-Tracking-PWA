@@ -15,6 +15,10 @@ const RecurringTransaction = require('../models/RecurringTransaction');
 const SimulationHistory = require('../models/SimulationHistory');
 const SmartBudgetPlan = require('../models/SmartBudgetPlan');
 const Subscription = require('../models/Subscription');
+const Installment = require('../models/Installment');
+const InstallmentTransaction = require('../models/InstallmentTransaction');
+const SavingsGoal = require('../models/SavingsGoal');
+const EmergencyFund = require('../models/EmergencyFund');
 const AppError = require('../utils/AppError');
 const { adoptLegacyData } = require('./legacyDataService');
 
@@ -59,19 +63,20 @@ const seedDefaultData = async (userId) => {
 
   const hasCategories = await Category.exists({ user: userId });
   if (!hasCategories) {
-    await Category.insertMany([
-      { user: userId, name: 'Salary', type: 'income', icon: 'Briefcase' },
-      { user: userId, name: 'Bonus', type: 'income', icon: 'Gift' },
-      { user: userId, name: 'Investment', type: 'income', icon: 'TrendingUp' },
-      { user: userId, name: 'Food', type: 'expense', icon: 'Utensils' },
-      { user: userId, name: 'Transport', type: 'expense', icon: 'Bus' },
-      { user: userId, name: 'Bills', type: 'expense', icon: 'FileText' },
-      { user: userId, name: 'Entertainment', type: 'expense', icon: 'Film' },
-      { user: userId, name: 'Health', type: 'expense', icon: 'HeartPulse' },
-      { user: userId, name: 'Shopping', type: 'expense', icon: 'ShoppingBag' },
-      { user: userId, name: 'Education', type: 'expense', icon: 'GraduationCap' },
-      { user: userId, name: 'Other', type: 'expense', icon: 'MoreHorizontal' }
-    ]);
+    const defaultCategories = [
+      { user: userId, name: 'Salary', type: 'income', icon: 'Briefcase', intentId: 'salary', intentSource: 'automatic', intentConfidence: 1.0, order: 0 },
+      { user: userId, name: 'Bonus', type: 'income', icon: 'Gift', intentId: 'salary', intentSource: 'automatic', intentConfidence: 1.0, order: 1 },
+      { user: userId, name: 'Investment', type: 'income', icon: 'TrendingUp', intentId: 'investment_income', intentSource: 'automatic', intentConfidence: 1.0, order: 2 },
+      { user: userId, name: 'Food', type: 'expense', icon: 'Utensils', intentId: 'food_and_drink', intentSource: 'automatic', intentConfidence: 1.0, order: 0 },
+      { user: userId, name: 'Transport', type: 'expense', icon: 'Bus', intentId: 'transportation', intentSource: 'automatic', intentConfidence: 1.0, order: 1 },
+      { user: userId, name: 'Bills', type: 'expense', icon: 'FileText', intentId: 'bills', intentSource: 'automatic', intentConfidence: 1.0, order: 2 },
+      { user: userId, name: 'Entertainment', type: 'expense', icon: 'Film', intentId: 'entertainment', intentSource: 'automatic', intentConfidence: 1.0, order: 3 },
+      { user: userId, name: 'Health', type: 'expense', icon: 'HeartPulse', intentId: 'healthcare', intentSource: 'automatic', intentConfidence: 1.0, order: 4 },
+      { user: userId, name: 'Shopping', type: 'expense', icon: 'ShoppingBag', intentId: 'shopping', intentSource: 'automatic', intentConfidence: 1.0, order: 5 },
+      { user: userId, name: 'Education', type: 'expense', icon: 'GraduationCap', intentId: 'education', intentSource: 'automatic', intentConfidence: 1.0, order: 6 },
+      { user: userId, name: 'Other', type: 'expense', icon: 'MoreHorizontal', intentId: 'other', intentSource: 'automatic', intentConfidence: 1.0, order: 7 }
+    ];
+    await Category.insertMany(defaultCategories);
   }
 };
 
@@ -213,6 +218,10 @@ const deleteAllUserData = async (userId) => {
     SimulationHistory.deleteMany({ userId }),
     SmartBudgetPlan.deleteMany({ user: userId }),
     Subscription.deleteMany({ user: userId }),
+    Installment.deleteMany({ user: userId }),
+    InstallmentTransaction.deleteMany({ user: userId }),
+    SavingsGoal.deleteMany({ user: userId }),
+    EmergencyFund.deleteMany({ user: userId }),
   ]);
 };
 

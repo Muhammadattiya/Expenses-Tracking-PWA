@@ -30,19 +30,22 @@ const initCronJobs = () => {
       pushSuccess: 0,
       pushFailed: 0,
       budgetsChecked: 0,
-      incomeProfilesExecuted: 0
+      incomeProfilesExecuted: 0,
+      installmentsProcessed: 0
     };
 
     await processRecurringTransactions(stats);
     await processBills(stats);
     await processIncomeProfiles(stats);
     await processBudgetThresholds(stats);
+    await processInstallments(stats);
 
     const executionTime = Date.now() - cronStartTime;
     console.log(`[CRON] Bills Processed: ${stats.billsProcessed}`);
     console.log(`[CRON] Recurring Transactions Executed: ${stats.recurringExecuted}`);
     console.log(`[CRON] Income Profiles Executed: ${stats.incomeProfilesExecuted}`);
     console.log(`[CRON] Budgets Checked: ${stats.budgetsChecked}`);
+    console.log(`[CRON] Installments Processed: ${stats.installmentsProcessed}`);
     console.log(`[CRON] Notifications Sent: ${stats.pushSuccess}`);
     console.log(`[CRON] Finished`);
     console.log(`Execution Time: ${executionTime} ms`);
@@ -625,4 +628,54 @@ const reconcileStaleAnalytics = async () => {
   }
 };
 
-module.exports = { initCronJobs, processRecurringTransactions, processBills, sendPushNotification, processSmartBudgetReminders, processIncomeProfiles, checkPaydaySurvivalRisk, reconcileStaleAnalytics };
+const processInstallments = async (stats) => {
+  try {
+    const Installment = require('../models/Installment');
+    const installmentService = require('./installmentService');
+    const now = new Date();
+
+    const dueInstallments = await Installment.find({
+      status: 'active',
+      nextDueDate: { $lte: now }
+    });
+
+    for (const inst of dueInstallments) {
+      if (stats) stats.installmentsProcessed = (stats.installmentsProcessed || 0) + 1;
+
+      if (inst.autoPay) {
+        try {
+          await installmentService.payInstallment(inst.user, inst._id);
+          const subscriptions = await Subscription.find({ user: inst.user });
+          for (const sub of subscriptions) {
+            const payload = JSON.stringify({
+              title: 'تم خصم القسط تلقائياً 💳',
+              body: `تم خصم قسط ${inst.title} بقيمة ${inst.monthlyAmount} ج.م بنجاح`,
+              url: '/receivables?tab=installments'
+            });
+            await sendPushNotification(sub, payload, stats);
+          }
+          continue;
+        } catch (payErr) {
+          console.error('[CRON] Auto-pay installment failed:', payErr.message);
+        }
+      }
+
+      // Priority 2: Push reminder notification on due date
+      const subscriptions = await Subscription.find({ user: inst.user });
+      for (const sub of subscriptions) {
+        const payload = JSON.stringify({
+          title: 'تذكير بموعد القسط الشهري 📅',
+          body: `اليوم موعد سداد قسط ${inst.title} بقيمة ${inst.monthlyAmount} ج.م`,
+          url: '/receivables?tab=installments'
+        });
+        await sendPushNotification(sub, payload, stats);
+      }
+    }
+  } catch (error) {
+    console.error('[ERROR] Operation Name: processInstallments');
+    console.error(`[ERROR] message:`, error.message);
+  }
+};
+
+module.exports = { initCronJobs, processRecurringTransactions, processBills, processInstallments, sendPushNotification, processSmartBudgetReminders, processIncomeProfiles, checkPaydaySurvivalRisk, reconcileStaleAnalytics };
+

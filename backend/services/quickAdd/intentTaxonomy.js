@@ -635,7 +635,14 @@ const INTENTS = [
       "ratb",
       "ratby",
       "mratab",
-      "mratby"
+      "mratby",
+      "bonus",
+      "بونص",
+      "مكافأة",
+      "مكافأه",
+      "حافز",
+      "حوافز",
+      "ارباح سنوية"
     ]
   },
   {

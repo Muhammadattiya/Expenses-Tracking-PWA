@@ -7,6 +7,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 // Module-level Set to track dismissed categories for the session
 const sessionDismissed = new Set();
 
+const DEFAULT_CATEGORY_NAMES = new Set([
+  'salary', 'bonus', 'investment', 'food', 'transport', 'bills',
+  'entertainment', 'health', 'shopping', 'education', 'other'
+]);
+
 const UNIVERSAL_INTENT_KEYS = [
   'food_and_drink', 'restaurant', 'fast_food', 'coffee', 'beverages', 'desserts', 'groceries',
   'transportation', 'fuel', 'parking',
@@ -64,7 +69,11 @@ export default function CategoryClarificationManager() {
     return () => { isMounted = false; };
   }, []);
 
-  const activeCategory = categories.find(c => c.intentId === null && !sessionDismissed.has(c._id));
+  const activeCategory = categories.find(c => 
+    !c.intentId && 
+    !DEFAULT_CATEGORY_NAMES.has((c.name || '').toLowerCase().trim()) &&
+    !sessionDismissed.has(c._id)
+  );
 
   // If we run out of active categories, safely close the modal so it's reset if more appear
   useEffect(() => {

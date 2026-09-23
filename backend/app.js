@@ -22,6 +22,9 @@ const debtsRoutes = require('./routes/debts');
 const simulationRoutes = require('./routes/simulationRoutes');
 const forecastRoutes = require('./routes/forecastRoutes');
 const incomeProfileRoutes = require('./routes/incomeProfileRoutes');
+const installmentRoutes = require('./routes/installmentRoutes');
+const emergencyFundRoutes = require('./routes/emergencyFundRoutes');
+const savingsGoalRoutes = require('./routes/savingsGoalRoutes');
 
 const app = express();
 
@@ -56,6 +59,7 @@ app.use(compression());
 const unauthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
+  skip: () => process.env.NODE_ENV === 'test',
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
@@ -113,6 +117,9 @@ app.use('/api/bills', billsRoutes);
 app.use('/api/budgets', budgetsRoutes);
 app.use('/api/smart-budgets', smartBudgetsRoutes);
 app.use('/api/debts', debtsRoutes);
+app.use('/api/installments', installmentRoutes);
+app.use('/api/emergency-fund', emergencyFundRoutes);
+app.use('/api/savings-goals', savingsGoalRoutes);
 app.use('/api/sandbox', simulationRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/income-profiles', incomeProfileRoutes);

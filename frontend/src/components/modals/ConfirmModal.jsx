@@ -7,12 +7,14 @@ import Button from "../ui/Button";
 
 const ConfirmModal = ({
   open,
+  isOpen,
   title,
   message,
   icon = null,
   confirmText,
   cancelText,
   confirmColor = "red",
+  danger = false,
   loading = false,
   disabled = false,
   size = "sm",
@@ -20,22 +22,27 @@ const ConfirmModal = ({
   closeOnEsc = true,
   onConfirm,
   onCancel,
+  onClose,
 }) => {
   const { t, lang } = useLanguage();
+  
+  const isModalOpen = open !== undefined ? open : Boolean(isOpen);
+  const handleCancel = onCancel || onClose;
+  const effectiveConfirmColor = danger ? "red" : confirmColor;
   
   const finalConfirmText = confirmText || t('modals.confirm');
   const finalCancelText = cancelText || t('modals.cancelBtn');
 
   useEffect(() => {
-    if (!open || !closeOnEsc) return;
+    if (!isModalOpen || !closeOnEsc) return;
     const handleKeyDown = (e) => {
-      if (e.key === "Escape" && !loading && !disabled) onCancel?.();
+      if (e.key === "Escape" && !loading && !disabled) handleCancel?.();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, closeOnEsc, loading, disabled, onCancel]);
+  }, [isModalOpen, closeOnEsc, loading, disabled, handleCancel]);
 
-  if (!open) return null;
+  if (!isModalOpen) return null;
 
   const modalWidth =
     size === "lg" ? "max-w-2xl" : size === "md" ? "max-w-lg" : "max-w-sm";
@@ -56,7 +63,7 @@ const ConfirmModal = ({
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10"
           onClick={() => {
-            if (closeOnBackdrop && !loading && !disabled) onCancel?.();
+            if (closeOnBackdrop && !loading && !disabled) handleCancel?.();
           }}
         />
 
@@ -76,7 +83,7 @@ const ConfirmModal = ({
           <div className="mb-4 flex justify-center">
             {icon ? (
               icon
-            ) : confirmColor === "red" ? (
+            ) : effectiveConfirmColor === "red" ? (
               <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/25 flex items-center justify-center text-red-400 shadow-inner">
                 <AlertTriangle size={28} />
               </div>
@@ -101,7 +108,7 @@ const ConfirmModal = ({
               variant="glass"
               size="pill"
               fullWidth
-              onClick={onCancel}
+              onClick={handleCancel}
               disabled={loading || disabled}
               className="py-3 px-5 text-[13.5px] font-semibold text-white/70 hover:text-white"
             >
@@ -109,7 +116,7 @@ const ConfirmModal = ({
             </Button>
 
             <Button
-              variant={confirmColor === "red" ? "danger" : "primary"}
+              variant={effectiveConfirmColor === "red" ? "danger" : "primary"}
               size="pill"
               fullWidth
               loading={loading}
