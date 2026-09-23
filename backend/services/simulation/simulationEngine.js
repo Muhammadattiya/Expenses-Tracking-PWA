@@ -1,6 +1,7 @@
 const StateBuilder = require('./stateBuilder');
 const FinancialCalculator = require('./financialCalculator');
 const DecisionEvaluator = require('./DecisionEvaluator');
+const ProjectionEngine = require('./projectionEngine');
 
 const scenarios = {
   purchase: require('./scenarios/purchaseScenario'),
@@ -9,11 +10,12 @@ const scenarios = {
   debt: require('./scenarios/debtScenario'),
   bill: require('./scenarios/billScenario'),
   recurring: require('./scenarios/recurringScenario'),
-  investment: require('./scenarios/investmentScenario')
+  investment: require('./scenarios/investmentScenario'),
+  installment: require('./scenarios/installmentScenario')
 };
 
 class SimulationEngine {
-  static async runSimulation(userId, actions) {
+  static async runSimulation(userId, actions, options = {}) {
     // 1. Build Base State
     const baseState = await StateBuilder.buildState(userId);
     
@@ -29,19 +31,29 @@ class SimulationEngine {
       simulatedState = scenarioHandler(simulatedState, action.payload);
     }
     
-    // 4. Calculate Metrics
+    // 4. Calculate Current Snapshot Metrics
     const beforeMetrics = FinancialCalculator.calculate(baseState);
     const afterMetrics = FinancialCalculator.calculate(simulatedState);
     
-    // 5. Evaluate Decision
-    const evaluation = DecisionEvaluator.evaluate(beforeMetrics, afterMetrics);
+    // 5. Compute Forward Trajectory Projection (3, 6, or 12 months)
+    const horizonMonths = options.horizonMonths || 6;
+    const projection = ProjectionEngine.projectTrajectory(baseState, simulatedState, horizonMonths);
+
+    // 6. Evaluate Decision with Verdict Matrix & Trade-offs
+    const evaluation = DecisionEvaluator.evaluate(beforeMetrics, afterMetrics, projection, baseState, simulatedState, actions);
     
-    // 6. Generate Difference Object
+    // 7. Generate Difference Object
     const difference = {
       balance: afterMetrics.currentBalance - beforeMetrics.currentBalance,
       savings: afterMetrics.currentSavings - beforeMetrics.currentSavings,
       budgetUsage: afterMetrics.totalBudgetSpent - beforeMetrics.totalBudgetSpent,
       debt: afterMetrics.totalDebtRemaining - beforeMetrics.totalDebtRemaining,
+      installmentsBurden: afterMetrics.monthlyInstallmentBurden - beforeMetrics.monthlyInstallmentBurden,
+      installmentObligations: afterMetrics.totalInstallmentObligations - beforeMetrics.totalInstallmentObligations,
+      emergencyReserve: afterMetrics.emergencyReserve - beforeMetrics.emergencyReserve,
+      emergencyCoverage: Number((afterMetrics.emergencyCoverageMonths - beforeMetrics.emergencyCoverageMonths).toFixed(1)),
+      dtiRatio: Number((afterMetrics.dtiRatio - beforeMetrics.dtiRatio).toFixed(1)),
+      essentialBurn: afterMetrics.essentialMonthlyBurn - beforeMetrics.essentialMonthlyBurn,
       netWorth: afterMetrics.netWorth - beforeMetrics.netWorth,
       investments: afterMetrics.totalInvestments - beforeMetrics.totalInvestments,
       billsCoverage: afterMetrics.unpaidBillsTotal - beforeMetrics.unpaidBillsTotal,
@@ -53,7 +65,9 @@ class SimulationEngine {
       after: afterMetrics,
       difference,
       decision: evaluation.decision,
-      insights: evaluation.insights
+      insights: evaluation.insights,
+      projection,
+      actions
     };
   }
 }

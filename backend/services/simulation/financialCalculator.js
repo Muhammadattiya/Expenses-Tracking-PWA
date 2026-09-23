@@ -70,14 +70,28 @@ class FinancialCalculator {
     
     const currentSavings = currentMonthIncome - currentMonthExpense;
 
-    // 3. Debt Summary
-    let totalDebtRemaining = 0;
+    // 3. Debt & Installments Summary
+    let personalDebtRemaining = 0;
     debts.forEach(d => {
       if (d.type === 'borrowed') {
         const remaining = d.amount - (d.paidAmount || 0);
-        totalDebtRemaining += remaining;
+        personalDebtRemaining += remaining;
       }
     });
+
+    let totalInstallmentObligations = 0;
+    let monthlyInstallmentBurden = 0;
+    let activeInstallmentsCount = 0;
+    (state.installments || []).forEach(inst => {
+      if (inst.status === 'active') {
+        const remainingMonths = Math.max(0, (inst.totalMonths || 0) - (inst.paidMonths || 0));
+        totalInstallmentObligations += remainingMonths * (inst.monthlyAmount || 0);
+        monthlyInstallmentBurden += (inst.monthlyAmount || 0);
+        activeInstallmentsCount += 1;
+      }
+    });
+
+    const totalDebtRemaining = personalDebtRemaining + totalInstallmentObligations;
 
     // 4. Bills Coverage (Unpaid bills)
     let unpaidBillsTotal = 0;
@@ -87,7 +101,7 @@ class FinancialCalculator {
       }
     });
 
-    // 4.5 Monthly Fixed Expenses Burn Rate
+    // 4.5 Monthly Fixed Expenses Burn Rate (bills + recurring + active installments)
     let monthlyFixedExpenses = 0;
     bills.forEach(b => {
       if (b.isActive) {
@@ -108,11 +122,35 @@ class FinancialCalculator {
           else if (r.repeatType === 'weekly') monthly = r.amount * (52 / 12);
           else if (r.repeatType === 'yearly') monthly = r.amount / 12;
           else if (r.repeatType === 'monthly') monthly = r.amount;
-          else monthly = r.amount; // fallback
+          else monthly = r.amount;
           monthlyFixedExpenses += monthly;
         }
       });
     }
+
+    monthlyFixedExpenses += monthlyInstallmentBurden;
+
+    // Essential Monthly Burn (Fixed expenses + Essential category budgets or baseline)
+    let essentialBudget = 0;
+    (budgets || []).forEach(b => {
+      essentialBudget += (b.amount || 0);
+    });
+    const essentialMonthlyBurn = Math.round(monthlyFixedExpenses + (essentialBudget > 0 ? essentialBudget : 3000));
+
+    // Emergency Shield Reserve & Coverage Runway
+    let emergencyReserve = 0;
+    const emergencyAcc = accounts.find(a => a.isEmergencyFund);
+    if (emergencyAcc) {
+      emergencyReserve = emergencyAcc.calculatedBalance || 0;
+    } else if (state.emergencyFund?.currentReserveAmount) {
+      emergencyReserve = state.emergencyFund.currentReserveAmount;
+    } else {
+      emergencyReserve = Math.max(0, cashAvailable);
+    }
+
+    const emergencyCoverageMonths = essentialMonthlyBurn > 0
+      ? Number((emergencyReserve / essentialMonthlyBurn).toFixed(1))
+      : 0;
 
     // 5. Investments Summary
     let totalInvestments = 0;
@@ -139,6 +177,12 @@ class FinancialCalculator {
     // 8. Cash Remaining after bills
     const cashRemaining = cashAvailable - unpaidBillsTotal;
 
+    // 9. Debt-to-Income (DTI) Ratio
+    const monthlyIncome = state.userMonthlyIncome || 10000;
+    const dtiRatio = monthlyIncome > 0
+      ? Number(((monthlyInstallmentBurden / monthlyIncome) * 100).toFixed(1))
+      : 0;
+
     return {
       currentBalance,
       cashAvailable,
@@ -146,6 +190,10 @@ class FinancialCalculator {
       currentMonthExpense,
       currentSavings,
       totalDebtRemaining,
+      personalDebtRemaining,
+      totalInstallmentObligations,
+      monthlyInstallmentBurden,
+      activeInstallmentsCount,
       unpaidBillsTotal,
       totalInvestments,
       totalBudgetAmount,
@@ -153,6 +201,11 @@ class FinancialCalculator {
       netWorth,
       cashRemaining,
       monthlyFixedExpenses,
+      essentialMonthlyBurn,
+      emergencyReserve,
+      emergencyCoverageMonths,
+      dtiRatio,
+      monthlyIncome,
       accounts: accounts.map(a => ({ _id: a._id, name: a.name, balance: a.calculatedBalance })),
       bills: bills.map(b => ({ _id: b._id, name: b.name, status: b.status, expectedAmount: b.expectedAmount }))
     };

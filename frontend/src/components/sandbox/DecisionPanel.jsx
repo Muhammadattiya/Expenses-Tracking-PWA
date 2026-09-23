@@ -1,132 +1,353 @@
 import React from 'react';
-import { ShieldAlert, TrendingUp, TrendingDown, Activity, AlertCircle, ShieldCheck, CheckCircle2, AlertTriangle, Zap, DollarSign, BrainCircuit, PieChart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  ShieldCheck, ShieldAlert, AlertTriangle, CheckCircle2, 
+  Clock, TrendingUp, TrendingDown, Target, Lightbulb, 
+  ArrowRight, Award, Zap, AlertCircle, Sparkles, Flame, Calendar
+} from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
-export default function DecisionPanel({ decision, insights }) {
+export default function DecisionPanel({ decision, insights = [] }) {
+  const { t, lang } = useLanguage();
+
   if (!decision) return null;
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30 shadow-[0_8px_32px_rgba(52,211,153,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-emerald-400/40 border-l-emerald-400/30';
-    if (score >= 50) return 'text-[#8D6346] bg-[#8D6346]/10 border-[#8D6346]/30 shadow-[0_8px_32px_rgba(0,122,255,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-[#8D6346]/40 border-l-[#8D6346]/30';
-    if (score >= 30) return 'text-amber-400 bg-amber-400/10 border-amber-400/30 shadow-[0_8px_32px_rgba(251,191,36,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-amber-400/40 border-l-amber-400/30';
-    return 'text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_8px_32px_rgba(244,63,94,0.2),inset_0_1px_2px_rgba(255,255,255,0.3)] border-t-rose-400/40 border-l-rose-400/30';
+  const money = (val) =>
+    new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
+      style: 'currency',
+      currency: 'EGP',
+      maximumFractionDigits: 0
+    }).format(val || 0);
+
+  const verdict = decision.verdict || {
+    status: decision.risk === 'Critical' ? 'critical' : (decision.risk === 'High' ? 'caution' : 'safe'),
+    badgeAr: decision.risk === 'Critical' ? 'خطر حرج ⚠️' : (decision.risk === 'High' ? 'قابل للتطبيق بحذر !' : 'آمن وموصى به ✓'),
+    badgeEn: decision.risk === 'Critical' ? 'Critical Risk ⚠️' : (decision.risk === 'High' ? 'Viable with Caution !' : 'Safe & Recommended ✓'),
+    titleAr: decision.risk === 'Critical' ? 'خطر مالي حرج' : (decision.risk === 'High' ? 'قابل للتطبيق مع الحذر' : 'آمن وموصى به'),
+    titleEn: decision.risk === 'Critical' ? 'Critical Financial Risk' : (decision.risk === 'High' ? 'Viable with Caution' : 'Safe & Recommended'),
+    reasonAr: 'التقييم يعتمد على مستوى السيولة ودرع الأمان ومعدل عبء الدين.',
+    reasonEn: 'Evaluation is based on liquidity buffers, emergency shield, and debt load.'
   };
 
-  const getRiskColor = (risk) => {
-    switch (risk) {
-      case 'Very Low':
-      case 'Low': return 'text-emerald-400';
-      case 'Medium': return 'text-amber-400';
-      case 'High':
-      case 'Critical': return 'text-rose-400';
-      default: return 'text-white';
+  // Verdict Theme Styles
+  const verdictStyles = {
+    safe: {
+      bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
+      badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
+      glow: 'rgba(52,199,89,0.15)',
+      icon: ShieldCheck,
+      iconColor: 'text-emerald-400'
+    },
+    caution: {
+      bg: 'bg-amber-500/10 border-amber-500/30 text-amber-300',
+      badge: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
+      glow: 'rgba(245,158,11,0.15)',
+      icon: AlertTriangle,
+      iconColor: 'text-amber-400'
+    },
+    critical: {
+      bg: 'bg-rose-500/10 border-rose-500/30 text-rose-300',
+      badge: 'bg-rose-500/20 text-rose-400 border-rose-500/40',
+      glow: 'rgba(255,59,48,0.15)',
+      icon: ShieldAlert,
+      iconColor: 'text-rose-400'
     }
   };
 
-  const getStressColor = (stress) => {
-    switch (stress) {
-      case 'Very Low':
-      case 'Low': return 'text-emerald-400';
-      case 'Medium': return 'text-amber-400';
-      case 'High':
-      case 'Critical': return 'text-rose-400';
-      default: return 'text-white';
-    }
-  };
+  const currentStyle = verdictStyles[verdict.status] || verdictStyles.safe;
+  const VerdictIcon = currentStyle.icon;
+
+  const verdictBadge = lang === 'ar' ? verdict.badgeAr : verdict.badgeEn;
+  const verdictTitle = lang === 'ar' ? verdict.titleAr : verdict.titleEn;
+  const verdictReason = lang === 'ar' ? verdict.reasonAr : verdict.reasonEn;
+
+  // Extracted Resilience Metrics Before & After
+  const shieldBefore = decision.emergencyCoverageMonthsBefore !== undefined ? decision.emergencyCoverageMonthsBefore : 0;
+  const shieldAfter = decision.emergencyCoverageMonthsAfter !== undefined ? decision.emergencyCoverageMonthsAfter : (decision.emergencyCoverageMonths || 0);
+  const shieldDiff = Number((shieldAfter - shieldBefore).toFixed(1));
+
+  const dtiBefore = decision.dtiBefore !== undefined ? decision.dtiBefore : 0;
+  const dtiAfter = decision.dtiAfter !== undefined ? decision.dtiAfter : (decision.debtToIncomeRatio || 0);
+
+  const burnBefore = decision.essentialBurnBefore !== undefined ? decision.essentialBurnBefore : 0;
+  const burnAfter = decision.essentialBurnAfter !== undefined ? decision.essentialBurnAfter : 0;
+  const burnDiff = burnAfter - burnBefore;
+
+  const recoveryDays = decision.recoveryDays;
+  const dailyRate = decision.dailySavingsRate || 0;
+  const monthlyNetSavings = decision.monthlyNetSavings || 0;
 
   return (
-    <div className="space-y-6 mb-8 animate-fade-in-up">
-      {/* Hero Decision Score */}
-      <div className={`backdrop-blur-[40px] border p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 ${getScoreColor(decision.score)}`}>
-        <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center flex-shrink-0 relative">
-             <div className="absolute inset-0 rounded-full animate-ping opacity-20 border-inherit" />
-             <span className="text-4xl font-black tabular-nums">{decision.score}</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <BrainCircuit className="w-5 h-5" />
-              <h2 className="text-xl font-bold uppercase tracking-widest">AI Decision Score</h2>
+    <div className="space-y-5 mb-8">
+      {/* 1. Hero Decision Verdict Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`relative overflow-hidden rounded-[2.5rem] p-6 sm:p-8 backdrop-blur-[32px] border ${currentStyle.bg}`}
+        style={{ boxShadow: `0 8px 32px ${currentStyle.glow}` }}
+      >
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border ${currentStyle.badge}`}>
+              <VerdictIcon size={30} className={currentStyle.iconColor} />
             </div>
-            <p className="text-sm opacity-80 leading-relaxed max-w-md">
-              This score mathematically evaluates the cumulative impact of all actions in the pipeline based on liquidity, debt, and budget stability.
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <span className={`px-3 py-1 rounded-full text-xs font-black border ${currentStyle.badge}`}>
+                  {verdictBadge}
+                </span>
+                {decision.score !== undefined && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-black/30 border border-white/10 text-white/70 tabular-nums">
+                    {decision.score}/100
+                  </span>
+                )}
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {verdictTitle}
+              </h3>
+              <p className="text-xs sm:text-sm text-white/80 mt-1 leading-relaxed max-w-xl">
+                {verdictReason}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Resilience Pillars 4-Card Grid (Before vs After) */}
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10">
+          
+          {/* Pillar 1: Emergency Shield Runway */}
+          <div className="p-4 rounded-2xl bg-black/25 border border-white/5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-white/50 font-medium">
+                {t('sandbox.shieldCoverage')}
+              </span>
+              <ShieldCheck size={14} className={decision.emergencyFloorBreached ? 'text-amber-400' : 'text-emerald-400'} />
+            </div>
+            
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xs text-white/40 line-through tabular-nums">
+                {shieldBefore} {t('sandbox.months')}
+              </span>
+              <ArrowRight size={11} className="text-white/30 rtl:rotate-180" />
+              <span className={`text-base font-extrabold tabular-nums ${
+                decision.emergencyFloorBreached ? 'text-rose-400' : 'text-emerald-400'
+              }`}>
+                {shieldAfter} {t('sandbox.months')}
+              </span>
+            </div>
+
+            <p className="text-[10px] text-white/50 truncate">
+              {decision.emergencyFloorBreached
+                ? t('sandbox.shieldBreached', { percent: decision.floorBreachPercent || 0 })
+                : t('sandbox.shieldUntouched')}
+            </p>
+          </div>
+
+          {/* Pillar 2: Debt-to-Income (DTI) Ratio */}
+          <div className="p-4 rounded-2xl bg-black/25 border border-white/5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-white/50 font-medium">
+                {t('sandbox.dtiRatio')}
+              </span>
+              <TrendingUp size={14} className={dtiAfter > 40 ? 'text-rose-400' : dtiAfter > 30 ? 'text-amber-400' : 'text-emerald-400'} />
+            </div>
+            
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xs text-white/40 line-through tabular-nums">
+                {dtiBefore}%
+              </span>
+              <ArrowRight size={11} className="text-white/30 rtl:rotate-180" />
+              <span className={`text-base font-extrabold tabular-nums ${
+                dtiAfter > 40 ? 'text-rose-400' : dtiAfter > 30 ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {dtiAfter}%
+              </span>
+            </div>
+
+            <p className="text-[10px] text-white/50">
+              {dtiAfter > 40 ? t('sandbox.criticalRatio') : dtiAfter > 30 ? t('sandbox.cautionRatio') : t('sandbox.healthyRatio')}
+            </p>
+          </div>
+
+          {/* Pillar 3: Recovery Runway */}
+          <div className="p-4 rounded-2xl bg-black/25 border border-white/5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-white/50 font-medium">
+                {t('sandbox.recoveryRunway')}
+              </span>
+              <Clock size={14} className="text-[#E8C5A8]" />
+            </div>
+            
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-base font-extrabold text-white tabular-nums">
+                {recoveryDays !== null ? `${recoveryDays} ${t('sandbox.days')}` : t('sandbox.noRecovery')}
+              </span>
+            </div>
+
+            <p className="text-[10px] text-white/50 truncate">
+              {dailyRate > 0 ? `+${money(dailyRate)} / ${t('sandbox.dailyRate')}` : t('sandbox.noRecovery')}
+            </p>
+          </div>
+
+          {/* Pillar 4: Essential Commitments Burn */}
+          <div className="p-4 rounded-2xl bg-black/25 border border-white/5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-white/50 font-medium">
+                {t('sandbox.essentialCommitments')}
+              </span>
+              <Flame size={14} className="text-amber-400" />
+            </div>
+            
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xs text-white/40 line-through tabular-nums">
+                {money(burnBefore)}
+              </span>
+              <ArrowRight size={11} className="text-white/30 rtl:rotate-180" />
+              <span className="text-base font-extrabold text-white tabular-nums">
+                {money(burnAfter)}
+              </span>
+            </div>
+
+            <p className={`text-[10px] font-bold tabular-nums ${burnDiff > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+              {burnDiff > 0 ? `+${money(burnDiff)} / ${t('sandbox.perMonth')}` : '0 ج.م'}
             </p>
           </div>
         </div>
-        
-        <div className="flex flex-col gap-3 min-w-[200px]">
-           <div className="bg-black/10 shadow-inner p-4 rounded-2xl flex items-center justify-between border border-white/5">
-              <span className="text-xs uppercase tracking-wider opacity-70">Overall Risk</span>
-              <span className={`font-bold ${getRiskColor(decision.risk)}`}>{decision.risk}</span>
-           </div>
-           <div className="bg-black/10 shadow-inner p-4 rounded-2xl flex items-center justify-between border border-white/5">
-              <span className="text-xs uppercase tracking-wider opacity-70">Financial Stress</span>
-              <span className={`font-bold ${getStressColor(decision.financialStress)}`}>{decision.financialStress}</span>
-           </div>
-        </div>
-      </div>
+      </motion.div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Cash Impact */}
-        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
-          <div className="flex items-center gap-2 mb-3">
-             <DollarSign className="w-4 h-4 text-[#8D6346]" />
-             <span className="text-xs text-white/50 uppercase tracking-wider">Cash Impact</span>
-          </div>
-          <p className={`text-2xl font-black tabular-nums ${decision.cashImpact >= 0 ? 'text-brand-green' : 'text-brand-red'}`}>
-             {decision.cashImpact > 0 ? '+' : ''}{decision.cashImpact}%
+      {/* 3. Agreed Dedicated Recovery Quote Statement (sand.md) */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl bg-[#8D6346]/15 border border-[#8D6346]/35 p-4 flex items-start gap-3 shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
+      >
+        <div className="p-2 rounded-xl bg-[#8D6346]/30 text-[#E8C5A8] shrink-0 mt-0.5 border border-[#8D6346]/40">
+          <Sparkles size={18} />
+        </div>
+        <div>
+          <p className="text-xs sm:text-sm font-semibold text-white/90 leading-relaxed">
+            {lang === 'ar' ? decision.recoveryDaysTextAr : decision.recoveryDaysTextEn}
           </p>
+          {dailyRate > 0 && monthlyNetSavings > 0 && (
+            <p className="text-[11px] text-[#E8C5A8] mt-1 font-medium">
+              {lang === 'ar' 
+                ? `معدل التوفير اليومي: ${money(dailyRate)}/يوم • صافي الفائض الشهري: ${money(monthlyNetSavings)}/شهر`
+                : `Daily Savings Rate: ${money(dailyRate)}/day • Monthly Net Surplus: ${money(monthlyNetSavings)}/month`}
+            </p>
+          )}
         </div>
+      </motion.div>
 
-        {/* Liquidity Score */}
-        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
-          <div className="flex items-center gap-2 mb-3">
-             <Activity className="w-4 h-4 text-[#8D6346]" />
-             <span className="text-xs text-white/50 uppercase tracking-wider">Liquidity Score</span>
+      {/* 4. Goal Delays Opportunity Cost Section (sand.md) */}
+      {decision.goalDelays && decision.goalDelays.length > 0 && (
+        <div className="rounded-[2.5rem] bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+          <div className="flex items-center gap-2 mb-1.5 text-[#E8C5A8]">
+            <Target size={18} />
+            <h4 className="text-sm font-bold text-white">
+              {t('sandbox.goalDelayNotice')}
+            </h4>
           </div>
-          <p className="text-2xl font-black text-white tabular-nums">{decision.liquidityScore} / 100</p>
-        </div>
-
-        {/* Emergency Coverage */}
-        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
-          <div className="flex items-center gap-2 mb-3">
-             <ShieldCheck className="w-4 h-4 text-[#8D6346]" />
-             <span className="text-xs text-white/50 uppercase tracking-wider">Emergency Cover</span>
-          </div>
-          <p className="text-2xl font-black text-white tabular-nums">{decision.emergencyCoverageMonths} <span className="text-sm font-medium text-white/50">Months</span></p>
-        </div>
-
-        {/* Budget Stability */}
-        <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5">
-          <div className="flex items-center gap-2 mb-3">
-             <PieChart className="w-4 h-4 text-[#8D6346]" />
-             <span className="text-xs text-white/50 uppercase tracking-wider">Budget Stability</span>
-          </div>
-          <p className={`text-lg font-black ${decision.budgetStability === 'Stable' ? 'text-brand-green' : (decision.budgetStability === 'Warning' ? 'text-amber-400' : 'text-brand-red')}`}>
-             {decision.budgetStability}
+          <p className="text-xs text-white/50 mb-4">
+            {lang === 'ar' 
+              ? 'يوضح هذا القسم كيف يؤثر هذا القرار سلباً على المواعيد النهائية لأهدافك التوفيرية النشطة:'
+              : 'This section details how this decision delays your active savings goals target deadlines:'}
           </p>
-        </div>
-      </div>
 
-      {/* Critical Insights if any */}
-      {insights && insights.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {insights.map((insight, idx) => (
-            <div key={idx} className={`p-4 rounded-2xl border shadow-inner flex items-start gap-3
-              ${insight.type === 'critical' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : 
-                insight.type === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 
-                'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {decision.goalDelays.map((gd) => (
+              <div 
+                key={gd.goalId} 
+                className="p-4 rounded-2xl bg-black/25 border border-white/5 flex flex-col justify-between gap-3 group hover:border-[#8D6346]/40 transition-colors"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-2">
+                      {gd.title}
+                    </h5>
+                    {gd.priority === 'high' ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                        {t('savingsGoals.priorityHigh')}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/60 font-medium border border-white/10">
+                        {t(`savingsGoals.priority${gd.priority ? gd.priority.charAt(0).toUpperCase() + gd.priority.slice(1) : 'Medium'}`)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Agreed Impact Statement */}
+                  <p className="text-xs text-amber-300/90 font-medium leading-relaxed mt-1">
+                    {lang === 'ar' ? gd.impactTextAr : gd.impactTextEn}
+                  </p>
+                </div>
+
+                {/* Date Progression Pill */}
+                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-[10px] text-white/40 block">
+                      {lang === 'ar' ? 'الموعد الأصلي' : 'Original Deadline'}
+                    </span>
+                    <span className="font-semibold text-white/60 line-through tabular-nums text-[11px]">
+                      {gd.originalTargetDateFormatted || new Date(gd.originalTargetDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+
+                  <ArrowRight size={13} className="text-[#E8C5A8] rtl:rotate-180 shrink-0" />
+
+                  <div className="text-end">
+                    <span className="text-[10px] text-[#E8C5A8] block font-medium">
+                      {t('sandbox.newDeadline')}
+                    </span>
+                    <span className="font-bold text-white tabular-nums text-xs">
+                      {gd.newEstimatedDateFormatted || new Date(gd.newEstimatedDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Actionable Trade-off Suggestions */}
+      {decision.tradeOffSuggestions && decision.tradeOffSuggestions.length > 0 && (
+        <div className="rounded-[2.5rem] bg-[#8D6346]/10 border border-[#8D6346]/25 p-6 backdrop-blur-[20px]">
+          <div className="flex items-center gap-2 mb-2.5 text-[#E8C5A8]">
+            <Lightbulb size={18} />
+            <h4 className="text-sm font-bold">
+              {t('sandbox.suggestionsTitle')}
+            </h4>
+          </div>
+
+          <div className="space-y-2.5">
+            {decision.tradeOffSuggestions.map((sug, idx) => (
+              <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-white/80">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E8C5A8] mt-2 shrink-0" />
+                <p className="leading-relaxed">
+                  {lang === 'ar' ? sug.textAr : sug.textEn}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 6. Warnings & Insights */}
+      {insights.length > 0 && (
+        <div className="space-y-2">
+          {insights.map((ins, i) => (
+            <div 
+              key={i} 
+              className={`p-4 rounded-2xl border flex items-center gap-3 text-xs sm:text-sm font-medium ${
+                ins.type === 'critical'
+                  ? 'bg-rose-500/15 border-rose-500/35 text-rose-300'
+                  : 'bg-amber-500/15 border-amber-500/35 text-amber-300'
               }`}
             >
-               <div className="mt-0.5">
-                 {insight.type === 'critical' && <AlertTriangle className="w-5 h-5" />}
-                 {insight.type === 'warning' && <AlertCircle className="w-5 h-5" />}
-                 {insight.type === 'good' && <CheckCircle2 className="w-5 h-5" />}
-               </div>
-               <div>
-                 <h4 className="font-bold mb-1">{insight.title}</h4>
-                 <p className="text-sm opacity-90">{insight.message}</p>
-               </div>
+              <AlertCircle size={18} className="shrink-0" />
+              <span>{ins.message}</span>
             </div>
           ))}
         </div>

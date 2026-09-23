@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { Loader2 } from 'lucide-react';
 import Layout from './components/Layout';
@@ -19,6 +19,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const AnalyticsPage = lazy(() => import('./pages/Analytics'));
 const Receivables = lazy(() => import('./pages/Receivables'));
 const Bills = lazy(() => import('./pages/Bills'));
+const Planning = lazy(() => import('./pages/Planning'));
 const Budgets = lazy(() => import('./pages/Budgets'));
 const SmartBudgetPlanner = lazy(() => import('./pages/SmartBudgetPlanner'));
 const Sandbox = lazy(() => import('./pages/Sandbox'));
@@ -57,7 +58,8 @@ function App() {
                     <Route path="/analytics" element={<AnalyticsPage />} />
                     <Route path="/receivables" element={<Receivables />} />
                     <Route path="/bills" element={<Bills />} />
-                    <Route path="/budgets" element={<Budgets />} />
+                    <Route path="/planning" element={<Planning />} />
+                    <Route path="/budgets" element={<Navigate to="/planning?tab=budgets" replace />} />
                     <Route path="/budgets/smart-planner" element={<SmartBudgetPlanner />} />
                     <Route path="/sandbox" element={<Sandbox />} />
                   </Route>

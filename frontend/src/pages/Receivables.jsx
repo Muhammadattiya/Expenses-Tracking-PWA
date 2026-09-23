@@ -4,18 +4,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import GroupExpenses from '../components/debts/GroupExpenses';
 import PersonalDebts from '../components/debts/PersonalDebts';
+import InstallmentsList from '../components/debts/InstallmentsList';
 
 export default function Receivables() {
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
-    return searchParams.get('tab') === 'personal' ? 'personal' : 'group';
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'personal' || tabParam === 'installments') return tabParam;
+    return 'group';
   });
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab') === 'personal' ? 'personal' : 'group';
-    if (tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
+    const tabFromUrl = searchParams.get('tab');
+    const validTab = tabFromUrl === 'personal' || tabFromUrl === 'installments' ? tabFromUrl : 'group';
+    if (validTab !== activeTab) {
+      setActiveTab(validTab);
     }
   }, [searchParams]);
 
@@ -23,10 +27,10 @@ export default function Receivables() {
     setActiveTab(tab);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      if (tab === 'personal') {
-        next.set('tab', 'personal');
-      } else {
+      if (tab === 'group') {
         next.delete('tab');
+      } else {
+        next.set('tab', tab);
       }
       return next;
     }, { replace: true });
@@ -62,27 +66,31 @@ export default function Receivables() {
         <div 
           role="tablist" 
           aria-label={t('debts.title')}
-          className="flex p-1 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full h-12 items-center w-full max-w-sm sm:w-fit"
+          className="flex p-1 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-full h-12 items-center w-full max-w-md sm:w-fit"
         >
-          {['group', 'personal'].map((tab) => (
+          {[
+            { id: 'group', label: t('debts.tabGroupExpenses') },
+            { id: 'personal', label: t('debts.tabPersonalDebts') },
+            { id: 'installments', label: t('installments.title') }
+          ].map((tab) => (
             <button
-              key={tab}
+              key={tab.id}
               role="tab"
-              id={`tab-${tab}`}
-              aria-selected={activeTab === tab}
-              aria-controls={`panel-${tab}`}
-              onClick={() => handleTabChange(tab)}
-              className={`relative flex-1 sm:flex-none px-6 h-full min-h-[44px] flex items-center justify-center text-sm sm:text-[15px] font-semibold rounded-full transition-colors duration-300 z-10 ${activeTab === tab ? 'text-white' : 'text-white/50 hover:text-white'}`}
+              id={`tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`panel-${tab.id}`}
+              onClick={() => handleTabChange(tab.id)}
+              className={`relative flex-1 sm:flex-none px-4 sm:px-6 h-full min-h-[44px] flex items-center justify-center text-xs sm:text-[14px] font-semibold rounded-full transition-colors duration-300 z-10 ${activeTab === tab.id ? 'text-white' : 'text-white/50 hover:text-white'}`}
             >
-              {activeTab === tab && (
+              {activeTab === tab.id && (
                 <motion.div
                   layoutId="receivablesTab"
-                  className="absolute inset-0 bg-[#8D6346]/20 border border-[#8D6346]/30 rounded-full shadow-sm"
+                  className="absolute inset-0 bg-[#8D6346]/30 border border-[#8D6346]/40 rounded-full shadow-sm"
                   transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                 />
               )}
               <span className="relative z-10">
-                {tab === 'group' ? t('debts.tabGroupExpenses') : t('debts.tabPersonalDebts')}
+                {tab.label}
               </span>
             </button>
           ))}
@@ -101,7 +109,13 @@ export default function Receivables() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
           >
-            {activeTab === 'group' ? <GroupExpenses /> : <PersonalDebts />}
+            {activeTab === 'group' ? (
+              <GroupExpenses />
+            ) : activeTab === 'personal' ? (
+              <PersonalDebts />
+            ) : (
+              <InstallmentsList />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>

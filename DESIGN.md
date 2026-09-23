@@ -5,6 +5,8 @@ colors:
   primary: "#8D6346"
   copper-light: "#E8C5A8"
   copper-dark: "#3D2E2B"
+  copper-glass: "rgba(141, 99, 70, 0.3)"
+  copper-glass-hover: "rgba(141, 99, 70, 0.45)"
   obsidian-canvas: "#141115"
   obsidian-debts: "#100E11"
   gain-green: "#34C759"
@@ -56,13 +58,13 @@ spacing:
   xl: "32px"
 components:
   button-primary:
-    backgroundColor: "{colors.primary}"
+    backgroundColor: "{colors.copper-glass}"
     textColor: "{colors.neutral-text}"
-    rounded: "{rounded.pill}"
+    rounded: "{rounded.full}"
     padding: "12px 24px"
   button-primary-hover:
-    backgroundColor: "{colors.copper-light}"
-    textColor: "{colors.copper-dark}"
+    backgroundColor: "{colors.copper-glass-hover}"
+    textColor: "{colors.neutral-text}"
   card-liquid-glass:
     backgroundColor: "rgba(43, 35, 33, 0.3)"
     rounded: "{rounded.card}"
@@ -153,6 +155,7 @@ Finova conveys depth through pure CSS **Liquid Glass** optical layering rather t
 
 ### Shadow & Specular Vocabulary
 - **Liquid Hero Rim** (`box-shadow: inset 0 1px 2px rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.4)`): Used on hero account cards and balance containers to create physical bevel depth and luminous rim highlights.
+- **Copper Glass Action Glow** (`box-shadow: 0 4px 20px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.18)`): Used on action buttons (Bill Card "Pay Now" / "Ignore", Login, Signup) to create an inset specular top highlight paired with deep obsidian drop shadow.
 - **Recessed Inset Well** (`box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.1)`): Used on nested stat wells, segmented tab shells, and quick gain/loss metric pills.
 - **Floating Nav Shadow** (`box-shadow: 0 8px 30px rgba(0,0,0,0.3)`): Used on the floating bottom glass bar to separate it cleanly from scrolling content.
 - **Copper Focus Glow** (`box-shadow: 0 0 12px rgba(141, 99, 70, 0.3)`): Applied to active input fields, active buttons, and tactile focus rings.
@@ -176,12 +179,16 @@ Finova features soft, continuous curvature modeled after native iOS hardware.
 ## Components
 
 ### Buttons
-- **Primary Pill Button**:
-  - Shape: Pill (`rounded-full`, 24px)
-  - Color: Warm Copper Ember (`bg-[#8D6346] text-white`)
-  - Padding: 12px 24px (`py-3 px-6`)
-  - Micro-Interaction: `<motion.button whileTap={{ scale: 0.95 }}>`
-  - Hover / Focus: `hover:bg-[#E8C5A8] hover:text-[#3D2E2B]` with `transition-colors duration-200`
+- **Signature Copper Glass Action Button (Bill Card "Pay Now" & "Ignore" Archetype)**:
+  - Shape: Continuous pill (`rounded-full`, 9999px)
+  - Material & Surface: Translucent Copper Glass (`bg-[#8D6346]/30` / `rgba(141, 99, 70, 0.3)`) backed by pure CSS optical blur (`backdrop-blur-md` / `blur(12px)`)
+  - Specular Rim Border: Semi-translucent copper border (`border border-[#8D6346]/50` / `1px solid rgba(141, 99, 70, 0.5)`)
+  - Specular & Elevation: Dual-layer shadow (`shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)]`), providing physical top rim illumination and ambient obsidian grounding
+  - Typography: SemiBold (`font-semibold text-[13.5px] sm:text-sm text-white`)
+  - Padding & Sizing: `py-3 px-4` to `py-3 px-6` (`flex-1 py-3` in dual-action rows like Bill Card, `h-12` in full-width auth forms)
+  - Hover State: Luminous copper excitation (`hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70`)
+  - Active & Micro-Interactions: Tactile compression (`active:scale-[0.98]` or `<motion.button whileTap={{ scale: 0.98 }}>`) with smooth interpolation (`transition-all duration-300`)
+  - Usage: Primary calls to action, bill payments, confirmations, and card-level decisions across the app
 - **Secondary Glass Button**:
   - Shape: Pill (`rounded-full`)
   - Color: Translucent obsidian (`bg-white/10 text-white border border-white/15`)
@@ -220,8 +227,9 @@ Finova features soft, continuous curvature modeled after native iOS hardware.
 
 ### Do:
 - **Do** enforce pure CSS Liquid Glass (`backdrop-blur-[32px]`, `bg-[#2B2321]/30`, `border-white/10`) so underlying background glows remain vividly visible.
+- **Do** style primary and card action buttons using the signature translucent Copper Glass aesthetic (`bg-[#8D6346]/30`, `border-[#8D6346]/50`, `backdrop-blur-md`, `shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)]`, `active:scale-[0.98]`).
 - **Do** format all financial metrics and balances with `tabular-nums tracking-tight`.
-- **Do** apply physical spring physics (`whileTap={{ scale: 0.95 }}`) to all interactive buttons and cards.
+- **Do** apply physical spring physics (`whileTap={{ scale: 0.95 }}` or `0.98`) to all interactive buttons and cards.
 - **Do** use logical CSS classes (`ms-`, `me-`, `start-`, `end-`) for dynamic RTL/LTR support.
 - **Do** mount all modals into `document.body` via React Portals to prevent z-index stacking conflicts with `BottomNav`.
 - **Do** keep long virtualized lists bound to window scroll (`useWindowScroll={true}`) to prevent double scrollbars.
@@ -230,8 +238,8 @@ Finova features soft, continuous curvature modeled after native iOS hardware.
 
 ### Don't:
 - **Don't** modify, alter, or attempt to replace the existing `.liquidglass` class and its specular glass filter; keep it intact as-is.
+- **Don't** use generic flat opaque buttons for primary card actions; buttons must feature translucent Copper Glass, tactile feedback, and specular inset highlights.
 - **Don't** make glass surfaces opaque or muddy grey; keep opacity under 35% on dark surfaces so depth remains optical.
-- **Don't** use generic flat primary buttons; buttons must feature tactile feedback and refined copper highlights.
 - **Don't** hardcode physical layout directions (`left-`, `right-`, `ml-`, `mr-`) in UI components.
 - **Don't** use native `window.confirm` for destructive operations.
 - **Don't** expose technical variable names or raw localization keys in the user interface.

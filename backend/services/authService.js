@@ -15,6 +15,10 @@ const RecurringTransaction = require('../models/RecurringTransaction');
 const SimulationHistory = require('../models/SimulationHistory');
 const SmartBudgetPlan = require('../models/SmartBudgetPlan');
 const Subscription = require('../models/Subscription');
+const Installment = require('../models/Installment');
+const InstallmentTransaction = require('../models/InstallmentTransaction');
+const SavingsGoal = require('../models/SavingsGoal');
+const EmergencyFund = require('../models/EmergencyFund');
 const AppError = require('../utils/AppError');
 const { adoptLegacyData } = require('./legacyDataService');
 
@@ -214,6 +218,10 @@ const deleteAllUserData = async (userId) => {
     SimulationHistory.deleteMany({ userId }),
     SmartBudgetPlan.deleteMany({ user: userId }),
     Subscription.deleteMany({ user: userId }),
+    Installment.deleteMany({ user: userId }),
+    InstallmentTransaction.deleteMany({ user: userId }),
+    SavingsGoal.deleteMany({ user: userId }),
+    EmergencyFund.deleteMany({ user: userId }),
   ]);
 };
 

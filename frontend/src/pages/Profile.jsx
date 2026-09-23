@@ -509,6 +509,7 @@ export default function Profile() {
                 
                 <div className="bg-[#2B2321]/20 backdrop-blur-[24px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)] rounded-[2rem] p-2 flex flex-col divide-y divide-white/5 overflow-hidden">
                   <motion.button
+                    id="btn-profile-accounts"
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       triggerHaptic('selection');

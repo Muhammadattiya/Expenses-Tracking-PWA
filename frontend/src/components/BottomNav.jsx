@@ -33,7 +33,7 @@ function GlassDisc({ isActive = false }) {
   );
 }
 
-const OVERFLOW_PATHS = ['/bills', '/budgets', '/investments', '/receivables'];
+const OVERFLOW_PATHS = ['/bills', '/planning', '/budgets', '/investments', '/receivables'];
 
 function pathInFamily(pathname, base) {
   return pathname === base || pathname.startsWith(`${base}/`);
@@ -130,7 +130,7 @@ export default function BottomNav() {
 
   const fabItems = [
     { path: '/bills', icon: Receipt, label: t('nav.bills') },
-    { path: '/budgets', icon: Target, label: t('nav.budgets') },
+    { path: '/planning', icon: Target, label: t('nav.planning') },
     { path: '/investments', icon: TrendingUp, label: t('nav.investments') },
     { path: '/receivables', icon: Users, label: t('nav.receivables') }
   ];
