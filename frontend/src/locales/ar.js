@@ -1539,7 +1539,17 @@ export default {
     "savingSettings": "جاري الحفظ...",
     "depositValidation": "يرجى تحديد الحساب والمبلغ",
     "depositNotes": "تغذية درع الطوارئ المالي",
-    "vaultPlaceholder": "حساب الطوارئ"
+    "vaultPlaceholder": "حساب الطوارئ",
+    "calculationHint": "يُحسب الحرق الشهري تلقائياً بجمع التزاماتك الثابتة (الفواتير والأقساط) مع متوسط مصاريفك الحقيقية في فئات المعيشة الأساسية التي تحددها للبقاء.",
+    "customizeCategories": "تخصيص فئات البقاء",
+    "essentialCategoriesTitle": "فئات المعيشة الأساسية للبقاء",
+    "essentialCategoriesSubtitle": "حدد الفئات الحيوية التي لا غنى عنها للبقاء في أوقات الطوارئ لحساب مصاريف المعيشة بدقة",
+    "selectAll": "تحديد الكل",
+    "defaultEssentials": "الأساسيات الافتراضية",
+    "clearSelection": "مسح التحديد",
+    "selectedCategoriesSummary": "تم تحديد {{count}} فئات للبقاء",
+    "defaultCategoriesNotice": "استخدام الأساسيات الافتراضية (طعام، سكن، صحة، فواتير)",
+    "noCategoriesSelectedWarning": "لم تحدد أي فئات، سيتم استخدام الأساسيات الافتراضية."
   },
   "savingsGoals": {
     "title": "أهداف الادخار الذكية",
@@ -1879,6 +1889,16 @@ export default {
     "tierSolid": "قوي ومستقر",
     "tierBasic": "حماية أساسية",
     "tierVulnerable": "غير كافٍ",
-    "isEmergencyFundAccount": "حساب صندوق الطوارئ"
+    "isEmergencyFundAccount": "حساب صندوق الطوارئ",
+    "calculationHint": "يُحسب الحرق الشهري تلقائياً بجمع التزاماتك الثابتة (الفواتير والأقساط) مع متوسط مصاريفك الحقيقية في فئات المعيشة الأساسية التي تحددها للبقاء.",
+    "customizeCategories": "تخصيص فئات البقاء",
+    "essentialCategoriesTitle": "فئات المعيشة الأساسية للبقاء",
+    "essentialCategoriesSubtitle": "حدد الفئات الحيوية التي لا غنى عنها للبقاء في أوقات الطوارئ لحساب مصاريف المعيشة بدقة",
+    "selectAll": "تحديد الكل",
+    "defaultEssentials": "الأساسيات الافتراضية",
+    "clearSelection": "مسح التحديد",
+    "selectedCategoriesSummary": "تم تحديد {{count}} فئات للبقاء",
+    "defaultCategoriesNotice": "استخدام الأساسيات الافتراضية (طعام، سكن، صحة، فواتير)",
+    "noCategoriesSelectedWarning": "لم تحدد أي فئات، سيتم استخدام الأساسيات الافتراضية."
   }
 };

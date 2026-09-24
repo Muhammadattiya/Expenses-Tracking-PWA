@@ -34,6 +34,18 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
     }
   }, [isOpen, planToEdit]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const fetchPlanDetails = async (id) => {
     try {
       const plan = await smartBudgetService.getPlanById(id);
@@ -95,7 +107,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -105,24 +117,28 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
       />
       
       <motion.div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="master-budget-title"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] w-full max-w-lg shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
       >
         {/* Inner Highlight Line */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-20" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-20 pointer-events-none" />
         
-        <div className="p-6 pb-2 border-b border-white/5 flex-shrink-0">
+        <div className="p-6 pb-4 border-b border-white/10 flex-shrink-0 sticky top-0 bg-[#1C1819]/95 backdrop-blur-md z-20">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white">
+            <h2 id="master-budget-title" className="text-xl font-bold text-white">
               {t('smartBudget.editMasterBudget')}
             </h2>
             <button 
               type="button"
               onClick={onClose}
-              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/70 transition-colors"
+              aria-label={t('common.close')}
+              className="w-11 h-11 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-colors flex items-center justify-center shrink-0"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -131,8 +147,9 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
           <form id="master-budget-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Name Input */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-white/70">{t('smartBudget.planName')}</label>
+              <label htmlFor="master-budget-name" className="block text-sm font-medium text-white/70">{t('smartBudget.planName')}</label>
               <input 
+                id="master-budget-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -144,10 +161,10 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
 
             {/* Account Select (Applies to all) */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-white/70 flex items-center gap-2">
+              <span className="block text-sm font-medium text-white/70 flex items-center gap-2">
                 {t('budgets.account')}
                 <Info size={14} className="text-white/40" />
-              </label>
+              </span>
               <p className="text-xs text-white/40 mb-2">{t('smartBudget.accountDesc')}</p>
               <CustomSelect
                 value={account}
@@ -164,13 +181,13 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
             {/* Categories List */}
             <div className="space-y-3 pt-2">
               <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-white/70">{t('budgets.categories')}</label>
+                <span className="block text-sm font-medium text-white/70">{t('budgets.categories')}</span>
                 <button
                   type="button"
                   onClick={handleAddCategory}
-                  className="text-xs font-medium bg-[#8D6346]/20 text-[#8D6346] px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#8D6346]/30 transition-colors"
+                  className="text-xs font-semibold bg-[#8D6346]/20 text-[#E8C5A8] border border-[#8D6346]/40 px-3.5 py-2 rounded-xl flex items-center gap-1.5 hover:bg-[#8D6346]/30 transition-colors"
                 >
-                  <Plus size={14} />
+                  <Plus size={15} />
                   {t('common.add')}
                 </button>
               </div>
@@ -183,9 +200,9 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="flex gap-2 items-start"
+                      className="flex gap-2 items-center"
                     >
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1">
                         <CustomSelect
                           value={cat.category}
                           onChange={(val) => handleCategoryChange(cat.id, 'category', val)}
@@ -208,7 +225,8 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
                       <button
                         type="button"
                         onClick={() => handleRemoveCategory(cat.id)}
-                        className="mt-2.5 p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        aria-label={t('common.delete')}
+                        className="w-11 h-11 flex items-center justify-center text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
                       >
                         <Trash2 size={16} />
                       </button>

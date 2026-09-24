@@ -97,7 +97,7 @@ class ProjectionEngine {
       let billsTotal = 0;
       (stateObj.bills || []).forEach(b => {
         if (b.isActive !== false) {
-          const amt = Number(b.amount) || 0;
+          const amt = Number(b.expectedAmount ?? b.amount) || 0;
           if (b.repeat === 'weekly') billsTotal += amt * (52 / 12);
           else if (b.repeat === 'yearly') billsTotal += amt / 12;
           else billsTotal += amt;
@@ -172,13 +172,13 @@ class ProjectionEngine {
       (baseState.bills || []).forEach(b => {
         if (b.isActive !== false) {
           const dueDay = b.dueDay || 10;
-          if (dayOfMonth === dueDay) baseDayOut += Number(b.amount) || 0;
+          if (dayOfMonth === dueDay) baseDayOut += Number(b.expectedAmount ?? b.amount) || 0;
         }
       });
       (simulatedState.bills || []).forEach(b => {
         if (b.isActive !== false) {
           const dueDay = b.dueDay || 10;
-          if (dayOfMonth === dueDay) simDayOut += Number(b.amount) || 0;
+          if (dayOfMonth === dueDay) simDayOut += Number(b.expectedAmount ?? b.amount) || 0;
         }
       });
 

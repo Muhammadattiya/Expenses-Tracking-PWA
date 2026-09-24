@@ -1526,7 +1526,17 @@ export default {
     "savingSettings": "Saving...",
     "depositValidation": "Please select an account and valid amount",
     "depositNotes": "Funding Financial Emergency Shield",
-    "vaultPlaceholder": "Emergency Vault"
+    "vaultPlaceholder": "Emergency Vault",
+    "calculationHint": "Monthly burn is calculated from your active commitments (bills & installments) plus your actual monthly average in essential categories you choose for survival.",
+    "customizeCategories": "Customize Survival Categories",
+    "essentialCategoriesTitle": "Survival Living Categories",
+    "essentialCategoriesSubtitle": "Choose which categories are essential for survival during an emergency to calculate your monthly burn rate accurately",
+    "selectAll": "Select All",
+    "defaultEssentials": "Default Essentials",
+    "clearSelection": "Clear",
+    "selectedCategoriesSummary": "{{count}} survival categories selected",
+    "defaultCategoriesNotice": "Using default essentials (Food, Housing, Health, Utilities)",
+    "noCategoriesSelectedWarning": "No categories selected. Default essentials will be used."
   },
   "savingsGoals": {
     "title": "Smart Savings Goals",
@@ -1866,6 +1876,16 @@ export default {
     "tierSolid": "Solid",
     "tierBasic": "Basic Cushion",
     "tierVulnerable": "Vulnerable",
-    "isEmergencyFundAccount": "Emergency Fund Account"
+    "isEmergencyFundAccount": "Emergency Fund Account",
+    "calculationHint": "Monthly burn is calculated from your active commitments (bills & installments) plus your actual monthly average in essential categories you choose for survival.",
+    "customizeCategories": "Customize Survival Categories",
+    "essentialCategoriesTitle": "Survival Living Categories",
+    "essentialCategoriesSubtitle": "Choose which categories are essential for survival during an emergency to calculate your monthly burn rate accurately",
+    "selectAll": "Select All",
+    "defaultEssentials": "Default Essentials",
+    "clearSelection": "Clear",
+    "selectedCategoriesSummary": "{{count}} survival categories selected",
+    "defaultCategoriesNotice": "Using default essentials (Food, Housing, Health, Utilities)",
+    "noCategoriesSelectedWarning": "No categories selected. Default essentials will be used."
   }
 };

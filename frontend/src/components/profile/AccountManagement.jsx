@@ -142,6 +142,19 @@ export default function AccountManagement({ onBack }) {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (editModalOpen && !isUpdating) closeEditModal();
+        if (addAccountModalOpen && !isAdding) setAddAccountModalOpen(false);
+      }
+    };
+    if (editModalOpen || addAccountModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editModalOpen, addAccountModalOpen, isUpdating, isAdding]);
+
   const isInvestmentAccount = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
 
   const accountBalances = useMemo(() => {
@@ -596,152 +609,194 @@ export default function AccountManagement({ onBack }) {
       {/* Edit Modal */}
       {editModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6 w-full max-w-sm flex flex-col gap-4 max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold font-['Exo_2'] text-white">
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-account-title"
+            className="bg-[#2B2321]/95 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2.5rem] w-full max-w-sm flex flex-col max-h-[90vh] overflow-hidden"
+          >
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-20 flex justify-between items-center p-6 border-b border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
+              <h3 id="edit-account-title" className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.editAccount')}
               </h3>
-              <button onClick={closeEditModal} disabled={isUpdating} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50">
-                <X size={24} />
+              <button 
+                onClick={closeEditModal} 
+                disabled={isUpdating} 
+                aria-label={t('common.close')} 
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50 rounded-full hover:bg-white/10"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={submitEdit} className="flex flex-col gap-4 mt-2">
-              {(editingItem?.isSystemAccount || isInvestmentAccount(editingItem)) ? (
-                <div className="flex flex-col gap-3">
-                  <p className="text-xs text-white/50">{t('settings.systemAccountNotice')}</p>
-                  <label className="flex items-center w-full justify-between gap-2 px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
-                    <span className="text-sm font-medium text-white/90">{t('settings.excludeFromTotal')}</span>
-                    <input type="checkbox" checked={editExcludeFromTotal} onChange={(e) => setEditExcludeFromTotal(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
-                  </label>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
-                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/50 mb-1.5">{t('settings.balanceLabel')}</label>
-                      <input type="number" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
-                    </div>
+            {/* Scrollable Form Body */}
+            <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
+              <form id="edit-account-form" onSubmit={submitEdit} className="flex flex-col gap-4">
+                {(editingItem?.isSystemAccount || isInvestmentAccount(editingItem)) ? (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-xs text-white/50">{t('settings.systemAccountNotice')}</p>
+                    <label htmlFor="edit-system-exclude" className="flex items-center w-full justify-between gap-2 px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl cursor-pointer hover:bg-black/30 transition-colors">
+                      <span className="text-sm font-medium text-white/90">{t('settings.excludeFromTotal')}</span>
+                      <input id="edit-system-exclude" type="checkbox" checked={editExcludeFromTotal} onChange={(e) => setEditExcludeFromTotal(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
+                    </label>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
-                      <input type="text" maxLength="4" pattern="\d{4}" value={editCardLast4} onChange={(e) => setEditCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="edit-acc-name" className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
+                        <input id="edit-acc-name" type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                      </div>
+                      <div>
+                        <label htmlFor="edit-acc-balance" className="block text-xs text-white/50 mb-1.5">{t('settings.balanceLabel')}</label>
+                        <input id="edit-acc-balance" type="number" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                      </div>
                     </div>
-                    <div className="flex items-end pb-0.5">
-                      <label className="flex items-center w-full justify-between gap-2 px-3 py-2.5 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
-                        <span className="text-[11px] font-medium text-white/90">{t('settings.excludeFromTotal')}</span>
-                        <input type="checkbox" checked={editExcludeFromTotal} onChange={(e) => setEditExcludeFromTotal(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="edit-acc-last4" className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
+                        <input id="edit-acc-last4" type="text" maxLength="4" pattern="\d{4}" value={editCardLast4} onChange={(e) => setEditCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
+                      </div>
+                      <div className="flex items-end pb-0.5">
+                        <label htmlFor="edit-acc-exclude-inline" className="flex items-center w-full justify-between gap-2 px-3 py-2.5 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl cursor-pointer hover:bg-black/30 transition-colors">
+                          <span className="text-[11px] font-medium text-white/90">{t('settings.excludeFromTotal')}</span>
+                          <input id="edit-acc-exclude-inline" type="checkbox" checked={editExcludeFromTotal} onChange={(e) => setEditExcludeFromTotal(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
+                        </label>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <label htmlFor="edit-acc-savings" className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl cursor-pointer hover:bg-black/30 transition-colors">
+                        <span className="text-xs font-medium text-white/90">{t('settings.isSavingsAccount')}</span>
+                        <input id="edit-acc-savings" type="checkbox" checked={editIsSavingsAccount} onChange={(e) => setEditIsSavingsAccount(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
+                      </label>
+                      <label htmlFor="edit-acc-emergency" className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl cursor-pointer hover:bg-black/30 transition-colors">
+                        <span className="text-xs font-medium text-white/90">{t('emergencyFund.isEmergencyFundAccount')}</span>
+                        <input id="edit-acc-emergency" type="checkbox" checked={editIsEmergencyFund} onChange={(e) => setEditIsEmergencyFund(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
                       </label>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <label className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
-                      <span className="text-xs font-medium text-white/90">{t('settings.isSavingsAccount')}</span>
-                      <input type="checkbox" checked={editIsSavingsAccount} onChange={(e) => setEditIsSavingsAccount(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
-                    </label>
-                    <label className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
-                      <span className="text-xs font-medium text-white/90">{t('emergencyFund.isEmergencyFundAccount')}</span>
-                      <input type="checkbox" checked={editIsEmergencyFund} onChange={(e) => setEditIsEmergencyFund(e.target.checked)} className="w-4 h-4 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
-                    </label>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
 
-              {!editingItem?.isSystemAccount && (
-                <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-3xl p-2">
-                  <IconPicker
-                    type="account"
-                    selectedIcon={editIcon}
-                    onSelect={setEditIcon}
-                    selectedColor={editColor}
-                    onColorSelect={setEditColor}
-                    colorClass="text-[#8D6346]"
-                  />
-                </div>
-              )}
+                {!editingItem?.isSystemAccount && (
+                  <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl p-2">
+                    <IconPicker
+                      type="account"
+                      selectedIcon={editIcon}
+                      onSelect={setEditIcon}
+                      selectedColor={editColor}
+                      onColorSelect={setEditColor}
+                      colorClass="text-[#8D6346]"
+                    />
+                  </div>
+                )}
+              </form>
+            </div>
 
+            {/* Sticky Actions Footer */}
+            <div className="sticky bottom-0 z-20 p-6 border-t border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
+                form="edit-account-form"
                 disabled={isUpdating}
-                className="w-full py-3.5 mt-2 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] font-semibold text-[15px] hover:bg-[#8D6346]/45 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
                 {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : t('settings.saveChanges')}
               </motion.button>
-            </form>
+            </div>
           </div>
         </div>,
         document.body
       )}
 
+      {/* Add Account Modal */}
       {addAccountModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6 w-full max-w-sm flex flex-col max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="text-xl font-bold font-['Exo_2'] text-white">
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-account-title"
+            className="bg-[#2B2321]/95 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2.5rem] w-full max-w-sm flex flex-col max-h-[90vh] overflow-hidden"
+          >
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-20 flex justify-between items-center p-6 border-b border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
+              <h3 id="add-account-title" className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.addAccountBtn')}
               </h3>
-              <button onClick={() => { if (!isAdding) setAddAccountModalOpen(false); }} disabled={isAdding} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50">
-                <X size={24} />
+              <button 
+                onClick={() => { if (!isAdding) setAddAccountModalOpen(false); }} 
+                disabled={isAdding} 
+                aria-label={t('common.close')} 
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50 rounded-full hover:bg-white/10"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleAddAccount} className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
-                  <input type="text" value={newAccountName} onChange={(e) => setNewAccountName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+            {/* Scrollable Form Body */}
+            <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
+              <form id="add-account-form" onSubmit={handleAddAccount} className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="new-acc-name" className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
+                    <input id="new-acc-name" type="text" value={newAccountName} onChange={(e) => setNewAccountName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                  </div>
+                  <div>
+                    <label htmlFor="new-acc-type" className="block text-xs text-white/50 mb-1.5">{t('settings.accountType')}</label>
+                    <select id="new-acc-type" value={newAccountType} onChange={(e) => setNewAccountType(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none">
+                      <option value="cash" className="bg-[#2B2321] text-white">{t('settings.cash')}</option>
+                      <option value="bank" className="bg-[#2B2321] text-white">{t('settings.bank')}</option>
+                      <option value="wallet" className="bg-[#2B2321] text-white">{t('settings.wallet')}</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-white/50 mb-1.5">{t('settings.accountType')}</label>
-                  <select value={newAccountType} onChange={(e) => setNewAccountType(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none">
-                    <option value="cash" className="bg-[#2B2321] text-white">{t('settings.cash')}</option>
-                    <option value="bank" className="bg-[#2B2321] text-white">{t('settings.bank')}</option>
-                    <option value="wallet" className="bg-[#2B2321] text-white">{t('settings.wallet')}</option>
-                  </select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/50 mb-1.5">{t('settings.balanceLabel')}</label>
-                  <input type="number" value={newAccountBalance} onChange={(e) => setNewAccountBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="new-acc-balance" className="block text-xs text-white/50 mb-1.5">{t('settings.balanceLabel')}</label>
+                    <input id="new-acc-balance" type="number" value={newAccountBalance} onChange={(e) => setNewAccountBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                  </div>
+                  <div>
+                    <label htmlFor="new-acc-last4" className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
+                    <input id="new-acc-last4" type="text" maxLength="4" pattern="\d{4}" value={newAccountCardLast4} onChange={(e) => setNewAccountCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
-                  <input type="text" maxLength="4" pattern="\d{4}" value={newAccountCardLast4} onChange={(e) => setNewAccountCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
-                </div>
-              </div>
 
-              <label className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
-                <span className="text-xs font-medium text-white/90">{t('settings.excludeFromTotal')}</span>
-                <input type="checkbox" checked={newAccountExcludeFromTotal} onChange={(e) => setNewAccountExcludeFromTotal(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <label className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
-                  <span className="text-xs font-medium text-white/90">{t('settings.isSavingsAccount')}</span>
-                  <input type="checkbox" checked={newAccountIsSavingsAccount} onChange={(e) => setNewAccountIsSavingsAccount(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
+                <label htmlFor="new-acc-exclude" className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl cursor-pointer hover:bg-black/30 transition-colors">
+                  <span className="text-xs font-medium text-white/90">{t('settings.excludeFromTotal')}</span>
+                  <input id="new-acc-exclude" type="checkbox" checked={newAccountExcludeFromTotal} onChange={(e) => setNewAccountExcludeFromTotal(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
                 </label>
-                <label className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] cursor-pointer hover:bg-black/30 transition-colors">
-                  <span className="text-xs font-medium text-white/90">{t('emergencyFund.isEmergencyFundAccount')}</span>
-                  <input type="checkbox" checked={newAccountIsEmergencyFund} onChange={(e) => setNewAccountIsEmergencyFund(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
-                </label>
-              </div>
 
-              <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-3xl p-2 mt-2">
-                <IconPicker type="account" selectedIcon={newAccountIcon} onSelect={setNewAccountIcon} selectedColor={newAccountColor} onColorSelect={setNewAccountColor} colorClass="text-[#8D6346]" />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label htmlFor="new-acc-savings" className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl cursor-pointer hover:bg-black/30 transition-colors">
+                    <span className="text-xs font-medium text-white/90">{t('settings.isSavingsAccount')}</span>
+                    <input id="new-acc-savings" type="checkbox" checked={newAccountIsSavingsAccount} onChange={(e) => setNewAccountIsSavingsAccount(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
+                  </label>
+                  <label htmlFor="new-acc-emergency" className="flex items-center justify-between px-4 py-3 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl cursor-pointer hover:bg-black/30 transition-colors">
+                    <span className="text-xs font-medium text-white/90">{t('emergencyFund.isEmergencyFundAccount')}</span>
+                    <input id="new-acc-emergency" type="checkbox" checked={newAccountIsEmergencyFund} onChange={(e) => setNewAccountIsEmergencyFund(e.target.checked)} className="w-5 h-5 rounded border-gray-600 text-[#8D6346] focus:ring-[#8D6346]/50 bg-black/50" />
+                  </label>
+                </div>
 
-              <motion.button whileTap={{ scale: 0.95 }} type="submit" disabled={isAdding} className="w-full py-3.5 mt-3 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2">
+                <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl p-2 mt-1">
+                  <IconPicker type="account" selectedIcon={newAccountIcon} onSelect={setNewAccountIcon} selectedColor={newAccountColor} onColorSelect={setNewAccountColor} colorClass="text-[#8D6346]" />
+                </div>
+              </form>
+            </div>
+
+            {/* Sticky Actions Footer */}
+            <div className="sticky bottom-0 z-20 p-6 border-t border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
+              <motion.button 
+                whileTap={{ scale: 0.98 }} 
+                type="submit" 
+                form="add-account-form"
+                disabled={isAdding} 
+                className="w-full py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] font-semibold text-[15px] hover:bg-[#8D6346]/45 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+              >
                 {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Plus className="w-5 h-5" /> {t('settings.addAccountBtn')}</>)}
               </motion.button>
-            </form>
+            </div>
           </div>
         </div>,
         document.body

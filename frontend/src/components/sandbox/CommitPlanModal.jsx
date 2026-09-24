@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -16,6 +16,17 @@ export default function CommitPlanModal({
 }) {
   const { t, lang } = useLanguage();
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isCommitting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose, isCommitting]);
+
   if (!open) return null;
 
   const money = (val) =>
@@ -28,6 +39,9 @@ export default function CommitPlanModal({
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="commit-plan-title"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -40,7 +54,7 @@ export default function CommitPlanModal({
               <Sparkles size={22} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">
+              <h3 id="commit-plan-title" className="text-lg font-bold text-white">
                 {t('sandbox.commitTitle')}
               </h3>
               <p className="text-xs text-white/50">
@@ -52,7 +66,7 @@ export default function CommitPlanModal({
             onClick={onClose}
             disabled={isCommitting}
             aria-label={t('common.close')}
-            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
           >
             <X size={20} />
           </button>

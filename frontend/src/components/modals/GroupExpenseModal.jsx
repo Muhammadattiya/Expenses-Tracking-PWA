@@ -152,12 +152,12 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
       />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg bg-[#1C1819]/80 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-lg bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Subtle Top Inner Edge Highlight */}
         <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
-        {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-transparent z-10">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-20 p-6 border-b border-white/10 flex items-center justify-between bg-[#1C1819]/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-[#8D6346]/20 rounded-xl text-[#8D6346] shadow-inner">
               <Users className="w-5 h-5" />
@@ -171,14 +171,14 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
             onClick={onClose} 
             disabled={isSubmitting}
             aria-label={t('common.close') || 'Close'}
-            className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors disabled:opacity-40"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-colors disabled:opacity-40"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Form Body */}
-        <div className="p-6 overflow-y-auto">
+        {/* Scrollable Form Body */}
+        <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
           {error && (
             <div role="alert" className="mb-6 rounded-2xl bg-brand-red/10 p-4 border border-brand-red/20 text-sm text-brand-red font-medium flex items-center gap-2">
               <X className="w-4 h-4 flex-shrink-0" />
@@ -259,9 +259,9 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/10">
-              <label className="text-sm font-medium text-white/90 px-1">
+              <span className="block text-sm font-medium text-white/90 px-1">
                 {t('receivables.friendsOwes')}
-              </label>
+              </span>
               {form.participants.map((participant, index) => (
                 <div className="flex gap-2 items-center" key={index}>
                   <div className="grid grid-cols-2 gap-3 flex-1">
@@ -281,7 +281,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                       required 
                       type="number" 
                       min="0.01" 
-                      step="any"
+                      step="any" 
                       disabled={isSubmitting}
                       aria-label={`${t('receivables.owedAmount')} ${index + 1}`}
                       placeholder={t('receivables.amountOwed')} 
@@ -295,7 +295,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                       disabled={isSubmitting}
                       aria-label={t('common.delete') || 'Delete'}
                       onClick={() => removeParticipant(index)} 
-                      className="p-3 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition border border-red-500/20 shadow-sm disabled:opacity-40 shrink-0"
+                      className="min-w-[44px] min-h-[44px] p-3 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition border border-red-500/20 shadow-sm disabled:opacity-40 flex items-center justify-center shrink-0"
                     >
                       <Trash2 size={20} />
                     </button>
@@ -306,7 +306,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 type="button" 
                 disabled={isSubmitting}
                 onClick={addParticipant} 
-                className="text-sm font-medium text-[#E8C5A8] hover:text-white transition-colors flex items-center gap-1.5 ms-1 disabled:opacity-40"
+                className="min-h-[44px] py-2 px-3 text-sm font-medium text-[#E8C5A8] hover:text-white transition-colors flex items-center gap-1.5 ms-1 disabled:opacity-40"
               >
                 {t('receivables.addPerson')}
               </button>
@@ -319,9 +319,9 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
               </div>
               
               <div className="border-t border-[#8D6346]/20 pt-4">
-                <label className="text-sm font-medium text-white/90 block mb-2 px-1">
+                <span className="text-sm font-medium text-white/90 block mb-2 px-1">
                   {t('receivables.expenseCategory')}
-                </label>
+                </span>
                 <CustomSelect 
                   value={form.expenseCategory} 
                   onChange={(v) => setForm({ ...form, expenseCategory: v })} 
@@ -335,8 +335,8 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-white/10 bg-transparent">
+        {/* Sticky Actions Footer */}
+        <div className="sticky bottom-0 z-20 p-6 border-t border-white/10 bg-[#1C1819]/90 backdrop-blur-md">
           <button 
             type="submit"
             form="group-expense-form"

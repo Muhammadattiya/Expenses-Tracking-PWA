@@ -16,6 +16,19 @@ const PROVIDER_COLORS = {
   other: 'from-stone-600/20 to-stone-900/20 text-stone-300 border-stone-600/30'
 };
 
+const moneyFormatters = {
+  ar: new Intl.NumberFormat('ar-EG', {
+    style: 'currency',
+    currency: 'EGP',
+    maximumFractionDigits: 0
+  }),
+  en: new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'EGP',
+    maximumFractionDigits: 0
+  })
+};
+
 export default function InstallmentCard({
   installment,
   onPay,
@@ -25,12 +38,7 @@ export default function InstallmentCard({
 }) {
   const { t, lang } = useLanguage();
 
-  const money = (val) =>
-    new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      style: 'currency',
-      currency: 'EGP',
-      maximumFractionDigits: 0
-    }).format(val || 0);
+  const money = (val) => (moneyFormatters[lang] || moneyFormatters.en).format(val || 0);
 
   const {
     _id,
@@ -66,17 +74,20 @@ export default function InstallmentCard({
 
   const isSettled = status === 'settled' || paidMonths >= totalMonths;
 
+  const accountDisplayName = linkedAccountId?.name
+    ? (linkedAccountId.name.charAt(0).toUpperCase() + linkedAccountId.name.slice(1))
+    : null;
+
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3 }}
       className="relative overflow-hidden rounded-2xl bg-[#2B2321]/30 backdrop-blur-xl border border-[#8D6346]/25 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.37)] hover:border-[#8D6346]/50 transition-all group"
     >
-      {/* Ambient subtle glow sphere behind active cards */}
-      <div className="absolute -top-12 -right-12 w-28 h-28 bg-[#8D6346]/20 rounded-full blur-2xl pointer-events-none" />
+      {/* Ambient subtle glow sphere behind active cards (logical end positioning) */}
+      <div className="absolute -top-12 -end-12 w-28 h-28 bg-[#8D6346]/20 rounded-full blur-2xl pointer-events-none" />
 
       {/* Top row: Provider Badge & Action Icons */}
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -93,25 +104,25 @@ export default function InstallmentCard({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
           {onEdit && (
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => onEdit(installment)}
               aria-label={t('installments.editInstallment')}
-              className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-full text-white/60 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
             >
-              <Edit2 className="w-3.5 h-3.5" />
+              <Edit2 className="w-4 h-4" />
             </motion.button>
           )}
           {onDelete && (
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => onDelete(installment)}
               aria-label={t('installments.deleteInstallment')}
-              className="p-1.5 rounded-lg text-white/50 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-full text-white/60 hover:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </motion.button>
           )}
         </div>
@@ -123,9 +134,9 @@ export default function InstallmentCard({
           <h3 className="text-base font-semibold text-white/90 drop-shadow-sm line-clamp-1">
             {title}
           </h3>
-          {linkedAccountId?.name && (
-            <p className="text-xs text-white/40 mt-0.5">
-              {linkedAccountId.name}
+          {accountDisplayName && (
+            <p className="text-xs text-white/60 mt-0.5">
+              {accountDisplayName}
             </p>
           )}
         </div>
@@ -133,15 +144,15 @@ export default function InstallmentCard({
           <span className="text-lg font-bold text-white tabular-nums tracking-tight">
             {money(monthlyAmount)}
           </span>
-          <span className="text-xs text-[#E8C5A8]/70 block">
+          <span className="text-xs text-[#E8C5A8]/80 block">
             {t('savingsGoals.perMonth')}
           </span>
         </div>
       </div>
 
-      {/* Progress Bar & Month Counter */}
+      {/* Progress Bar & Month Counter with GPU transform and accessibility semantics */}
       <div className="space-y-1.5 mb-4">
-        <div className="flex items-center justify-between text-xs text-white/60">
+        <div className="flex items-center justify-between text-xs text-white/70">
           <span>
             {t('installments.monthOf', { current: paidMonths, total: totalMonths })}
           </span>
@@ -149,12 +160,19 @@ export default function InstallmentCard({
             {progressPercent}%
           </span>
         </div>
-        <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden p-0.5 border border-white/5">
+        <div 
+          role="progressbar"
+          aria-valuenow={progressPercent}
+          aria-valuemin="0"
+          aria-valuemax="100"
+          className="w-full h-2 rounded-full bg-black/40 overflow-hidden p-0.5 border border-white/5"
+        >
           <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: Math.min(1, Math.max(0, progressPercent / 100)) }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className={`h-full rounded-full ${
+            style={{ transformOrigin: lang === 'ar' ? 'right' : 'left' }}
+            className={`w-full h-full rounded-full ${
               isSettled
                 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
                 : 'bg-gradient-to-r from-[#8D6346] via-[#B28260] to-[#E8C5A8]'
@@ -173,17 +191,17 @@ export default function InstallmentCard({
               {t('installments.statusSettled')}
             </span>
           ) : isOverdue ? (
-            <span className="inline-flex items-center gap-1 text-rose-400 font-medium bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+            <span className="inline-flex items-center gap-1 text-rose-400 font-medium bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
               <AlertCircle className="w-3 h-3" />
               {t('installments.overdue')}
             </span>
           ) : diffDays === 0 ? (
-            <span className="inline-flex items-center gap-1 text-amber-400 font-medium bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+            <span className="inline-flex items-center gap-1 text-amber-400 font-medium bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
               <Clock className="w-3 h-3" />
               {t('installments.dueToday')}
             </span>
           ) : (
-            <span className={`inline-flex items-center gap-1 ${diffDays <= 3 ? 'text-amber-400' : 'text-white/60'}`}>
+            <span className={`inline-flex items-center gap-1 ${diffDays <= 3 ? 'text-amber-400' : 'text-white/70'}`}>
               <Calendar className="w-3 h-3" />
               {t('installments.nextDueIn', {
                 days: diffDays,
@@ -195,10 +213,10 @@ export default function InstallmentCard({
 
         {/* Total remaining amount */}
         <div className="text-end">
-          <span className="text-white/40 block text-[10px]">
+          <span className="text-white/60 block text-[10px]">
             {t('installments.totalRemaining')}
           </span>
-          <span className="font-semibold text-white/80 tabular-nums">
+          <span className="font-semibold text-white/90 tabular-nums">
             {money(remainingAmount)}
           </span>
         </div>

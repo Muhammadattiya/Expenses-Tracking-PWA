@@ -90,12 +90,12 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
       />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-md bg-[#1C1819]/80 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-md bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Subtle Top Inner Edge Highlight */}
         <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
-        {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-transparent z-10">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-20 p-6 border-b border-white/10 flex items-center justify-between bg-[#1C1819]/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-[#8D6346]/20 rounded-xl text-[#8D6346] shadow-inner">
               <User className="w-5 h-5" />
@@ -109,14 +109,14 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
             onClick={onClose} 
             disabled={isSubmitting}
             aria-label={t('common.close') || 'Close'}
-            className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors disabled:opacity-40"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-colors disabled:opacity-40"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Form Body */}
-        <div className="p-6 overflow-y-auto">
+        {/* Scrollable Form Body */}
+        <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
           {error && (
             <div role="alert" className="mb-6 rounded-2xl bg-brand-red/10 p-4 border border-brand-red/20 text-sm text-brand-red font-medium flex items-center gap-2">
               <X className="w-4 h-4 flex-shrink-0" />
@@ -133,7 +133,7 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
                   role="radio"
                   aria-checked={form.type === 'i_owe'}
                   onClick={() => setForm({ ...form, type: 'i_owe' })} 
-                  className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${form.type === 'i_owe' ? 'bg-brand-red text-white shadow-lg shadow-brand-red/20' : 'text-white/50 hover:text-white'}`}
+                  className={`flex-1 min-h-[44px] py-3 text-sm font-bold rounded-xl transition-all ${form.type === 'i_owe' ? 'bg-brand-red text-white shadow-lg shadow-brand-red/20' : 'text-white/50 hover:text-white'}`}
                 >
                   {t('debts.iOwe')}
                 </button>
@@ -142,7 +142,7 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
                   role="radio"
                   aria-checked={form.type === 'owed_to_me'}
                   onClick={() => setForm({ ...form, type: 'owed_to_me' })} 
-                  className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${form.type === 'owed_to_me' ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20' : 'text-white/50 hover:text-white'}`}
+                  className={`flex-1 min-h-[44px] py-3 text-sm font-bold rounded-xl transition-all ${form.type === 'owed_to_me' ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20' : 'text-white/50 hover:text-white'}`}
                 >
                   {t('debts.owedToMe')}
                 </button>
@@ -203,8 +203,8 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-white/10 bg-transparent">
+        {/* Sticky Actions Footer */}
+        <div className="sticky bottom-0 z-20 p-6 border-t border-white/10 bg-[#1C1819]/90 backdrop-blur-md">
           <Button
             type="submit"
             form="personal-debt-form"

@@ -57,6 +57,19 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
     setLocalCategories(categories || []);
   }, [categories]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (editModalOpen && !isUpdating) closeEditModal();
+        if (addCategoryModalOpen && !isAdding) setAddCategoryModalOpen(false);
+      }
+    };
+    if (editModalOpen || addCategoryModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editModalOpen, addCategoryModalOpen, isUpdating, isAdding]);
+
   const activeTabCategories = useMemo(() => {
     return localCategories.filter(cat => cat.type === categoryTab);
   }, [localCategories, categoryTab]);
@@ -357,40 +370,58 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
       {/* Edit Modal */}
       {editModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6 w-full max-w-sm flex flex-col gap-4 max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold font-['Exo_2'] text-white">
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-category-title"
+            className="bg-[#2B2321]/95 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2.5rem] w-full max-w-sm flex flex-col max-h-[90vh] overflow-hidden"
+          >
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-20 flex justify-between items-center p-6 border-b border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
+              <h3 id="edit-category-title" className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.editCategory')}
               </h3>
-              <button onClick={closeEditModal} disabled={isUpdating} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50">
-                <X size={24} />
+              <button 
+                onClick={closeEditModal} 
+                disabled={isUpdating} 
+                aria-label={t('common.close')} 
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50 rounded-full hover:bg-white/10"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={submitEdit} className="flex flex-col gap-4 mt-2">
-              <div>
-                <label className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
-                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
-              </div>
+            {/* Scrollable Form Body */}
+            <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
+              <form id="edit-category-form" onSubmit={submitEdit} className="flex flex-col gap-4">
+                <div>
+                  <label htmlFor="edit-cat-name" className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
+                  <input id="edit-cat-name" type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                </div>
 
-              <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-3xl p-2">
-                <IconPicker
-                  type="category"
-                  selectedIcon={editIcon}
-                  onSelect={setEditIcon}
-                  colorClass="text-[#8D6346]"
-                />
-              </div>
+                <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl p-2">
+                  <IconPicker
+                    type="category"
+                    selectedIcon={editIcon}
+                    onSelect={setEditIcon}
+                    colorClass="text-[#8D6346]"
+                  />
+                </div>
+              </form>
+            </div>
 
+            {/* Sticky Actions Footer */}
+            <div className="sticky bottom-0 z-20 p-6 border-t border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
+                form="edit-category-form"
                 disabled={isUpdating}
-                className="w-full py-3.5 mt-2 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] font-semibold text-[15px] hover:bg-[#8D6346]/45 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
                 {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : t('settings.saveChanges')}
               </motion.button>
-            </form>
+            </div>
           </div>
         </div>,
         document.body
@@ -399,49 +430,67 @@ export default function CategoryManagement({ categories, fetchData, onBack }) {
       {/* Add Modal */}
       {addCategoryModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6 w-full max-w-sm flex flex-col gap-4 max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div className="flex justify-between items-center mb-1">
-              <h3 className="text-xl font-bold font-['Exo_2'] text-white">
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-category-title"
+            className="bg-[#2B2321]/95 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2.5rem] w-full max-w-sm flex flex-col max-h-[90vh] overflow-hidden"
+          >
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-20 flex justify-between items-center p-6 border-b border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
+              <h3 id="add-category-title" className="text-xl font-bold font-['Exo_2'] text-white">
                 {t('settings.addCategoryBtn')}
               </h3>
-              <button onClick={() => { if (!isAdding) setAddCategoryModalOpen(false); }} disabled={isAdding} aria-label={t('common.close')} className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50">
-                <X size={24} />
+              <button 
+                onClick={() => { if (!isAdding) setAddCategoryModalOpen(false); }} 
+                disabled={isAdding} 
+                aria-label={t('common.close')} 
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors disabled:opacity-50 rounded-full hover:bg-white/10"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleAddCategory} className="flex flex-col gap-4 mt-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
-                  <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+            {/* Scrollable Form Body */}
+            <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
+              <form id="add-category-form" onSubmit={handleAddCategory} className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="new-cat-name" className="block text-xs text-white/50 mb-1.5">{t('settings.nameLabel')}</label>
+                    <input id="new-cat-name" type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
+                  </div>
+                  <div>
+                    <label htmlFor="new-cat-type" className="block text-xs text-white/50 mb-1.5">{t('settings.categoryType')}</label>
+                    <select id="new-cat-type" value={newCategoryType} onChange={(e) => setNewCategoryType(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none">
+                      <option value="expense" className="bg-[#2B2321] text-white">{t('settings.expense')}</option>
+                      <option value="income" className="bg-[#2B2321] text-white">{t('settings.income')}</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-white/50 mb-1.5">{t('settings.categoryType')}</label>
-                  <select value={newCategoryType} onChange={(e) => setNewCategoryType(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50 appearance-none">
-                    <option value="expense" className="bg-[#2B2321] text-white">{t('settings.expense')}</option>
-                    <option value="income" className="bg-[#2B2321] text-white">{t('settings.income')}</option>
-                  </select>
+
+                <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-2xl p-2 mt-2">
+                  <IconPicker 
+                    type="category" 
+                    selectedIcon={newCategoryIcon} 
+                    onSelect={setNewCategoryIcon} 
+                    colorClass="text-[#8D6346]" 
+                  />
                 </div>
-              </div>
+              </form>
+            </div>
 
-              <div className="bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-3xl p-2 mt-2">
-                <IconPicker 
-                  type="category" 
-                  selectedIcon={newCategoryIcon} 
-                  onSelect={setNewCategoryIcon} 
-                  colorClass="text-[#8D6346]" 
-                />
-              </div>
-
+            {/* Sticky Actions Footer */}
+            <div className="sticky bottom-0 z-20 p-6 border-t border-white/10 bg-[#2B2321]/90 backdrop-blur-md">
               <motion.button 
-                whileTap={{ scale: 0.95 }} 
+                whileTap={{ scale: 0.98 }} 
                 type="submit" 
+                form="add-category-form"
                 disabled={isAdding}
-                className="w-full py-3.5 mt-3 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] font-semibold text-[15px] hover:bg-[#8D6346]/45 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
                 {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : (<><Plus className="w-5 h-5" /> {t('settings.addCategoryBtn')}</>)}
               </motion.button>
-            </form>
+            </div>
           </div>
         </div>,
         document.body

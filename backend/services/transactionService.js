@@ -477,6 +477,8 @@ const createTransaction = async (userId, data, opts = {}) => {
   if (populated && populated.type === 'expense') {
     const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+    const { reconcileEmergencyFundBurn } = require('./emergencyFundService');
+    reconcileEmergencyFundBurn(userId).catch(err => console.error('[EMERGENCY_FUND] reconcile error:', err.message));
   }
 
   const { checkPaydaySurvivalRisk } = require('./cronJobs');
@@ -581,6 +583,8 @@ const updateTransaction = async (userId, id, data) => {
   if (originalTx.type === 'expense' || updatedTx.type === 'expense') {
     const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+    const { reconcileEmergencyFundBurn } = require('./emergencyFundService');
+    reconcileEmergencyFundBurn(userId).catch(err => console.error('[EMERGENCY_FUND] reconcile error:', err.message));
   }
 
   const { checkPaydaySurvivalRisk } = require('./cronJobs');
@@ -621,6 +625,8 @@ const deleteTransaction = async (userId, id) => {
   if (originalTx && originalTx.type === 'expense') {
     const { checkBudgetThresholds } = require('./budgetEngine');
     checkBudgetThresholds(userId).catch(err => console.error('[ERROR] checkBudgetThresholds:', err));
+    const { reconcileEmergencyFundBurn } = require('./emergencyFundService');
+    reconcileEmergencyFundBurn(userId).catch(err => console.error('[EMERGENCY_FUND] reconcile error:', err.message));
   }
 
   const { checkPaydaySurvivalRisk } = require('./cronJobs');

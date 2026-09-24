@@ -125,188 +125,231 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
   const filteredCategories = categories.filter(c => c.type === transaction.type);
 
   return createPortal(
-    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${lang === 'ar' ? 'font-arabic' : 'font-english'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 ${lang === 'ar' ? 'font-arabic' : 'font-english'}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-6 w-full max-w-sm flex flex-col max-h-[80vh] overflow-y-auto scrollbar-hide relative z-10">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-white">
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-recurring-title"
+        className="bg-[#2B2321]/95 backdrop-blur-[32px] border border-white/10 shadow-[0_16px_48px_rgba(0,0,0,0.5)] rounded-[2rem] w-full max-w-md flex flex-col max-h-[85vh] overflow-hidden relative z-10"
+      >
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-[#2B2321]/95 backdrop-blur-md z-20 flex justify-between items-center p-5 px-6 border-b border-white/10">
+          <h3 id="edit-recurring-title" className="text-lg font-bold text-white">
             {t('modals.editRecurringTitle')}
           </h3>
-          <button onClick={onClose} disabled={isUpdating} aria-label={t('common.close')} className="p-2 text-white/50 hover:text-white bg-white/5 rounded-full transition-colors hover:bg-white/10 disabled:opacity-50">
-            <X size={20} />
+          <button 
+            onClick={onClose} 
+            disabled={isUpdating} 
+            aria-label={t('common.close')} 
+            className="w-11 h-11 text-white/70 hover:text-white bg-white/5 rounded-full transition-colors hover:bg-white/10 disabled:opacity-50 flex items-center justify-center shrink-0 active:scale-95"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.amountLabel')}</label>
-            <div className="relative">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          {/* Scrollable Fields Body */}
+          <div className="overflow-y-auto px-6 py-4 space-y-4 max-h-[calc(85vh-160px)]">
+            <div>
+              <label htmlFor="edit-rec-amount" className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.amountLabel')}</label>
+              <div className="relative">
+                <input
+                  id="edit-rec-amount"
+                  type="number"
+                  required
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+                />
+                <span className="absolute top-3.5 end-4 text-white/50 font-medium pointer-events-none">{t('nav.currency')}</span>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="edit-rec-title" className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.descriptionLabel')}</label>
               <input
-                type="number"
-                required
-                min="0.01"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                id="edit-rec-title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
               />
-              <span className="absolute top-3.5 end-4 text-white/50 font-medium pointer-events-none">{t('nav.currency')}</span>
             </div>
-          </div>
 
-          <div>
-            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.descriptionLabel')}</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
-            />
-          </div>
+            {transaction.type === 'transfer' ? (
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <span className="block text-[13px] text-[#3b82f6]/80 mb-1 ms-1">{t('modals.fromAccount')}</span>
+                  <CustomSelect
+                    buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
+                    value={fromAccount}
+                    onChange={setFromAccount}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    placeholder={t('modals.selectAccount')}
+                  />
+                </div>
+                <div className="flex-1">
+                  <span className="block text-[13px] text-[#10b981]/80 mb-1 ms-1">{t('modals.toAccount')}</span>
+                  <CustomSelect
+                    buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
+                    value={toAccount}
+                    onChange={setToAccount}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    placeholder={t('modals.selectAccount')}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <span className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.accountLabel')}</span>
+                  <CustomSelect
+                    buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
+                    value={account}
+                    onChange={setAccount}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    placeholder={t('modals.selectAccount')}
+                  />
+                </div>
+                <div>
+                  <span className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.categoryLabel')}</span>
+                  <CustomSelect
+                    buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
+                    value={category}
+                    onChange={setCategory}
+                    options={filteredCategories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon }))}
+                    placeholder={t('modals.selectCategory')}
+                  />
+                </div>
+              </>
+            )}
 
-          {transaction.type === 'transfer' ? (
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block text-[13px] text-[#3b82f6]/80 mb-1 ms-1">{t('modals.fromAccount')}</label>
-                <CustomSelect
-                  buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
-                  value={fromAccount}
-                  onChange={setFromAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                  placeholder={t('modals.selectAccount')}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-[13px] text-[#10b981]/80 mb-1 ms-1">{t('modals.toAccount')}</label>
-                <CustomSelect
-                  buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
-                  value={toAccount}
-                  onChange={setToAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                  placeholder={t('modals.selectAccount')}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              <div>
-                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.accountLabel')}</label>
-                <CustomSelect
-                  buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
-                  value={account}
-                  onChange={setAccount}
-                  options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
-                  placeholder={t('modals.selectAccount')}
-                />
-              </div>
-              <div>
-                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.categoryLabel')}</label>
-                <CustomSelect
-                  buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
-                  value={category}
-                  onChange={setCategory}
-                  options={filteredCategories.map(cat => ({ value: cat._id, label: cat.name, icon: cat.icon }))}
-                  placeholder={t('modals.selectCategory')}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Recurring Options */}
-          <div className="pt-2 border-t border-white/10 mt-2">
-            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.repeatType')}</label>
-            <CustomSelect
-              buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
-              value={repeatType}
-              onChange={setRepeatType}
-              options={[
-                { value: 'daily', label: t('recurring.daily') },
-                { value: 'weekly', label: t('recurring.weekly') },
-                { value: 'monthly', label: t('recurring.monthly') },
-                { value: 'yearly', label: t('recurring.yearly') },
-                { value: 'custom', label: t('recurring.custom') }
-              ]}
-            />
-          </div>
-
-          {repeatType === 'custom' && (
-            <div>
-              <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.interval')}</label>
-              <input 
-                type="number" 
-                min="1" 
-                value={interval} 
-                onChange={(e) => setInterval(e.target.value)} 
-                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50" 
+            {/* Recurring Options */}
+            <div className="pt-2 border-t border-white/10 mt-2">
+              <span className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.repeatType')}</span>
+              <CustomSelect
+                buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
+                value={repeatType}
+                onChange={setRepeatType}
+                options={[
+                  { value: 'daily', label: t('recurring.daily') },
+                  { value: 'weekly', label: t('recurring.weekly') },
+                  { value: 'monthly', label: t('recurring.monthly') },
+                  { value: 'yearly', label: t('recurring.yearly') },
+                  { value: 'custom', label: t('recurring.custom') }
+                ]}
               />
             </div>
-          )}
 
-          <div>
-            <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.executionTime')}</label>
-            <input 
-              type="time" 
-              value={executionTime} 
-              onChange={(e) => setExecutionTime(e.target.value)} 
-              className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none text-left"
-              style={{ colorScheme: 'dark' }}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className="text-[13px] font-bold text-white/90">{t('recurring.neverEnds')}</label>
-            <button
-              type="button"
-              onClick={() => setNeverEnds(!neverEnds)}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-300 shadow-inner border border-white/10 ${neverEnds ? 'bg-[#8D6346]' : 'bg-black/40'}`}
-            >
-              <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${neverEnds ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-0'}`} />
-            </button>
-          </div>
-
-          {!neverEnds && (
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.endDate')}</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none"
-                  style={{ colorScheme: 'dark' }}
+            {repeatType === 'custom' && (
+              <div>
+                <label htmlFor="edit-rec-interval" className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.interval')}</label>
+                <input 
+                  id="edit-rec-interval"
+                  type="number" 
+                  min="1" 
+                  value={interval} 
+                  onChange={(e) => setInterval(e.target.value)} 
+                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50" 
                 />
               </div>
-              <div className="flex-1">
-                <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.maxOccurrences')}</label>
-                <input type="number" min="1" value={maxOccurrences} onChange={(e) => setMaxOccurrences(e.target.value)} placeholder="12" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none" />
-              </div>
-            </div>
-          )}
+            )}
 
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
-            <label className="text-[13px] font-bold text-white/90">{t('recurring.reminderEnabled')}</label>
-            <button
-              type="button"
-              onClick={() => setReminderEnabled(!reminderEnabled)}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-300 shadow-inner border border-white/10 ${reminderEnabled ? 'bg-[#8D6346]' : 'bg-black/40'}`}
-            >
-              <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${reminderEnabled ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-0'}`} />
-            </button>
+            <div>
+              <label htmlFor="edit-rec-time" className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.executionTime')}</label>
+              <input 
+                id="edit-rec-time"
+                type="time" 
+                value={executionTime} 
+                onChange={(e) => setExecutionTime(e.target.value)} 
+                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none text-left"
+                style={{ colorScheme: 'dark' }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label htmlFor="edit-rec-never-ends" className="text-[13px] font-bold text-white/90">{t('recurring.neverEnds')}</label>
+              <button
+                id="edit-rec-never-ends"
+                type="button"
+                role="switch"
+                aria-checked={neverEnds}
+                aria-label={t('recurring.neverEnds')}
+                onClick={() => setNeverEnds(!neverEnds)}
+                className={`relative w-12 h-7 rounded-full transition-colors duration-300 shadow-inner border border-white/10 ${neverEnds ? 'bg-[#8D6346]' : 'bg-black/40'}`}
+              >
+                <div className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${neverEnds ? (lang === 'ar' ? '-translate-x-5' : 'translate-x-5') : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {!neverEnds && (
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label htmlFor="edit-rec-end-date" className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.endDate')}</label>
+                  <input
+                    id="edit-rec-end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="edit-rec-max-occurrences" className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.maxOccurrences')}</label>
+                  <input 
+                    id="edit-rec-max-occurrences"
+                    type="number" 
+                    min="1" 
+                    value={maxOccurrences} 
+                    onChange={(e) => setMaxOccurrences(e.target.value)} 
+                    placeholder="12" 
+                    className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none" 
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
+              <label htmlFor="edit-rec-reminder-toggle" className="text-[13px] font-bold text-white/90">{t('recurring.reminderEnabled')}</label>
+              <button
+                id="edit-rec-reminder-toggle"
+                type="button"
+                role="switch"
+                aria-checked={reminderEnabled}
+                aria-label={t('recurring.reminderEnabled')}
+                onClick={() => setReminderEnabled(!reminderEnabled)}
+                className={`relative w-12 h-7 rounded-full transition-colors duration-300 shadow-inner border border-white/10 ${reminderEnabled ? 'bg-[#8D6346]' : 'bg-black/40'}`}
+              >
+                <div className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${reminderEnabled ? (lang === 'ar' ? '-translate-x-5' : 'translate-x-5') : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {reminderEnabled && (
+              <div className="animate-fade-in">
+                <label htmlFor="edit-rec-reminder-days" className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.reminderDaysBefore')}</label>
+                <input 
+                  id="edit-rec-reminder-days"
+                  type="number" 
+                  min="0" 
+                  value={reminderDaysBefore} 
+                  onChange={(e) => setReminderDaysBefore(e.target.value)} 
+                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none" 
+                />
+              </div>
+            )}
           </div>
 
-          {reminderEnabled && (
-            <div className="animate-fade-in">
-              <label className="text-[13px] text-white/60 mb-1 block ms-1">{t('recurring.reminderDaysBefore')}</label>
-              <input type="number" min="0" value={reminderDaysBefore} onChange={(e) => setReminderDaysBefore(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white focus:outline-none" />
-            </div>
-          )}
-
-          <div className="flex flex-col gap-3 mt-4">
+          {/* Sticky Actions Footer */}
+          <div className="sticky bottom-0 bg-[#2B2321]/95 backdrop-blur-md z-20 p-5 px-6 border-t border-white/10">
             <button
               type="submit"
               disabled={isUpdating}
-              className="w-full py-3.5 rounded-[30px] bg-[#8D6346]/20 backdrop-blur-[10px] border border-[#8D6346]/30 text-white shadow-inner font-medium text-[15px] hover:bg-[#8D6346]/30 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-full font-semibold text-[14px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
             >
               {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5"/> {t('modals.saveChanges')}</>}
             </button>

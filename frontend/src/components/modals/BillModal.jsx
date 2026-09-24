@@ -58,6 +58,18 @@ export default function BillModal({
     }
   }, [isOpen, bill, accounts, categories]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
@@ -118,6 +130,9 @@ export default function BillModal({
 
         {/* Pure Liquid Glass Modal Container - Perfectly Sized with Zero Scroll */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bill-modal-title"
           initial={{ opacity: 0, scale: 0.94, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 15 }}
@@ -126,7 +141,7 @@ export default function BillModal({
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-3 relative z-10">
-            <h3 className="text-[16px] font-bold text-white tracking-wide">
+            <h3 id="bill-modal-title" className="text-[16px] font-bold text-white tracking-wide">
               {bill ? t('bills.editBill') : t('bills.addBill')}
             </h3>
 
@@ -135,18 +150,20 @@ export default function BillModal({
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="p-1.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 rounded-full transition-colors text-red-400 hover:text-red-300 active:scale-95 flex items-center justify-center"
+                  aria-label={t('common.delete')}
+                  className="w-11 h-11 bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 rounded-full transition-colors text-red-400 hover:text-red-300 active:scale-95 flex items-center justify-center"
                   title={t('common.delete')}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 bg-black/20 hover:bg-black/40 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center"
+                aria-label={t('common.close')}
+                className="w-11 h-11 bg-white/5 hover:bg-white/15 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -156,10 +173,11 @@ export default function BillModal({
             {/* Row 1: Bill Name & Expected Amount (2-Columns) */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+                <label htmlFor="bill-name-input" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                   {t('bills.name')}
                 </label>
                 <input
+                  id="bill-name-input"
                   type="text"
                   required
                   value={name}
@@ -170,11 +188,12 @@ export default function BillModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+                <label htmlFor="bill-amount-input" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                   {t('bills.amount')}
                 </label>
                 <div className="relative">
                   <input
+                    id="bill-amount-input"
                     type="number"
                     inputMode="decimal"
                     required
@@ -194,10 +213,11 @@ export default function BillModal({
             {/* Row 2: Due Date & Repeat (2-Columns) */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+                <label htmlFor="bill-date-btn" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                   {t('bills.dueDate')}
                 </label>
                 <button
+                  id="bill-date-btn"
                   type="button"
                   onClick={() => setIsDatePickerOpen(true)}
                   className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 text-[12px] font-medium text-white flex items-center justify-between focus:outline-none focus:border-[#8D6346] shadow-inner transition-all hover:bg-white/[0.08]"
@@ -208,9 +228,9 @@ export default function BillModal({
               </div>
 
               <div className="min-w-0">
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                   {t('bills.repeat')}
-                </label>
+                </span>
                 <CustomSelect
                   value={repeat}
                   onChange={setRepeat}
@@ -223,9 +243,9 @@ export default function BillModal({
             {/* Row 3: Category & Account (2-Columns) */}
             <div className="grid grid-cols-2 gap-2">
               <div className="min-w-0">
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                   {t('addTransaction.category')}
-                </label>
+                </span>
                 <CustomSelect
                   value={category}
                   onChange={setCategory}
@@ -235,9 +255,9 @@ export default function BillModal({
               </div>
 
               <div className="min-w-0">
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                   {t('addTransaction.account')}
-                </label>
+                </span>
                 <CustomSelect
                   value={account}
                   onChange={setAccount}
@@ -255,11 +275,14 @@ export default function BillModal({
                 </span>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={reminderEnabled}
+                  aria-label={t('bills.reminder')}
                   onClick={() => setReminderEnabled(!reminderEnabled)}
-                  className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-[#8D6346]' : 'bg-white/15'}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-[#8D6346]' : 'bg-white/15'}`}
                 >
                   <div
-                    className={`absolute top-0.5 ${lang === 'ar' ? (reminderEnabled ? 'right-5' : 'right-0.5') : (reminderEnabled ? 'left-5' : 'left-0.5')} w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-md`}
+                    className={`absolute top-0.5 ${lang === 'ar' ? (reminderEnabled ? 'right-5' : 'right-0.5') : (reminderEnabled ? 'left-5' : 'left-0.5')} w-5 h-5 rounded-full bg-white transition-all duration-300 shadow-md`}
                   />
                 </button>
               </div>

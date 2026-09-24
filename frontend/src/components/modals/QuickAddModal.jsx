@@ -274,9 +274,9 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 type="button"
                 onClick={onClose}
                 aria-label={t('common.close')}
-                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+                className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
           </div>
@@ -435,7 +435,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 ))}
               </div>
               
-              <div className="flex gap-3 mt-2">
+              <div className="sticky bottom-0 bg-[#141115]/95 backdrop-blur-md pt-3 pb-1 mt-2 z-20 flex gap-3">
                 <button 
                   type="button"
                   onClick={() => setCandidates([])} 

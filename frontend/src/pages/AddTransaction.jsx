@@ -230,7 +230,12 @@ const AddTransaction = () => {
         const response = await createTransaction(payload);
         // الدفع للفاتورة لو جاية من شاشة الفواتير
         if (billId) {
-          await payBill(billId, response._id);
+          try {
+            const isServerId = response?._id && typeof response._id === 'string' && !response._id.startsWith('local_');
+            await payBill(billId, isServerId ? response._id : undefined);
+          } catch (billError) {
+            console.warn('⚠️ Could not sync bill status immediately (offline or network):', billError);
+          }
         }
       }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Repeat, Calendar, Clock, Bell } from 'lucide-react';
@@ -23,6 +23,18 @@ const RecurringSettingsModal = ({
   const [reminderDaysBefore, setReminderDaysBefore] = useState(initialSettings?.reminderDaysBefore || 1);
 
   const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -57,6 +69,9 @@ const RecurringSettingsModal = ({
 
         {/* Pure Liquid Glass Modal Container */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="recurring-settings-title"
           initial={{ opacity: 0, y: 30, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.96 }}
@@ -69,14 +84,15 @@ const RecurringSettingsModal = ({
               <div className="w-9 h-9 rounded-full bg-[#8D6346]/25 border border-[#8D6346]/40 flex items-center justify-center text-[#E8C5A8] shadow-inner">
                 <Repeat size={18} />
               </div>
-              <h2 className="text-[17px] font-bold text-white tracking-wide">
+              <h2 id="recurring-settings-title" className="text-[17px] font-bold text-white tracking-wide">
                 {t('recurring.settings')}
               </h2>
             </div>
             <button 
               type="button"
               onClick={onClose} 
-              className="p-1.5 bg-black/20 hover:bg-black/40 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95"
+              aria-label={t('common.close')}
+              className="w-11 h-11 bg-white/5 hover:bg-white/15 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
@@ -85,9 +101,9 @@ const RecurringSettingsModal = ({
           {/* Content */}
           <div className="p-6 overflow-y-auto scrollbar-hide space-y-6 relative z-10">
             <div>
-              <label className="block text-[12px] font-medium text-white/75 mb-2.5 px-1 tracking-wide">
+              <span className="block text-[12px] font-medium text-white/75 mb-2.5 px-1 tracking-wide">
                 {t('recurring.repeatType')}
-              </label>
+              </span>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {[
                   { value: 'never', label: t('recurring.never') },
@@ -122,10 +138,11 @@ const RecurringSettingsModal = ({
                   
                   {repeatType === 'custom' && (
                     <div className="flex items-center justify-between p-4 transition-colors hover:bg-white/[0.02]">
-                      <label className="text-[13px] font-medium text-white/85">
+                      <label htmlFor="rec-set-interval" className="text-[13px] font-medium text-white/85">
                         {t('recurring.interval')}
                       </label>
                       <input 
+                        id="rec-set-interval"
                         type="number" 
                         min="1" 
                         value={interval} 
@@ -138,11 +155,12 @@ const RecurringSettingsModal = ({
                   <div className="flex items-center justify-between p-4 transition-colors hover:bg-white/[0.02]">
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-[#E8C5A8]" />
-                      <label className="text-[13px] font-medium text-white/85">
+                      <label htmlFor="rec-set-time" className="text-[13px] font-medium text-white/85">
                         {t('recurring.executionTime')}
                       </label>
                     </div>
                     <input 
+                      id="rec-set-time"
                       type="time" 
                       value={executionTime} 
                       onChange={(e) => setExecutionTime(e.target.value)} 
@@ -152,11 +170,15 @@ const RecurringSettingsModal = ({
                   </div>
 
                   <div className="flex items-center justify-between p-4 transition-colors hover:bg-white/[0.02]">
-                    <label className="text-[13px] font-medium text-white/85">
+                    <label htmlFor="rec-set-never-ends" className="text-[13px] font-medium text-white/85">
                       {t('recurring.neverEnds')}
                     </label>
                     <button
+                      id="rec-set-never-ends"
                       type="button"
+                      role="switch"
+                      aria-checked={neverEnds}
+                      aria-label={t('recurring.neverEnds')}
                       onClick={() => setNeverEnds(!neverEnds)}
                       className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${neverEnds ? 'bg-[#8D6346]' : 'bg-white/15'}`}
                     >
@@ -168,10 +190,11 @@ const RecurringSettingsModal = ({
                     <div className="p-4 bg-white/[0.02] shadow-inner">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                          <label className="block text-[11px] font-medium text-white/70 mb-1.5 px-1">
+                          <label htmlFor="rec-set-end-date" className="block text-[11px] font-medium text-white/70 mb-1.5 px-1">
                             {t('recurring.endDate')}
                           </label>
                           <button 
+                            id="rec-set-end-date"
                             type="button" 
                             onClick={() => setIsEndDatePickerOpen(true)} 
                             className="w-full text-start bg-black/30 border border-white/15 rounded-xl py-2.5 px-3 text-[13px] font-medium text-white focus:outline-none focus:border-[#8D6346] transition-colors flex items-center justify-between"
@@ -181,10 +204,11 @@ const RecurringSettingsModal = ({
                           </button>
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-white/70 mb-1.5 px-1">
+                          <label htmlFor="rec-set-max-occurrences" className="block text-[11px] font-medium text-white/70 mb-1.5 px-1">
                             {t('recurring.maxOccurrences')}
                           </label>
                           <input 
+                            id="rec-set-max-occurrences"
                             type="number" 
                             min="1" 
                             value={maxOccurrences} 
@@ -200,12 +224,16 @@ const RecurringSettingsModal = ({
                   <div className="flex items-center justify-between p-4 transition-colors hover:bg-white/[0.02]">
                     <div className="flex items-center gap-2">
                       <Bell size={16} className="text-[#E8C5A8]" />
-                      <label className="text-[13px] font-medium text-white/85">
+                      <label htmlFor="rec-set-reminder-toggle" className="text-[13px] font-medium text-white/85">
                         {t('recurring.reminderEnabled')}
                       </label>
                     </div>
                     <button
+                      id="rec-set-reminder-toggle"
                       type="button"
+                      role="switch"
+                      aria-checked={reminderEnabled}
+                      aria-label={t('recurring.reminderEnabled')}
                       onClick={() => setReminderEnabled(!reminderEnabled)}
                       className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-[#8D6346]' : 'bg-white/15'}`}
                     >
@@ -215,10 +243,11 @@ const RecurringSettingsModal = ({
 
                   {reminderEnabled && (
                     <div className="flex items-center justify-between p-4 bg-white/[0.02] shadow-inner">
-                      <label className="text-[13px] font-medium text-white/85">
+                      <label htmlFor="rec-set-reminder-days" className="text-[13px] font-medium text-white/85">
                         {t('recurring.reminderDaysBefore')}
                       </label>
                       <input 
+                        id="rec-set-reminder-days"
                         type="number" 
                         min="0" 
                         value={reminderDaysBefore} 
