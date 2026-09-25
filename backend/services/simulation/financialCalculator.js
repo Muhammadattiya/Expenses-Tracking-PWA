@@ -1,6 +1,16 @@
 class FinancialCalculator {
   static calculate(state) {
-    const { accounts, transactions, debts, bills, investments, budgets, receivables } = state;
+    const { 
+      accounts = [], 
+      transactions = [], 
+      debts = [], 
+      debtTransactions = [],
+      installmentTransactions = [],
+      bills = [], 
+      investments = [], 
+      budgets = [], 
+      receivables = [] 
+    } = state;
     
     // 1. Balance & Cash Available
     let currentBalance = 0;
@@ -8,42 +18,76 @@ class FinancialCalculator {
 
     accounts.forEach(acc => {
       const accIdStr = acc._id.toString();
+      const isInvAcc = acc.type === 'investment' || acc.name === 'Investments' || acc.name === 'استثمارات';
       
-      // Calculate current balance based on transactions for this account
-      // For income/expense, 'account' is used. For transfers, 'from_account' and 'to_account' are used.
-      const accTransactions = transactions.filter(t => {
-        if (t.type === 'transfer') {
-          return t.from_account?.toString() === accIdStr || t.to_account?.toString() === accIdStr;
-        }
-        return t.account?.toString() === accIdStr;
-      });
+      let accBalance = Number(acc.balance_adjustment) || 0;
       
-      let accBalance = acc.balance_adjustment || 0;
-      
-      accTransactions.forEach(t => {
-        if (t.type === 'income') accBalance += t.amount;
-        if (t.type === 'expense') accBalance -= t.amount;
-        if (t.type === 'settlement') accBalance += t.amount; // depending on whether settlement acts as income
-        if (t.type === 'transfer') {
-          if (t.from_account?.toString() === accIdStr) accBalance -= t.amount;
-          if (t.to_account?.toString() === accIdStr) accBalance += t.amount;
-        }
-      });
-      
-      if (receivables) {
-        receivables.forEach(r => {
-          if (r.paidFrom?.toString() === accIdStr) accBalance -= r.paidAmount;
-          if (r.receivedTo?.toString() === accIdStr) accBalance += r.receivedAmount;
-          if (r.participants) {
-            r.participants.forEach(p => {
-              if (p.payments) {
-                p.payments.forEach(pay => {
-                  if (pay.account?.toString() === accIdStr) accBalance += pay.amount;
-                });
-              }
-            });
+      if (isInvAcc && state.investmentsValue !== undefined) {
+        accBalance = state.investmentsValue;
+      } else {
+        // Calculate current balance based on transactions for this account
+        // For income/expense, 'account' is used. For transfers, 'from_account' and 'to_account' are used.
+        const accTransactions = transactions.filter(t => {
+          if (t.type === 'transfer') {
+            return t.from_account?.toString() === accIdStr || t.to_account?.toString() === accIdStr;
+          }
+          return t.account?.toString() === accIdStr;
+        });
+        
+        accTransactions.forEach(t => {
+          const amt = Number(t.amount) || 0;
+          if (t.type === 'income') accBalance += amt;
+          if (t.type === 'expense') accBalance -= amt;
+          if (t.type === 'settlement') accBalance += amt;
+          if (t.type === 'transfer') {
+            if (t.from_account?.toString() === accIdStr) accBalance -= amt;
+            if (t.to_account?.toString() === accIdStr) accBalance += amt;
           }
         });
+
+        // 2. Debt Transactions (loans and repayments)
+        if (debtTransactions) {
+          debtTransactions.forEach(dt => {
+            if (dt.account?.toString() === accIdStr) {
+              const dtAmount = Number(dt.amount) || 0;
+              const parentDebt = (debts || []).find(d => d._id?.toString() === (dt.debtId?._id || dt.debtId)?.toString());
+              const debtType = dt.debtType || parentDebt?.type || dt.debtId?.type;
+              if (dt.type === 'loan') {
+                if (debtType === 'i_owe') accBalance += dtAmount;
+                else accBalance -= dtAmount;
+              } else if (dt.type === 'repayment') {
+                if (debtType === 'i_owe') accBalance -= dtAmount;
+                else accBalance += dtAmount;
+              }
+            }
+          });
+        }
+
+        // 3. Installment Transactions
+        if (installmentTransactions) {
+          installmentTransactions.forEach(it => {
+            if (it.account?.toString() === accIdStr) {
+              accBalance -= (Number(it.amount) || 0);
+            }
+          });
+        }
+        
+        // 4. Receivables
+        if (receivables) {
+          receivables.forEach(r => {
+            if (r.paidFrom?.toString() === accIdStr) accBalance -= (Number(r.paidAmount) || 0);
+            if (r.receivedTo?.toString() === accIdStr) accBalance += (Number(r.receivedAmount) || 0);
+            if (r.participants) {
+              r.participants.forEach(p => {
+                if (p.payments) {
+                  p.payments.forEach(pay => {
+                    if (pay.account?.toString() === accIdStr) accBalance += (Number(pay.amount) || 0);
+                  });
+                }
+              });
+            }
+          });
+        }
       }
 
       acc.calculatedBalance = accBalance;
@@ -178,10 +222,10 @@ class FinancialCalculator {
     const cashRemaining = cashAvailable - unpaidBillsTotal;
 
     // 9. Debt-to-Income (DTI) Ratio
-    const monthlyIncome = state.userMonthlyIncome || 10000;
+    const monthlyIncome = state.userMonthlyIncome || 0;
     const dtiRatio = monthlyIncome > 0
       ? Number(((monthlyInstallmentBurden / monthlyIncome) * 100).toFixed(1))
-      : 0;
+      : null;
 
     return {
       currentBalance,

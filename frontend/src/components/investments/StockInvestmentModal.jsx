@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, LineChart, Loader2 } from 'lucide-react';
@@ -25,17 +25,20 @@ export default function StockInvestmentModal({ isOpen, onClose, onSave, initialD
   const [accounts, setAccounts] = useState([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const nameInputRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && !isSubmitting) {
         onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSubmitting) {
+        handleSubmit(e);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, isSubmitting]);
+  }, [isOpen, onClose, isSubmitting, form]);
 
   useEffect(() => {
     getAccounts().then(accs => setAccounts(accs.filter(a => !a.isArchived))).catch(console.error);
@@ -69,6 +72,11 @@ export default function StockInvestmentModal({ isOpen, onClose, onSave, initialD
         });
       }
       setError('');
+
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, initialData]);
 
@@ -169,6 +177,7 @@ export default function StockInvestmentModal({ isOpen, onClose, onSave, initialD
                   </label>
                   <input
                     id="stock-name-input"
+                    ref={nameInputRef}
                     type="text"
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
@@ -304,7 +313,13 @@ export default function StockInvestmentModal({ isOpen, onClose, onSave, initialD
                     onChange={val => setForm({ ...form, from_account: val })}
                     options={[
                       { value: '', label: isRTL ? 'بدون خصم من حساب' : 'Do not deduct' },
-                      ...accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))
+                      ...accounts.map(a => ({
+                        value: a._id,
+                        label: a.name,
+                        icon: a.icon,
+                        color: a.color,
+                        subtitle: a.balance !== undefined ? `${a.balance.toLocaleString()} ${a.currency || 'EGP'}` : undefined
+                      }))
                     ]}
                     placeholder={isRTL ? 'اختر الحساب...' : 'Select account...'}
                   />

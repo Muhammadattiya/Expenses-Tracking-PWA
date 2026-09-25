@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getCategories } from '../../api/categories';
@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../ui/CustomSelect';
 
 export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const nameInputRef = useRef(null);
   
   const [categories, setCategories] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -17,6 +18,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
   const [name, setName] = useState('');
   const [account, setAccount] = useState('');
   const [planCategories, setPlanCategories] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (isOpen) {
@@ -31,8 +33,19 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
         setAccount('');
         setPlanCategories([]);
       }
+      setFieldErrors({});
     }
   }, [isOpen, planToEdit]);
+
+  // Autofocus name on open
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,6 +53,11 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const formEl = document.getElementById('master-budget-form');
+        if (formEl) formEl.requestSubmit();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -85,7 +103,12 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setFieldErrors({ name: t('common.fillRequired') || 'Required' });
+      return;
+    }
+
+    setFieldErrors({});
 
     // Filter out incomplete categories
     const validCategories = planCategories
@@ -149,14 +172,25 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
             <div className="space-y-1.5">
               <label htmlFor="master-budget-name" className="block text-sm font-medium text-white/70">{t('smartBudget.planName')}</label>
               <input 
+                ref={nameInputRef}
                 id="master-budget-name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all placeholder-white/20"
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null }));
+                }}
+                className={`w-full bg-white/5 border rounded-2xl px-4 py-3.5 text-white focus:outline-none transition-all placeholder-white/20 ${
+                  fieldErrors.name
+                    ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
+                    : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70'
+                }`}
                 placeholder={t('smartBudget.planNamePlaceholder')}
                 required
               />
+              {fieldErrors.name && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.name}</p>
+              )}
             </div>
 
             {/* Account Select (Applies to all) */}
@@ -171,7 +205,13 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
                 onChange={setAccount}
                 options={[
                   { value: '', label: t('budgets.accountPlaceholder') },
-                  ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
+                  ...accounts.map(acc => ({
+                    value: acc._id,
+                    label: acc.name,
+                    icon: acc.icon,
+                    color: acc.color,
+                    subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : undefined
+                  }))
                 ]}
                 placeholder={t('budgets.accountPlaceholder')}
                 buttonClassName="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white flex justify-between items-center hover:bg-white/10 transition-colors"

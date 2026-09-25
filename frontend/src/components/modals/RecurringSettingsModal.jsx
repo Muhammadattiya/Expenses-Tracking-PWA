@@ -31,10 +31,14 @@ const RecurringSettingsModal = ({
         e.preventDefault();
         onClose();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, repeatType, interval, executionTime, neverEnds, endDate, maxOccurrences, reminderEnabled, reminderDaysBefore]);
 
   if (!isOpen) return null;
 

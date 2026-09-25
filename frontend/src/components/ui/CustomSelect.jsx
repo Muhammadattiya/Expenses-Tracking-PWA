@@ -4,7 +4,7 @@ import { ChevronDown, Check } from 'lucide-react';
 import { getIconComponent } from '../IconPicker';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassName, 'aria-label': ariaLabel }) => {
+const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassName, 'aria-label': ariaLabel, error }) => {
   const { lang, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -16,7 +16,7 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassN
   const buttonId = useId();
 
   const defaultPlaceholder = placeholder || t('common.select');
-  const selectedIndex = options.findIndex((opt) => opt.value === value);
+  const selectedIndex = options.findIndex((opt) => String(opt.value) === String(value));
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -152,10 +152,12 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassN
         onKeyDown={handleKeyDown}
         className={
           buttonClassName ||
-          "w-full min-h-[44px] bg-[#2A2325]/75 border border-white/10 rounded-[18px] px-3.5 py-3 text-[13px] font-medium text-white flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-[#E8C5A8]/70 focus:border-[#8D6346] shadow-inner transition-all hover:bg-[#342B2E]/80 active:scale-[0.99]"
+          `w-full min-h-[44px] bg-[#2A2325]/75 border ${
+            error ? 'border-[#FF3B30] focus-visible:ring-[#FF3B30]/50' : 'border-white/10 focus-visible:ring-[#E8C5A8]/70 focus:border-[#8D6346]'
+          } rounded-[18px] px-3.5 py-3 text-[13px] font-medium text-white flex items-center justify-between outline-none focus-visible:ring-2 shadow-inner transition-all hover:bg-[#342B2E]/80 active:scale-[0.99]`
         }
       >
-        <div className="flex items-center gap-2.5 truncate">
+        <div className="flex items-center gap-2 truncate">
           {SelectedIcon && (
             <SelectedIcon
               className={`w-4 h-4 shrink-0 ${!selectedOption?.color ? 'text-white/70' : ''}`}
@@ -165,6 +167,11 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassN
           <span className={`truncate ${selectedOption ? 'text-white font-medium' : 'text-white/70'}`}>
             {selectedOption ? selectedOption.label : defaultPlaceholder}
           </span>
+          {selectedOption?.subtitle && (
+            <span className="text-white/45 text-[11px] tabular-nums font-normal shrink-0 ms-1">
+              ({selectedOption.subtitle})
+            </span>
+          )}
         </div>
         <ChevronDown
           className={`w-4 h-4 text-white/50 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180 text-white' : ''}`}
@@ -199,7 +206,7 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassN
             ) : (
               options.map((option, index) => {
                 const OptionIcon = option.icon ? getIconComponent(option.icon) : null;
-                const isSelected = value === option.value;
+                const isSelected = String(value) === String(option.value);
                 const isActive = index === activeIndex;
                 return (
                   <button
@@ -228,7 +235,14 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, buttonClassN
                       )}
                       <span className="truncate text-[13px]">{option.label}</span>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-[#8D6346] shrink-0" aria-hidden="true" />}
+                    <div className="flex items-center gap-2 shrink-0 ms-2">
+                      {option.subtitle && (
+                        <span className={`text-[11px] tabular-nums font-normal ${isSelected ? 'text-[#E8C5A8]/80' : 'text-white/45'}`}>
+                          {option.subtitle}
+                        </span>
+                      )}
+                      {isSelected && <Check className="w-4 h-4 text-[#8D6346] shrink-0" aria-hidden="true" />}
+                    </div>
                   </button>
                 );
               })

@@ -64,11 +64,18 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (candidates.length > 0) {
+          handleConfirmAll();
+        } else if (textInput.trim()) {
+          handleParse();
+        }
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, candidates, textInput]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -420,7 +427,13 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                           <CustomSelect
                             value={cand.accountId}
                             onChange={val => updateCandidate(cand.id, 'accountId', val)}
-                            options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
+                            options={accounts.map(a => ({
+                              value: a._id,
+                              label: a.name,
+                              icon: a.icon,
+                              color: a.color,
+                              subtitle: a.balance !== undefined ? `${a.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                            }))}
                           />
                         </div>
                       </div>

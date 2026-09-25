@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getCategories } from '../../api/categories';
@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../ui/CustomSelect';
 
 export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, defaultPeriod = 'monthly' }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const amountInputRef = useRef(null);
   
   const [categories, setCategories] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -21,6 +22,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
   const [carryOver, setCarryOver] = useState(false);
   const [isRecurring, setIsRecurring] = useState(true);
   
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isRecommending, setIsRecommending] = useState(false);
   const [recommendError, setRecommendError] = useState('');
   const [recommendedData, setRecommendedData] = useState(null);
@@ -45,8 +47,19 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
       }
       setRecommendError('');
       setRecommendedData(null);
+      setFieldErrors({});
     }
   }, [isOpen, budgetToEdit]);
+
+  // Autofocus amount on open
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -54,6 +67,11 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const formEl = document.querySelector('form');
+        if (formEl) formEl.requestSubmit();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -104,8 +122,16 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!category || !amount) return;
+    const errors = {};
+    if (!category) errors.category = t('budgets.selectCategory');
+    if (!amount || Number(amount) <= 0) errors.amount = t('budgets.amountRequired') || t('common.error');
 
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     onSave({
       category,
       amount: Number(amount),
@@ -161,10 +187,17 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
               <span className="block text-sm font-medium text-white/70">{t('budgets.category')}</span>
               <CustomSelect
                 value={category}
-                onChange={setCategory}
+                onChange={(cat) => {
+                  setCategory(cat);
+                  if (fieldErrors.category) setFieldErrors(prev => ({ ...prev, category: null }));
+                }}
+                error={Boolean(fieldErrors.category)}
                 options={categories.map(c => ({ value: c._id, label: c.name, icon: c.icon, color: c.color }))}
                 placeholder={t('budgets.selectCategory')}
               />
+              {fieldErrors.category && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.category}</p>
+              )}
             </div>
 
             {/* Account Select (Optional) */}
@@ -178,7 +211,13 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                 onChange={setAccount}
                 options={[
                   { value: '', label: t('budgets.accountPlaceholder') },
-                  ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
+                  ...accounts.map(acc => ({
+                    value: acc._id,
+                    label: acc.name,
+                    icon: acc.icon,
+                    color: acc.color,
+                    subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : undefined
+                  }))
                 ]}
                 placeholder={t('budgets.accountPlaceholder')}
                 buttonClassName="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white flex justify-between items-center hover:bg-white/10 transition-colors"
@@ -255,11 +294,19 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
               <label htmlFor="budget-amount-input" className="block text-sm font-medium text-white/70">{t('budgets.amount')}</label>
               <div className="relative">
                 <input 
+                  ref={amountInputRef}
                   id="budget-amount-input"
                   type="number"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white font-bold text-2xl focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all placeholder-white/20"
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if (fieldErrors.amount) setFieldErrors(prev => ({ ...prev, amount: null }));
+                  }}
+                  className={`w-full bg-white/5 border rounded-2xl px-4 py-4 text-white font-bold text-2xl focus:outline-none transition-all placeholder-white/20 ${
+                    fieldErrors.amount 
+                      ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70' 
+                      : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70'
+                  }`}
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -269,6 +316,9 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   <span className="text-white/40">{t('nav.currency')}</span>
                 </div>
               </div>
+              {fieldErrors.amount && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.amount}</p>
+              )}
             </div>
 
             {/* Recommendation UI */}

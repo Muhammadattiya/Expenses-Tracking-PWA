@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Building2, Calendar, CreditCard, DollarSign, FileText, Zap, ShieldCheck, Trash2 } from 'lucide-react';
@@ -26,6 +26,7 @@ export default function InstallmentModal({
   accounts = []
 }) {
   const { t, lang } = useLanguage();
+  const titleInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -44,16 +45,32 @@ export default function InstallmentModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
-  // Keyboard Escape listener
+  // Keyboard Escape and Ctrl+Enter listeners
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !isSubmitting) onClose();
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSubmitting) {
+        e.preventDefault();
+        const formEl = document.getElementById('installment-form');
+        if (formEl) formEl.requestSubmit();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isSubmitting, onClose]);
+
+  // Autofocus title on open
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Pre-fill form when editing or resetting
   useEffect(() => {
@@ -104,22 +121,26 @@ export default function InstallmentModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errors = {};
     if (!formData.title.trim()) {
-      setError(t('installments.titleLabel'));
-      return;
+      errors.title = t('installments.titleLabel');
     }
     if (!formData.totalAmount || Number(formData.totalAmount) <= 0) {
-      setError(t('installments.totalAmount'));
-      return;
+      errors.totalAmount = t('installments.totalAmount');
     }
     if (!formData.monthlyAmount || Number(formData.monthlyAmount) <= 0) {
-      setError(t('installments.monthlyAmount'));
-      return;
+      errors.monthlyAmount = t('installments.monthlyAmount');
     }
     if (!formData.linkedAccountId) {
-      setError(t('installments.linkedAccount'));
+      errors.linkedAccountId = t('installments.linkedAccount');
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(Object.values(errors)[0]);
       return;
     }
+    setFieldErrors({});
 
     try {
       setIsSubmitting(true);
@@ -192,7 +213,7 @@ export default function InstallmentModal({
         </div>
 
         {/* Form Container */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+        <form id="installment-form" noValidate onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           {/* Scrollable Fields Body */}
           <div className="overflow-y-auto px-6 py-4 space-y-4 max-h-[calc(90vh-170px)]">
             {error && (
@@ -207,16 +228,23 @@ export default function InstallmentModal({
                 {t('installments.titleLabel')} *
               </label>
               <input
+                ref={titleInputRef}
                 id="inst-title"
                 type="text"
                 name="title"
                 required
                 aria-required="true"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  if (fieldErrors.title) setFieldErrors(prev => ({ ...prev, title: null }));
+                }}
                 placeholder={t('installments.titlePlaceholder')}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#8D6346] transition-colors"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-white/5 border ${fieldErrors.title ? 'border-[#FF3B30]' : 'border-white/10'} text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#8D6346] transition-colors`}
               />
+              {fieldErrors.title && (
+                <p className="text-xs text-[#FF3B30] mt-1">{fieldErrors.title}</p>
+              )}
             </div>
 
             {/* Provider Selection */}
@@ -275,11 +303,15 @@ export default function InstallmentModal({
                   onChange={(e) => {
                     const val = e.target.value;
                     setFormData({ ...formData, totalAmount: val });
+                    if (fieldErrors.totalAmount) setFieldErrors(prev => ({ ...prev, totalAmount: null }));
                     handleAutoCalcMonthly(val, formData.downPayment, formData.totalMonths);
                   }}
                   placeholder="0"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm tabular-nums focus:outline-none focus:border-[#8D6346]"
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-white/5 border ${fieldErrors.totalAmount ? 'border-[#FF3B30]' : 'border-white/10'} text-white text-sm tabular-nums focus:outline-none focus:border-[#8D6346]`}
                 />
+                {fieldErrors.totalAmount && (
+                  <p className="text-xs text-[#FF3B30] mt-1">{fieldErrors.totalAmount}</p>
+                )}
               </div>
 
               <div>
@@ -339,10 +371,16 @@ export default function InstallmentModal({
                   required
                   aria-required="true"
                   value={formData.monthlyAmount}
-                  onChange={(e) => setFormData({ ...formData, monthlyAmount: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, monthlyAmount: e.target.value });
+                    if (fieldErrors.monthlyAmount) setFieldErrors(prev => ({ ...prev, monthlyAmount: null }));
+                  }}
                   placeholder="0"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#8D6346]/10 border border-[#8D6346]/40 text-[#E8C5A8] font-bold text-sm tabular-nums focus:outline-none focus:border-[#8D6346]"
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#8D6346]/10 border ${fieldErrors.monthlyAmount ? 'border-[#FF3B30]' : 'border-[#8D6346]/40'} text-[#E8C5A8] font-bold text-sm tabular-nums focus:outline-none focus:border-[#8D6346]`}
                 />
+                {fieldErrors.monthlyAmount && (
+                  <p className="text-xs text-[#FF3B30] mt-1">{fieldErrors.monthlyAmount}</p>
+                )}
               </div>
             </div>
 
@@ -376,16 +414,23 @@ export default function InstallmentModal({
                   required
                   aria-required="true"
                   value={formData.linkedAccountId}
-                  onChange={(e) => setFormData({ ...formData, linkedAccountId: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#1A161A] border border-white/10 text-white text-sm focus:outline-none focus:border-[#8D6346]"
+                  onChange={(e) => {
+                    setFormData({ ...formData, linkedAccountId: e.target.value });
+                    if (fieldErrors.linkedAccountId) setFieldErrors(prev => ({ ...prev, linkedAccountId: null }));
+                  }}
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#1A161A] border ${fieldErrors.linkedAccountId ? 'border-[#FF3B30]' : 'border-white/10'} text-white text-sm focus:outline-none focus:border-[#8D6346]`}
                 >
                   <option value="" disabled>{t('installments.selectAccountPlaceholder')}</option>
                   {accounts.map(acc => (
                     <option key={acc._id} value={acc._id} className="bg-[#1A161A] text-white">
                       {acc.name ? acc.name.charAt(0).toUpperCase() + acc.name.slice(1) : acc._id}
+                      {acc.balance !== undefined ? ` (${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'})` : ''}
                     </option>
                   ))}
                 </select>
+                {fieldErrors.linkedAccountId && (
+                  <p className="text-xs text-[#FF3B30] mt-1">{fieldErrors.linkedAccountId}</p>
+                )}
               </div>
             </div>
 

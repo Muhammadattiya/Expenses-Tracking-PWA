@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, X, Trash2, CheckCircle2, Calendar, Calculator } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateTransaction } from "../../api/transactions";
@@ -29,6 +29,9 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [errors, setErrors] = useState({});
+  const amountInputRef = useRef(null);
+  const formRef = useRef(null);
   const { showToast } = useNotification();
 
   useEffect(() => {
@@ -43,6 +46,12 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
       setCategory(transaction.category?._id || (typeof transaction.category === 'string' ? transaction.category : ""));
       setFromAccount(transaction.from_account?._id || (typeof transaction.from_account === 'string' ? transaction.from_account : ""));
       setToAccount(transaction.to_account?._id || (typeof transaction.to_account === 'string' ? transaction.to_account : ""));
+      setErrors({});
+
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [open, transaction]);
 
@@ -61,6 +70,9 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -72,6 +84,14 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isUpdating) return;
+    const newErrors = {};
+    if (!amount || Number(amount) <= 0) newErrors.amount = t('common.amountRequired') || t('common.required');
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setIsUpdating(true);
     try {
       const payload = {
@@ -154,7 +174,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
+          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
             
             {/* Type Switch Capsule with Liquid Glass */}
             <div className="flex liquidglass p-1 rounded-full border border-white/15 shadow-inner">
@@ -213,18 +233,29 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
                 <div className="relative">
                   <input
                     id="edit-tx-amount"
+                    ref={amountInputRef}
                     type="number"
                     inputMode="decimal"
                     required
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none focus:border-[#8D6346] shadow-inner transition-all"
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      if (errors.amount) setErrors(prev => ({ ...prev, amount: undefined }));
+                    }}
+                    className={`w-full bg-black/30 border ${
+                      errors.amount ? 'border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]' : 'border-white/10 focus:border-[#8D6346]'
+                    } rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none shadow-inner transition-all`}
                     style={{ caretColor: type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF' }}
                   />
                   <span className="absolute end-2.5 top-2 text-[11px] text-white/50 font-semibold pointer-events-none">
                     {t('nav.currency')}
                   </span>
                 </div>
+                {errors.amount && (
+                  <span className="text-[#FF3B30] text-[10px] font-medium mt-0.5 block px-1 animate-fade-in">
+                    {errors.amount}
+                  </span>
+                )}
               </div>
 
               <div>
@@ -268,7 +299,13 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
                   <CustomSelect
                     value={fromAccount}
                     onChange={setFromAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>
@@ -279,7 +316,13 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
                   <CustomSelect
                     value={toAccount}
                     onChange={setToAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>
@@ -293,7 +336,13 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
                   <CustomSelect
                     value={account}
                     onChange={setAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>

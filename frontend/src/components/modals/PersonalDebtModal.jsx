@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, User } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
 import Button from '../ui/Button';
 
-export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, initialData }) {
-  const { t } = useLanguage();
+export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts = [], initialData }) {
+  const { t, lang } = useLanguage();
+  const isRTL = lang === 'ar';
+  const personNameInputRef = useRef(null);
   
   const defaultForm = { personName: '', type: 'i_owe', amount: '', account: accounts[0]?._id || '' };
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,14 +29,30 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
         setForm(defaultForm);
       }
       setError('');
+      setFieldErrors({});
     }
   }, [isOpen, accounts, initialData]);
 
-  // Escape key listener for accessible modal dismissal
+  // Autofocus person name input on mount
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        personNameInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Escape key & Ctrl+Enter accelerator listener
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && !isSubmitting) {
         onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSubmitting) {
+        e.preventDefault();
+        const formEl = document.getElementById('personal-debt-form');
+        if (formEl) formEl.requestSubmit();
       }
     };
     if (isOpen) {
@@ -47,19 +66,25 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
   const submit = async (event) => {
     event.preventDefault();
     setError('');
+    const errors = {};
 
     const trimmedName = form.personName.trim();
     if (!trimmedName) {
-      setError(t('debts.validationPersonName'));
-      return;
+      errors.personName = t('debts.validationPersonName');
     }
 
     const parsedAmount = Number(form.amount);
     if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError(t('debts.validationAmount'));
+      errors.amount = t('debts.validationAmount');
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(errors.personName || errors.amount);
       return;
     }
 
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       await onSave({
@@ -157,15 +182,26 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
                 {t('debts.personName')}
               </label>
               <input 
+                ref={personNameInputRef}
                 id="pd-person-name"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)] transition-all disabled:opacity-50" 
+                className={`w-full bg-white/5 border rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none transition-all disabled:opacity-50 ${
+                  fieldErrors.personName
+                    ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
+                    : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)]'
+                }`}
                 required 
                 disabled={isSubmitting}
                 maxLength={80}
                 placeholder={t('debts.personName')} 
                 value={form.personName} 
-                onChange={(e) => setForm({ ...form, personName: e.target.value })} 
+                onChange={(e) => {
+                  setForm({ ...form, personName: e.target.value });
+                  if (fieldErrors.personName) setFieldErrors(prev => ({ ...prev, personName: null }));
+                }} 
               />
+              {fieldErrors.personName && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.personName}</p>
+              )}
             </div>
             
             <div className="space-y-3 pt-3 border-t border-white/10">
@@ -173,25 +209,45 @@ export default function PersonalDebtModal({ isOpen, onClose, onSave, accounts, i
                 {t('debts.amount')}
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <input 
-                  id="pd-amount"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)] transition-all disabled:opacity-50" 
-                  required 
-                  type="number" 
-                  min="0.01" 
-                  step="any"
-                  disabled={!!initialData || isSubmitting}
-                  placeholder={t('debts.amount')} 
-                  value={form.amount} 
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })} 
-                />
-                <CustomSelect 
-                  value={form.account} 
-                  onChange={(v) => setForm({ ...form, account: v })} 
-                  options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
-                  placeholder={t('debts.account')} 
-                  disabled={!!initialData || isSubmitting}
-                />
+                <div>
+                  <input 
+                    id="pd-amount"
+                    className={`w-full bg-white/5 border rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none transition-all disabled:opacity-50 ${
+                      fieldErrors.amount
+                        ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
+                        : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)]'
+                    }`}
+                    required 
+                    type="number" 
+                    min="0.01" 
+                    step="any"
+                    disabled={!!initialData || isSubmitting}
+                    placeholder={t('debts.amount')} 
+                    value={form.amount} 
+                    onChange={(e) => {
+                      setForm({ ...form, amount: e.target.value });
+                      if (fieldErrors.amount) setFieldErrors(prev => ({ ...prev, amount: null }));
+                    }} 
+                  />
+                  {fieldErrors.amount && (
+                    <p className="text-xs text-[#FF3B30] mt-1 px-1">{fieldErrors.amount}</p>
+                  )}
+                </div>
+                <div>
+                  <CustomSelect 
+                    value={form.account} 
+                    onChange={(v) => setForm({ ...form, account: v })} 
+                    options={accounts.filter(a => !a.isArchived).map(a => ({
+                      value: a._id,
+                      label: a.name,
+                      icon: a.icon,
+                      color: a.color,
+                      subtitle: a.balance !== undefined ? `${a.balance.toLocaleString(isRTL ? 'ar-EG' : 'en-US')} ${a.currency || 'EGP'}` : undefined
+                    }))} 
+                    placeholder={t('debts.account')} 
+                    disabled={!!initialData || isSubmitting}
+                  />
+                </div>
               </div>
               {initialData && (
                 <p className="text-xs text-white/45 px-1 leading-relaxed">

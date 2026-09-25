@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Users, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
 
-export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData, accounts, categories }) {
+export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData, accounts = [], categories = [] }) {
   const { t, lang } = useLanguage();
+  const isRTL = lang === 'ar';
+  const titleInputRef = useRef(null);
   const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP' }).format(value || 0);
   
   const defaultForm = { 
@@ -21,6 +23,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
 
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -46,14 +49,30 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
         });
       }
       setError('');
+      setFieldErrors({});
     }
   }, [isOpen, initialData, accounts, categories]);
 
-  // Escape key listener for accessible modal dismissal
+  // Autofocus title input on mount
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Escape key & Ctrl+Enter accelerator listener
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && !isSubmitting) {
         onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSubmitting) {
+        e.preventDefault();
+        const formEl = document.getElementById('group-expense-form');
+        if (formEl) formEl.requestSubmit();
       }
     };
     if (isOpen) {
@@ -72,16 +91,21 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
   const submit = async (event) => {
     event.preventDefault();
     setError('');
+    const errors = {};
 
     const trimmedTitle = form.title.trim();
     if (!trimmedTitle) {
-      setError(t('receivables.validationTitleRequired'));
-      return;
+      errors.title = t('receivables.validationTitleRequired');
     }
 
     const paidAmount = Number(form.paidAmount);
     if (!paidAmount || isNaN(paidAmount) || paidAmount <= 0) {
-      setError(t('receivables.validationPaidAmount'));
+      errors.paidAmount = t('receivables.validationPaidAmount');
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(errors.title || errors.paidAmount);
       return;
     }
 
@@ -193,15 +217,26 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 {t('receivables.outingName')}
               </label>
               <input 
+                ref={titleInputRef}
                 id="ge-title"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)] transition-all disabled:opacity-50" 
+                className={`w-full bg-white/5 border rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none transition-all disabled:opacity-50 ${
+                  fieldErrors.title
+                    ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
+                    : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)]'
+                }`}
                 required 
                 disabled={isSubmitting}
                 maxLength={120}
                 placeholder={t('receivables.outingName')} 
                 value={form.title} 
-                onChange={(e) => setForm({ ...form, title: e.target.value })} 
+                onChange={(e) => {
+                  setForm({ ...form, title: e.target.value });
+                  if (fieldErrors.title) setFieldErrors(prev => ({ ...prev, title: null }));
+                }} 
               />
+              {fieldErrors.title && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.title}</p>
+              )}
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/10">
@@ -209,25 +244,45 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 {t('receivables.totalPaid')}
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <input 
-                  id="ge-paid-amount"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)] transition-all disabled:opacity-50" 
-                  required 
-                  type="number" 
-                  min="0.01" 
-                  step="any"
-                  disabled={isSubmitting}
-                  placeholder={t('receivables.paidAmount')} 
-                  value={form.paidAmount} 
-                  onChange={(e) => setForm({ ...form, paidAmount: e.target.value })} 
-                />
-                <CustomSelect 
-                  value={form.paidFrom} 
-                  onChange={(v) => setForm({ ...form, paidFrom: v })} 
-                  options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
-                  placeholder={t('receivables.selectAccount')} 
-                  disabled={isSubmitting}
-                />
+                <div>
+                  <input 
+                    id="ge-paid-amount"
+                    className={`w-full bg-white/5 border rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none transition-all disabled:opacity-50 ${
+                      fieldErrors.paidAmount
+                        ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
+                        : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)]'
+                    }`}
+                    required 
+                    type="number" 
+                    min="0.01" 
+                    step="any"
+                    disabled={isSubmitting}
+                    placeholder={t('receivables.paidAmount')} 
+                    value={form.paidAmount} 
+                    onChange={(e) => {
+                      setForm({ ...form, paidAmount: e.target.value });
+                      if (fieldErrors.paidAmount) setFieldErrors(prev => ({ ...prev, paidAmount: null }));
+                    }} 
+                  />
+                  {fieldErrors.paidAmount && (
+                    <p className="text-xs text-[#FF3B30] mt-1 px-1">{fieldErrors.paidAmount}</p>
+                  )}
+                </div>
+                <div>
+                  <CustomSelect 
+                    value={form.paidFrom} 
+                    onChange={(v) => setForm({ ...form, paidFrom: v })} 
+                    options={accounts.filter(a => !a.isArchived).map(a => ({
+                      value: a._id,
+                      label: a.name,
+                      icon: a.icon,
+                      color: a.color,
+                      subtitle: a.balance !== undefined ? `${a.balance.toLocaleString(isRTL ? 'ar-EG' : 'en-US')} ${a.currency || 'EGP'}` : undefined
+                    }))} 
+                    placeholder={t('receivables.selectAccount')} 
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
             </div>
 
@@ -251,7 +306,13 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 <CustomSelect 
                   value={form.receivedTo} 
                   onChange={(v) => setForm({ ...form, receivedTo: v })} 
-                  options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
+                  options={accounts.filter(a => !a.isArchived).map(a => ({
+                    value: a._id,
+                    label: a.name,
+                    icon: a.icon,
+                    color: a.color,
+                    subtitle: a.balance !== undefined ? `${a.balance.toLocaleString(isRTL ? 'ar-EG' : 'en-US')} ${a.currency || 'EGP'}` : undefined
+                  }))} 
                   placeholder={t('receivables.receivingAccount')} 
                   disabled={isSubmitting}
                 />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -64,6 +64,7 @@ export default function GoalModal({
   const [color, setColor] = useState('#8D6346');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+  const titleInputRef = useRef(null);
 
   useEffect(() => {
     if (initialGoal) {
@@ -110,6 +111,11 @@ export default function GoalModal({
       setNotes('');
     }
     setError('');
+
+    const timer = setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [initialGoal, open, accounts, accountBalances]);
 
   useEffect(() => {
@@ -118,11 +124,14 @@ export default function GoalModal({
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmit(e);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, title, targetAmount, targetDate, category, linkedAccountId, allocationType, priority, color, notes]);
 
   if (!open) return null;
 
@@ -245,6 +254,7 @@ export default function GoalModal({
               </label>
               <input
                 id="goal-title-input"
+                ref={titleInputRef}
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}

@@ -75,11 +75,12 @@ exports.applySimulation = async (req, res, next) => {
               const defCat = await Category.findOne({ user: req.user.id, type: 'expense' }).session(session);
               catId = defCat?._id;
             }
+            const targetAccId = p.linkedAccountId || p.accountId;
             const [downTx] = await Transaction.create([{
               user: req.user.id,
               type: 'expense',
               amount: downPayment,
-              account: p.linkedAccountId,
+              account: targetAccId,
               category: catId,
               date: p.startDate ? new Date(p.startDate) : new Date(),
               notes: `[مقدم قسط] ${p.title || 'خطة تقسيط'}`
@@ -87,6 +88,7 @@ exports.applySimulation = async (req, res, next) => {
             createdRecords.transactions.push(downTx._id);
           }
 
+          const targetAccId = p.linkedAccountId || p.accountId;
           const [inst] = await Installment.create([{
             user: req.user.id,
             title: p.title || 'خطة تقسيط مجدولة',
@@ -97,7 +99,7 @@ exports.applySimulation = async (req, res, next) => {
             totalMonths,
             paidMonths: 0,
             dueDayOfMonth,
-            linkedAccountId: p.linkedAccountId,
+            linkedAccountId: targetAccId,
             nextDueDate: calculateNextDueDate(dueDayOfMonth),
             status: 'active',
             autoPay: p.autoPay || false,

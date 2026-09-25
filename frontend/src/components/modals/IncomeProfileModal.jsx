@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -13,6 +13,7 @@ const IncomeProfileModal = ({
   categories
 }) => {
   const { t, lang } = useLanguage();
+  const nameInputRef = useRef(null);
   const [profileData, setProfileData] = useState({
     name: '',
     amount: '',
@@ -23,6 +24,7 @@ const IncomeProfileModal = ({
     category: '',
     isActive: true
   });
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (open) {
@@ -40,12 +42,28 @@ const IncomeProfileModal = ({
           isActive: true
         });
       }
+      setFieldErrors({});
     }
   }, [open, initialData, accounts, categories]);
+
+  // Autofocus name input on open
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const formEl = document.querySelector('form');
+        if (formEl) formEl.requestSubmit();
+      }
     };
     if (open) {
       window.addEventListener('keydown', handleKeyDown);
@@ -58,9 +76,16 @@ const IncomeProfileModal = ({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (!profileData.name.trim() || Number(profileData.amount) <= 0) {
+    const errors = {};
+    if (!profileData.name.trim()) errors.name = t('common.fillRequired') || 'Required';
+    if (!profileData.amount || Number(profileData.amount) <= 0) errors.amount = t('common.fillRequired') || 'Required';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+
+    setFieldErrors({});
     onSubmit(profileData);
   };
 
@@ -93,13 +118,22 @@ const IncomeProfileModal = ({
             <div>
               <label htmlFor="income-profile-name" className="text-[13px] text-white/60 mb-1 block ms-1">{t('incomeProfiles.profileName')}</label>
               <input
+                ref={nameInputRef}
                 id="income-profile-name"
                 type="text"
                 required
                 value={profileData.name}
-                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+                onChange={(e) => {
+                  setProfileData({ ...profileData, name: e.target.value });
+                  if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null }));
+                }}
+                className={`w-full bg-black/20 backdrop-blur-[10px] border shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none ${
+                  fieldErrors.name ? 'border-[#FF3B30] focus:border-[#FF3B30]' : 'border-white/5 focus:border-[#8D6346]/50'
+                }`}
               />
+              {fieldErrors.name && (
+                <p className="text-xs text-[#FF3B30] mt-1 ms-2">{fieldErrors.name}</p>
+              )}
             </div>
 
             <div>
@@ -112,11 +146,19 @@ const IncomeProfileModal = ({
                   min="0.01"
                   step="0.01"
                   value={profileData.amount}
-                  onChange={(e) => setProfileData({ ...profileData, amount: e.target.value })}
-                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+                  onChange={(e) => {
+                    setProfileData({ ...profileData, amount: e.target.value });
+                    if (fieldErrors.amount) setFieldErrors(prev => ({ ...prev, amount: null }));
+                  }}
+                  className={`w-full bg-black/20 backdrop-blur-[10px] border shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none ${
+                    fieldErrors.amount ? 'border-[#FF3B30] focus:border-[#FF3B30]' : 'border-white/5 focus:border-[#8D6346]/50'
+                  }`}
                 />
                 <span className="absolute top-3.5 end-4 text-white/50 font-medium pointer-events-none">{t('nav.currency')}</span>
               </div>
+              {fieldErrors.amount && (
+                <p className="text-xs text-[#FF3B30] mt-1 ms-2">{fieldErrors.amount}</p>
+              )}
             </div>
 
             <div>
@@ -169,7 +211,13 @@ const IncomeProfileModal = ({
                 value={typeof profileData.account === 'object' ? profileData.account?._id : profileData.account}
                 onChange={(v) => setProfileData({ ...profileData, account: v })}
                 placeholder={t('addTransaction.accountPlaceholder')}
-                options={accounts?.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color })) || []}
+                options={accounts?.map(acc => ({
+                  value: acc._id,
+                  label: acc.name,
+                  icon: acc.icon,
+                  color: acc.color,
+                  subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : undefined
+                })) || []}
               />
             </div>
 

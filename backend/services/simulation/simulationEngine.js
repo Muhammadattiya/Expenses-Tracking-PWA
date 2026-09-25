@@ -52,7 +52,7 @@ class SimulationEngine {
       installmentObligations: afterMetrics.totalInstallmentObligations - beforeMetrics.totalInstallmentObligations,
       emergencyReserve: afterMetrics.emergencyReserve - beforeMetrics.emergencyReserve,
       emergencyCoverage: Number((afterMetrics.emergencyCoverageMonths - beforeMetrics.emergencyCoverageMonths).toFixed(1)),
-      dtiRatio: Number((afterMetrics.dtiRatio - beforeMetrics.dtiRatio).toFixed(1)),
+      dtiRatio: (afterMetrics.dtiRatio !== null && beforeMetrics.dtiRatio !== null) ? Number((afterMetrics.dtiRatio - beforeMetrics.dtiRatio).toFixed(1)) : null,
       essentialBurn: afterMetrics.essentialMonthlyBurn - beforeMetrics.essentialMonthlyBurn,
       netWorth: afterMetrics.netWorth - beforeMetrics.netWorth,
       investments: afterMetrics.totalInvestments - beforeMetrics.totalInvestments,

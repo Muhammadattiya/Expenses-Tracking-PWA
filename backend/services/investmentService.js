@@ -98,6 +98,7 @@ const create = async (userId, input) => {
         await invAccount.save();
       }
 
+      const transactionTitle = input.transferTitle || input.title || `Investment: ${safeData.name}`;
       await transactionService.createTransaction(userId, {
         type: 'transfer',
         amount: totalAmount,
@@ -112,9 +113,22 @@ const create = async (userId, input) => {
 
   return investment;
 };
-const remove = async (userId, id) => {
-  const investment = await Investment.findOneAndDelete({ _id: id, user: userId });
+const remove = async (userId, id, options = {}) => {
+  const investment = await Investment.findOne({ _id: id, user: userId });
   if (!investment) throw new AppError('Investment not found.', 404);
+
+  const Transaction = require('../models/Transaction');
+  const linkedTxs = await Transaction.find({ investment: id, user: userId });
+
+  if (options.revertTransaction) {
+    for (const tx of linkedTxs) {
+      await transactionService.deleteTransaction(userId, tx._id);
+    }
+  } else if (linkedTxs.length > 0) {
+    await Transaction.updateMany({ investment: id, user: userId }, { $unset: { investment: 1 } });
+  }
+
+  await Investment.deleteOne({ _id: id, user: userId });
 };
 const update = async (userId, id, input) => {
   const safeData = {};

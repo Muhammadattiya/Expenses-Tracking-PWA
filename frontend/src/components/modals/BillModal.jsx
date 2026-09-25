@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, CheckCircle2, Calendar, Loader2 } from 'lucide-react';
@@ -27,10 +27,14 @@ export default function BillModal({
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderDaysBefore, setReminderDaysBefore] = useState(1);
   const [notes, setNotes] = useState('');
+  const [errors, setErrors] = useState({});
 
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const nameInputRef = useRef(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -55,6 +59,13 @@ export default function BillModal({
         setReminderDaysBefore(1);
         setNotes('');
       }
+      setErrors({});
+
+      // Autofocus primary field on mount
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, bill, accounts, categories]);
 
@@ -64,6 +75,9 @@ export default function BillModal({
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -74,7 +88,14 @@ export default function BillModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !expectedAmount) return;
+    const newErrors = {};
+    if (!name.trim()) newErrors.name = t('common.nameRequired') || t('common.required');
+    if (!expectedAmount || Number(expectedAmount) <= 0) newErrors.expectedAmount = t('common.amountRequired') || t('common.required');
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -169,7 +190,7 @@ export default function BillModal({
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
+          <form ref={formRef} noValidate onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
             {/* Row 1: Bill Name & Expected Amount (2-Columns) */}
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -178,13 +199,24 @@ export default function BillModal({
                 </label>
                 <input
                   id="bill-name-input"
+                  ref={nameInputRef}
                   type="text"
                   required
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
+                  }}
                   placeholder={t('bills.name')}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 text-[13px] font-medium text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] shadow-inner transition-all"
+                  className={`w-full bg-black/30 border ${
+                    errors.name ? 'border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]' : 'border-white/10 focus:border-[#8D6346]'
+                  } rounded-xl py-2 px-3 text-[13px] font-medium text-white placeholder-white/35 focus:outline-none shadow-inner transition-all`}
                 />
+                {errors.name && (
+                  <span className="text-[#FF3B30] text-[10px] font-medium mt-0.5 block px-1 animate-fade-in">
+                    {errors.name}
+                  </span>
+                )}
               </div>
 
               <div>
@@ -199,14 +231,24 @@ export default function BillModal({
                     required
                     min="0"
                     value={expectedAmount}
-                    onChange={(e) => setExpectedAmount(e.target.value)}
+                    onChange={(e) => {
+                      setExpectedAmount(e.target.value);
+                      if (errors.expectedAmount) setErrors(prev => ({ ...prev, expectedAmount: undefined }));
+                    }}
                     placeholder="0"
-                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none focus:border-[#8D6346] shadow-inner transition-all"
+                    className={`w-full bg-black/30 border ${
+                      errors.expectedAmount ? 'border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]' : 'border-white/10 focus:border-[#8D6346]'
+                    } rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none shadow-inner transition-all`}
                   />
                   <span className="absolute end-2.5 top-2 text-[11px] text-white/50 font-semibold pointer-events-none">
                     {t('nav.currency')}
                   </span>
                 </div>
+                {errors.expectedAmount && (
+                  <span className="text-[#FF3B30] text-[10px] font-medium mt-0.5 block px-1 animate-fade-in">
+                    {errors.expectedAmount}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -261,7 +303,13 @@ export default function BillModal({
                 <CustomSelect
                   value={account}
                   onChange={setAccount}
-                  options={accounts.filter((a) => !a.isArchived).map((a) => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
+                  options={accounts.filter((a) => !a.isArchived).map((a) => ({
+                    value: a._id,
+                    label: a.name,
+                    icon: a.icon,
+                    color: a.color,
+                    subtitle: a.balance !== undefined ? `${a.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                  }))}
                   placeholder={t('addTransaction.account')}
                 />
               </div>

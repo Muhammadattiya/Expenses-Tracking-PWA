@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, ArrowRightLeft, Loader2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -13,6 +13,7 @@ export default function GoalContributeModal({
   isSubmitting = false
 }) {
   const { t, lang } = useLanguage();
+  const amountInputRef = useRef(null);
 
   const [amount, setAmount] = useState('');
   const [fromAccountId, setFromAccountId] = useState('');
@@ -32,12 +33,27 @@ export default function GoalContributeModal({
     }
   }, [goal, open, accounts]);
 
+  // Autofocus amount input on open
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const formEl = document.querySelector('form');
+        if (formEl) formEl.requestSubmit();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -119,6 +135,7 @@ export default function GoalContributeModal({
               {t('savingsGoals.depositAmount')} *
             </label>
             <input
+              ref={amountInputRef}
               id="contribute-amount-input"
               type="number"
               min="1"
@@ -160,7 +177,7 @@ export default function GoalContributeModal({
               <option value="">{t('savingsGoals.selectSourceAccount')}</option>
               {accounts.map((acc) => (
                 <option key={acc._id} value={acc._id}>
-                  {acc.name} ({acc.type})
+                  {acc.name} ({acc.type}) {acc.balance !== undefined ? `— ${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : ''}
                 </option>
               ))}
             </select>

@@ -6,13 +6,15 @@ module.exports = function installmentScenario(state, payload) {
   const monthlyAmount = Number(payload.monthlyAmount) || Math.round((totalAmount - downPayment) / Math.max(1, totalMonths));
   const dueDayOfMonth = Number(payload.dueDayOfMonth) || new Date().getDate();
 
+  const targetAccountId = payload.linkedAccountId || payload.accountId;
+
   // 1. If there's an upfront down payment, create a simulated expense transaction
   if (downPayment > 0) {
     state.transactions.push({
       _id: `sim_tx_down_${Date.now()}`,
       type: 'expense',
       amount: downPayment,
-      account: payload.linkedAccountId,
+      account: targetAccountId,
       date: payload.startDate || new Date().toISOString(),
       notes: `[Simulated Down Payment] ${payload.title || 'Installment'}`,
       isSimulation: true
@@ -34,7 +36,7 @@ module.exports = function installmentScenario(state, payload) {
     totalMonths,
     paidMonths: 0,
     dueDayOfMonth,
-    linkedAccountId: payload.linkedAccountId,
+    linkedAccountId: targetAccountId,
     status: 'active',
     isSimulation: true
   });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, X, CheckCircle2 } from "lucide-react";
 import { updateRecurringTransaction } from "../../api/recurringTransactions";
 import { getAccounts } from "../../api/accounts";
@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 
 const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open, onClose, onSuccess, accounts: propAccounts = [], categories: propCategories = [] }) => {
   const { t, lang } = useLanguage();
+  const amountInputRef = useRef(null);
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [account, setAccount] = useState("");
@@ -30,6 +31,7 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
   const [accounts, setAccounts] = useState(propAccounts);
   const [categories, setCategories] = useState(propCategories);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
   const { showToast } = useNotification();
 
   useEffect(() => {
@@ -53,8 +55,19 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
       setExecutionTime(transaction.executionTime || "00:00");
       setReminderEnabled(transaction.reminderEnabled || false);
       setReminderDaysBefore(transaction.reminderDaysBefore || 1);
+      setFieldErrors({});
     }
   }, [open, transaction]);
+
+  // Autofocus amount input on open
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -73,12 +86,17 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isUpdating) {
+        e.preventDefault();
+        const formEl = document.querySelector('form');
+        if (formEl) formEl.requestSubmit();
+      }
     };
     if (open) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, isUpdating, onClose]);
 
   if (!open || !transaction) return null;
 
@@ -156,17 +174,26 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
               <label htmlFor="edit-rec-amount" className="text-[13px] text-white/60 mb-1 block ms-1">{t('modals.amountLabel')}</label>
               <div className="relative">
                 <input
+                  ref={amountInputRef}
                   id="edit-rec-amount"
                   type="number"
                   required
                   min="0.01"
                   step="0.01"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/50"
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if (fieldErrors.amount) setFieldErrors(prev => ({ ...prev, amount: null }));
+                  }}
+                  className={`w-full bg-black/20 backdrop-blur-[10px] border shadow-inner rounded-[30px] px-4 py-3 text-base text-white placeholder-white/30 focus:outline-none ${
+                    fieldErrors.amount ? 'border-[#FF3B30] focus:border-[#FF3B30]' : 'border-white/5 focus:border-[#8D6346]/50'
+                  }`}
                 />
                 <span className="absolute top-3.5 end-4 text-white/50 font-medium pointer-events-none">{t('nav.currency')}</span>
               </div>
+              {fieldErrors.amount && (
+                <p className="text-xs text-[#FF3B30] mt-1 ms-2">{fieldErrors.amount}</p>
+              )}
             </div>
 
             <div>
@@ -188,7 +215,13 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
                     buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                     value={fromAccount}
                     onChange={setFromAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>
@@ -198,7 +231,13 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
                     buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                     value={toAccount}
                     onChange={setToAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>
@@ -211,7 +250,13 @@ const EditRecurringTransactionModal = ({ recurringTx: transaction, isOpen: open,
                     buttonClassName="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-[30px] px-4 py-3 text-[13px] text-white/90 flex justify-between items-center"
                     value={account}
                     onChange={setAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>

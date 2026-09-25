@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Coins, Loader2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { getAccounts } from '../../api/accounts';
 export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialData = null, liveGoldRates = null }) {
   const { t, lang } = useLanguage();
   const isRTL = lang === 'ar';
+  const nameInputRef = useRef(null);
 
   const [form, setForm] = useState({
     type: 'gold',
@@ -22,6 +23,7 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
 
   const [accounts, setAccounts] = useState([]);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -30,10 +32,25 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
       if (e.key === 'Escape' && !isSubmitting) {
         onClose();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSubmitting) {
+        e.preventDefault();
+        const formEl = document.getElementById('gold-form');
+        if (formEl) formEl.requestSubmit();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, isSubmitting]);
+
+  // Autofocus name input on mount
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     getAccounts().then(accs => setAccounts(accs.filter(a => !a.isArchived))).catch(console.error);
@@ -87,13 +104,20 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.quantity || !form.purchasePrice) {
+    const errors = {};
+    if (!form.name.trim()) errors.name = t('investments.fillAllFields');
+    if (!form.quantity || Number(form.quantity) <= 0) errors.quantity = t('investments.fillAllFields');
+    if (!form.purchasePrice || Number(form.purchasePrice) <= 0) errors.purchasePrice = t('investments.fillAllFields');
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       setError(t('investments.fillAllFields'));
       return;
     }
 
     setIsSubmitting(true);
     setError('');
+    setFieldErrors({});
     try {
       await onSave({
         ...form,
@@ -204,13 +228,22 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
                   {t('investments.goldNameLabel')}
                 </label>
                 <input
+                  ref={nameInputRef}
                   id="gold-name-input"
                   type="text"
                   value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  onChange={e => {
+                    setForm({ ...form, name: e.target.value });
+                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null }));
+                  }}
                   placeholder={isRTL ? 'مثال: سبيكة BTC 10 جرام' : 'e.g. 10g BTC Gold Bar'}
-                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/60 placeholder:text-white/30 transition-all shadow-inner"
+                  className={`w-full bg-black/30 border rounded-2xl px-4 py-3 text-white text-sm focus:outline-none placeholder:text-white/30 transition-all shadow-inner ${
+                    fieldErrors.name ? 'border-[#FF3B30] focus:border-[#FF3B30]' : 'border-white/10 focus:border-amber-500/60'
+                  }`}
                 />
+                {fieldErrors.name && (
+                  <p className="text-[11px] text-[#FF3B30] mt-1 px-1">{fieldErrors.name}</p>
+                )}
               </div>
 
               {/* Quantity (Weight in Grams) & Purchase Price per Gram */}
@@ -225,10 +258,18 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
                     step="any"
                     min="0.01"
                     value={form.quantity}
-                    onChange={e => setForm({ ...form, quantity: e.target.value })}
+                    onChange={e => {
+                      setForm({ ...form, quantity: e.target.value });
+                      if (fieldErrors.quantity) setFieldErrors(prev => ({ ...prev, quantity: null }));
+                    }}
                     placeholder="e.g. 10"
-                    className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/60 placeholder:text-white/30 transition-all shadow-inner tabular-nums font-mono"
+                    className={`w-full bg-black/30 border rounded-2xl px-4 py-3 text-white text-sm focus:outline-none placeholder:text-white/30 transition-all shadow-inner tabular-nums font-mono ${
+                      fieldErrors.quantity ? 'border-[#FF3B30] focus:border-[#FF3B30]' : 'border-white/10 focus:border-amber-500/60'
+                    }`}
                   />
+                  {fieldErrors.quantity && (
+                    <p className="text-[11px] text-[#FF3B30] mt-1 px-1">{fieldErrors.quantity}</p>
+                  )}
                 </div>
 
                 <div>
@@ -241,10 +282,18 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
                     step="any"
                     min="1"
                     value={form.purchasePrice}
-                    onChange={e => setForm({ ...form, purchasePrice: e.target.value })}
+                    onChange={e => {
+                      setForm({ ...form, purchasePrice: e.target.value });
+                      if (fieldErrors.purchasePrice) setFieldErrors(prev => ({ ...prev, purchasePrice: null }));
+                    }}
                     placeholder="e.g. 3500"
-                    className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/60 placeholder:text-white/30 transition-all shadow-inner tabular-nums font-mono"
+                    className={`w-full bg-black/30 border rounded-2xl px-4 py-3 text-white text-sm focus:outline-none placeholder:text-white/30 transition-all shadow-inner tabular-nums font-mono ${
+                      fieldErrors.purchasePrice ? 'border-[#FF3B30] focus:border-[#FF3B30]' : 'border-white/10 focus:border-amber-500/60'
+                    }`}
                   />
+                  {fieldErrors.purchasePrice && (
+                    <p className="text-[11px] text-[#FF3B30] mt-1 px-1">{fieldErrors.purchasePrice}</p>
+                  )}
                 </div>
               </div>
 
@@ -285,7 +334,13 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
                     onChange={val => setForm({ ...form, from_account: val })}
                     options={[
                       { value: '', label: isRTL ? 'بدون خصم من حساب' : 'Do not deduct' },
-                      ...accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))
+                      ...accounts.map(a => ({
+                        value: a._id,
+                        label: a.name,
+                        icon: a.icon,
+                        color: a.color,
+                        subtitle: a.balance !== undefined ? `${a.balance.toLocaleString(isRTL ? 'ar-EG' : 'en-US')} ${a.currency || 'EGP'}` : undefined
+                      }))
                     ]}
                     placeholder={isRTL ? 'اختر الحساب...' : 'Select account...'}
                   />
