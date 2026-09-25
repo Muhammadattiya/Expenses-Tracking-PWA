@@ -243,10 +243,11 @@ export default function Bills() {
             <button
               type="button"
               onClick={openCreateModal}
-              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/80 hover:text-white transition-all active:scale-95 flex items-center justify-center shadow-sm"
+              aria-label={t('bills.addBill')}
+              className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/80 hover:text-white transition-all active:scale-95 flex items-center justify-center shadow-sm"
               title={t('bills.addBill')}
             >
-              <Plus size={16} />
+              <Plus size={18} />
             </button>
           </div>
 

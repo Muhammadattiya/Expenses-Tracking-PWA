@@ -16,7 +16,7 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
   };
 
   return (
-    <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 h-full flex flex-col">
+    <div className="bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-s-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2.5rem] p-6 h-full flex flex-col">
       <div className="flex items-center gap-2 mb-6">
         <Clock className="w-5 h-5 text-[#8D6346]" />
         <h2 className="text-xl font-bold text-white/90">
@@ -43,9 +43,9 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
                   onClick={() => handleDelete(item._id)}
                   title={t('sandbox.deleteSimulation')}
                   aria-label={t('sandbox.deleteSimulation')}
-                  className="p-2 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl transition-all shadow-sm"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl transition-all shadow-sm"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
               <p className="text-xs text-white/50 mb-4 opacity-70">
@@ -54,7 +54,7 @@ export default function HistoryPanel({ history, onRun, onDelete }) {
               
               <button 
                 onClick={() => onRun(item.actions || [{ type: item.type, payload: item.payload }])}
-                className="w-full py-3 rounded-full font-bold text-[13px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
+                className="w-full min-h-[44px] py-3 rounded-full font-bold text-[13px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
               >
                 <Play className="w-3.5 h-3.5 fill-current" /> {t('sandbox.runAgain')}
               </button>

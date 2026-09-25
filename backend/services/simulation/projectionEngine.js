@@ -64,10 +64,7 @@ class ProjectionEngine {
       monthlyDiscretionary += Math.max(budgetLimit, histAvg);
     });
 
-    // If historical data is sparse, ensure reasonable baseline
-    if (monthlyDiscretionary === 0) {
-      monthlyDiscretionary = 3000;
-    }
+    // If historical data is sparse, monthlyDiscretionary stays 0 unless defined by active budgets
     const dailyDiscretionary = Math.round(monthlyDiscretionary / 30);
 
     // 3. Monthly Net Income Estimation
@@ -89,7 +86,7 @@ class ProjectionEngine {
         return d >= sixtyDaysAgo && d <= now && t.type === 'income';
       });
       const totalPastIncome = incomeTxs.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-      monthlyIncome = totalPastIncome > 0 ? Math.round(totalPastIncome / 2) : 10000;
+      monthlyIncome = totalPastIncome > 0 ? Math.round(totalPastIncome / 2) : (baseState.userMonthlyIncome || 0);
     }
 
     // 4. Fixed Monthly Commitments (Bills + Recurring Expenses + Installments)
@@ -97,7 +94,7 @@ class ProjectionEngine {
       let billsTotal = 0;
       (stateObj.bills || []).forEach(b => {
         if (b.isActive !== false) {
-          const amt = Number(b.amount) || 0;
+          const amt = Number(b.expectedAmount ?? b.amount) || 0;
           if (b.repeat === 'weekly') billsTotal += amt * (52 / 12);
           else if (b.repeat === 'yearly') billsTotal += amt / 12;
           else billsTotal += amt;
@@ -148,6 +145,12 @@ class ProjectionEngine {
     let minBaselineBalance = currBaseline;
 
     const startDate = new Date();
+    let minSimulatedPoint = {
+      date: startDate.toISOString().substring(0, 10),
+      dateFormattedAr: startDate.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
+      dateFormattedEn: startDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+      balance: Math.round(currSimulated)
+    };
 
     for (let d = 1; d <= totalDays; d++) {
       const pointDate = new Date(startDate.getTime() + d * 24 * 60 * 60 * 1000);
@@ -172,13 +175,13 @@ class ProjectionEngine {
       (baseState.bills || []).forEach(b => {
         if (b.isActive !== false) {
           const dueDay = b.dueDay || 10;
-          if (dayOfMonth === dueDay) baseDayOut += Number(b.amount) || 0;
+          if (dayOfMonth === dueDay) baseDayOut += Number(b.expectedAmount ?? b.amount) || 0;
         }
       });
       (simulatedState.bills || []).forEach(b => {
         if (b.isActive !== false) {
           const dueDay = b.dueDay || 10;
-          if (dayOfMonth === dueDay) simDayOut += Number(b.amount) || 0;
+          if (dayOfMonth === dueDay) simDayOut += Number(b.expectedAmount ?? b.amount) || 0;
         }
       });
 
@@ -207,10 +210,18 @@ class ProjectionEngine {
       currBaseline += (baseDayIn - baseDayOut);
       currSimulated += (simDayIn - simDayOut);
 
-      if (currSimulated < minSimulatedBalance) minSimulatedBalance = currSimulated;
-      if (currBaseline < minBaselineBalance) minBaselineBalance = currBaseline;
-
       const dateStr = pointDate.toISOString().substring(0, 10);
+
+      if (currSimulated < minSimulatedBalance) {
+        minSimulatedBalance = currSimulated;
+        minSimulatedPoint = {
+          date: dateStr,
+          dateFormattedAr: pointDate.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
+          dateFormattedEn: pointDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+          balance: Math.round(currSimulated)
+        };
+      }
+      if (currBaseline < minBaselineBalance) minBaselineBalance = currBaseline;
 
       dailyPoints.push({
         day: d,
@@ -254,6 +265,7 @@ class ProjectionEngine {
       safetyFloor: Math.round(safetyFloor),
       minSimulatedBalance: Math.round(minSimulatedBalance),
       minBaselineBalance: Math.round(minBaselineBalance),
+      minPoint: minSimulatedPoint,
       breachedFloor,
       floorBreachAmount: Math.round(floorBreachAmount),
       floorBreachPercent,

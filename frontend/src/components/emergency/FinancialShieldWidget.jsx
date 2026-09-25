@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, ShieldCheck, ShieldAlert, Zap, ArrowRightLeft, Settings, X, Sparkles, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldAlert, Zap, ArrowRightLeft, Settings, X, Sparkles, ChevronDown, ChevronUp, Lock, Info, Check } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getEmergencyFund, updateEmergencyFund, depositEmergencyFund } from '../../api/emergencyFund';
 import { getAccounts } from '../../api/accounts';
+import { getCategories } from '../../api/categories';
 import { getTransactions } from '../../api/transactions';
 import { getDebts } from '../../api/debts';
 import { getInstallments } from '../../api/installments';
@@ -12,6 +13,7 @@ import { getReceivables } from '../../api/receivables';
 import { getInvestments, getGoldPrice } from '../../api/investments';
 import { formatAccountName } from '../../utils/transactionFormatters';
 import { calculateAccountBalances } from '../../utils/accountBalances';
+import { getIconComponent } from '../IconPicker';
 
 export default function FinancialShieldWidget({ onUpdate = null }) {
   const { t, lang } = useLanguage();
@@ -43,6 +45,8 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
   // Config state
   const [targetMonths, setTargetMonths] = useState(6);
   const [linkedAccountId, setLinkedAccountId] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [isConfiguring, setIsConfiguring] = useState(false);
 
   const loadData = async () => {
@@ -56,7 +60,8 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
         installmentsData,
         receivablesData,
         investmentsData,
-        goldPriceData
+        goldPriceData,
+        categoriesData
       ] = await Promise.all([
         getEmergencyFund().catch(() => null),
         getAccounts().catch(() => []),
@@ -65,12 +70,16 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
         getInstallments().catch(() => []),
         getReceivables().catch(() => []),
         getInvestments().catch(() => []),
-        getGoldPrice().catch(() => null)
+        getGoldPrice().catch(() => null),
+        getCategories().catch(() => [])
       ]);
 
       setShield(shieldData);
       const safeAccs = accs || [];
       setAccounts(safeAccs);
+
+      const expenseCats = (categoriesData || []).filter(c => c.type === 'expense');
+      setCategories(expenseCats);
 
       const balMap = calculateAccountBalances({
         accounts: safeAccs,
@@ -86,6 +95,20 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
       if (shieldData) {
         setTargetMonths(shieldData.targetMonths || 6);
         setLinkedAccountId(shieldData.linkedAccount?._id || '');
+        if (shieldData.essentialCategoryIds && shieldData.essentialCategoryIds.length > 0) {
+          setSelectedCategoryIds(shieldData.essentialCategoryIds);
+        } else {
+          // Identify matching default essentials among categories
+          const essentialKeywords = [
+            'food', 'grocer', 'supermarket', 'market', 'housing', 'rent', 'utilit',
+            'health', 'pharmacy', 'medic', 'أكل', 'طعام', 'سوبرماركت', 'تموين', 'سكن',
+            'إيجار', 'كهرباء', 'مياه', 'غاز', 'صحة', 'علاج', 'أدوية', 'صيدلية', 'فواتير'
+          ];
+          const defaults = expenseCats
+            .filter(c => essentialKeywords.some(kw => (c.name || '').toLowerCase().includes(kw)))
+            .map(c => c._id);
+          setSelectedCategoryIds(defaults);
+        }
       }
     } catch (err) {
       console.error('[SHIELD] Failed to load shield:', err);
@@ -97,6 +120,19 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (depositModalOpen && !isDepositing) setDepositModalOpen(false);
+        if (configModalOpen && !isConfiguring) setConfigModalOpen(false);
+      }
+    };
+    if (depositModalOpen || configModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [depositModalOpen, configModalOpen, isDepositing, isConfiguring]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -138,7 +174,8 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
       setModalError('');
       await updateEmergencyFund({
         targetMonths: Number(targetMonths),
-        linkedAccountId: linkedAccountId ? linkedAccountId : null
+        linkedAccountId: linkedAccountId ? linkedAccountId : null,
+        essentialCategoryIds: selectedCategoryIds
       });
       setConfigModalOpen(false);
       showToast(t('emergencyFund.updateSuccess'));
@@ -233,7 +270,7 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
           <button
             onClick={() => setConfigModalOpen(true)}
             aria-label={t('emergencyFund.configureShield')}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -330,12 +367,12 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
 
             {/* Quick deposit action */}
             <motion.button
-              whileTap={{ scale: 0.96 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => {
                 setFromAccountId(accounts.find(a => a._id !== linkedAccount?._id)?._id || accounts[0]?._id || '');
                 setDepositModalOpen(true);
               }}
-              className="mt-3 w-full py-2 px-3 rounded-xl bg-[#8D6346] hover:bg-[#77533A] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(141,99,70,0.3)] transition-all"
+              className="mt-3 w-full py-2.5 px-3 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] active:scale-[0.98] hover:bg-[#8D6346]/45 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >
               <Zap className="w-3.5 h-3.5" />
               {t('emergencyFund.depositQuick')}
@@ -359,23 +396,52 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden pt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs"
+                className="overflow-hidden pt-3 space-y-3"
               >
-                <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
-                  <span className="text-[10px] text-white/40 block">{t('emergencyFund.bills')}</span>
-                  <span className="font-bold text-white tabular-nums">{money(burnBreakdown.billsMonthly)}</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
+                    <span className="text-[10px] text-white/40 block">{t('emergencyFund.bills')}</span>
+                    <span className="font-bold text-white tabular-nums">{money(burnBreakdown.billsMonthly)}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
+                    <span className="text-[10px] text-white/40 block">{t('emergencyFund.recurring')}</span>
+                    <span className="font-bold text-white tabular-nums">{money(burnBreakdown.recurringMonthly)}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
+                    <span className="text-[10px] text-white/40 block">{t('emergencyFund.installments')}</span>
+                    <span className="font-bold text-white tabular-nums">{money(burnBreakdown.installmentsMonthly)}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
+                    <span className="text-[10px] text-white/40 block">{t('emergencyFund.baselineDiscretionary')}</span>
+                    <span className="font-bold text-white tabular-nums">{money(burnBreakdown.discretionaryBaseline)}</span>
+                  </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
-                  <span className="text-[10px] text-white/40 block">{t('emergencyFund.recurring')}</span>
-                  <span className="font-bold text-white tabular-nums">{money(burnBreakdown.recurringMonthly)}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
-                  <span className="text-[10px] text-white/40 block">{t('emergencyFund.installments')}</span>
-                  <span className="font-bold text-white tabular-nums">{money(burnBreakdown.installmentsMonthly)}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
-                  <span className="text-[10px] text-white/40 block">{t('emergencyFund.baselineDiscretionary')}</span>
-                  <span className="font-bold text-white tabular-nums">{money(burnBreakdown.discretionaryBaseline)}</span>
+
+                {/* Calculation Explanation & Customize Link */}
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-[#8D6346]/20 border border-[#8D6346]/40 flex items-center justify-center shrink-0 mt-0.5 text-[#E8C5A8]">
+                      <Info className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-white/85 leading-relaxed font-medium">
+                        {t('emergencyFund.calculationHint')}
+                      </p>
+                      <span className="text-[10px] text-white/45 block mt-0.5">
+                        {selectedCategoryIds.length > 0
+                          ? t('emergencyFund.selectedCategoriesSummary', { count: selectedCategoryIds.length })
+                          : t('emergencyFund.defaultCategoriesNotice')}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfigModalOpen(true)}
+                    className="px-3 py-1.5 rounded-xl bg-[#8D6346]/20 hover:bg-[#8D6346]/35 text-[#E8C5A8] hover:text-white border border-[#8D6346]/40 hover:border-[#8D6346]/60 text-xs font-semibold whitespace-nowrap self-end sm:self-center transition-all flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-[#E8C5A8]" />
+                    <span>{t('emergencyFund.customizeCategories')}</span>
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -394,6 +460,9 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
             className="fixed inset-0 bg-black/80 backdrop-blur-md"
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shield-deposit-modal-title"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -402,25 +471,30 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
             <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-[#E8C5A8]" />
-                <h3 className="font-bold text-base">{t('emergencyFund.depositQuick')}</h3>
+                <h3 id="shield-deposit-modal-title" className="font-bold text-base">{t('emergencyFund.depositQuick')}</h3>
               </div>
-              <button onClick={() => setDepositModalOpen(false)} className="p-1 rounded-lg text-white/50 hover:text-white">
+              <button 
+                onClick={() => setDepositModalOpen(false)} 
+                aria-label={t('common.close')}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {modalError && (
-              <div className="mb-3 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs">
+              <div role="alert" className="mb-3 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs">
                 {modalError}
               </div>
             )}
 
             <form onSubmit={handleDeposit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-white/70 mb-1.5">
+                <label htmlFor="shield-from-account" className="block text-xs font-medium text-white/70 mb-1.5">
                   {t('emergencyFund.fromAccountLabel')}
                 </label>
                 <select
+                  id="shield-from-account"
                   value={fromAccountId}
                   onChange={(e) => setFromAccountId(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#1A161A] border border-white/10 text-white text-sm focus:outline-none focus:border-[#8D6346]"
@@ -440,10 +514,11 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-white/70 mb-1.5">
+                <label htmlFor="shield-deposit-amount" className="block text-xs font-medium text-white/70 mb-1.5">
                   {t('emergencyFund.depositAmountLabel')}
                 </label>
                 <input
+                  id="shield-deposit-amount"
                   type="number"
                   min="1"
                   required
@@ -458,17 +533,18 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
                 <button
                   type="button"
                   onClick={() => setDepositModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium"
+                  className="flex-1 py-3 rounded-full bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium transition-colors"
                 >
                   {t('common.cancel')}
                 </button>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={isDepositing}
-                  className="flex-1 py-2.5 rounded-xl bg-[#8D6346] hover:bg-[#77533A] text-white text-xs font-bold shadow-lg disabled:opacity-50"
+                  className="flex-1 py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] active:scale-[0.98] hover:bg-[#8D6346]/45 text-white text-xs font-bold disabled:opacity-50 cursor-pointer"
                 >
                   {isDepositing ? t('emergencyFund.depositing') : t('emergencyFund.confirmDepositBtn')}
-                </button>
+                </motion.button>
               </div>
             </form>
           </motion.div>
@@ -487,6 +563,9 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
             className="fixed inset-0 bg-black/80 backdrop-blur-md"
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shield-config-modal-title"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -495,12 +574,12 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
             <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
               <div className="flex items-center gap-2">
                 <Settings className="w-5 h-5 text-[#E8C5A8]" />
-                <h3 className="font-bold text-base">{t('emergencyFund.configureShield')}</h3>
+                <h3 id="shield-config-modal-title" className="font-bold text-base">{t('emergencyFund.configureShield')}</h3>
               </div>
               <button 
                 onClick={() => setConfigModalOpen(false)} 
                 aria-label={t('common.close')}
-                className="p-1 rounded-lg text-white/50 hover:text-white"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full text-white/50 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -508,16 +587,16 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
 
             <form onSubmit={handleSaveConfig} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-white/70 mb-1.5">
+                <span className="block text-xs font-medium text-white/70 mb-1.5">
                   {t('emergencyFund.targetHorizon')} {t('emergencyFund.targetHorizonSubtitle')}
-                </label>
+                </span>
                 <div className="grid grid-cols-3 gap-2">
                   {[3, 6, 12].map(m => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => setTargetMonths(m)}
-                      className={`py-2 rounded-xl text-xs font-bold border transition-colors ${
+                      className={`min-h-[44px] py-2 rounded-xl text-xs font-bold border transition-colors ${
                         targetMonths === m
                           ? 'bg-[#8D6346] text-white border-[#8D6346]'
                           : 'bg-white/5 text-white/60 border-white/10 hover:border-white/20'
@@ -530,10 +609,11 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-white/70 mb-1.5">
+                <label htmlFor="shield-vault-account" className="block text-xs font-medium text-white/70 mb-1.5">
                   {t('emergencyFund.selectVaultAccount')}
                 </label>
                 <select
+                  id="shield-vault-account"
                   value={linkedAccountId}
                   onChange={(e) => setLinkedAccountId(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#1A161A] border border-white/10 text-white text-sm focus:outline-none focus:border-[#8D6346]"
@@ -552,21 +632,122 @@ export default function FinancialShieldWidget({ onUpdate = null }) {
                 </select>
               </div>
 
+              {/* Survival Categories Selection Section */}
+              <div className="pt-3 border-t border-white/10">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#E8C5A8]" />
+                    <span>{t('emergencyFund.essentialCategoriesTitle')}</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8D6346]/20 text-[#E8C5A8] border border-[#8D6346]/40">
+                    {t('emergencyFund.selectedCategoriesSummary', { count: selectedCategoryIds.length })}
+                  </span>
+                </div>
+                <p className="text-[11px] text-white/50 mb-2.5 leading-relaxed">
+                  {t('emergencyFund.essentialCategoriesSubtitle')}
+                </p>
+
+                {/* Quick Selection Buttons */}
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryIds(categories.map(c => c._id))}
+                    className="min-h-[44px] px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-semibold text-white/70 hover:text-white transition-colors"
+                  >
+                    {t('emergencyFund.selectAll')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const essentialKeywords = [
+                        'food', 'grocer', 'supermarket', 'market', 'housing', 'rent', 'utilit',
+                        'health', 'pharmacy', 'medic', 'أكل', 'طعام', 'سوبرماركت', 'تموين', 'سكن',
+                        'إيجار', 'كهرباء', 'مياه', 'غاز', 'صحة', 'علاج', 'أدوية', 'صيدلية', 'فواتير'
+                      ];
+                      const defaults = categories
+                        .filter(c => essentialKeywords.some(kw => (c.name || '').toLowerCase().includes(kw)))
+                        .map(c => c._id);
+                      setSelectedCategoryIds(defaults);
+                    }}
+                    className="min-h-[44px] px-3 py-1.5 rounded-lg bg-[#8D6346]/20 hover:bg-[#8D6346]/30 border border-[#8D6346]/40 text-[10px] font-semibold text-[#E8C5A8] transition-colors"
+                  >
+                    {t('emergencyFund.defaultEssentials')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryIds([])}
+                    className="min-h-[44px] px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-semibold text-white/50 hover:text-white transition-colors"
+                  >
+                    {t('emergencyFund.clearSelection')}
+                  </button>
+                </div>
+
+                {/* Categories List */}
+                <div className="max-h-44 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar">
+                  {categories.map((cat) => {
+                    const isSelected = selectedCategoryIds.includes(cat._id);
+                    const CatIcon = getIconComponent(cat.icon, 'Tag');
+                    return (
+                      <div
+                        key={cat._id}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== cat._id));
+                          } else {
+                            setSelectedCategoryIds([...selectedCategoryIds, cat._id]);
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border transition-all flex items-center justify-between text-xs font-medium cursor-pointer min-h-[44px] ${
+                          isSelected
+                            ? 'bg-[#8D6346]/20 border-[#8D6346] text-white shadow-[0_2px_8px_rgba(141,99,70,0.25)]'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border"
+                            style={{
+                              backgroundColor: `${cat.color || '#8D6346'}20`,
+                              borderColor: `${cat.color || '#8D6346'}40`,
+                              color: cat.color || '#E8C5A8'
+                            }}
+                          >
+                            <CatIcon size={12} />
+                          </div>
+                          <span className="truncate">{cat.name}</span>
+                        </div>
+                        <div className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected ? 'bg-[#8D6346] text-white' : 'border border-white/20 bg-white/5'
+                        }`}>
+                          {isSelected && <Check size={10} className="stroke-[3]" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {selectedCategoryIds.length === 0 && (
+                  <p className="mt-1.5 text-[10px] text-amber-400/80">
+                    {t('emergencyFund.noCategoriesSelectedWarning')}
+                  </p>
+                )}
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setConfigModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium"
+                  className="flex-1 py-3 rounded-full bg-white/5 hover:bg-white/10 text-white/70 text-xs font-medium transition-colors"
                 >
                   {t('common.cancel')}
                 </button>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={isConfiguring}
-                  className="flex-1 py-2.5 rounded-xl bg-[#8D6346] hover:bg-[#77533A] text-white text-xs font-bold shadow-lg disabled:opacity-50"
+                  className="flex-1 py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] active:scale-[0.98] hover:bg-[#8D6346]/45 text-white text-xs font-bold disabled:opacity-50 cursor-pointer"
                 >
                   {isConfiguring ? t('emergencyFund.savingSettings') : t('common.saveChanges')}
-                </button>
+                </motion.button>
               </div>
             </form>
           </motion.div>

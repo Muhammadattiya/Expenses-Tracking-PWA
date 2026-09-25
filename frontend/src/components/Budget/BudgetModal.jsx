@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getCategories } from '../../api/categories';
@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../ui/CustomSelect';
 
 export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, defaultPeriod = 'monthly' }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const amountInputRef = useRef(null);
   
   const [categories, setCategories] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -21,6 +22,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
   const [carryOver, setCarryOver] = useState(false);
   const [isRecurring, setIsRecurring] = useState(true);
   
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isRecommending, setIsRecommending] = useState(false);
   const [recommendError, setRecommendError] = useState('');
   const [recommendedData, setRecommendedData] = useState(null);
@@ -45,8 +47,36 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
       }
       setRecommendError('');
       setRecommendedData(null);
+      setFieldErrors({});
     }
   }, [isOpen, budgetToEdit]);
+
+  // Autofocus amount on open
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const formEl = document.querySelector('form');
+        if (formEl) formEl.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const loadData = async () => {
     try {
@@ -90,11 +120,18 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
     }
   }, [category, period]);
 
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!category || !amount) return;
+    const errors = {};
+    if (!category) errors.category = t('budgets.selectCategory');
+    if (!amount || Number(amount) <= 0) errors.amount = t('budgets.amountRequired') || t('common.error');
 
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     onSave({
       category,
       amount: Number(amount),
@@ -108,7 +145,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -118,50 +155,69 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
       />
       
       <motion.div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="budget-modal-title"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] w-full max-w-md shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative z-10 overflow-y-auto max-h-[90vh] scrollbar-hide"
+        className="bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] w-full max-w-md shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative z-10 flex flex-col max-h-[90vh] overflow-hidden"
       >
         {/* Inner Highlight Line */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-20" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-20 pointer-events-none" />
         
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white">
-              {budgetToEdit ? t('budgets.editBudget') : t('budgets.addBudget')}
-            </h2>
-            <button 
-              onClick={onClose}
-              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/70 transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-[#1C1819]/95 backdrop-blur-md z-20 flex justify-between items-center p-6 pb-4 border-b border-white/10">
+          <h2 id="budget-modal-title" className="text-xl font-bold text-white">
+            {budgetToEdit ? t('budgets.editBudget') : t('budgets.addBudget')}
+          </h2>
+          <button 
+            onClick={onClose}
+            aria-label={t('common.close')}
+            className="w-11 h-11 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-colors flex items-center justify-center shrink-0"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          {/* Scrollable Fields Body */}
+          <div className="overflow-y-auto px-6 py-4 space-y-4 max-h-[calc(90vh-170px)]">
             {/* Category Select */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-white/70">{t('budgets.category')}</label>
+              <span className="block text-sm font-medium text-white/70">{t('budgets.category')}</span>
               <CustomSelect
                 value={category}
-                onChange={setCategory}
+                onChange={(cat) => {
+                  setCategory(cat);
+                  if (fieldErrors.category) setFieldErrors(prev => ({ ...prev, category: null }));
+                }}
+                error={Boolean(fieldErrors.category)}
                 options={categories.map(c => ({ value: c._id, label: c.name, icon: c.icon, color: c.color }))}
                 placeholder={t('budgets.selectCategory')}
               />
+              {fieldErrors.category && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.category}</p>
+              )}
             </div>
 
             {/* Account Select (Optional) */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-white/70 flex items-center gap-2">
+              <span className="block text-sm font-medium text-white/70 flex items-center gap-2">
                 {t('budgets.account')}
                 <Info size={14} className="text-white/40" />
-              </label>
+              </span>
               <CustomSelect
                 value={account}
                 onChange={setAccount}
                 options={[
                   { value: '', label: t('budgets.accountPlaceholder') },
-                  ...accounts.map(acc => ({ value: acc._id, label: acc.name }))
+                  ...accounts.map(acc => ({
+                    value: acc._id,
+                    label: acc.name,
+                    icon: acc.icon,
+                    color: acc.color,
+                    subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : undefined
+                  }))
                 ]}
                 placeholder={t('budgets.accountPlaceholder')}
                 buttonClassName="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white flex justify-between items-center hover:bg-white/10 transition-colors"
@@ -170,7 +226,7 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
 
             {/* Period Select */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-white/70">{t('budgets.period')}</label>
+              <span className="block text-sm font-medium text-white/70">{t('budgets.period')}</span>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -203,14 +259,15 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                 <p className="text-sm font-medium text-white">{t('budgets.carryOver')}</p>
                 <p className="text-xs text-white/50 mt-1 pr-4">{t('budgets.carryOverDesc')}</p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label htmlFor="budget-carryover-input" className="relative inline-flex items-center cursor-pointer min-h-[44px]">
                 <input 
+                  id="budget-carryover-input"
                   type="checkbox" 
                   className="sr-only peer" 
                   checked={carryOver}
                   onChange={(e) => setCarryOver(e.target.checked)}
                 />
-                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
+                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[12px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
               </label>
             </div>
 
@@ -220,26 +277,36 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                 <p className="text-sm font-medium text-white">{t('budgets.recurring') || 'Recurring Budget'}</p>
                 <p className="text-xs text-white/50 mt-1 pr-4">{t('budgets.recurringDesc') || 'Automatically repeats when period ends'}</p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label htmlFor="budget-recurring-input" className="relative inline-flex items-center cursor-pointer min-h-[44px]">
                 <input 
+                  id="budget-recurring-input"
                   type="checkbox" 
                   className="sr-only peer" 
                   checked={isRecurring}
                   onChange={(e) => setIsRecurring(e.target.checked)}
                 />
-                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
+                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[12px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8D6346]"></div>
               </label>
             </div>
 
             {/* Amount Input */}
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-white/70">{t('budgets.amount')}</label>
+              <label htmlFor="budget-amount-input" className="block text-sm font-medium text-white/70">{t('budgets.amount')}</label>
               <div className="relative">
                 <input 
+                  ref={amountInputRef}
+                  id="budget-amount-input"
                   type="number"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-white font-bold text-2xl focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 transition-all placeholder-white/20"
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if (fieldErrors.amount) setFieldErrors(prev => ({ ...prev, amount: null }));
+                  }}
+                  className={`w-full bg-white/5 border rounded-2xl px-4 py-4 text-white font-bold text-2xl focus:outline-none transition-all placeholder-white/20 ${
+                    fieldErrors.amount 
+                      ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70' 
+                      : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70'
+                  }`}
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -249,6 +316,9 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                   <span className="text-white/40">{t('nav.currency')}</span>
                 </div>
               </div>
+              {fieldErrors.amount && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.amount}</p>
+              )}
             </div>
 
             {/* Recommendation UI */}
@@ -313,19 +383,19 @@ export default function BudgetModal({ isOpen, onClose, onSave, budgetToEdit, def
                 {recommendError}
               </motion.p>
             )}
+          </div>
 
-            {/* Submit */}
-            <div className="pt-4">
-              <motion.button 
-                type="submit"
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
-              >
-                {t('budgets.save')}
-              </motion.button>
-            </div>
-          </form>
-        </div>
+          {/* Sticky Submit Footer */}
+          <div className="sticky bottom-0 bg-[#1C1819]/95 backdrop-blur-md z-20 p-6 pt-3 pb-5 border-t border-white/10">
+            <motion.button 
+              type="submit"
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
+            >
+              {t('budgets.save')}
+            </motion.button>
+          </div>
+        </form>
       </motion.div>
     </div>,
     document.body

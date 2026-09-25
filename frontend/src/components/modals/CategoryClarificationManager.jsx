@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tag, X, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { getCategories, updateCategory } from '../../api/categories';
@@ -106,24 +107,21 @@ export default function CategoryClarificationManager() {
     }
   };
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        setIsModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen, isSubmitting]);
+
   const ArrowIcon = lang === 'ar' ? ArrowLeft : ArrowRight;
 
   return (
     <>
-      {/* Subtle Backdrop - Only shows when modal is open */}
-      <AnimatePresence>
-        {isModalOpen && activeCategory && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            onClick={() => setIsModalOpen(false)} // clicking outside minimizes back to pill
-            className="fixed inset-0 z-[900] bg-black/60 backdrop-blur-sm"
-          />
-        )}
-      </AnimatePresence>
-
       <AnimatePresence>
         {!isModalOpen && activeCategory && !dockOverlay && (
           <motion.div
@@ -148,13 +146,27 @@ export default function CategoryClarificationManager() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {isModalOpen && activeCategory && (
+      {/* Portal modal and backdrop to document.body */}
+      {isModalOpen && activeCategory && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => setIsModalOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10"
+          />
+
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clarification-cat-title"
             key="modal"
             layoutId="clarification-morph"
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] w-[85%] max-w-[320px] liquidglass flex flex-col border border-white/10 shadow-2xl overflow-hidden"
-            style={{ borderRadius: 24, maxHeight: '60vh' }}
+            className="w-[85%] max-w-[320px] liquidglass flex flex-col border border-white/10 shadow-2xl overflow-hidden rounded-[24px] max-h-[60vh] relative z-10"
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
           >
             <motion.div 
@@ -166,7 +178,7 @@ export default function CategoryClarificationManager() {
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-1 shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)]">
                   <Tag className="w-5 h-5 text-[#8D6346]" />
                 </div>
-                <h3 className="text-base font-bold text-white tracking-tight leading-tight drop-shadow-sm">
+                <h3 id="clarification-cat-title" className="text-base font-bold text-white tracking-tight leading-tight drop-shadow-sm">
                   {activeCategory.name}
                 </h3>
                 <p className="text-white/60 text-xs">
@@ -204,7 +216,7 @@ export default function CategoryClarificationManager() {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleDismiss}
                   disabled={isSubmitting}
-                  className="w-full py-3 rounded-xl font-medium text-xs text-white/50 bg-white/5 border border-white/5 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3.5 min-h-[44px] rounded-xl font-medium text-xs text-white/50 bg-white/5 border border-white/5 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <Loader2 size={14} className="animate-spin text-white/50" />
@@ -218,8 +230,9 @@ export default function CategoryClarificationManager() {
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

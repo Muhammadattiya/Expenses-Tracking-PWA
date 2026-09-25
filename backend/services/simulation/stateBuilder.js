@@ -2,12 +2,14 @@ const Transaction = require('../../models/Transaction');
 const Account = require('../../models/Account');
 const Budget = require('../../models/Budget');
 const Debt = require('../../models/Debt');
+const DebtTransaction = require('../../models/DebtTransaction');
 const Bill = require('../../models/Bill');
 const RecurringTransaction = require('../../models/RecurringTransaction');
 const Investment = require('../../models/Investment');
 const User = require('../../models/User');
 const Receivable = require('../../models/Receivable');
 const Installment = require('../../models/Installment');
+const InstallmentTransaction = require('../../models/InstallmentTransaction');
 const SavingsGoal = require('../../models/SavingsGoal');
 const EmergencyFund = require('../../models/EmergencyFund');
 const IncomeProfile = require('../../models/IncomeProfile');
@@ -23,26 +25,30 @@ class StateBuilder {
       accounts,
       budgets,
       debts,
+      debtTransactions,
       bills,
       recurring,
       investments,
       user,
       receivables,
       installments,
+      installmentTransactions,
       savingsGoals,
       emergencyFund,
       incomeProfiles
     ] = await Promise.all([
       Transaction.find({ user: userId }).lean(),
-      Account.find({ user: userId }).lean(),
+      Account.find({ user: userId, isArchived: { $ne: true } }).lean(),
       Budget.find({ user: userId }).lean(),
       Debt.find({ user: userId }).lean(),
+      DebtTransaction.find({ user: userId }).lean(),
       Bill.find({ user: userId }).lean(),
       RecurringTransaction.find({ user: userId }).lean(),
       Investment.find({ user: userId }).lean(),
       User.findById(userId).lean(),
       Receivable.find({ user: userId }).lean(),
       Installment.find({ user: userId, status: 'active' }).lean(),
+      InstallmentTransaction.find({ user: userId }).lean(),
       SavingsGoal.find({ user: userId }).lean(),
       EmergencyFund.findOne({ user: userId }).lean(),
       IncomeProfile.find({ user: userId, isActive: true }).lean()
@@ -62,7 +68,7 @@ class StateBuilder {
       const pastIncomeTotal = (transactions || [])
         .filter(t => t.type === 'income' && new Date(t.date) >= sixtyDaysAgo)
         .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-      userMonthlyIncome = pastIncomeTotal > 0 ? Math.round(pastIncomeTotal / 2) : 10000;
+      userMonthlyIncome = pastIncomeTotal > 0 ? Math.round(pastIncomeTotal / 2) : 0;
     }
 
     return {
@@ -71,11 +77,13 @@ class StateBuilder {
       accounts,
       budgets,
       debts,
+      debtTransactions: debtTransactions || [],
       bills,
       recurring,
       investments,
       receivables,
       installments: installments || [],
+      installmentTransactions: installmentTransactions || [],
       savingsGoals: savingsGoals || [],
       emergencyFund: emergencyFund || null,
       userMonthlyIncome,

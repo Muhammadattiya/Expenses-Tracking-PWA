@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, CreditCard, PieChart, ShieldAlert, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -8,15 +8,25 @@ import InstallmentCard from './InstallmentCard';
 import InstallmentModal from './InstallmentModal';
 import ConfirmModal from '../modals/ConfirmModal';
 
+const moneyFormatters = {
+  ar: new Intl.NumberFormat('ar-EG', {
+    style: 'currency',
+    currency: 'EGP',
+    maximumFractionDigits: 0
+  }),
+  en: new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'EGP',
+    maximumFractionDigits: 0
+  })
+};
+
 export default function InstallmentsList() {
   const { t, lang } = useLanguage();
 
-  const money = (val) =>
-    new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
-      style: 'currency',
-      currency: 'EGP',
-      maximumFractionDigits: 0
-    }).format(val || 0);
+  const money = useCallback((val) => {
+    return (moneyFormatters[lang] || moneyFormatters.en).format(val || 0);
+  }, [lang]);
 
   const [installments, setInstallments] = useState([]);
   const [summary, setSummary] = useState({
@@ -98,19 +108,22 @@ export default function InstallmentsList() {
       await loadData();
     } catch (err) {
       console.error('[INSTALLMENTS] Pay failed:', err);
+      showToast(err?.response?.data?.message || t('common.error'));
     } finally {
       setPayingId(null);
     }
   };
 
-  const filteredInstallments = installments.filter(i => {
-    if (filter === 'active') return i.status === 'active';
-    if (filter === 'settled') return i.status === 'settled';
-    return true;
-  });
+  const filteredInstallments = useMemo(() => {
+    return installments.filter(i => {
+      if (filter === 'active') return i.status === 'active';
+      if (filter === 'settled') return i.status === 'settled';
+      return true;
+    });
+  }, [installments, filter]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-36">
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
@@ -132,7 +145,7 @@ export default function InstallmentsList() {
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-3xl bg-[#2B2321]/30 backdrop-blur-xl border border-[#8D6346]/30 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.37)]"
       >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#8D6346]/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-0 end-0 w-64 h-64 bg-[#8D6346]/20 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -143,21 +156,21 @@ export default function InstallmentsList() {
               <span className="text-3xl font-extrabold text-white tabular-nums tracking-tight">
                 {money(summary.totalMonthlyBurden)}
               </span>
-              <span className="text-xs text-white/50">
+              <span className="text-xs text-white/60">
                 / {t('savingsGoals.perMonth')}
               </span>
             </div>
           </div>
 
-          {/* Action button */}
+          {/* Action button - Signature Finova Copper Glass Pill */}
           <motion.button
             id="btn-add-installment"
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               setEditingInstallment(null);
               setModalOpen(true);
             }}
-            className="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-[#8D6346] hover:bg-[#77533A] text-white text-xs font-semibold shadow-[0_4px_16px_rgba(141,99,70,0.3)] transition-all"
+            className="min-h-[44px] py-2.5 px-5 rounded-full font-semibold text-xs sm:text-sm text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center gap-2 backdrop-blur-md"
           >
             <Plus className="w-4 h-4" />
             {t('installments.addInstallment')}
@@ -167,16 +180,16 @@ export default function InstallmentsList() {
         {/* Secondary Metrics Row */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-white/10">
           <div>
-            <span className="text-[11px] text-white/40 block">
+            <span className="text-[11px] text-white/60 block">
               {t('installments.totalRemaining')}
             </span>
-            <span className="text-sm font-bold text-white/80 tabular-nums">
+            <span className="text-sm font-bold text-white/90 tabular-nums">
               {money(summary.totalRemainingObligations)}
             </span>
           </div>
 
           <div>
-            <span className="text-[11px] text-white/40 block">
+            <span className="text-[11px] text-white/60 block">
               {t('installments.activeCount')}
             </span>
             <span className="text-sm font-bold text-[#E8C5A8] tabular-nums">
@@ -185,7 +198,7 @@ export default function InstallmentsList() {
           </div>
 
           <div className="col-span-2 sm:col-span-1">
-            <span className="text-[11px] text-white/40 block">
+            <span className="text-[11px] text-white/60 block">
               {t('installments.dtiRatio')}
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -208,21 +221,29 @@ export default function InstallmentsList() {
       </motion.div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center p-1 rounded-2xl bg-[#2B2321]/40 border border-white/10 text-xs font-medium">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div 
+          role="tablist"
+          aria-label={t('installments.title')}
+          className="flex items-center p-1 rounded-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner h-12"
+        >
           {['active', 'settled', 'all'].map(tabKey => (
             <button
               key={tabKey}
+              role="tab"
+              id={`installment-filter-${tabKey}`}
+              aria-selected={filter === tabKey}
+              aria-controls="installment-cards-grid"
               onClick={() => setFilter(tabKey)}
-              className={`relative px-4 py-1.5 rounded-xl transition-colors ${
-                filter === tabKey ? 'text-white' : 'text-white/50 hover:text-white/80'
+              className={`relative flex items-center justify-center min-h-[44px] px-5 rounded-full text-xs font-semibold transition-colors duration-300 z-10 ${
+                filter === tabKey ? 'text-white' : 'text-white/50 hover:text-white'
               }`}
             >
               {filter === tabKey && (
                 <motion.div
                   layoutId="installmentFilterTab"
-                  className="absolute inset-0 rounded-xl bg-[#8D6346] shadow-sm"
-                  transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+                  className="absolute inset-0 bg-[#8D6346]/30 border border-[#8D6346]/40 rounded-full shadow-sm"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
                 />
               )}
               <span className="relative z-10">
@@ -232,7 +253,7 @@ export default function InstallmentsList() {
           ))}
         </div>
 
-        <span className="text-xs text-white/40">
+        <span className="text-xs text-white/60">
           {filteredInstallments.length} {t('installments.title')}
         </span>
       </div>
@@ -250,24 +271,24 @@ export default function InstallmentsList() {
           <h4 className="text-sm font-semibold text-white/80 mb-1">
             {t('installments.emptyTitle')}
           </h4>
-          <p className="text-xs text-white/40 max-w-sm mx-auto mb-4">
+          <p className="text-xs text-white/50 max-w-sm mx-auto mb-4">
             {t('installments.emptySubtitle')}
           </p>
           <motion.button
             id="btn-add-installment-empty"
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => {
               setEditingInstallment(null);
               setModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 py-2 px-4 rounded-xl bg-[#8D6346]/20 text-[#E8C5A8] border border-[#8D6346]/30 hover:bg-[#8D6346]/30 text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-2 min-h-[44px] py-2.5 px-5 rounded-full font-semibold text-xs text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 backdrop-blur-md"
           >
             <Plus className="w-3.5 h-3.5" />
             {t('installments.addInstallment')}
           </motion.button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="installment-cards-grid" className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AnimatePresence mode="popLayout">
             {filteredInstallments.map(inst => (
               <InstallmentCard
@@ -285,6 +306,7 @@ export default function InstallmentsList() {
           </AnimatePresence>
         </div>
       )}
+
 
       {/* Creation / Edit Modal */}
       <InstallmentModal

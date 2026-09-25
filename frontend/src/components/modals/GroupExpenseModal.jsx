@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Users, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
 
-export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData, accounts, categories }) {
+export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData, accounts = [], categories = [] }) {
   const { t, lang } = useLanguage();
+  const isRTL = lang === 'ar';
+  const titleInputRef = useRef(null);
   const money = (value) => new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency: 'EGP' }).format(value || 0);
   
   const defaultForm = { 
@@ -21,6 +23,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
 
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -46,14 +49,30 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
         });
       }
       setError('');
+      setFieldErrors({});
     }
   }, [isOpen, initialData, accounts, categories]);
 
-  // Escape key listener for accessible modal dismissal
+  // Autofocus title input on mount
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Escape key & Ctrl+Enter accelerator listener
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && !isSubmitting) {
         onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSubmitting) {
+        e.preventDefault();
+        const formEl = document.getElementById('group-expense-form');
+        if (formEl) formEl.requestSubmit();
       }
     };
     if (isOpen) {
@@ -72,16 +91,21 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
   const submit = async (event) => {
     event.preventDefault();
     setError('');
+    const errors = {};
 
     const trimmedTitle = form.title.trim();
     if (!trimmedTitle) {
-      setError(t('receivables.validationTitleRequired'));
-      return;
+      errors.title = t('receivables.validationTitleRequired');
     }
 
     const paidAmount = Number(form.paidAmount);
     if (!paidAmount || isNaN(paidAmount) || paidAmount <= 0) {
-      setError(t('receivables.validationPaidAmount'));
+      errors.paidAmount = t('receivables.validationPaidAmount');
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(errors.title || errors.paidAmount);
       return;
     }
 
@@ -152,12 +176,12 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
       />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg bg-[#1C1819]/80 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-lg bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Subtle Top Inner Edge Highlight */}
         <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
-        {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-transparent z-10">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-20 p-6 border-b border-white/10 flex items-center justify-between bg-[#1C1819]/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-[#8D6346]/20 rounded-xl text-[#8D6346] shadow-inner">
               <Users className="w-5 h-5" />
@@ -171,14 +195,14 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
             onClick={onClose} 
             disabled={isSubmitting}
             aria-label={t('common.close') || 'Close'}
-            className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors disabled:opacity-40"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center transition-colors disabled:opacity-40"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Form Body */}
-        <div className="p-6 overflow-y-auto">
+        {/* Scrollable Form Body */}
+        <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
           {error && (
             <div role="alert" className="mb-6 rounded-2xl bg-brand-red/10 p-4 border border-brand-red/20 text-sm text-brand-red font-medium flex items-center gap-2">
               <X className="w-4 h-4 flex-shrink-0" />
@@ -193,15 +217,26 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 {t('receivables.outingName')}
               </label>
               <input 
+                ref={titleInputRef}
                 id="ge-title"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)] transition-all disabled:opacity-50" 
+                className={`w-full bg-white/5 border rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none transition-all disabled:opacity-50 ${
+                  fieldErrors.title
+                    ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
+                    : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)]'
+                }`}
                 required 
                 disabled={isSubmitting}
                 maxLength={120}
                 placeholder={t('receivables.outingName')} 
                 value={form.title} 
-                onChange={(e) => setForm({ ...form, title: e.target.value })} 
+                onChange={(e) => {
+                  setForm({ ...form, title: e.target.value });
+                  if (fieldErrors.title) setFieldErrors(prev => ({ ...prev, title: null }));
+                }} 
               />
+              {fieldErrors.title && (
+                <p className="text-xs text-[#FF3B30] px-1">{fieldErrors.title}</p>
+              )}
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/10">
@@ -209,25 +244,45 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 {t('receivables.totalPaid')}
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <input 
-                  id="ge-paid-amount"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)] transition-all disabled:opacity-50" 
-                  required 
-                  type="number" 
-                  min="0.01" 
-                  step="any"
-                  disabled={isSubmitting}
-                  placeholder={t('receivables.paidAmount')} 
-                  value={form.paidAmount} 
-                  onChange={(e) => setForm({ ...form, paidAmount: e.target.value })} 
-                />
-                <CustomSelect 
-                  value={form.paidFrom} 
-                  onChange={(v) => setForm({ ...form, paidFrom: v })} 
-                  options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
-                  placeholder={t('receivables.selectAccount')} 
-                  disabled={isSubmitting}
-                />
+                <div>
+                  <input 
+                    id="ge-paid-amount"
+                    className={`w-full bg-white/5 border rounded-2xl p-4 text-white placeholder-white/30 focus:outline-none transition-all disabled:opacity-50 ${
+                      fieldErrors.paidAmount
+                        ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
+                        : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70 focus:shadow-[0_0_12px_rgba(141,99,70,0.25)]'
+                    }`}
+                    required 
+                    type="number" 
+                    min="0.01" 
+                    step="any"
+                    disabled={isSubmitting}
+                    placeholder={t('receivables.paidAmount')} 
+                    value={form.paidAmount} 
+                    onChange={(e) => {
+                      setForm({ ...form, paidAmount: e.target.value });
+                      if (fieldErrors.paidAmount) setFieldErrors(prev => ({ ...prev, paidAmount: null }));
+                    }} 
+                  />
+                  {fieldErrors.paidAmount && (
+                    <p className="text-xs text-[#FF3B30] mt-1 px-1">{fieldErrors.paidAmount}</p>
+                  )}
+                </div>
+                <div>
+                  <CustomSelect 
+                    value={form.paidFrom} 
+                    onChange={(v) => setForm({ ...form, paidFrom: v })} 
+                    options={accounts.filter(a => !a.isArchived).map(a => ({
+                      value: a._id,
+                      label: a.name,
+                      icon: a.icon,
+                      color: a.color,
+                      subtitle: a.balance !== undefined ? `${a.balance.toLocaleString(isRTL ? 'ar-EG' : 'en-US')} ${a.currency || 'EGP'}` : undefined
+                    }))} 
+                    placeholder={t('receivables.selectAccount')} 
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
             </div>
 
@@ -251,7 +306,13 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 <CustomSelect 
                   value={form.receivedTo} 
                   onChange={(v) => setForm({ ...form, receivedTo: v })} 
-                  options={accounts.filter(a => !a.isArchived).map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))} 
+                  options={accounts.filter(a => !a.isArchived).map(a => ({
+                    value: a._id,
+                    label: a.name,
+                    icon: a.icon,
+                    color: a.color,
+                    subtitle: a.balance !== undefined ? `${a.balance.toLocaleString(isRTL ? 'ar-EG' : 'en-US')} ${a.currency || 'EGP'}` : undefined
+                  }))} 
                   placeholder={t('receivables.receivingAccount')} 
                   disabled={isSubmitting}
                 />
@@ -259,9 +320,9 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/10">
-              <label className="text-sm font-medium text-white/90 px-1">
+              <span className="block text-sm font-medium text-white/90 px-1">
                 {t('receivables.friendsOwes')}
-              </label>
+              </span>
               {form.participants.map((participant, index) => (
                 <div className="flex gap-2 items-center" key={index}>
                   <div className="grid grid-cols-2 gap-3 flex-1">
@@ -281,7 +342,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                       required 
                       type="number" 
                       min="0.01" 
-                      step="any"
+                      step="any" 
                       disabled={isSubmitting}
                       aria-label={`${t('receivables.owedAmount')} ${index + 1}`}
                       placeholder={t('receivables.amountOwed')} 
@@ -295,7 +356,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                       disabled={isSubmitting}
                       aria-label={t('common.delete') || 'Delete'}
                       onClick={() => removeParticipant(index)} 
-                      className="p-3 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition border border-red-500/20 shadow-sm disabled:opacity-40 shrink-0"
+                      className="min-w-[44px] min-h-[44px] p-3 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition border border-red-500/20 shadow-sm disabled:opacity-40 flex items-center justify-center shrink-0"
                     >
                       <Trash2 size={20} />
                     </button>
@@ -306,7 +367,7 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
                 type="button" 
                 disabled={isSubmitting}
                 onClick={addParticipant} 
-                className="text-sm font-medium text-[#E8C5A8] hover:text-white transition-colors flex items-center gap-1.5 ms-1 disabled:opacity-40"
+                className="min-h-[44px] py-2 px-3 text-sm font-medium text-[#E8C5A8] hover:text-white transition-colors flex items-center gap-1.5 ms-1 disabled:opacity-40"
               >
                 {t('receivables.addPerson')}
               </button>
@@ -319,9 +380,9 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
               </div>
               
               <div className="border-t border-[#8D6346]/20 pt-4">
-                <label className="text-sm font-medium text-white/90 block mb-2 px-1">
+                <span className="text-sm font-medium text-white/90 block mb-2 px-1">
                   {t('receivables.expenseCategory')}
-                </label>
+                </span>
                 <CustomSelect 
                   value={form.expenseCategory} 
                   onChange={(v) => setForm({ ...form, expenseCategory: v })} 
@@ -335,8 +396,8 @@ export default function GroupExpenseModal({ isOpen, onClose, onSave, initialData
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-white/10 bg-transparent">
+        {/* Sticky Actions Footer */}
+        <div className="sticky bottom-0 z-20 p-6 border-t border-white/10 bg-[#1C1819]/90 backdrop-blur-md">
           <button 
             type="submit"
             form="group-expense-form"

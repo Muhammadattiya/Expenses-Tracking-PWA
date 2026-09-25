@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, CheckCircle2, Calendar, Loader2 } from 'lucide-react';
@@ -27,10 +27,14 @@ export default function BillModal({
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderDaysBefore, setReminderDaysBefore] = useState(1);
   const [notes, setNotes] = useState('');
+  const [errors, setErrors] = useState({});
 
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const nameInputRef = useRef(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -55,14 +59,43 @@ export default function BillModal({
         setReminderDaysBefore(1);
         setNotes('');
       }
+      setErrors({});
+
+      // Autofocus primary field on mount
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, bill, accounts, categories]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !expectedAmount) return;
+    const newErrors = {};
+    if (!name.trim()) newErrors.name = t('common.nameRequired') || t('common.required');
+    if (!expectedAmount || Number(expectedAmount) <= 0) newErrors.expectedAmount = t('common.amountRequired') || t('common.required');
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -118,6 +151,9 @@ export default function BillModal({
 
         {/* Pure Liquid Glass Modal Container - Perfectly Sized with Zero Scroll */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bill-modal-title"
           initial={{ opacity: 0, scale: 0.94, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 15 }}
@@ -126,7 +162,7 @@ export default function BillModal({
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-3 relative z-10">
-            <h3 className="text-[16px] font-bold text-white tracking-wide">
+            <h3 id="bill-modal-title" className="text-[16px] font-bold text-white tracking-wide">
               {bill ? t('bills.editBill') : t('bills.addBill')}
             </h3>
 
@@ -135,69 +171,95 @@ export default function BillModal({
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="p-1.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 rounded-full transition-colors text-red-400 hover:text-red-300 active:scale-95 flex items-center justify-center"
+                  aria-label={t('common.delete')}
+                  className="w-11 h-11 bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 rounded-full transition-colors text-red-400 hover:text-red-300 active:scale-95 flex items-center justify-center"
                   title={t('common.delete')}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 bg-black/20 hover:bg-black/40 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center"
+                aria-label={t('common.close')}
+                className="w-11 h-11 bg-white/5 hover:bg-white/15 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
+          <form ref={formRef} noValidate onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
             {/* Row 1: Bill Name & Expected Amount (2-Columns) */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+                <label htmlFor="bill-name-input" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                   {t('bills.name')}
                 </label>
                 <input
+                  id="bill-name-input"
+                  ref={nameInputRef}
                   type="text"
                   required
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
+                  }}
                   placeholder={t('bills.name')}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 text-[13px] font-medium text-white placeholder-white/35 focus:outline-none focus:border-[#8D6346] shadow-inner transition-all"
+                  className={`w-full bg-black/30 border ${
+                    errors.name ? 'border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]' : 'border-white/10 focus:border-[#8D6346]'
+                  } rounded-xl py-2 px-3 text-[13px] font-medium text-white placeholder-white/35 focus:outline-none shadow-inner transition-all`}
                 />
+                {errors.name && (
+                  <span className="text-[#FF3B30] text-[10px] font-medium mt-0.5 block px-1 animate-fade-in">
+                    {errors.name}
+                  </span>
+                )}
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+                <label htmlFor="bill-amount-input" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                   {t('bills.amount')}
                 </label>
                 <div className="relative">
                   <input
+                    id="bill-amount-input"
                     type="number"
                     inputMode="decimal"
                     required
                     min="0"
                     value={expectedAmount}
-                    onChange={(e) => setExpectedAmount(e.target.value)}
+                    onChange={(e) => {
+                      setExpectedAmount(e.target.value);
+                      if (errors.expectedAmount) setErrors(prev => ({ ...prev, expectedAmount: undefined }));
+                    }}
                     placeholder="0"
-                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none focus:border-[#8D6346] shadow-inner transition-all"
+                    className={`w-full bg-black/30 border ${
+                      errors.expectedAmount ? 'border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]' : 'border-white/10 focus:border-[#8D6346]'
+                    } rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none shadow-inner transition-all`}
                   />
                   <span className="absolute end-2.5 top-2 text-[11px] text-white/50 font-semibold pointer-events-none">
                     {t('nav.currency')}
                   </span>
                 </div>
+                {errors.expectedAmount && (
+                  <span className="text-[#FF3B30] text-[10px] font-medium mt-0.5 block px-1 animate-fade-in">
+                    {errors.expectedAmount}
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Row 2: Due Date & Repeat (2-Columns) */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+                <label htmlFor="bill-date-btn" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                   {t('bills.dueDate')}
                 </label>
                 <button
+                  id="bill-date-btn"
                   type="button"
                   onClick={() => setIsDatePickerOpen(true)}
                   className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 text-[12px] font-medium text-white flex items-center justify-between focus:outline-none focus:border-[#8D6346] shadow-inner transition-all hover:bg-white/[0.08]"
@@ -208,9 +270,9 @@ export default function BillModal({
               </div>
 
               <div className="min-w-0">
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                   {t('bills.repeat')}
-                </label>
+                </span>
                 <CustomSelect
                   value={repeat}
                   onChange={setRepeat}
@@ -223,9 +285,9 @@ export default function BillModal({
             {/* Row 3: Category & Account (2-Columns) */}
             <div className="grid grid-cols-2 gap-2">
               <div className="min-w-0">
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                   {t('addTransaction.category')}
-                </label>
+                </span>
                 <CustomSelect
                   value={category}
                   onChange={setCategory}
@@ -235,13 +297,19 @@ export default function BillModal({
               </div>
 
               <div className="min-w-0">
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                   {t('addTransaction.account')}
-                </label>
+                </span>
                 <CustomSelect
                   value={account}
                   onChange={setAccount}
-                  options={accounts.filter((a) => !a.isArchived).map((a) => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
+                  options={accounts.filter((a) => !a.isArchived).map((a) => ({
+                    value: a._id,
+                    label: a.name,
+                    icon: a.icon,
+                    color: a.color,
+                    subtitle: a.balance !== undefined ? `${a.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                  }))}
                   placeholder={t('addTransaction.account')}
                 />
               </div>
@@ -255,11 +323,14 @@ export default function BillModal({
                 </span>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={reminderEnabled}
+                  aria-label={t('bills.reminder')}
                   onClick={() => setReminderEnabled(!reminderEnabled)}
-                  className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-[#8D6346]' : 'bg-white/15'}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${reminderEnabled ? 'bg-[#8D6346]' : 'bg-white/15'}`}
                 >
                   <div
-                    className={`absolute top-0.5 ${lang === 'ar' ? (reminderEnabled ? 'right-5' : 'right-0.5') : (reminderEnabled ? 'left-5' : 'left-0.5')} w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-md`}
+                    className={`absolute top-0.5 ${lang === 'ar' ? (reminderEnabled ? 'right-5' : 'right-0.5') : (reminderEnabled ? 'left-5' : 'left-0.5')} w-5 h-5 rounded-full bg-white transition-all duration-300 shadow-md`}
                   />
                 </button>
               </div>

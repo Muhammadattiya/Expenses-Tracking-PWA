@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 // but strictly prevents malicious `while(true)` script abuse.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300,
+  max: process.env.NODE_ENV === 'development' ? 2000 : 300,
   skip: () => process.env.NODE_ENV === 'test',
   keyGenerator: (req) => String(req.user?.id || req.ip),
   validate: false, // Don't log warnings for valid IP limits

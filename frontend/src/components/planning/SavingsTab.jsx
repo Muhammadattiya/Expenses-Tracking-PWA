@@ -126,6 +126,19 @@ export default function SavingsTab() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (depositModalOpen && !isDepositing) setDepositModalOpen(false);
+        if (designateModalOpen) setDesignateModalOpen(false);
+      }
+    };
+    if (depositModalOpen || designateModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [depositModalOpen, designateModalOpen, isDepositing]);
+
   const savingsAccounts = useMemo(() => {
     return accounts.filter(a => a.isSavingsAccount && !a.isArchived);
   }, [accounts]);
@@ -306,9 +319,9 @@ export default function SavingsTab() {
             </p>
 
             <motion.button
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setDesignateModalOpen(true)}
-              className="px-6 py-3 bg-[#8D6346] hover:bg-[#A37352] text-white rounded-2xl font-bold text-sm shadow-[0_4px_16px_rgba(141,99,70,0.3)] transition-all inline-flex items-center gap-2"
+              className="px-6 py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] active:scale-[0.98] text-white font-bold text-sm hover:bg-[#8D6346]/45 transition-all inline-flex items-center gap-2 cursor-pointer"
             >
               <Plus size={16} />
               <span>{t('planning.savings.chooseAccount') || 'Select Savings Account'}</span>
@@ -320,21 +333,25 @@ export default function SavingsTab() {
         {designateModalOpen && createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
             <motion.div 
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="designate-savings-title"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md bg-[#1C1817] border border-white/10 rounded-[2rem] p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">
+                <h3 id="designate-savings-title" className="text-lg font-bold text-white">
                   {t('planning.savings.chooseAccount') || 'Select Savings Account'}
                 </h3>
                 <button 
                   data-testid="close-designate-modal"
                   onClick={() => setDesignateModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 text-white/60 hover:text-white flex items-center justify-center"
+                  aria-label={t('common.close')}
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/5 text-white/60 hover:text-white flex items-center justify-center transition-colors"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               </div>
 
@@ -351,7 +368,7 @@ export default function SavingsTab() {
                       data-testid="designate-account-item"
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleDesignateAccount(acc._id)}
-                      className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white/5 hover:bg-[#8D6346]/20 border border-white/5 hover:border-[#8D6346]/40 transition-all text-start"
+                      className="w-full min-h-[44px] flex items-center justify-between p-3.5 rounded-2xl bg-white/5 hover:bg-[#8D6346]/20 border border-white/5 hover:border-[#8D6346]/40 transition-all text-start"
                     >
                       <div className="flex items-center gap-3">
                         <div 
@@ -498,9 +515,9 @@ export default function SavingsTab() {
             </div>
 
             <motion.button
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setDepositModalOpen(true)}
-              className="px-5 py-3 rounded-2xl bg-[#8D6346] hover:bg-[#A37352] text-white font-bold text-sm shadow-[0_4px_16px_rgba(141,99,70,0.3)] transition-all flex items-center justify-center gap-2 shrink-0"
+              className="px-5 py-3 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] active:scale-[0.98] text-white font-bold text-sm hover:bg-[#8D6346]/45 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             >
               <Plus size={16} />
               <span>{t('planning.savings.deposit') || 'Deposit Funds'}</span>
@@ -590,21 +607,25 @@ export default function SavingsTab() {
       {depositModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
           <motion.div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="savings-deposit-modal-title"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="w-full max-w-md bg-[#1C1817] border border-white/10 rounded-[2.5rem] p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 id="savings-deposit-modal-title" className="text-lg font-bold text-white flex items-center gap-2">
                 <Plus className="text-[#8D6346]" size={20} />
                 {t('planning.savings.deposit') || 'Deposit Funds into Savings'}
               </h3>
               <button 
                 onClick={() => setDepositModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/5 text-white/60 hover:text-white flex items-center justify-center"
+                aria-label={t('common.close')}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/5 text-white/60 hover:text-white flex items-center justify-center transition-colors"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
@@ -617,10 +638,11 @@ export default function SavingsTab() {
 
             <form onSubmit={handleDepositSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-white/60 mb-1.5">
+                <label htmlFor="savings-deposit-source" className="block text-xs font-medium text-white/60 mb-1.5">
                   {t('emergencyFund.fromAccountLabel') || 'Source Account'}
                 </label>
                 <select
+                  id="savings-deposit-source"
                   value={fromAccountId}
                   onChange={(e) => setFromAccountId(e.target.value)}
                   className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-[#8D6346]"
@@ -638,10 +660,11 @@ export default function SavingsTab() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-white/60 mb-1.5">
+                <label htmlFor="savings-deposit-amount" className="block text-xs font-medium text-white/60 mb-1.5">
                   {t('emergencyFund.depositAmountLabel') || 'Amount to Deposit (EGP)'}
                 </label>
                 <input
+                  id="savings-deposit-amount"
                   type="number"
                   min="1"
                   step="any"
@@ -658,7 +681,7 @@ export default function SavingsTab() {
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={isDepositing}
-                  className="w-full py-3.5 bg-[#8D6346] hover:bg-[#A37352] text-white font-bold rounded-xl text-sm transition-all shadow-[0_4px_16px_rgba(141,99,70,0.3)] disabled:opacity-50"
+                  className="w-full py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] active:scale-[0.98] font-semibold text-white hover:bg-[#8D6346]/45 text-sm transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isDepositing ? (t('emergencyFund.depositing') || 'Transferring...') : (t('planning.savings.deposit') || 'Confirm Deposit')}
                 </motion.button>
@@ -673,21 +696,25 @@ export default function SavingsTab() {
       {designateModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
           <motion.div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="designate-savings-modal-title"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="w-full max-w-md bg-[#1C1817] border border-white/10 rounded-[2rem] p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">
+              <h3 id="designate-savings-modal-title" className="text-lg font-bold text-white">
                 {t('planning.savings.chooseAccount') || 'Select Savings Account'}
               </h3>
               <button 
                 data-testid="close-designate-modal"
                 onClick={() => setDesignateModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/5 text-white/60 hover:text-white flex items-center justify-center"
+                aria-label={t('common.close')}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/5 text-white/60 hover:text-white flex items-center justify-center transition-colors"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
@@ -706,7 +733,7 @@ export default function SavingsTab() {
                     data-testid="designate-account-item"
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleDesignateAccount(acc._id)}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-start ${
+                    className={`w-full min-h-[44px] flex items-center justify-between p-3.5 rounded-2xl border transition-all text-start ${
                       isCurrent 
                         ? 'bg-[#8D6346]/20 border-[#8D6346]/60' 
                         : 'bg-white/5 hover:bg-[#8D6346]/10 border-white/5 hover:border-[#8D6346]/30'

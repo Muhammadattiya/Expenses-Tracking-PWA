@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, X, Trash2, CheckCircle2, Calendar, Calculator } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateTransaction } from "../../api/transactions";
@@ -29,6 +29,9 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [errors, setErrors] = useState({});
+  const amountInputRef = useRef(null);
+  const formRef = useRef(null);
   const { showToast } = useNotification();
 
   useEffect(() => {
@@ -43,6 +46,12 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
       setCategory(transaction.category?._id || (typeof transaction.category === 'string' ? transaction.category : ""));
       setFromAccount(transaction.from_account?._id || (typeof transaction.from_account === 'string' ? transaction.from_account : ""));
       setToAccount(transaction.to_account?._id || (typeof transaction.to_account === 'string' ? transaction.to_account : ""));
+      setErrors({});
+
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [open, transaction]);
 
@@ -55,11 +64,34 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
     }
   }, [open, accounts.length]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   if (!open || !transaction) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isUpdating) return;
+    const newErrors = {};
+    if (!amount || Number(amount) <= 0) newErrors.amount = t('common.amountRequired') || t('common.required');
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setIsUpdating(true);
     try {
       const payload = {
@@ -106,6 +138,9 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
 
         {/* Pure Liquid Glass Modal Container - Perfectly Sized with Zero Scroll */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-transaction-title"
           initial={{ opacity: 0, scale: 0.94, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 15 }}
@@ -114,7 +149,7 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
         >
           {/* Header with Title and Quick Action Icons */}
           <div className="flex justify-between items-center mb-3 relative z-10">
-            <h3 className="text-[16px] font-bold text-white tracking-wide">
+            <h3 id="edit-transaction-title" className="text-[16px] font-bold text-white tracking-wide">
               {t('modals.editTransactionTitle')}
             </h3>
             
@@ -122,22 +157,24 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
               <button 
                 type="button"
                 onClick={() => setDeleteConfirmOpen(true)} 
-                className="p-1.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 rounded-full transition-colors text-red-400 hover:text-red-300 active:scale-95 flex items-center justify-center"
+                aria-label={t('modals.deleteTransaction')}
+                className="w-11 h-11 bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 rounded-full transition-colors text-red-400 hover:text-red-300 active:scale-95 flex items-center justify-center"
                 title={t('modals.deleteTransaction')}
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" />
               </button>
               <button 
                 type="button"
                 onClick={onClose} 
-                className="p-1.5 bg-black/20 hover:bg-black/40 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center"
+                aria-label={t('common.close')}
+                className="w-11 h-11 bg-white/5 hover:bg-white/15 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
+          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-2.5 relative z-10">
             
             {/* Type Switch Capsule with Liquid Glass */}
             <div className="flex liquidglass p-1 rounded-full border border-white/15 shadow-inner">
@@ -180,39 +217,53 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <div className="flex items-center justify-between mb-1 px-1">
-                  <label className="text-[11px] font-medium text-white/75">
+                  <label htmlFor="edit-tx-amount" className="text-[11px] font-medium text-white/75">
                     {t('modals.amountLabel')}
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowCalculator(true)}
-                    className="p-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all active:scale-95 flex items-center justify-center"
+                    aria-label={t('calculator.title')}
+                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all active:scale-95 flex items-center justify-center"
                     title={t('calculator.title')}
                   >
-                    <Calculator size={12} />
+                    <Calculator size={13} />
                   </button>
                 </div>
                 <div className="relative">
                   <input
+                    id="edit-tx-amount"
+                    ref={amountInputRef}
                     type="number"
                     inputMode="decimal"
                     required
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none focus:border-[#8D6346] shadow-inner transition-all"
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      if (errors.amount) setErrors(prev => ({ ...prev, amount: undefined }));
+                    }}
+                    className={`w-full bg-black/30 border ${
+                      errors.amount ? 'border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]' : 'border-white/10 focus:border-[#8D6346]'
+                    } rounded-xl py-2 px-3 pe-11 text-[13px] font-bold text-white focus:outline-none shadow-inner transition-all`}
                     style={{ caretColor: type === 'expense' ? '#FF5555' : type === 'income' ? '#34C759' : '#007AFF' }}
                   />
                   <span className="absolute end-2.5 top-2 text-[11px] text-white/50 font-semibold pointer-events-none">
                     {t('nav.currency')}
                   </span>
                 </div>
+                {errors.amount && (
+                  <span className="text-[#FF3B30] text-[10px] font-medium mt-0.5 block px-1 animate-fade-in">
+                    {errors.amount}
+                  </span>
+                )}
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+                <label htmlFor="edit-tx-date-btn" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                   {t('modals.dateLabel')}
                 </label>
                 <button
+                  id="edit-tx-date-btn"
                   type="button"
                   onClick={() => setIsDatePickerOpen(true)}
                   className="w-full bg-black/30 border border-white/10 rounded-xl py-2 px-3 text-[12px] font-medium text-white flex items-center justify-between focus:outline-none focus:border-[#8D6346] shadow-inner transition-all hover:bg-white/[0.08]"
@@ -225,10 +276,11 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
 
             {/* Description Field */}
             <div>
-              <label className="block text-[11px] font-medium text-white/75 mb-1 px-1">
+              <label htmlFor="edit-tx-desc" className="block text-[11px] font-medium text-white/75 mb-1 px-1">
                 {t('modals.descriptionLabel')}
               </label>
               <input
+                id="edit-tx-desc"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -241,24 +293,36 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
             {type === 'transfer' ? (
               <div className="grid grid-cols-2 gap-2">
                 <div className="min-w-0">
-                  <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                  <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                     {t('modals.fromAccount')}
-                  </label>
+                  </span>
                   <CustomSelect
                     value={fromAccount}
                     onChange={setFromAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>
                 <div className="min-w-0">
-                  <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                  <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                     {t('modals.toAccount')}
-                  </label>
+                  </span>
                   <CustomSelect
                     value={toAccount}
                     onChange={setToAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>
@@ -266,20 +330,26 @@ const EditTransactionModal = ({ transaction, open, onClose, onSkip, onDelete, on
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <div className="min-w-0">
-                  <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                  <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                     {t('modals.accountLabel')}
-                  </label>
+                  </span>
                   <CustomSelect
                     value={account}
                     onChange={setAccount}
-                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))}
+                    options={accounts.filter(acc => !acc.isArchived).map(acc => ({
+                      value: acc._id,
+                      label: acc.name,
+                      icon: acc.icon,
+                      color: acc.color,
+                      subtitle: acc.balance !== undefined ? `${acc.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                    }))}
                     placeholder={t('modals.selectAccount')}
                   />
                 </div>
                 <div className="min-w-0">
-                  <label className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
+                  <span className="block text-[11px] font-medium text-white/75 mb-1 px-1 truncate">
                     {t('modals.categoryLabel')}
-                  </label>
+                  </span>
                   <CustomSelect
                     value={category}
                     onChange={setCategory}

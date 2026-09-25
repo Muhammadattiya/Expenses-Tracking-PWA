@@ -60,6 +60,17 @@ export default function EmergencyFundTab() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!changeAccountModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isUpdatingAccount) {
+        setChangeAccountModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [changeAccountModalOpen, isUpdatingAccount]);
+
   const handleSelectEmergencyAccount = async (accId) => {
     try {
       setIsUpdatingAccount(true);
@@ -170,9 +181,9 @@ export default function EmergencyFundTab() {
           ) : (
             <div className="mt-4 pt-4 border-t border-white/10">
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setChangeAccountModalOpen(true)}
-                className="w-full py-3 bg-[#8D6346] hover:bg-[#A37352] text-white rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] active:scale-[0.98] font-semibold text-white hover:bg-[#8D6346]/45 transition-all flex items-center justify-center gap-2"
               >
                 <Plus size={16} />
                 <span>{t('planning.emergency.chooseAccount') || 'Select Emergency Account'}</span>
@@ -182,7 +193,7 @@ export default function EmergencyFundTab() {
         </div>
       </motion.div>
 
-      {/* Financial Shield Widget (Moved exclusively to this page) */}
+      {/* Financial Shield Widget */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -202,21 +213,25 @@ export default function EmergencyFundTab() {
       {changeAccountModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
           <motion.div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-emergency-account-title"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="w-full max-w-md bg-[#1C1817] border border-white/10 rounded-[2.5rem] p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 id="change-emergency-account-title" className="text-lg font-bold text-white flex items-center gap-2">
                 <Shield className="text-[#34C759]" size={20} />
                 {t('planning.emergency.chooseAccount') || 'Select Emergency Account'}
               </h3>
               <button 
                 onClick={() => setChangeAccountModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/5 text-white/60 hover:text-white flex items-center justify-center"
+                aria-label={t('common.close')}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/5 text-white/60 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
@@ -235,7 +250,7 @@ export default function EmergencyFundTab() {
                     whileTap={{ scale: 0.98 }}
                     disabled={isUpdatingAccount}
                     onClick={() => handleSelectEmergencyAccount(acc._id)}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-start ${
+                    className={`w-full min-h-[44px] flex items-center justify-between p-3.5 rounded-2xl border transition-all text-start ${
                       isCurrent 
                         ? 'bg-[#34C759]/15 border-[#34C759]/50' 
                         : 'bg-white/5 hover:bg-[#8D6346]/10 border-white/5 hover:border-[#8D6346]/30'

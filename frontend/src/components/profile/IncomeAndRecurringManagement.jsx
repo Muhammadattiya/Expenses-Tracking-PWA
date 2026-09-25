@@ -14,7 +14,6 @@ import {
   ChevronRight,
   ArrowLeft
 } from 'lucide-react';
-import { createPortal } from 'react-dom';
 import ConfirmModal from '../modals/ConfirmModal';
 import IncomeProfileModal from '../modals/IncomeProfileModal';
 import EditRecurringTransactionModal from '../modals/EditRecurringTransactionModal';

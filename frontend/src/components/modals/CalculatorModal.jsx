@@ -16,6 +16,18 @@ export default function CalculatorModal({ isOpen, onClose, onSave, initialValue 
     }
   }, [isOpen, initialValue]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleInput = (val) => {
@@ -146,6 +158,9 @@ export default function CalculatorModal({ isOpen, onClose, onSave, initialValue 
         
         {/* Modal */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="calculator-modal-title"
           initial={{ opacity: 0, scale: 0.92, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 15 }}
@@ -154,11 +169,12 @@ export default function CalculatorModal({ isOpen, onClose, onSave, initialValue 
         >
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-white font-bold text-[16px] tracking-wide">{t('calculator.title')}</h3>
+            <h3 id="calculator-modal-title" className="text-white font-bold text-[16px] tracking-wide">{t('calculator.title')}</h3>
             <button 
               type="button"
               onClick={onClose} 
-              className="p-1.5 bg-black/20 hover:bg-black/40 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95"
+              aria-label={t('common.close')}
+              className="w-11 h-11 bg-white/5 hover:bg-white/15 border border-white/10 rounded-full transition-colors text-white/70 hover:text-white active:scale-95 flex items-center justify-center shrink-0"
             >
               <X size={16} />
             </button>

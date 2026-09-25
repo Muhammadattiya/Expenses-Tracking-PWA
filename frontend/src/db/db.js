@@ -61,6 +61,10 @@ db.version(10).stores({
   savingsGoals: '_id, user, status, targetDate, linkedAccountId'
 });
 
+db.version(11).stores({
+  investments: '_id, user, type, symbol, name, purchasedAt'
+});
+
 export async function clearOfflineData() {
   await db.transactions.clear();
   await db.accounts.clear();
@@ -74,6 +78,7 @@ export async function clearOfflineData() {
   if (db.debtTransactions) await db.debtTransactions.clear();
   if (db.installments) await db.installments.clear();
   if (db.savingsGoals) await db.savingsGoals.clear();
+  if (db.investments) await db.investments.clear();
   if (db.syncMetadata) await db.syncMetadata.clear();
 }
 

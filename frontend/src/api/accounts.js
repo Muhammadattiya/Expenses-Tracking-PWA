@@ -21,7 +21,7 @@ export const getAccounts = async () => {
     }
     return sortedData;
   } catch (error) {
-    if (!error.response || !navigator.onLine || (error.code === 'ERR_NETWORK') || error.response?.status === 401 || error.response?.status === 403 || error.response?.status >= 500) {
+    if (!error.response || !navigator.onLine || (error.code === 'ERR_NETWORK') || error.response?.status === 401 || error.response?.status === 403 || error.response?.status === 429 || error.response?.status >= 500) {
       if (!userId) return [];
       const offline = await db.accounts.where({ userId }).toArray();
       return offline.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

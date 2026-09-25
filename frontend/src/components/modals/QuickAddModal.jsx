@@ -64,11 +64,18 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (candidates.length > 0) {
+          handleConfirmAll();
+        } else if (textInput.trim()) {
+          handleParse();
+        }
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, candidates, textInput]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -274,9 +281,9 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 type="button"
                 onClick={onClose}
                 aria-label={t('common.close')}
-                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+                className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
           </div>
@@ -420,7 +427,13 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                           <CustomSelect
                             value={cand.accountId}
                             onChange={val => updateCandidate(cand.id, 'accountId', val)}
-                            options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
+                            options={accounts.map(a => ({
+                              value: a._id,
+                              label: a.name,
+                              icon: a.icon,
+                              color: a.color,
+                              subtitle: a.balance !== undefined ? `${a.balance.toLocaleString()} ${t('nav.currency') || 'EGP'}` : undefined
+                            }))}
                           />
                         </div>
                       </div>
@@ -435,7 +448,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 ))}
               </div>
               
-              <div className="flex gap-3 mt-2">
+              <div className="sticky bottom-0 bg-[#141115]/95 backdrop-blur-md pt-3 pb-1 mt-2 z-20 flex gap-3">
                 <button 
                   type="button"
                   onClick={() => setCandidates([])} 

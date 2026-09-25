@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Bill = require('../models/Bill');
 const Account = require('../models/Account');
 const Category = require('../models/Category');
@@ -39,6 +40,8 @@ exports.createBill = async (userId, data) => {
   bill.status = calculateBillStatus(bill.dueDate);
 
   await bill.save();
+  const { reconcileEmergencyFundBurn } = require('./emergencyFundService');
+  reconcileEmergencyFundBurn(userId).catch(err => console.error('[EMERGENCY_FUND] bill reconcile error:', err.message));
   return bill;
 };
 
@@ -68,12 +71,16 @@ exports.updateBill = async (userId, id, data) => {
     bill.status = calculateBillStatus(bill.dueDate);
   }
   await bill.save();
+  const { reconcileEmergencyFundBurn } = require('./emergencyFundService');
+  reconcileEmergencyFundBurn(userId).catch(err => console.error('[EMERGENCY_FUND] bill reconcile error:', err.message));
   return bill;
 };
 
 exports.deleteBill = async (userId, id) => {
   const bill = await Bill.findOneAndDelete({ _id: id, user: userId });
   if (!bill) throw new Error('Bill not found');
+  const { reconcileEmergencyFundBurn } = require('./emergencyFundService');
+  reconcileEmergencyFundBurn(userId).catch(err => console.error('[EMERGENCY_FUND] bill reconcile error:', err.message));
   return bill;
 };
 
@@ -89,19 +96,30 @@ exports.markAsPaid = async (userId, id, transactionId) => {
     bill.paymentHistory = [];
   }
 
+  // Validate that transactionId is a genuine 24-character hexadecimal ObjectId
+  // to avoid fatal CastErrors with client-side offline IDs (e.g., "local_...")
+  const isValidTxId = Boolean(
+    transactionId &&
+    typeof transactionId === 'string' &&
+    !transactionId.startsWith('local_') &&
+    mongoose.Types.ObjectId.isValid(transactionId) &&
+    transactionId.length === 24
+  );
+  const safeTxId = isValidTxId ? transactionId : undefined;
+
   // Record payment in paymentHistory to preserve it permanently across cycles
   bill.paymentHistory.push({
     paidAt: now,
     dueDate: currentDueDate,
     amount: paidAmount,
-    transactionId: transactionId || undefined
+    transactionId: safeTxId
   });
 
   // Preserve latest payment date and transaction references
   bill.paymentDate = now;
   bill.lastPaymentDate = now;
-  if (transactionId) {
-    bill.lastTransactionId = transactionId;
+  if (safeTxId) {
+    bill.lastTransactionId = safeTxId;
   }
 
   if (bill.repeat !== 'never') {
@@ -118,7 +136,7 @@ exports.markAsPaid = async (userId, id, transactionId) => {
     bill.transactionId = undefined; 
   } else {
     bill.status = 'paid';
-    bill.transactionId = transactionId;
+    bill.transactionId = safeTxId;
   }
   
   await bill.save();

@@ -22,9 +22,10 @@ import CurrencyCard from '../components/investments/CurrencyCard';
 import GoldInvestmentModal from '../components/investments/GoldInvestmentModal';
 import StockInvestmentModal from '../components/investments/StockInvestmentModal';
 import CurrencyInvestmentModal from '../components/investments/CurrencyInvestmentModal';
-import ConfirmModal from '../components/modals/ConfirmModal';
+import DeleteInvestmentModal from '../components/investments/DeleteInvestmentModal';
 import { InvestmentsSkeleton } from '../components/ui/Skeletons';
 import ErrorMessage from '../components/ui/ErrorMessage';
+import { db } from '../db/db';
 
 export default function Investments() {
   const { t, lang } = useLanguage();
@@ -43,7 +44,8 @@ export default function Investments() {
   // Modal controls
   const [modalType, setModalType] = useState(null); // 'gold', 'stock', 'currency' or null
   const [editingItem, setEditingItem] = useState(null);
-  const [deleteId, setDeleteId] = useState(null);
+  const [deletingItem, setDeletingItem] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const money = (value) => new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', { 
     style: 'currency', 
@@ -63,6 +65,19 @@ export default function Investments() {
     else setLoading(true);
     setError('');
 
+    // Instant local hydration from Dexie
+    if (!isManualRefresh && db.investments) {
+      try {
+        const localItems = await db.investments.toArray();
+        if (localItems && localItems.length > 0) {
+          setInvestments(localItems);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error('Dexie hydration error:', e);
+      }
+    }
+
     const cachedGold = localStorage.getItem('cachedGoldPrice');
     if (cachedGold) {
       try { setGold(JSON.parse(cachedGold)); } catch (e) {}
@@ -73,14 +88,14 @@ export default function Investments() {
     if (itemsResult.status === 'fulfilled') {
       setInvestments(itemsResult.value || []);
     } else {
-      setError(itemsResult.reason.response?.data?.message || t('investments.loadError'));
+      setError(itemsResult.reason?.response?.data?.message || t('investments.loadError'));
     }
     
     if (priceResult.status === 'fulfilled') {
       setGold(priceResult.value);
       localStorage.setItem('cachedGoldPrice', JSON.stringify(priceResult.value));
     } else if (!cachedGold) {
-      setError(priceResult.reason.response?.data?.message || t('investments.goldPriceError'));
+      setError(priceResult.reason?.response?.data?.message || t('investments.goldPriceError'));
     }
 
     setLoading(false);
@@ -173,24 +188,28 @@ export default function Investments() {
         await createInvestment(formData);
         showToast(t('common.addSuccess'), 'success');
       }
+      window.dispatchEvent(new CustomEvent('finova-data-updated'));
       await loadData();
     } catch (err) {
       showToast(err.response?.data?.message || err.message || t('investments.saveError'), 'error');
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    const id = deleteId;
-    setDeleteId(null);
-    const previous = [...investments];
-    setInvestments(investments.filter(item => item._id !== id));
+  const handleDelete = async (revertTransaction) => {
+    if (!deletingItem) return;
+    const itemToDelete = deletingItem;
+    setDeleteLoading(true);
+
     try {
-      await deleteInvestment(id);
+      await deleteInvestment(itemToDelete._id, revertTransaction);
+      setInvestments(prev => prev.filter(item => item._id !== itemToDelete._id));
+      setDeletingItem(null);
       showToast(t('common.deleteSuccess'), 'success');
+      window.dispatchEvent(new CustomEvent('finova-data-updated'));
     } catch (err) {
-      setInvestments(previous);
-      showToast(t('investments.deleteError'), 'error');
+      showToast(err.response?.data?.message || err.message || t('investments.deleteError'), 'error');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -434,7 +453,7 @@ export default function Investments() {
                   item={item}
                   liveGoldRate={liveRate}
                   onEdit={handleOpenEditModal}
-                  onDelete={(id) => setDeleteId(id)}
+                  onDelete={() => setDeletingItem(item)}
                 />
               );
             }
@@ -444,7 +463,7 @@ export default function Investments() {
                   key={item._id}
                   item={item}
                   onEdit={handleOpenEditModal}
-                  onDelete={(id) => setDeleteId(id)}
+                  onDelete={() => setDeletingItem(item)}
                 />
               );
             }
@@ -455,7 +474,7 @@ export default function Investments() {
                 item={item}
                 liveUsdRate={gold?.usdToEgp}
                 onEdit={handleOpenEditModal}
-                onDelete={(id) => setDeleteId(id)}
+                onDelete={() => setDeletingItem(item)}
               />
             );
           })}
@@ -512,13 +531,13 @@ export default function Investments() {
         liveUsdRate={gold?.usdToEgp}
       />
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        open={!!deleteId}
-        title={t('investments.deleteTitle')}
-        message={t('investments.deleteConfirm')}
+      {/* Dual-choice Delete Confirmation Modal */}
+      <DeleteInvestmentModal
+        isOpen={Boolean(deletingItem)}
+        item={deletingItem}
+        loading={deleteLoading}
+        onClose={() => setDeletingItem(null)}
         onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
       />
     </div>
   );

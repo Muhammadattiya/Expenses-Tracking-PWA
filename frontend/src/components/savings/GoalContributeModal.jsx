@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, ArrowRightLeft, Loader2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -13,6 +13,7 @@ export default function GoalContributeModal({
   isSubmitting = false
 }) {
   const { t, lang } = useLanguage();
+  const amountInputRef = useRef(null);
 
   const [amount, setAmount] = useState('');
   const [fromAccountId, setFromAccountId] = useState('');
@@ -31,6 +32,33 @@ export default function GoalContributeModal({
       setError('');
     }
   }, [goal, open, accounts]);
+
+  // Autofocus amount input on open
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const formEl = document.querySelector('form');
+        if (formEl) formEl.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
 
   if (!open || !goal) return null;
 
@@ -56,8 +84,11 @@ export default function GoalContributeModal({
   const quickPresets = [500, 1000, 2000, 5000];
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="goal-contribute-title"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -70,7 +101,7 @@ export default function GoalContributeModal({
               <ArrowRightLeft size={22} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">
+              <h3 id="goal-contribute-title" className="text-lg font-bold text-white">
                 {t('savingsGoals.contributeTo', { title: '' })}
               </h3>
               <p className="text-xs text-[#E8C5A8] font-bold">
@@ -79,12 +110,13 @@ export default function GoalContributeModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             disabled={isSubmitting}
             aria-label={t('common.close')}
-            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors shrink-0"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
@@ -99,10 +131,12 @@ export default function GoalContributeModal({
 
           {/* Amount Input */}
           <div>
-            <label className="block text-xs font-semibold text-white/70 mb-1.5">
+            <label htmlFor="contribute-amount-input" className="block text-xs font-semibold text-white/70 mb-1.5">
               {t('savingsGoals.depositAmount')} *
             </label>
             <input
+              ref={amountInputRef}
+              id="contribute-amount-input"
               type="number"
               min="1"
               step="any"
@@ -121,7 +155,7 @@ export default function GoalContributeModal({
                 key={preset}
                 type="button"
                 onClick={() => setAmount(String(preset))}
-                className="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 text-xs font-bold transition-colors tabular-nums"
+                className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 text-xs font-bold transition-colors tabular-nums min-h-[40px]"
               >
                 +{preset.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}
               </button>
@@ -130,10 +164,11 @@ export default function GoalContributeModal({
 
           {/* Source Account */}
           <div>
-            <label className="block text-xs font-semibold text-white/70 mb-1.5">
+            <label htmlFor="contribute-account-select" className="block text-xs font-semibold text-white/70 mb-1.5">
               {t('savingsGoals.fromAccount')} *
             </label>
             <select
+              id="contribute-account-select"
               value={fromAccountId}
               onChange={(e) => setFromAccountId(e.target.value)}
               className="w-full px-4 py-3 bg-[#2B2321] border border-white/10 rounded-2xl text-white text-sm focus:outline-none focus:border-[#8D6346]"
@@ -142,7 +177,7 @@ export default function GoalContributeModal({
               <option value="">{t('savingsGoals.selectSourceAccount')}</option>
               {accounts.map((acc) => (
                 <option key={acc._id} value={acc._id}>
-                  {acc.name} ({acc.type})
+                  {acc.name} ({acc.type}) {acc.balance !== undefined ? `— ${acc.balance.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')} ${acc.currency || 'EGP'}` : ''}
                 </option>
               ))}
             </select>
@@ -150,10 +185,11 @@ export default function GoalContributeModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-white/70 mb-1.5">
+            <label htmlFor="contribute-notes-input" className="block text-xs font-semibold text-white/70 mb-1.5">
               {t('savingsGoals.notes')}
             </label>
             <input
+              id="contribute-notes-input"
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -168,7 +204,7 @@ export default function GoalContributeModal({
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#8D6346] via-[#B88764] to-[#8D6346] hover:opacity-95 text-white font-bold text-sm shadow-[0_8px_24px_rgba(141,99,70,0.4)] flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              className="w-full py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

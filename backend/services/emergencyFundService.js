@@ -9,6 +9,7 @@ const Transaction = require('../models/Transaction');
 const DebtTransaction = require('../models/DebtTransaction');
 const InstallmentTransaction = require('../models/InstallmentTransaction');
 const Receivable = require('../models/Receivable');
+const UserAnalyticsMonthly = require('../models/UserAnalyticsMonthly');
 const transactionService = require('./transactionService');
 const AppError = require('../utils/AppError');
 
@@ -88,19 +89,24 @@ async function computeAccountBalance(userId, account) {
 
 /**
  * Calculates the user's essential monthly burn breakdown.
+ * Implements Option 2 (Hybrid Model):
+ * Monthly Burn Rate = Fixed Commitments (Bills + Recurring + Installments) + Actual Variable Monthly Expenses.
+ *
+ * Performance-optimized: Uses pre-aggregated UserAnalyticsMonthly to derive the user's
+ * actual monthly expense in O(1) time, avoiding expensive ad-hoc collection scans on raw transactions.
  */
 async function calculateBurnBreakdown(userId) {
-  // 1. Recurring Bills
+  // 1. Recurring Bills (Active)
   const bills = await Bill.find({ user: userId, isActive: true }).lean();
   let billsMonthly = 0;
   for (const b of bills) {
-    const amt = Number(b.amount) || 0;
+    const amt = Number(b.expectedAmount ?? b.amount) || 0;
     if (b.repeat === 'weekly') billsMonthly += amt * (52 / 12);
     else if (b.repeat === 'yearly') billsMonthly += amt / 12;
-    else billsMonthly += amt; // monthly default
+    else billsMonthly += amt; // monthly default or active one-time
   }
 
-  // 2. Recurring Expenses
+  // 2. Recurring Expenses (Active)
   const recurrings = await RecurringTransaction.find({ user: userId, isActive: true, type: 'expense' }).lean();
   let recurringMonthly = 0;
   for (const r of recurrings) {
@@ -118,53 +124,94 @@ async function calculateBurnBreakdown(userId) {
     installmentsMonthly += Number(i.monthlyAmount) || 0;
   }
 
-  // 4. Baseline Discretionary Essential Spend (Food, Housing, Utilities, Healthcare)
-  const essentialKeywords = [
-    'food', 'grocer', 'supermarket', 'market', 'housing', 'rent', 'utilit',
-    'health', 'pharmacy', 'medic', 'أكل', 'طعام', 'سوبرماركت', 'تموين', 'سكن',
-    'إيجار', 'كهرباء', 'مياه', 'غاز', 'صحة', 'علاج', 'أدوية', 'صيدلية'
-  ];
+  const fixedMonthlyCommitments = billsMonthly + recurringMonthly + installmentsMonthly;
 
-  const categories = await Category.find({ user: userId }).lean();
-  const essentialCategoryIds = categories
-    .filter(c => {
-      const name = (c.name || '').toLowerCase();
-      return essentialKeywords.some(kw => name.includes(kw));
-    })
-    .map(c => c._id);
-
+  // 4. Actual Variable Monthly Expense (Discretionary Living / Survival Categories)
+  // Utilizes pre-aggregated UserAnalyticsMonthly maintained in O(1) by analyticsEngine.
+  // Supports user-selected survival categories with smart essential defaults.
   let discretionaryBaseline = 0;
 
-  // Check active category budgets for essential categories
-  const activeBudgets = await Budget.find({
-    user: userId,
-    isActive: true,
-    category: { $in: essentialCategoryIds }
-  }).lean();
+  // Retrieve user's configured essential survival categories
+  const efConfig = await EmergencyFund.findOne({ user: userId }).select('essentialCategoryIds').lean();
+  let targetCategoryIds = (efConfig?.essentialCategoryIds || []).map(id => id.toString());
 
-  if (activeBudgets && activeBudgets.length > 0) {
-    discretionaryBaseline = activeBudgets.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
-  } else {
-    // 60-day historical average fallback
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  // If user hasn't explicitly selected categories yet, auto-select default essential categories
+  if (targetCategoryIds.length === 0) {
+    const essentialKeywords = [
+      'food', 'grocer', 'supermarket', 'market', 'housing', 'rent', 'utilit',
+      'health', 'pharmacy', 'medic', 'أكل', 'طعام', 'سوبرماركت', 'تموين', 'سكن',
+      'إيجار', 'كهرباء', 'مياه', 'غاز', 'صحة', 'علاج', 'أدوية', 'صيدلية', 'فواتير'
+    ];
+    const userCategories = await Category.find({ user: userId, type: 'expense' }).lean();
+    targetCategoryIds = userCategories
+      .filter(c => {
+        const name = (c.name || '').toLowerCase();
+        return essentialKeywords.some(kw => name.includes(kw));
+      })
+      .map(c => c._id.toString());
+  }
 
-    const pastEssentialSpend = await Transaction.aggregate([
-      {
-        $match: {
-          user: userId,
-          type: 'expense',
-          category: { $in: essentialCategoryIds },
-          date: { $gte: sixtyDaysAgo }
+  const currentMonthKey = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+  
+  // Read up to 4 recent materialized monthly analytics documents (sub-millisecond indexed read)
+  const monthlyDocs = await UserAnalyticsMonthly.find({ user: userId })
+    .sort({ month: -1 })
+    .limit(4)
+    .select('month summary.expense categoryTotals')
+    .lean();
+
+  // Helper to extract survival category spend from a monthly analytics doc in O(1)
+  const extractSurvivalSpend = (doc) => {
+    if (!doc) return 0;
+    if (targetCategoryIds.length > 0 && doc.categoryTotals) {
+      let catSum = 0;
+      for (const catId of targetCategoryIds) {
+        const catData = doc.categoryTotals instanceof Map
+          ? doc.categoryTotals.get(catId)
+          : doc.categoryTotals[catId];
+        if (catData && catData.amount > 0) {
+          catSum += Number(catData.amount) || 0;
         }
-      },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]);
+      }
+      return catSum;
+    }
+    return Math.max(0, (doc.summary?.expense || 0) - fixedMonthlyCommitments);
+  };
 
-    if (pastEssentialSpend && pastEssentialSpend.length > 0) {
-      discretionaryBaseline = Math.round((pastEssentialSpend[0].total / 60) * 30);
+  // Completed calendar months strictly before the current month with positive expenses
+  const completedMonths = (monthlyDocs || []).filter(
+    doc => doc.month < currentMonthKey && (doc.summary?.expense || 0) > 0
+  );
+
+  if (completedMonths.length > 0) {
+    // Average across recent completed months (up to 3)
+    const recentCompleted = completedMonths.slice(0, 3);
+    const sum = recentCompleted.reduce((acc, d) => acc + extractSurvivalSpend(d), 0);
+    discretionaryBaseline = Math.round(sum / recentCompleted.length);
+  } else {
+    // If no prior completed months exist, examine current month
+    const currentDoc = (monthlyDocs || []).find(doc => doc.month === currentMonthKey);
+    const currentExpense = currentDoc?.summary?.expense || 0;
+    const dayOfMonth = new Date().getUTCDate();
+
+    if (currentExpense > 0 && dayOfMonth >= 3) {
+      const currentSurvival = extractSurvivalSpend(currentDoc);
+      discretionaryBaseline = Math.round((currentSurvival / dayOfMonth) * 30);
+    }
+  }
+
+  // Fallback for new accounts with minimal or no transaction history, or if variable calculated to 0
+  if (discretionaryBaseline <= 0) {
+    const activeBudgets = await Budget.find({
+      user: userId,
+      isActive: true,
+      ...(targetCategoryIds.length > 0 ? { category: { $in: targetCategoryIds } } : {})
+    }).lean();
+
+    if (activeBudgets && activeBudgets.length > 0) {
+      discretionaryBaseline = activeBudgets.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
     } else {
-      // Conservative minimal baseline fallback if brand new user
+      // Conservative minimal baseline for living expenses (food, essential supplies)
       discretionaryBaseline = 3000;
     }
   }
@@ -179,6 +226,8 @@ async function calculateBurnBreakdown(userId) {
 
 /**
  * Retrieves the live Financial Shield metrics.
+ * Uses cached/materialized EmergencyFund calculations if recent,
+ * avoiding unnecessary re-computations on high-frequency UI visits.
  */
 async function getEmergencyFundShield(userId) {
   let config = await EmergencyFund.findOne({ user: userId });
@@ -190,11 +239,37 @@ async function getEmergencyFundShield(userId) {
     await config.save();
   }
 
-  const burnBreakdown = await calculateBurnBreakdown(userId);
-  const calculatedBurn = burnBreakdown.billsMonthly +
-    burnBreakdown.recurringMonthly +
-    burnBreakdown.installmentsMonthly +
-    burnBreakdown.discretionaryBaseline;
+  // Pre-aggregated cache check (TTL: 5 minutes)
+  const CACHE_TTL_MS = 5 * 60 * 1000;
+  const isFresh = config.lastReconciledAt &&
+    (Date.now() - new Date(config.lastReconciledAt).getTime() < CACHE_TTL_MS) &&
+    config.burnBreakdown &&
+    config.essentialMonthlyBurn > 0;
+
+  let burnBreakdown;
+  let calculatedBurn;
+
+  if (isFresh) {
+    burnBreakdown = {
+      billsMonthly: config.burnBreakdown.billsMonthly || 0,
+      recurringMonthly: config.burnBreakdown.recurringMonthly || 0,
+      installmentsMonthly: config.burnBreakdown.installmentsMonthly || 0,
+      discretionaryBaseline: config.burnBreakdown.discretionaryBaseline || 0
+    };
+    calculatedBurn = burnBreakdown.billsMonthly +
+      burnBreakdown.recurringMonthly +
+      burnBreakdown.installmentsMonthly +
+      burnBreakdown.discretionaryBaseline;
+  } else {
+    burnBreakdown = await calculateBurnBreakdown(userId);
+    calculatedBurn = burnBreakdown.billsMonthly +
+      burnBreakdown.recurringMonthly +
+      burnBreakdown.installmentsMonthly +
+      burnBreakdown.discretionaryBaseline;
+
+    config.burnBreakdown = burnBreakdown;
+    config.lastReconciledAt = new Date();
+  }
 
   const essentialMonthlyBurn = (config.customMonthlyBurnOverride && config.customMonthlyBurnOverride > 0)
     ? config.customMonthlyBurnOverride
@@ -202,6 +277,13 @@ async function getEmergencyFundShield(userId) {
 
   const targetMonths = config.targetMonths || 6;
   const targetAmount = Math.round(essentialMonthlyBurn * targetMonths);
+
+  // Persist updated targets if modified or calculated
+  if (!isFresh || config.essentialMonthlyBurn !== essentialMonthlyBurn || config.targetAmount !== targetAmount) {
+    config.essentialMonthlyBurn = essentialMonthlyBurn;
+    config.targetAmount = targetAmount;
+    await config.save();
+  }
 
   // Find linked emergency account
   let reserveAccount = null;
@@ -244,6 +326,7 @@ async function getEmergencyFundShield(userId) {
     runwayDurationMonths,
     protectionTier,
     burnBreakdown,
+    essentialCategoryIds: (config.essentialCategoryIds || []).map(id => id.toString()),
     linkedAccount: reserveAccount ? {
       _id: reserveAccount._id,
       name: reserveAccount.name,
@@ -289,10 +372,18 @@ async function updateEmergencyFund(userId, data) {
     }
   }
 
+  if (data.essentialCategoryIds !== undefined) {
+    config.essentialCategoryIds = Array.isArray(data.essentialCategoryIds)
+      ? data.essentialCategoryIds.filter(id => id && String(id).length === 24)
+      : [];
+  }
+
   if (data.customMonthlyBurnOverride !== undefined) {
     config.customMonthlyBurnOverride = data.customMonthlyBurnOverride ? Number(data.customMonthlyBurnOverride) : null;
   }
 
+  // Invalidate cached reconciliation date so metrics recalculate on save
+  config.lastReconciledAt = null;
   await config.save();
   return getEmergencyFundShield(userId);
 }
@@ -335,10 +426,43 @@ async function depositToEmergencyFund(userId, { fromAccountId, amount, notes }) 
   };
 }
 
+/**
+ * Asynchronously reconciles and updates the emergency fund pre-aggregated metrics.
+ * Can be called after transactions or commitments change.
+ */
+async function reconcileEmergencyFundBurn(userId) {
+  try {
+    const config = await EmergencyFund.findOne({ user: userId });
+    if (!config) return;
+
+    const burnBreakdown = await calculateBurnBreakdown(userId);
+    const calculatedBurn = burnBreakdown.billsMonthly +
+      burnBreakdown.recurringMonthly +
+      burnBreakdown.installmentsMonthly +
+      burnBreakdown.discretionaryBaseline;
+
+    const essentialMonthlyBurn = (config.customMonthlyBurnOverride && config.customMonthlyBurnOverride > 0)
+      ? config.customMonthlyBurnOverride
+      : Math.max(1000, calculatedBurn);
+
+    const targetMonths = config.targetMonths || 6;
+    const targetAmount = Math.round(essentialMonthlyBurn * targetMonths);
+
+    config.burnBreakdown = burnBreakdown;
+    config.essentialMonthlyBurn = essentialMonthlyBurn;
+    config.targetAmount = targetAmount;
+    config.lastReconciledAt = new Date();
+    await config.save();
+  } catch (err) {
+    console.error('[EMERGENCY_FUND] reconcileEmergencyFundBurn error:', err.message);
+  }
+}
+
 module.exports = {
   computeAccountBalance,
   calculateBurnBreakdown,
   getEmergencyFundShield,
   updateEmergencyFund,
-  depositToEmergencyFund
+  depositToEmergencyFund,
+  reconcileEmergencyFundBurn
 };
