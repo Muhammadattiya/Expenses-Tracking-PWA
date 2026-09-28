@@ -94,13 +94,18 @@ export default function BudgetsTab() {
   };
 
   const calculateSpent = async (budgetsList, preferences = {}) => {
+    if (!budgetsList || budgetsList.length === 0) {
+      setSpentData({});
+      return;
+    }
+
     const now = new Date();
     
     // Preferences
     const prefMonthStart = preferences.trackingStartDayMonthly ?? 1;
     const prefWeekStart = preferences.trackingStartDayWeekly ?? 6;
     
-    // Month bounds
+    // Month bounds (numeric ms timestamps)
     let monthStart = new Date(now.getFullYear(), now.getMonth(), prefMonthStart);
     const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const actualMonthStartDay = Math.min(prefMonthStart, lastDayOfCurrentMonth);
@@ -117,8 +122,11 @@ export default function BudgetsTab() {
     monthEnd.setMonth(monthEnd.getMonth() + 1);
     monthEnd.setDate(monthEnd.getDate() - 1);
     monthEnd.setHours(23, 59, 59, 999);
+
+    const monthStartMs = monthStart.getTime();
+    const monthEndMs = monthEnd.getTime();
     
-    // Week bounds
+    // Week bounds (numeric ms timestamps)
     const day = now.getDay();
     const diffToWeekStart = (day - prefWeekStart + 7) % 7; 
     const weekStart = new Date(now);
@@ -129,51 +137,72 @@ export default function BudgetsTab() {
     weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
 
+    const weekStartMs = weekStart.getTime();
+    const weekEndMs = weekEnd.getTime();
+
     const recentTx = await getTransactions();
+
+    // Pre-index expense transactions by category ID with pre-parsed timestamps
+    const txByCat = new Map();
+    for (let i = 0; i < recentTx.length; i++) {
+      const tx = recentTx[i];
+      if (tx.type !== 'expense') continue;
+      
+      const catId = typeof tx.category === 'object' ? String(tx.category?._id || '') : String(tx.category || '');
+      if (!catId) continue;
+
+      const txAccId = typeof tx.account === 'object' ? String(tx.account?._id || '') : String(tx.account || '');
+      const txFromAccId = typeof tx.from_account === 'object' ? String(tx.from_account?._id || '') : String(tx.from_account || '');
+      const time = new Date(tx.date).getTime();
+      const amount = Number(tx.amount) || 0;
+
+      let list = txByCat.get(catId);
+      if (!list) {
+        list = [];
+        txByCat.set(catId, list);
+      }
+      list.push({ time, amount, txAccId, txFromAccId });
+    }
 
     const spentMap = {};
 
-    for (const b of budgetsList) {
+    for (let i = 0; i < budgetsList.length; i++) {
+      const b = budgetsList[i];
       const catId = typeof b.category === 'object' ? String(b.category?._id || '') : String(b.category || '');
-      
-      let categoryTx = recentTx.filter(tx => {
-        const txCatId = typeof tx.category === 'object' ? String(tx.category?._id || '') : String(tx.category || '');
-        return tx.type === 'expense' && txCatId === catId;
-      });
+      const categoryTxs = txByCat.get(catId);
 
-      if (b.account) {
-        const bAccId = typeof b.account === 'object' ? String(b.account?._id || '') : String(b.account);
-        categoryTx = categoryTx.filter(tx => {
-          const txAccId = typeof tx.account === 'object' ? String(tx.account?._id || '') : String(tx.account || '');
-          const txFromAccId = typeof tx.from_account === 'object' ? String(tx.from_account?._id || '') : String(tx.from_account || '');
-          return txAccId === bAccId || txFromAccId === bAccId;
-        });
+      if (!categoryTxs || categoryTxs.length === 0) {
+        spentMap[b._id] = 0;
+        continue;
       }
 
-      let total = 0;
+      const bAccId = b.account ? (typeof b.account === 'object' ? String(b.account?._id || '') : String(b.account)) : null;
       const budgetPeriod = b.period || 'monthly';
-      if (budgetPeriod === 'monthly') {
-        const monthlyTx = categoryTx.filter(tx => {
-          const d = new Date(tx.date);
-          return d >= monthStart && d <= monthEnd;
-        });
-        total = monthlyTx.reduce((sum, tx) => sum + tx.amount, 0);
-      } else if (budgetPeriod === 'weekly') {
-        const weeklyTx = categoryTx.filter(tx => {
-          const d = new Date(tx.date);
-          return d >= weekStart && d <= weekEnd;
-        });
-        total = weeklyTx.reduce((sum, tx) => sum + tx.amount, 0);
+
+      let startMs = monthStartMs;
+      let endMs = monthEndMs;
+
+      if (budgetPeriod === 'weekly') {
+        startMs = weekStartMs;
+        endMs = weekEndMs;
       } else if (budgetPeriod === 'custom' && b.startDate && b.endDate) {
         const customStart = new Date(b.startDate);
         const customEnd = new Date(b.endDate);
         customStart.setHours(0, 0, 0, 0);
         customEnd.setHours(23, 59, 59, 999);
-        const customTx = categoryTx.filter(tx => {
-          const d = new Date(tx.date);
-          return d >= customStart && d <= customEnd;
-        });
-        total = customTx.reduce((sum, tx) => sum + tx.amount, 0);
+        startMs = customStart.getTime();
+        endMs = customEnd.getTime();
+      }
+
+      let total = 0;
+      for (let j = 0; j < categoryTxs.length; j++) {
+        const item = categoryTxs[j];
+        if (bAccId && item.txAccId !== bAccId && item.txFromAccId !== bAccId) {
+          continue;
+        }
+        if (item.time >= startMs && item.time <= endMs) {
+          total += item.amount;
+        }
       }
 
       spentMap[b._id] = total;
@@ -242,6 +271,15 @@ export default function BudgetsTab() {
     }
   };
 
+  const categoriesMap = useMemo(() => {
+    const map = new Map();
+    for (let i = 0; i < categories.length; i++) {
+      const c = categories[i];
+      map.set(c._id, c);
+    }
+    return map;
+  }, [categories]);
+
   const filteredBudgets = useMemo(() => {
     return budgets.filter(b => {
       if (filterPeriod !== 'all' && b.period !== filterPeriod) return false;
@@ -252,22 +290,35 @@ export default function BudgetsTab() {
   }, [budgets, filterPeriod, filterCategory]);
 
   const groupedDisplayItems = useMemo(() => {
+    const planBudgetsMap = new Map();
+    for (let i = 0; i < budgets.length; i++) {
+      const rb = budgets[i];
+      if (rb.smartBudgetPlan) {
+        const pid = typeof rb.smartBudgetPlan === 'object' ? rb.smartBudgetPlan._id : rb.smartBudgetPlan;
+        if (pid) {
+          let list = planBudgetsMap.get(pid);
+          if (!list) {
+            list = [];
+            planBudgetsMap.set(pid, list);
+          }
+          list.push(rb);
+        }
+      }
+    }
+
     const items = [];
     const processedPlanIds = new Set();
 
-    filteredBudgets.forEach(b => {
+    for (let i = 0; i < filteredBudgets.length; i++) {
+      const b = filteredBudgets[i];
       if (b.smartBudgetPlan && typeof b.smartBudgetPlan === 'object' && b.smartBudgetPlan.groupAsMaster) {
         const planId = b.smartBudgetPlan._id;
         if (!processedPlanIds.has(planId)) {
           processedPlanIds.add(planId);
-          const relatedBudgets = budgets.filter(rb => 
-            rb.smartBudgetPlan && 
-            (typeof rb.smartBudgetPlan === 'object' ? rb.smartBudgetPlan._id : rb.smartBudgetPlan) === planId
-          );
           items.push({
             type: 'master',
             plan: b.smartBudgetPlan,
-            budgets: relatedBudgets
+            budgets: planBudgetsMap.get(planId) || []
           });
         }
       } else {
@@ -276,13 +327,29 @@ export default function BudgetsTab() {
           budget: b
         });
       }
-    });
+    }
 
     return items;
   }, [filteredBudgets, budgets]);
 
+  const { totalBudgeted, totalSpent, totalRemaining, isOverTotal } = useMemo(() => {
+    let budgeted = 0;
+    let spent = 0;
+    for (let i = 0; i < budgets.length; i++) {
+      const b = budgets[i];
+      budgeted += (b.amount || 0);
+      spent += (spentData[b._id] || 0);
+    }
+    return {
+      totalBudgeted: budgeted,
+      totalSpent: spent,
+      totalRemaining: budgeted - spent,
+      isOverTotal: budgeted < spent
+    };
+  }, [budgets, spentData]);
+
   return (
-    <div className="w-full">
+    <div className="w-full selection:bg-[#8D6346]/40 selection:text-white">
       {/* Action Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
@@ -295,17 +362,17 @@ export default function BudgetsTab() {
           </p>
         </div>
 
-        <motion.button 
-          whileTap={{ scale: 0.95 }}
+        <button 
+          type="button"
           onClick={() => {
             setBudgetToEdit(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#8D6346] hover:bg-[#A37352] text-white rounded-2xl font-bold text-xs sm:text-sm shadow-[0_4px_16px_rgba(141,99,70,0.3)] transition-all shrink-0"
+          className="py-3 px-5 rounded-full font-semibold text-[13.5px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md shrink-0 cursor-pointer"
         >
           <Plus size={16} />
           <span>{t('budgets.addBudget')}</span>
-        </motion.button>
+        </button>
       </div>
 
       {/* Hero Card */}
@@ -320,29 +387,27 @@ export default function BudgetsTab() {
           
           <div className="relative z-10 w-full">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-[#8D6346]/20 rounded-2xl border border-[#8D6346]/30 text-[#8D6346] shadow-inner">
+              <div className="p-3 bg-[#8D6346]/20 rounded-2xl border border-[#8D6346]/40 text-[#E8C5A8] shadow-[0_0_20px_rgba(141,99,70,0.35)] shadow-inner">
                 <Target size={28} />
               </div>
             </div>
-            <p className="text-xs sm:text-sm font-medium text-white/50 tracking-wider uppercase mb-2">
+            <p className="text-xs sm:text-sm font-semibold text-white/50 tracking-wider uppercase mb-2">
               {t('budgets.totalRemaining')}
             </p>
-            <h2 className={`text-3xl sm:text-5xl font-black tabular-nums tracking-tight mb-6 drop-shadow-sm ${
-              budgets.reduce((s, b) => s + (b.amount || 0), 0) < budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0) 
-                ? 'text-brand-red' 
-                : 'text-white/90'
+            <h2 className={`text-3xl sm:text-5xl font-black tabular-nums tracking-tight mb-6 ${
+              isOverTotal ? 'text-[#FF3B30] drop-shadow-[0_0_12px_rgba(255,59,48,0.4)]' : 'text-white drop-shadow-[0_2px_14px_rgba(232,197,168,0.25)]'
             }`}>
-              {(budgets.reduce((s, b) => s + (b.amount || 0), 0) - budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0)).toLocaleString()} {t('nav.currency')}
+              {totalRemaining.toLocaleString()} {t('nav.currency')}
             </h2>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 w-full max-w-xl mx-auto">
-              <div className="flex-1 bg-black/30 border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-[11px] text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalBudgeted')}</span>
-                <span className="font-bold text-base sm:text-lg text-white/90 tabular-nums">{budgets.reduce((s, b) => s + (b.amount || 0), 0).toLocaleString()} {t('nav.currency')}</span>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full max-w-xl mx-auto">
+              <div className="bg-[#2B2321]/40 border border-white/10 shadow-inner rounded-2xl p-3.5 sm:p-4 flex flex-col items-center">
+                <span className="text-[10px] sm:text-[11px] text-white/50 mb-1 uppercase tracking-wider font-semibold">{t('budgets.totalBudgeted')}</span>
+                <span className="font-bold text-sm sm:text-lg text-white/90 tabular-nums">{totalBudgeted.toLocaleString()} {t('nav.currency')}</span>
               </div>
-              <div className="flex-1 bg-black/30 border border-white/5 shadow-inner rounded-2xl p-4 flex flex-col items-center">
-                <span className="text-[11px] text-white/50 mb-1 uppercase tracking-wider">{t('budgets.totalSpent')}</span>
-                <span className="font-bold text-base sm:text-lg text-[#E8C5A8] tabular-nums">{budgets.reduce((s, b) => s + (spentData[b._id] || 0), 0).toLocaleString()} {t('nav.currency')}</span>
+              <div className="bg-[#8D6346]/15 border border-[#8D6346]/35 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-2xl p-3.5 sm:p-4 flex flex-col items-center">
+                <span className="text-[10px] sm:text-[11px] text-[#E8C5A8] mb-1 uppercase tracking-wider font-semibold">{t('budgets.totalSpent')}</span>
+                <span className="font-bold text-sm sm:text-lg text-[#E8C5A8] tabular-nums">{totalSpent.toLocaleString()} {t('nav.currency')}</span>
               </div>
             </div>
           </div>
@@ -353,20 +418,24 @@ export default function BudgetsTab() {
       <motion.div 
         whileTap={{ scale: 0.98 }}
         onClick={() => navigate('/budgets/smart-planner')}
-        className="relative overflow-hidden bg-black/20 backdrop-blur-[40px] border border-white/10 border-t-white/30 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(255,255,255,0.3)] rounded-[2rem] p-5 sm:p-6 mb-6 cursor-pointer group"
+        className="relative overflow-hidden bg-gradient-to-br from-[#8D6346]/20 via-black/30 to-black/40 backdrop-blur-[40px] border border-[#8D6346]/40 border-t-[#8D6346]/60 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_20px_rgba(141,99,70,0.15),inset_0_1px_2px_rgba(255,255,255,0.25)] rounded-[2rem] p-5 sm:p-6 mb-6 cursor-pointer group transition-all duration-300 hover:border-[#8D6346]/70"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#8D6346]/20 to-transparent opacity-50" />
-        <div className="absolute right-0 top-0 w-32 h-32 bg-[#8D6346]/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-[#8D6346]/40 transition-colors" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#8D6346]/25 to-transparent opacity-60" />
+        <div className="absolute right-0 top-0 w-36 h-36 bg-[#8D6346]/25 rounded-full blur-[60px] pointer-events-none group-hover:bg-[#8D6346]/45 transition-colors" />
         <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <h3 className="text-white/90 font-bold text-base sm:text-lg mb-1 flex items-center gap-2 drop-shadow-sm">
-              <Target className="text-[#8D6346]" size={20} />
-              {t('smartBudget.entryButton')}
-            </h3>
-            <p className="text-white/50 text-xs sm:text-sm">{t('smartBudget.entryDesc')}</p>
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#8D6346]/25 border border-[#8D6346]/40 shadow-inner flex items-center justify-center text-[#E8C5A8] shrink-0 group-hover:scale-105 transition-transform">
+              <Target size={22} />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-white font-bold text-base sm:text-lg mb-0.5 flex items-center gap-2 drop-shadow-sm truncate">
+                {t('smartBudget.entryButton')}
+              </h3>
+              <p className="text-white/60 text-xs sm:text-sm truncate">{t('smartBudget.entryDesc')}</p>
+            </div>
           </div>
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#8D6346]/20 border border-[#8D6346]/30 shadow-inner flex items-center justify-center text-[#8D6346] group-hover:scale-110 transition-transform shrink-0">
-            <ArrowRight size={22} className={lang === 'ar' ? 'rotate-180' : ''} />
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#8D6346]/30 border border-[#8D6346]/50 shadow-[0_4px_16px_rgba(141,99,70,0.3)] flex items-center justify-center text-[#E8C5A8] group-hover:scale-110 group-hover:bg-[#8D6346]/50 transition-all shrink-0 ms-2">
+            <ArrowRight size={20} className={lang === 'ar' ? 'rotate-180' : ''} />
           </div>
         </div>
       </motion.div>
@@ -410,13 +479,13 @@ export default function BudgetsTab() {
                     {draft.availableBudget?.toLocaleString()} {t('nav.currency')} • {draft.categories?.length || 0} {t('smartBudget.categories')}
                   </p>
                 </div>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
+                <button
+                  type="button"
                   onClick={() => navigate('/budgets/smart-planner', { state: { draftPlan: draft } })}
-                  className="px-4 py-2 bg-[#8D6346]/10 border border-[#8D6346]/20 hover:bg-[#8D6346] hover:text-white text-[#8D6346] rounded-xl text-xs sm:text-sm font-bold transition-colors shadow-inner"
+                  className="py-2.5 px-5 rounded-full font-semibold text-[13.5px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md cursor-pointer"
                 >
-                  {t('smartBudget.resume')}
-                </motion.button>
+                  <span>{t('smartBudget.resume')}</span>
+                </button>
               </div>
             ))}
           </div>
@@ -461,14 +530,14 @@ export default function BudgetsTab() {
 
       {/* Grid of Budgets */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
       ) : groupedDisplayItems.length === 0 ? (
-        <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5 p-8 backdrop-blur-md">
+        <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5 p-8 backdrop-blur-md flex flex-col items-center justify-center">
           <div className="w-16 h-16 rounded-full bg-[#8D6346]/10 flex items-center justify-center text-[#8D6346] mx-auto mb-4 border border-[#8D6346]/20">
             <Target size={32} />
           </div>
@@ -476,19 +545,20 @@ export default function BudgetsTab() {
           <p className="text-white/50 text-sm max-w-sm mx-auto mb-6">
             {t('budgets.noBudgetsDesc')}
           </p>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
+          <button 
+            type="button"
             onClick={() => {
               setBudgetToEdit(null);
               setIsModalOpen(true);
             }}
-            className="px-6 py-3 bg-[#8D6346] hover:bg-[#A37352] text-white rounded-xl font-bold text-sm shadow-[0_4px_16px_rgba(141,99,70,0.3)] transition-all"
+            className="mx-auto py-3 px-6 rounded-full font-semibold text-[13.5px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 inline-flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation cursor-pointer"
           >
-            {t('budgets.createFirst') || (lang === 'ar' ? 'إنشاء أول ميزانية' : 'Create First Budget')}
-          </motion.button>
+            <Plus size={16} />
+            <span>{t('budgets.createFirst') || (lang === 'ar' ? 'إنشاء أول ميزانية' : 'Create First Budget')}</span>
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
           <AnimatePresence>
             {groupedDisplayItems.map((item, index) => {
               if (item.type === 'master') {
@@ -510,7 +580,7 @@ export default function BudgetsTab() {
                 const budget = item.budget;
                 const mappedCategory = typeof budget.category === 'object' 
                   ? budget.category 
-                  : categories.find(c => c._id === budget.category) || { name: t('nav.category') };
+                  : categoriesMap.get(budget.category) || { name: t('nav.category') };
                   
                 const fullBudget = { ...budget, category: mappedCategory };
                 
@@ -556,6 +626,7 @@ export default function BudgetsTab() {
       <MasterBudgetModal
         isOpen={isPlanEditModalOpen}
         planToEdit={planToEdit}
+        categories={categories}
         onClose={() => {
           setIsPlanEditModalOpen(false);
           setPlanToEdit(null);

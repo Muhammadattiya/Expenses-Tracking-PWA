@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { getCategories } from '../../api/categories';
 import { getAccounts } from '../../api/accounts';
 import { smartBudgetService } from '../../api/smartBudgets';
@@ -8,8 +9,9 @@ import { X, Plus, Trash2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CustomSelect from '../ui/CustomSelect';
 
-export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit }) {
+function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit, categories: propCategories = [], accounts: propAccounts = [] }) {
   const { t, lang } = useLanguage();
+  const { showToast } = useNotification();
   const nameInputRef = useRef(null);
   
   const [categories, setCategories] = useState([]);
@@ -24,7 +26,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
     if (isOpen) {
       loadData();
       if (planToEdit) {
-        setName(planToEdit.name || 'Master Budget');
+        setName(planToEdit.name || t('smartBudget.masterBudgetLabel'));
         setAccount(planToEdit.account || '');
         // Fetch the full plan to get categories
         fetchPlanDetails(planToEdit._id);
@@ -81,9 +83,28 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
 
   const loadData = async () => {
     try {
-      const [allCats, allAccs] = await Promise.all([getCategories(), getAccounts()]);
-      setCategories(allCats.filter(c => c.type === 'expense'));
-      setAccounts(allAccs);
+      if (propCategories.length > 0 && propAccounts.length > 0) {
+        setCategories(propCategories.filter(c => c.type === 'expense'));
+        setAccounts(propAccounts);
+        return;
+      }
+      
+      const promises = [];
+      if (propCategories.length > 0) {
+        setCategories(propCategories.filter(c => c.type === 'expense'));
+      } else {
+        promises.push(getCategories().then(cats => setCategories(cats.filter(c => c.type === 'expense'))));
+      }
+
+      if (propAccounts.length > 0) {
+        setAccounts(propAccounts);
+      } else {
+        promises.push(getAccounts().then(accs => setAccounts(accs)));
+      }
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
     } catch (err) {
       console.error('Failed to load modal data', err);
     }
@@ -98,6 +119,18 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
   };
 
   const handleCategoryChange = (id, field, value) => {
+    if (field === 'category' && value) {
+      const isDuplicate = planCategories.some(c => c.id !== id && c.category === value);
+      if (isDuplicate) {
+        showToast(t('smartBudget.duplicateCategory'), 'error');
+        return;
+      }
+    }
+    if (field === 'amount') {
+      const sanitizedVal = value === '' ? '' : Math.max(0, Number(value));
+      setPlanCategories(planCategories.map(c => c.id === id ? { ...c, [field]: sanitizedVal } : c));
+      return;
+    }
     setPlanCategories(planCategories.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
@@ -110,13 +143,13 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
 
     setFieldErrors({});
 
-    // Filter out incomplete categories
+    // Filter out incomplete categories (must have valid category and amount > 0)
     const validCategories = planCategories
-      .filter(c => c.category && c.amount)
+      .filter(c => c.category && Number(c.amount) > 0)
       .map(c => ({
         category: c.category,
-        suggestedAmount: Number(c.amount),
-        priority: c.priority
+        suggestedAmount: Math.max(0, Number(c.amount) || 0),
+        priority: c.priority || 'Medium'
       }));
 
     onSave({
@@ -145,7 +178,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
         aria-labelledby="master-budget-title"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] w-full max-w-lg shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-[#1C1819]/95 backdrop-blur-3xl border border-white/15 rounded-[2.5rem] w-full max-w-lg shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative z-10 overflow-hidden flex flex-col max-h-[90dvh] selection:bg-[#8D6346]/40 selection:text-white"
       >
         {/* Inner Highlight Line */}
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent z-20 pointer-events-none" />
@@ -159,7 +192,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
               type="button"
               onClick={onClose}
               aria-label={t('common.close')}
-              className="w-11 h-11 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-colors flex items-center justify-center shrink-0"
+              className="w-11 h-11 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-colors flex items-center justify-center shrink-0 touch-manipulation"
             >
               <X size={18} />
             </button>
@@ -180,7 +213,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
                   setName(e.target.value);
                   if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null }));
                 }}
-                className={`w-full bg-white/5 border rounded-2xl px-4 py-3.5 text-white focus:outline-none transition-all placeholder-white/20 ${
+                className={`w-full bg-white/5 border rounded-2xl px-4 py-3.5 text-white focus:outline-none transition-all placeholder-white/20 caret-[#E8C5A8] ${
                   fieldErrors.name
                     ? 'border-[#FF3B30] focus:border-[#FF3B30] focus:ring-1 focus:ring-[#FF3B30]/70'
                     : 'border-white/10 focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/70'
@@ -225,7 +258,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
                 <button
                   type="button"
                   onClick={handleAddCategory}
-                  className="text-xs font-semibold bg-[#8D6346]/20 text-[#E8C5A8] border border-[#8D6346]/40 px-3.5 py-2 rounded-xl flex items-center gap-1.5 hover:bg-[#8D6346]/30 transition-colors"
+                  className="text-xs font-semibold bg-[#8D6346]/20 text-[#E8C5A8] border border-[#8D6346]/40 px-3.5 py-2 min-h-[38px] rounded-xl flex items-center gap-1.5 hover:bg-[#8D6346]/30 transition-colors touch-manipulation"
                 >
                   <Plus size={15} />
                   {t('common.add')}
@@ -254,9 +287,10 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
                       <div className="w-1/3 relative">
                         <input 
                           type="number"
+                          inputMode="decimal"
                           value={cat.amount}
                           onChange={(e) => handleCategoryChange(cat.id, 'amount', e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#8D6346]/70 transition-all placeholder-white/20"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#8D6346]/70 focus:ring-1 focus:ring-[#8D6346]/40 transition-all placeholder-white/20 tabular-nums caret-[#E8C5A8]"
                           placeholder="0.00"
                           min="0"
                           step="0.01"
@@ -266,7 +300,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
                         type="button"
                         onClick={() => handleRemoveCategory(cat.id)}
                         aria-label={t('common.delete')}
-                        className="w-11 h-11 flex items-center justify-center text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
+                        className="w-11 h-11 flex items-center justify-center text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors shrink-0 touch-manipulation"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -289,7 +323,7 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
             type="submit"
             form="master-budget-form"
             whileTap={{ scale: 0.98 }}
-            className="w-full py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md"
+            className="w-full min-h-[48px] py-3.5 rounded-full font-bold text-[15px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex items-center justify-center gap-2 backdrop-blur-md touch-manipulation"
           >
             {t('common.saveChanges')}
           </motion.button>
@@ -300,3 +334,6 @@ export default function MasterBudgetModal({ isOpen, onClose, onSave, planToEdit 
     document.body
   );
 }
+
+export default React.memo(MasterBudgetModal);
+

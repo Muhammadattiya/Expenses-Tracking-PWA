@@ -23,6 +23,7 @@ import { getActiveUserId } from "../utils/offlineSession";
 import TransactionCard from "../components/cards/TransactionCard";
 import EditTransactionModal from "../components/modals/EditTransactionModal";
 import QuickAddModal from "../components/modals/QuickAddModal";
+import CreateAccountModal from "../components/modals/CreateAccountModal";
 import SmartCaptureBar from "../components/dashboard/SmartCaptureBar";
 import CustomSelect from "../components/ui/CustomSelect";
 import { AmbientBackground, MetricPill } from "../components/ui";
@@ -116,6 +117,7 @@ const Dashboard = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [createAccountModalOpen, setCreateAccountModalOpen] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const { showToast } = useNotification();
 
@@ -130,15 +132,16 @@ const Dashboard = () => {
     
     if (isLeftSwipe || isRightSwipe) {
       const activeAccounts = accounts.filter(a => !a.isArchived);
-      const accountIds = ['all', ...activeAccounts.map(a => a._id)];
+      const accountIds = ['all', ...activeAccounts.map(a => a._id), 'add_account'];
       const currentIndex = accountIds.indexOf(selectedAccount);
-      let newIndex = currentIndex;
+      const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+      let newIndex = safeIndex;
       
       if (isLeftSwipe) {
-        newIndex = (currentIndex + 1) % accountIds.length;
+        newIndex = (safeIndex + 1) % accountIds.length;
         setDirection(1);
       } else if (isRightSwipe) {
-        newIndex = (currentIndex - 1 + accountIds.length) % accountIds.length;
+        newIndex = (safeIndex - 1 + accountIds.length) % accountIds.length;
         setDirection(-1);
       }
       setSelectedAccount(accountIds[newIndex]);
@@ -261,10 +264,9 @@ const Dashboard = () => {
 
     const pending = allTransactions.filter(t => !t.category && ['income', 'expense'].includes(t.type) && !skippedTransactionIds.has(t._id));
     setUncategorizedTransactions(pending);
-
     // Filter transactions based on selected account
     const filtered = completedTransactions.filter(t => {
-      if (selectedAccount === 'all') return true;
+      if (selectedAccount === 'all' || selectedAccount === 'add_account') return true;
       return matchesAcc(t.account, selectedAccount) || matchesAcc(t.from_account, selectedAccount) || matchesAcc(t.to_account, selectedAccount);
     });
 
@@ -275,7 +277,7 @@ const Dashboard = () => {
     let totalSettlements = 0;
     let totalAdjustments = 0;
 
-    if (selectedAccount === 'all') {
+    if (selectedAccount === 'all' || selectedAccount === 'add_account') {
       totalAdjustments = accounts.reduce((sum, acc) => sum + (acc.balance_adjustment || 0), 0);
     } else {
       const acc = accounts.find(a => a._id === selectedAccount);
@@ -294,7 +296,7 @@ const Dashboard = () => {
         totalExpense += tAmount;
         if (isCurrentPeriod) currentMonthExpense += tAmount;
       } else if (t.type === 'transfer') {
-        if (selectedAccount !== 'all') {
+        if (selectedAccount !== 'all' && selectedAccount !== 'add_account') {
           if (matchesAcc(t.to_account, selectedAccount)) {
             totalIncome += tAmount;
             if (isCurrentPeriod) currentMonthIncome += tAmount;
@@ -337,7 +339,7 @@ const Dashboard = () => {
             if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal += dtAmount;
             else bal -= dtAmount;
           } else if (dt.type === 'repayment') {
-            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal -= dtAmount;
+            if (dt.debtId?.type === 'i_owe' || dt.debtType === 'i_owe') bal += dtAmount;
             else bal += dtAmount;
           }
         }
@@ -367,7 +369,7 @@ const Dashboard = () => {
     };
 
     let calculatedBalance = 0;
-    if (selectedAccount === 'all') {
+    if (selectedAccount === 'all' || selectedAccount === 'add_account') {
       calculatedBalance = accounts
         .filter(acc => !acc.excludeFromTotal && !acc.isArchived)
         .reduce((sum, acc) => sum + getAccountBalance(acc), 0);
@@ -501,7 +503,7 @@ const Dashboard = () => {
     const allCombined = [...valid, ...mappedDebtTransactions, ...mappedInstallmentTransactions];
 
     return allCombined.filter(t => {
-      if (selectedAccount !== 'all') {
+      if (selectedAccount !== 'all' && selectedAccount !== 'add_account') {
         const accMatch = matchesAcc(t.account, selectedAccount);
         const fromMatch = matchesAcc(t.from_account, selectedAccount);
         const toMatch = matchesAcc(t.to_account, selectedAccount);
@@ -547,10 +549,10 @@ const Dashboard = () => {
 
       if (curr.type === 'income') acc[key].income += cAmount;
       else if (curr.type === 'expense') acc[key].expense += cAmount;
-      else if (curr.type === 'transfer' && selectedAccount !== 'all') {
+      else if (curr.type === 'transfer' && selectedAccount !== 'all' && selectedAccount !== 'add_account') {
         if (matchesAcc(curr.to_account, selectedAccount)) acc[key].income += cAmount;
         if (matchesAcc(curr.from_account, selectedAccount)) acc[key].expense += cAmount;
-      } else if (curr.type === 'settlement' && selectedAccount !== 'all') {
+      } else if (curr.type === 'settlement' && selectedAccount !== 'all' && selectedAccount !== 'add_account') {
         if (matchesAcc(curr.account, selectedAccount)) acc[key].income += cAmount;
       }
       
@@ -568,7 +570,7 @@ const Dashboard = () => {
   }, [displayedTransactions, selectedAccount]);
 
   const isSelectedAccountInvestment = useMemo(() => {
-    if (selectedAccount === 'all') return false;
+    if (selectedAccount === 'all' || selectedAccount === 'add_account') return false;
     const acc = accounts.find(a => a._id === selectedAccount);
     return acc?.type === 'investment' || acc?.name === 'Investments' || acc?.name === 'استثمارات';
   }, [selectedAccount, accounts]);
@@ -666,10 +668,43 @@ const Dashboard = () => {
            >
              {selectedAccount === 'add_account' ? (
                 <div 
-                  onClick={() => navigate('/add?tab=account')}
-                  className="w-full h-[220px] md:h-[260px] lg:h-[300px] max-w-[340px] md:max-w-[400px] lg:max-w-[460px] mx-auto rounded-[20px] border-2 border-dashed border-[#8D6346] bg-[#8D6346]/10 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                  onClick={() => {
+                    triggerHaptic('selection');
+                    setCreateAccountModalOpen(true);
+                  }}
+                  className="w-full h-[220px] md:h-[260px] lg:h-[300px] max-w-[340px] md:max-w-[400px] lg:max-w-[460px] mx-auto rounded-[30px] p-6 lg:p-8 flex flex-col items-center justify-center text-center cursor-pointer border-2 border-dashed border-[#8D6346]/60 hover:border-[#E8C5A8] bg-gradient-to-b from-[#2B2321]/45 to-black/35 backdrop-blur-2xl liquidglass relative overflow-hidden group transition-all duration-300 active:scale-[0.98]"
+                  style={{
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.15)'
+                  }}
                 >
-                  <p className="text-[#E2EF8B] text-lg lg:text-xl font-medium tracking-wide">{t('dashboard.addAccount') || 'Add Account +'}</p>
+                  {/* Subtle Top Shimmer */}
+                  <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8C5A8]/30 to-transparent pointer-events-none" />
+
+                  {/* Icon with Ambient Glow */}
+                  <div className="relative mb-2.5 flex items-center justify-center">
+                    <motion.div
+                      animate={{ scale: [1, 1.25, 1], opacity: [0.15, 0.35, 0.15] }}
+                      transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                      className="absolute w-14 h-14 rounded-full bg-[#8D6346] blur-lg pointer-events-none"
+                    />
+                    <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#8D6346]/25 border border-[#E8C5A8]/40 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:bg-[#8D6346]/40 transition-all duration-300">
+                      <LucideIcons.Plus className="w-6 h-6 md:w-7 md:h-7 text-[#E8C5A8] drop-shadow-[0_0_8px_rgba(232,197,168,0.5)]" />
+                    </div>
+                  </div>
+
+                  {/* Title & Description */}
+                  <h2 className="text-white font-bold text-base md:text-lg tracking-wide drop-shadow-sm mb-1">
+                    {t('dashboard.createAccountPrompt')}
+                  </h2>
+                  <p className="text-white/60 text-xs md:text-sm max-w-[240px] leading-relaxed mb-3">
+                    {t('dashboard.createAccountDesc')}
+                  </p>
+
+                  {/* Action Pill */}
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#8D6346]/40 border border-[#E8C5A8]/40 text-[#E8C5A8] text-xs md:text-sm font-semibold shadow-sm group-hover:bg-[#8D6346]/60 transition-colors">
+                    <span>{t('dashboard.addAccount')}</span>
+                    <LucideIcons.ArrowRight className={`w-3.5 h-3.5 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+                  </div>
                 </div>
              ) : (
                 <div className="w-full h-[220px] md:h-[260px] lg:h-[300px] max-w-[340px] md:max-w-[400px] lg:max-w-[460px] mx-auto rounded-[30px] p-6 lg:p-8 flex flex-col justify-between liquidglass relative overflow-hidden"
@@ -735,7 +770,21 @@ const Dashboard = () => {
            {/* Pagination Dots */}
            <div className="flex justify-center gap-2 mt-4">
               {['all', ...accounts.filter(a => !a.isArchived).map(a => a._id), 'add_account'].map((id) => (
-                <div key={id} className={`h-2 rounded-full transition-all duration-300 ${selectedAccount === id ? 'w-6 bg-white' : 'w-2 bg-white/30'}`} />
+                <button
+                  key={id}
+                  type="button"
+                  aria-label={`Account slide ${id}`}
+                  onClick={() => {
+                    triggerHaptic('selection');
+                    const activeAccounts = accounts.filter(a => !a.isArchived);
+                    const accountIds = ['all', ...activeAccounts.map(a => a._id), 'add_account'];
+                    const targetIdx = accountIds.indexOf(id);
+                    const currentIdx = accountIds.indexOf(selectedAccount);
+                    setDirection(targetIdx > currentIdx ? 1 : -1);
+                    setSelectedAccount(id);
+                  }}
+                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${selectedAccount === id ? 'w-6 bg-white' : 'w-2 bg-white/30 hover:bg-white/60'}`} 
+                />
               ))}
            </div>
         </div>
@@ -1080,6 +1129,17 @@ const Dashboard = () => {
         isOpen={quickAddOpen} 
         onClose={() => setQuickAddOpen(false)} 
         onSuccess={fetchData}
+      />
+
+      <CreateAccountModal
+        isOpen={createAccountModalOpen}
+        onClose={() => setCreateAccountModalOpen(false)}
+        onSuccess={(newAccount) => {
+          fetchData();
+          if (newAccount?._id) {
+            setSelectedAccount(newAccount._id);
+          }
+        }}
       />
 
       {/* Category Bottom Sheet */}
