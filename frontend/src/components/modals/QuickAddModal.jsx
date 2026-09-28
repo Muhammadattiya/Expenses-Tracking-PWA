@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Mic, MicOff, X, Send, Loader2, Trash2, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Sparkles, PenLine } from 'lucide-react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { parseQuickAddText, confirmQuickAddTransactions } from '../../api/quickAdd';
@@ -12,15 +12,20 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import CustomSelect from '../ui/CustomSelect';
 import useFocusTrap from '../../hooks/useFocusTrap';
 
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.95, y: 15 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
-  exit: { opacity: 0, scale: 0.95, y: 15, transition: { duration: 0.2 } }
-};
-
 export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   const { t, lang } = useLanguage();
   const { showToast } = useNotification();
+  const reduceMotion = useReducedMotion();
+
+  const activeModalVariants = reduceMotion ? {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.15 } },
+    exit: { opacity: 0, transition: { duration: 0.1 } }
+  } : {
+    hidden: { opacity: 0, scale: 0.96, y: 20 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', damping: 28, stiffness: 320 } },
+    exit: { opacity: 0, scale: 0.96, y: 20, transition: { duration: 0.2 } }
+  };
   
   const preferredVoiceLang = localStorage.getItem('finova-voice-lang') || (lang === 'en' ? 'en-US' : 'ar-EG');
   const { 
@@ -30,6 +35,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
     setTranscript, 
     startListening, 
     stopListening, 
+    resetTranscript,
     isSupported, 
     error: speechError,
     voiceLang,
@@ -39,11 +45,13 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   const handleToggleVoiceLang = (targetLang) => {
     if (voiceLang === targetLang) return;
     setVoiceLang(targetLang);
+  };
+
+  const handleToggleListening = () => {
     if (isListening) {
       stopListening();
-      setTimeout(() => {
-        startListening(targetLang);
-      }, 200);
+    } else {
+      startListening(voiceLang);
     }
   };
   
@@ -67,7 +75,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         if (candidates.length > 0) {
-          handleConfirmAll();
+          handleConfirm();
         } else if (textInput.trim()) {
           handleParse();
         }
@@ -77,18 +85,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose, candidates, textInput]);
 
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    if (isSupported) {
-      startListening();
-      return undefined;
-    }
-    const id = window.requestAnimationFrame(() => {
-      textAreaRef.current?.focus();
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [isOpen, isSupported]);
-
+  // Error toast handling
   useEffect(() => {
     if (!isOpen || !speechError) return;
     if (speechError === 'not-allowed') {
@@ -100,11 +97,12 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
     }
   }, [speechError, isOpen, showToast, t]);
 
+  // Reset state when opening/closing
   useEffect(() => {
     if (isOpen) {
       setTextInput('');
       setCandidates([]);
-      setTranscript('');
+      resetTranscript?.();
       
       Promise.all([getAccounts(), getCategories()]).then(([accs, cats]) => {
          setAccounts(accs.filter(a => !a.isArchived));
@@ -118,11 +116,19 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
          });
          setCategories(grouped);
       });
+
+      // Auto-focus input for immediate manual or voice typing
+      const id = window.requestAnimationFrame(() => {
+        textAreaRef.current?.focus();
+      });
+      return () => window.cancelAnimationFrame(id);
     } else {
        stopListening();
+       resetTranscript?.();
     }
   }, [isOpen]);
   
+  // Stream speech recognition into text input
   useEffect(() => {
     const combined = (transcript + (interimTranscript ? ' ' + interimTranscript : '')).trim();
     if (combined) {
@@ -132,6 +138,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   
   const handleParse = async () => {
     if (!textInput.trim()) return;
+    stopListening();
     setIsProcessing(true);
     try {
       const parsed = await parseQuickAddText(textInput);
@@ -194,31 +201,38 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div 
+        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" 
+        dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      >
         {/* Backdrop */}
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           exit={{ opacity: 0 }} 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10"
+          transition={reduceMotion ? { duration: 0.1 } : undefined}
+          className="fixed inset-0 bg-black/65 backdrop-blur-sm -z-10"
           onClick={onClose}
         />
         
-        {/* Modal Container */}
+        {/* Modal Container: Ergonomic Bottom Sheet on Mobile, Centered Dialog on Desktop/Tablet */}
         <motion.div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          variants={modalVariants}
+          variants={activeModalVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="relative w-full max-w-md liquidglass rounded-[2.5rem] p-6 border border-white/15 shadow-[0_16px_45px_rgba(0,0,0,0.6)] max-h-[90vh] overflow-y-auto hide-scrollbar flex flex-col gap-5"
+          className="relative w-full sm:max-w-md liquidglass rounded-t-[2.25rem] sm:rounded-[2.5rem] p-5 sm:p-6 border border-white/15 shadow-[0_16px_45px_rgba(0,0,0,0.6)] max-h-[92dvh] sm:max-h-[85vh] overflow-y-auto hide-scrollbar flex flex-col gap-4"
           onClick={e => e.stopPropagation()}
         >
-          {/* Top Hairline Light Reflection */}
-          <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+          {/* Mobile Sheet Pull Handle Indicator */}
+          <div className="w-10 h-1.5 rounded-full bg-white/20 mx-auto -mt-1 mb-1 sm:hidden shrink-0" />
+
+          {/* Top Hairline Light Reflection (Desktop/Tablet) */}
+          <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none hidden sm:block" />
 
           {/* Header */}
           <div className="flex justify-between items-center">
@@ -231,122 +245,172 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
               </h2>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Voice Language Switcher */}
-              {isSupported && (
-                <div 
-                  className="flex items-center bg-black/40 border border-white/10 rounded-full p-0.5 shadow-inner"
-                  dir="ltr"
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleToggleVoiceLang('ar-EG')}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200 ${
-                      voiceLang === 'ar-EG'
-                        ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
-                        : 'text-white/50 hover:text-white/80'
-                    }`}
-                    aria-label={t('quickAdd.langEgyptian')}
-                  >
-                    مصري
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleVoiceLang('ar-SA')}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200 ${
-                      voiceLang === 'ar-SA'
-                        ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
-                        : 'text-white/50 hover:text-white/80'
-                    }`}
-                    aria-label={t('quickAdd.langStandardArabic')}
-                  >
-                    عام
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleVoiceLang('en-US')}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all duration-200 ${
-                      voiceLang === 'en-US'
-                        ? 'bg-[#8D6346] text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)]'
-                        : 'text-white/50 hover:text-white/80'
-                    }`}
-                    aria-label={t('quickAdd.langEnglish')}
-                  >
-                    EN
-                  </button>
-                </div>
-              )}
-
-              <button 
-                type="button"
-                onClick={onClose}
-                aria-label={t('common.close')}
-                className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
-              >
-                <X size={16} />
-              </button>
-            </div>
+            <button 
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              className="w-11 h-11 min-w-[44px] min-h-[44px] shrink-0 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm touch-manipulation"
+            >
+              <X size={16} />
+            </button>
           </div>
           
           {candidates.length === 0 ? (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3.5">
+              {/* Prominent Pre-Speech Language Selector */}
+              {isSupported && (
+                <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 bg-black/35 border border-white/10 rounded-2xl p-2.5 px-3.5 shadow-inner">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Sparkles size={13} className="text-[#E8C5A8]" />
+                    <span className="text-xs text-[#E8C5A8] font-semibold">
+                      {t('quickAdd.voiceLang')}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-0.5 shadow-inner gap-1 w-full xs:w-auto" dir="ltr">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVoiceLang('ar-EG')}
+                      className={`flex-1 xs:flex-initial px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-semibold transition-all duration-200 touch-manipulation flex items-center justify-center ${
+                        voiceLang === 'ar-EG'
+                          ? 'bg-[#8D6346] text-white shadow-[0_1px_6px_rgba(141,99,70,0.5)]'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                      aria-label={t('quickAdd.langEgyptian')}
+                    >
+                      🇪🇬 {t('quickAdd.langEgyptian')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVoiceLang('ar-SA')}
+                      className={`flex-1 xs:flex-initial px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-semibold transition-all duration-200 touch-manipulation flex items-center justify-center ${
+                        voiceLang === 'ar-SA'
+                          ? 'bg-[#8D6346] text-white shadow-[0_1px_6px_rgba(141,99,70,0.5)]'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                      aria-label={t('quickAdd.langStandardArabic')}
+                    >
+                      🇸🇦 {t('quickAdd.langStandardArabic')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVoiceLang('en-US')}
+                      className={`flex-1 xs:flex-initial px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-semibold transition-all duration-200 touch-manipulation flex items-center justify-center ${
+                        voiceLang === 'en-US'
+                          ? 'bg-[#8D6346] text-white shadow-[0_1px_6px_rgba(141,99,70,0.5)]'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                      aria-label={t('quickAdd.langEnglish')}
+                    >
+                      🇬🇧 EN
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Textarea with In-Box Controls */}
               <div className="relative">
                 <textarea 
                   ref={textAreaRef}
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder={t('quickAdd.placeholder')}
-                  className="w-full bg-black/30 border border-white/10 rounded-2xl p-4 text-white text-[15px] min-h-[140px] focus:outline-none focus:border-[#8D6346]/60 placeholder:text-white/30 resize-none transition-all shadow-inner leading-relaxed"
+                  aria-label={t('quickAdd.placeholder')}
+                  className="w-full bg-black/30 border border-white/10 rounded-2xl p-4 pe-14 pb-14 text-white text-[15px] min-h-[135px] sm:min-h-[140px] focus:outline-none focus:border-[#8D6346]/60 placeholder:text-white/45 resize-none transition-all shadow-inner leading-relaxed"
                 />
+
+                {/* Clear Text button */}
+                {textInput.trim().length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTextInput('');
+                      resetTranscript?.();
+                    }}
+                    aria-label={t('quickAdd.clearText')}
+                    className="absolute top-3 end-3 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm touch-manipulation"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+
+                {/* Tactile Mic Button */}
                 {isSupported && (
                   <button 
                     type="button"
-                    onClick={isListening ? stopListening : () => startListening(voiceLang)}
+                    onClick={handleToggleListening}
                     aria-label={isListening ? t('quickAdd.stopListening') : t('quickAdd.listen')}
                     aria-pressed={isListening}
-                    className={`absolute bottom-3 end-3 p-3 rounded-2xl transition-all duration-300 ${
+                    className={`absolute bottom-3 end-3 p-3 rounded-2xl transition-all duration-300 touch-manipulation ${
                       isListening 
-                        ? 'bg-red-500/30 border border-red-500/50 text-red-200 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse' 
-                        : 'bg-white/10 hover:bg-white/20 border border-white/10 text-white shadow-lg active:scale-95'
+                        ? 'bg-red-500/30 border border-red-500/60 text-red-200 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse scale-105' 
+                        : 'bg-white/10 hover:bg-white/20 border border-white/10 text-white shadow-lg active:scale-95 hover:border-[#8D6346]/50'
                     }`}
                   >
                     {isListening ? <MicOff size={18} /> : <Mic size={18} />}
                   </button>
                 )}
               </div>
-              {isListening && (
-                <div className="flex items-center justify-between px-1" aria-live="polite">
-                  <p className="text-xs text-[#E8C5A8] flex items-center gap-1.5 font-medium">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" />
-                    {t('quickAdd.listening')}
-                  </p>
-                  <span className="text-[11px] text-white/60 font-medium">
+
+              {/* Voice Status Indicator & Fast Action Button */}
+              {isSupported && (
+                <div 
+                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors ${
+                    isListening ? 'bg-red-500/15 border border-red-500/25' : 'bg-white/[0.03] border border-white/5'
+                  }`}
+                  aria-live="polite"
+                >
+                  {isListening ? (
+                    <button
+                      type="button"
+                      onClick={handleToggleListening}
+                      className="flex items-center gap-2 text-red-300 font-semibold touch-manipulation"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping inline-block" />
+                      <span>{t('quickAdd.listening')}</span>
+                      <span className="text-[11px] opacity-75 font-normal">({t('quickAdd.tapToStop')})</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleToggleListening}
+                      className="flex items-center gap-1.5 text-[#E8C5A8] hover:text-white font-medium transition-colors touch-manipulation"
+                    >
+                      <Mic size={13} className="text-[#E8C5A8]" />
+                      <span>{t('quickAdd.tapToSpeak')}</span>
+                    </button>
+                  )}
+
+                  <span className="text-[11px] text-white/65 font-medium">
                     {voiceLang === 'ar-EG'
                       ? `🇪🇬 ${t('quickAdd.langEgyptian')}`
                       : voiceLang === 'ar-SA'
                       ? `🇸🇦 ${t('quickAdd.langStandardArabic')}`
-                      : `🇺🇸 ${t('quickAdd.langEnglish')}`}
+                      : `🇬🇧 ${t('quickAdd.langEnglish')}`}
                   </span>
                 </div>
               )}
               
-              <button 
-                type="button"
-                onClick={handleParse} 
-                disabled={isProcessing || !textInput.trim()}
-                className="w-full py-3.5 rounded-full font-semibold text-[14px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex justify-center items-center gap-2 backdrop-blur-md disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={16} />}
-                <span>{t('quickAdd.analyze')}</span>
-              </button>
-              <Link
-                to="/add"
-                onClick={onClose}
-                className="w-full py-3.5 rounded-full font-semibold text-[14px] text-white/90 border border-white/15 bg-black/20 hover:bg-white/10 flex justify-center items-center gap-2 transition-colors active:scale-[0.98]"
-              >
-                <PenLine size={16} aria-hidden="true" />
-                <span>{t('quickAdd.manualEntry')}</span>
-              </Link>
+              <div className="flex flex-col gap-2 mt-1">
+                <button 
+                  type="button"
+                  onClick={handleParse} 
+                  disabled={isProcessing || !textInput.trim()}
+                  className="w-full py-3.5 rounded-full font-semibold text-[14px] text-white shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.18)] transition-all duration-300 active:scale-[0.98] bg-[#8D6346]/30 border border-[#8D6346]/50 hover:bg-[#8D6346]/45 hover:border-[#8D6346]/70 flex justify-center items-center gap-2 backdrop-blur-md disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
+                >
+                  {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={16} />}
+                  <span>{t('quickAdd.analyze')}</span>
+                  <span className="hidden sm:inline text-[11px] text-white/50 ms-1 font-normal">(Ctrl+↵)</span>
+                </button>
+                <Link
+                  to="/add"
+                  onClick={onClose}
+                  className="w-full py-3 rounded-full font-semibold text-[13.5px] text-white/80 border border-white/10 bg-black/20 hover:bg-white/10 flex justify-center items-center gap-2 transition-colors active:scale-[0.98] touch-manipulation"
+                >
+                  <PenLine size={15} aria-hidden="true" />
+                  <span>{t('quickAdd.manualEntry')}</span>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
@@ -361,7 +425,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                       type="button"
                       onClick={() => removeCandidate(cand.id)}
                       aria-label={t('common.delete')}
-                      className="absolute top-3.5 end-3.5 text-red-400/80 hover:text-red-300 transition-colors p-1 min-w-11 min-h-11 flex items-center justify-center"
+                      className="absolute top-3.5 end-3.5 text-red-400/80 hover:text-red-300 transition-colors p-1 min-w-11 min-h-11 flex items-center justify-center touch-manipulation"
                     >
                       <Trash2 size={15} />
                     </button>
@@ -371,15 +435,17 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                         type="number" 
                         value={cand.amount} 
                         onChange={e => updateCandidate(cand.id, 'amount', e.target.value)}
+                        aria-label={t('addTransaction.amount') || 'Amount'}
                         className="bg-transparent border-b border-white/20 text-3xl font-black text-white w-32 focus:outline-none focus:border-[#8D6346] transition-colors text-center tabular-nums"
                       />
-                      <span className="text-white/60 font-medium text-sm mb-1.5">{t('nav.currency')}</span>
+                      <span className="text-white/70 font-medium text-sm mb-1.5">{t('nav.currency')}</span>
                     </div>
                     
                     <input 
                       type="date"
                       value={cand.date}
                       onChange={e => updateCandidate(cand.id, 'date', e.target.value)}
+                      aria-label={t('quickAdd.date') || 'Date'}
                       className="bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-[#8D6346]/50 transition-colors w-full"
                     />
                     
@@ -388,34 +454,35 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                       value={cand.description} 
                       onChange={e => updateCandidate(cand.id, 'description', e.target.value)}
                       placeholder={t('quickAdd.descPlaceholder')}
-                      className="bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-[#8D6346]/50 placeholder:text-white/30 transition-colors"
+                      aria-label={t('quickAdd.descPlaceholder') || 'Description'}
+                      className="bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-[#8D6346]/50 placeholder:text-white/45 transition-colors"
                     />
                     
                     {cand.type === 'transfer' ? (
-                      <div className="flex gap-2 z-10 items-center">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row gap-2 z-10 sm:items-center">
+                        <div className="flex-1 min-w-0">
                           <CustomSelect
                             value={cand.sourceAccountId}
                             onChange={val => updateCandidate(cand.id, 'sourceAccountId', val)}
                             options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
-                            placeholder={lang === 'ar' ? 'من حساب' : 'From Account'}
+                            placeholder={t('addTransaction.fromAccount')}
                           />
                         </div>
-                        <div className="flex-shrink-0 text-white/50 px-1">
+                        <div className="flex-shrink-0 text-white/50 self-center rotate-90 sm:rotate-0 px-1 py-0.5">
                           {lang === 'ar' ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <CustomSelect
                             value={cand.destinationAccountId}
                             onChange={val => updateCandidate(cand.id, 'destinationAccountId', val)}
                             options={accounts.map(a => ({ value: a._id, label: a.name, icon: a.icon, color: a.color }))}
-                            placeholder={lang === 'ar' ? 'إلى حساب' : 'To Account'}
+                            placeholder={t('addTransaction.toAccount')}
                           />
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-2 z-10">
-                        <div className="flex-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 z-10">
+                        <div className="w-full min-w-0">
                           <CustomSelect
                             value={cand.categoryId}
                             onChange={val => updateCandidate(cand.id, 'categoryId', val)}
@@ -423,7 +490,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                             placeholder={t('quickAdd.selectCategory')}
                           />
                         </div>
-                        <div className="flex-1">
+                        <div className="w-full min-w-0">
                           <CustomSelect
                             value={cand.accountId}
                             onChange={val => updateCandidate(cand.id, 'accountId', val)}
@@ -448,11 +515,12 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                 ))}
               </div>
               
-              <div className="sticky bottom-0 bg-[#141115]/95 backdrop-blur-md pt-3 pb-1 mt-2 z-20 flex gap-3">
+              {/* Sticky Confirmation Bar with Safe Area Bottom Padding */}
+              <div className="sticky bottom-0 bg-[#141115]/95 backdrop-blur-md pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] mt-2 z-20 flex gap-3">
                 <button 
                   type="button"
                   onClick={() => setCandidates([])} 
-                  className="flex-1 py-3 px-5 rounded-full font-semibold text-[13.5px] bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all active:scale-[0.98]"
+                  className="flex-1 py-3 px-5 rounded-full font-semibold text-[13.5px] bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all active:scale-[0.98] touch-manipulation"
                 >
                   {t('common.cancel')}
                 </button>
@@ -460,7 +528,7 @@ export default function QuickAddModal({ isOpen, onClose, onSuccess }) {
                   type="button"
                   onClick={handleConfirm}
                   disabled={isProcessing || candidates.length === 0}
-                  className="flex-[2] py-3 px-5 rounded-full font-semibold text-[13.5px] text-[#34C759] hover:text-green-300 transition-all active:scale-[0.98] bg-[#34C759]/20 border border-[#34C759]/40 hover:bg-[#34C759]/30 shadow-[0_4px_20px_rgba(52,199,89,0.2),inset_0_1px_1px_rgba(255,255,255,0.18)] flex justify-center items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-[2] py-3 px-5 rounded-full font-semibold text-[13.5px] text-[#34C759] hover:text-green-300 transition-all active:scale-[0.98] bg-[#34C759]/20 border border-[#34C759]/40 hover:bg-[#34C759]/30 shadow-[0_4px_20px_rgba(52,199,89,0.2),inset_0_1px_1px_rgba(255,255,255,0.18)] flex justify-center items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
                 >
                   {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                   <span>{t('quickAdd.confirmAll')}</span>
