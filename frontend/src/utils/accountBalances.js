@@ -13,6 +13,18 @@ export function calculateAccountBalances({
   const isInvestmentAccount = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
   const balances = new Map();
 
+  // Deduplicate transactions by idempotencyKey to prevent double-counting and ignore non-completed/non-pending
+  const seenTxKeys = new Set();
+  const validTransactions = [];
+  for (const t of transactions) {
+    if (t.status && t.status !== 'completed' && t.status !== 'pending') continue;
+    if (t.idempotencyKey) {
+      if (seenTxKeys.has(t.idempotencyKey)) continue;
+      seenTxKeys.add(t.idempotencyKey);
+    }
+    validTransactions.push(t);
+  }
+
   accounts.forEach(account => {
     const accId = (account._id || account).toString();
     if (!accId) return;
@@ -25,7 +37,7 @@ export function calculateAccountBalances({
     let balance = Number(account.balance_adjustment) || 0;
 
     // 1. Regular Transactions (income, expense, transfer, settlement)
-    transactions.forEach(t => {
+    validTransactions.forEach(t => {
       const amt = Number(t.amount) || 0;
       const tAccId = (t.account?._id || t.account)?.toString();
       const tFromId = (t.from_account?._id || t.from_account)?.toString();

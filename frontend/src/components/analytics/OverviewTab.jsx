@@ -5,95 +5,51 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { getIconComponent } from '../IconPicker';
 import { TrendingUp, TrendingDown, Landmark, Wallet, PiggyBank, CreditCard } from 'lucide-react';
 import { getMetricFontSize } from '../../utils/metricFontSize';
+import { calculateAccountBalances } from '../../utils/accountBalances';
 
-function OverviewTabComponent({ money, data, accounts, investments, debts, bills, incomeProfiles, filters, allTransactions, allDebtTransactions, allReceivables }) {
+function OverviewTabComponent({ money, data, accounts, investments, debts, bills, incomeProfiles, filters, allTransactions, allDebtTransactions, allInstallmentTransactions, allReceivables }) {
   const { t } = useLanguage();
   const reduceMotion = useReducedMotion();
 
+  const activeAccounts = useMemo(() => (accounts || []).filter(acc => !acc.isArchived), [accounts]);
+
+  const totalInvestments = useMemo(() => {
+    return (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
+  }, [investments]);
+
   const accountBalances = useMemo(() => {
-    const balances = {};
-    const totalInvestmentsValue = (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
-    const isInvAcc = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
-
-    const accountsMap = new Map();
-    (accounts || []).forEach(acc => {
-      accountsMap.set(String(acc._id), acc);
-      balances[acc._id] = isInvAcc(acc) ? totalInvestmentsValue : (acc.balance_adjustment || 0);
+    const balancesMap = calculateAccountBalances({
+      accounts: activeAccounts,
+      transactions: allTransactions || [],
+      debtTransactions: allDebtTransactions || [],
+      installmentTransactions: allInstallmentTransactions || [],
+      receivables: allReceivables || [],
+      investmentsValue: totalInvestments
     });
 
-    (allTransactions || []).forEach(t => {
-      const amount = Number(t.amount);
-      const accId = String(t.account?._id || t.account || '');
-      const fromId = String(t.from_account?._id || t.from_account || '');
-      const toId = String(t.to_account?._id || t.to_account || '');
-
-      const accObj = accountsMap.get(accId);
-      const fromObj = accountsMap.get(fromId);
-      const toObj = accountsMap.get(toId);
-
-      if (t.type === 'income') {
-        if (accId && !isInvAcc(accObj)) balances[accId] = (balances[accId] || 0) + amount;
-      } else if (t.type === 'expense') {
-        if (accId && !isInvAcc(accObj)) balances[accId] = (balances[accId] || 0) - amount;
-      } else if (t.type === 'transfer') {
-        if (fromId && !isInvAcc(fromObj)) balances[fromId] = (balances[fromId] || 0) - amount;
-        if (toId && !isInvAcc(toObj)) balances[toId] = (balances[toId] || 0) + amount;
-      }
+    const balancesObj = {};
+    balancesMap.forEach((val, key) => {
+      balancesObj[key] = val;
     });
-    
-    (allDebtTransactions || []).forEach(t => {
-        const amount = Number(t.amount);
-        if (t.type === 'borrowed') {
-            balances[t.account] = (balances[t.account] || 0) + amount;
-        } else if (t.type === 'lent') {
-            balances[t.account] = (balances[t.account] || 0) - amount;
-        } else if (t.type === 'repayment_borrowed') {
-            balances[t.account] = (balances[t.account] || 0) - amount;
-        } else if (t.type === 'repayment_lent') {
-            balances[t.account] = (balances[t.account] || 0) + amount;
-        }
-    });
-    
-    (allReceivables || []).forEach(r => {
-      if (r.paidFrom) balances[r.paidFrom._id || r.paidFrom] = (balances[r.paidFrom._id || r.paidFrom] || 0) - r.paidAmount;
-      if (r.receivedTo) balances[r.receivedTo._id || r.receivedTo] = (balances[r.receivedTo._id || r.receivedTo] || 0) + r.receivedAmount;
-      if (r.participants) {
-        r.participants.forEach(p => {
-          if (p.payments) {
-            p.payments.forEach(pay => {
-              if (pay.account) balances[pay.account._id || pay.account] = (balances[pay.account._id || pay.account] || 0) + pay.amount;
-            });
-          }
-        });
-      }
-    });
-
-    // Ensure investment account balance always reflects live market value of investments
-    (accounts || []).forEach(acc => {
-      if (isInvAcc(acc)) {
-        balances[acc._id] = totalInvestmentsValue;
-      }
-    });
-
-    return balances;
-  }, [accounts, investments, allTransactions, allDebtTransactions, allReceivables]);
+    return balancesObj;
+  }, [activeAccounts, allTransactions, allDebtTransactions, allInstallmentTransactions, allReceivables, totalInvestments]);
 
   const totalAssets = useMemo(() => {
     let total = 0;
     const isInvAcc = (a) => a?.type === 'investment' || a?.name === 'Investments' || a?.name === 'استثمارات';
-    (accounts || []).forEach(acc => {
-      if (!acc.isArchived && (!acc.excludeFromTotal || isInvAcc(acc))) {
+    activeAccounts.forEach(acc => {
+      if (!acc.excludeFromTotal || isInvAcc(acc)) {
         total += (accountBalances[acc._id] || 0);
       }
     });
 
     // Fallback if no account has type === 'investment'
-    const hasInvestmentAccount = (accounts || []).some(a => isInvAcc(a));
+    const hasInvestmentAccount = activeAccounts.some(a => isInvAcc(a));
     if (!hasInvestmentAccount) {
-      total += (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
+      total += totalInvestments;
     }
     return total;
-  }, [accounts, accountBalances, investments]);
+  }, [activeAccounts, accountBalances, totalInvestments]);
   
   // Lifetime debts I have to pay (borrowed / i_owe) - Point-in-time state for Net Worth
   const lifetimeDebtsToPay = useMemo(() => {
@@ -133,10 +89,6 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
       })
       .reduce((sum, d) => sum + (Number(d.remainingAmount) || 0), 0);
   }, [debts, allDebtTransactions, filters]);
-
-  const totalInvestments = useMemo(() => {
-    return (investments || []).reduce((sum, inv) => sum + (inv.currentValue || 0), 0);
-  }, [investments]);
 
   // Helper to count exact occurrences of a repeating event within the filtered date range (Mathematically accurate for JS Dates)
   const calculateOccurrences = (eventDate, frequency, filters) => {
@@ -301,13 +253,13 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
   
   const savings = useMemo(() => {
     let total = 0;
-    (accounts || []).forEach(acc => {
+    activeAccounts.forEach(acc => {
       if (acc.isSavingsAccount) {
         total += (accountBalances[acc._id] || 0);
       }
     });
     return total;
-  }, [accounts, accountBalances]);
+  }, [activeAccounts, accountBalances]);
 
   const fixedIncome = useMemo(() => {
     const active = (incomeProfiles || []).filter(p => p.isActive !== false);
@@ -565,7 +517,7 @@ function OverviewTabComponent({ money, data, accounts, investments, debts, bills
           animate="show"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-3 md:gap-4"
         >
-          {accounts?.length ? accounts.map((acc) => {
+          {activeAccounts?.length ? activeAccounts.map((acc) => {
             const AccIcon = getIconComponent(acc.icon, 'Wallet');
             const accBalance = accountBalances[acc._id] || 0;
             return (
