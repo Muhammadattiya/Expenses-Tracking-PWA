@@ -127,13 +127,7 @@ export default function useLiquidScrub({
     const rail = railRef.current;
     if (!rail || !rail.contains(e.target)) return;
 
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-      capturedPointerId.current = e.pointerId;
-    } catch {
-      /* optional */
-    }
-
+    // Defer setPointerCapture until drag actually occurs to avoid stealing click events from child links
     // Cache rects for the gesture lifecycle to eliminate 360 forced reflows/sec
     cachedTrackRect.current = trackRef.current?.getBoundingClientRect() ?? null;
     cachedRailRect.current = rail.getBoundingClientRect();
@@ -166,6 +160,14 @@ export default function useLiquidScrub({
     const dist = Math.hypot(dx, dy);
 
     if (dist > 6 || scrubbing || didScrub.current) {
+      if (capturedPointerId.current === null) {
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          capturedPointerId.current = e.pointerId;
+        } catch {
+          /* optional */
+        }
+      }
       didScrub.current = true;
       if (!scrubbing) setScrubbing(true);
       followFinger(e.clientX);
