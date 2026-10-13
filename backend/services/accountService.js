@@ -10,9 +10,15 @@ const getAccounts = async (userId) => {
 // Whitelist allowed fields to prevent mass assignment attacks
 const pickAccountFields = (data) => {
   const allowed = {};
-  const ALLOWED_KEYS = ['name', 'type', 'icon', 'color', 'balance_adjustment', 'isDefault', 'isSavingsAccount', 'isEmergencyFund', 'isArchived', 'excludeFromTotal', 'cardLast4', 'order'];
+  const ALLOWED_KEYS = ['name', 'type', 'icon', 'color', 'balance_adjustment', 'isDefault', 'isSavingsAccount', 'isEmergencyFund', 'isArchived', 'excludeFromTotal', 'cardLast4', 'linkedCards', 'order'];
   for (const key of ALLOWED_KEYS) {
     if (data[key] !== undefined) allowed[key] = data[key];
+  }
+  // Sync linkedCards and cardLast4 for bidirectional compatibility
+  if (Array.isArray(allowed.linkedCards) && allowed.linkedCards.length > 0) {
+    if (!allowed.cardLast4) allowed.cardLast4 = allowed.linkedCards[0];
+  } else if (allowed.cardLast4 && (!allowed.linkedCards || allowed.linkedCards.length === 0)) {
+    allowed.linkedCards = [allowed.cardLast4];
   }
   return allowed;
 };

@@ -34,6 +34,12 @@ router.get('/sms/token-status', requireAuth, smsWebhookController.getTokenStatus
 router.post('/sms/token', requireAuth, smsWebhookController.generateToken);
 router.delete('/sms/token', requireAuth, smsWebhookController.revokeToken);
 
+// Merchant Knowledge Management Endpoints
+const merchantKnowledgeController = require('../controllers/merchantKnowledgeController');
+router.get('/merchant-knowledge', requireAuth, merchantKnowledgeController.getLearnedMerchants);
+router.put('/merchant-knowledge/:id', requireAuth, merchantKnowledgeController.updateLearnedMerchant);
+router.delete('/merchant-knowledge/:id', requireAuth, merchantKnowledgeController.deleteLearnedMerchant);
+
 // Shortcut API endpoints (require shortcut token + dedicated rate limiter)
 // Used by the Apple Shortcuts app
 router.get('/shortcut/accounts', shortcutLimiter, shortcutAuth, shortcutController.getAccounts);

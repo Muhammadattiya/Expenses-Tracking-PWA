@@ -30,3 +30,19 @@ export const revokeSmsToken = async () => {
   const response = await api.delete('/integrations/sms/token');
   return response.data;
 };
+
+// Merchant Knowledge Management
+export const getLearnedMerchants = async () => {
+  const response = await api.get('/integrations/merchant-knowledge');
+  return response.data;
+};
+
+export const updateLearnedMerchant = async (id, intentId) => {
+  const response = await api.put(`/integrations/merchant-knowledge/${id}`, { intentId });
+  return response.data;
+};
+
+export const deleteLearnedMerchant = async (id) => {
+  const response = await api.delete(`/integrations/merchant-knowledge/${id}`);
+  return response.data;
+};

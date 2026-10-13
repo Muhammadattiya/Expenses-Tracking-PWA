@@ -37,6 +37,7 @@ export default function AccountManagement({ onBack }) {
   const [newAccountColor, setNewAccountColor] = useState('#3b82f6');
   const [newAccountBalance, setNewAccountBalance] = useState('');
   const [newAccountCardLast4, setNewAccountCardLast4] = useState('');
+  const [newAccountLinkedCards, setNewAccountLinkedCards] = useState([]);
   const [newAccountExcludeFromTotal, setNewAccountExcludeFromTotal] = useState(false);
   const [newAccountIsSavingsAccount, setNewAccountIsSavingsAccount] = useState(false);
   const [newAccountIsEmergencyFund, setNewAccountIsEmergencyFund] = useState(false);
@@ -48,6 +49,7 @@ export default function AccountManagement({ onBack }) {
   const [editIcon, setEditIcon] = useState('');
   const [editColor, setEditColor] = useState('#3b82f6');
   const [editCardLast4, setEditCardLast4] = useState('');
+  const [editLinkedCards, setEditLinkedCards] = useState([]);
   const [editBalance, setEditBalance] = useState('');
   const [editExcludeFromTotal, setEditExcludeFromTotal] = useState(false);
   const [editIsSavingsAccount, setEditIsSavingsAccount] = useState(false);
@@ -237,13 +239,18 @@ export default function AccountManagement({ onBack }) {
     }
     setIsAdding(true);
     try {
+      const allLinked = [...newAccountLinkedCards];
+      if (newAccountCardLast4.trim().length === 4 && !allLinked.includes(newAccountCardLast4.trim())) {
+        allLinked.push(newAccountCardLast4.trim());
+      }
       await createAccount({
         name: trimmed,
         type: newAccountType,
         icon: newAccountIcon,
         color: newAccountColor,
         balance_adjustment: Number(newAccountBalance) || 0,
-        cardLast4: newAccountCardLast4,
+        cardLast4: allLinked[0] || newAccountCardLast4 || undefined,
+        linkedCards: allLinked,
         excludeFromTotal: newAccountExcludeFromTotal,
         isSavingsAccount: newAccountIsSavingsAccount,
         isEmergencyFund: newAccountIsEmergencyFund
@@ -253,6 +260,7 @@ export default function AccountManagement({ onBack }) {
       setNewAccountIcon("Wallet");
       setNewAccountColor("#3b82f6");
       setNewAccountCardLast4("");
+      setNewAccountLinkedCards([]);
       setNewAccountExcludeFromTotal(false);
       setNewAccountIsSavingsAccount(false);
       setNewAccountIsEmergencyFund(false);
@@ -272,7 +280,11 @@ export default function AccountManagement({ onBack }) {
     setEditName(account.name);
     setEditIcon(account.icon || 'Wallet');
     setEditColor(account.color || '#3b82f6');
-    setEditCardLast4(account.cardLast4 || '');
+    setEditCardLast4('');
+    const existingLinked = Array.isArray(account.linkedCards) && account.linkedCards.length > 0
+      ? account.linkedCards
+      : (account.cardLast4 ? [account.cardLast4] : []);
+    setEditLinkedCards(existingLinked);
     setEditBalance(getAccountBalance(account));
     setEditExcludeFromTotal(account.excludeFromTotal || false);
     setEditIsSavingsAccount(account.isSavingsAccount || false);
@@ -287,6 +299,7 @@ export default function AccountManagement({ onBack }) {
     setEditIcon('');
     setEditColor('#3b82f6');
     setEditCardLast4('');
+    setEditLinkedCards([]);
     setEditIsEmergencyFund(false);
   };
 
@@ -305,12 +318,17 @@ export default function AccountManagement({ onBack }) {
       if (!isNaN(newBalance) && newBalance !== currentBalance) {
         newAdjustment += (newBalance - currentBalance);
       }
+      const allLinked = [...editLinkedCards];
+      if (editCardLast4.trim().length === 4 && !allLinked.includes(editCardLast4.trim())) {
+        allLinked.push(editCardLast4.trim());
+      }
       await updateAccount(editingItem._id, { 
         name: trimmed, 
         icon: editIcon, 
         color: editColor, 
         type: editingItem.type, 
-        cardLast4: editCardLast4, 
+        cardLast4: allLinked[0] || editCardLast4 || undefined,
+        linkedCards: allLinked,
         balance_adjustment: newAdjustment, 
         excludeFromTotal: editExcludeFromTotal, 
         isSavingsAccount: editIsSavingsAccount,
@@ -655,8 +673,58 @@ export default function AccountManagement({ onBack }) {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label htmlFor="edit-acc-last4" className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
-                        <input id="edit-acc-last4" type="text" maxLength="4" pattern="\d{4}" value={editCardLast4} onChange={(e) => setEditCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
+                        <label className="block text-xs text-white/50 mb-1.5">{t('settings.linkedCardsLabel') || t('settings.cardLast4')}</label>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {editLinkedCards.map((card, idx) => (
+                            <span key={idx} className="bg-white/10 border border-white/20 text-white text-xs px-2 py-0.5 rounded-lg font-mono flex items-center gap-1.5 shadow-sm">
+                              •••• {card}
+                              <button
+                                type="button"
+                                onClick={() => setEditLinkedCards(editLinkedCards.filter((_, i) => i !== idx))}
+                                className="text-white/40 hover:text-red-400 font-bold ml-0.5"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <input 
+                            id="edit-acc-last4" 
+                            type="text" 
+                            maxLength="4" 
+                            pattern="\d{4}" 
+                            value={editCardLast4} 
+                            onChange={(e) => setEditCardLast4(e.target.value)} 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && /^\d{4}$/.test(editCardLast4.trim())) {
+                                e.preventDefault();
+                                const val = editCardLast4.trim();
+                                if (!editLinkedCards.includes(val)) {
+                                  setEditLinkedCards([...editLinkedCards, val]);
+                                  setEditCardLast4('');
+                                }
+                              }
+                            }}
+                            placeholder="1234" 
+                            className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" 
+                          />
+                          {editCardLast4.trim().length === 4 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = editCardLast4.trim();
+                                if (/^\d{4}$/.test(val) && !editLinkedCards.includes(val)) {
+                                  setEditLinkedCards([...editLinkedCards, val]);
+                                  setEditCardLast4('');
+                                }
+                              }}
+                              className="px-3 bg-[#8D6346]/40 hover:bg-[#8D6346]/60 text-white text-xs font-bold rounded-xl border border-[#8D6346]/30 transition-colors"
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-end pb-0.5">
                         <label htmlFor="edit-acc-exclude-inline" className="flex items-center w-full justify-between gap-2 px-3 py-2.5 bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl cursor-pointer hover:bg-black/30 transition-colors">
@@ -758,8 +826,58 @@ export default function AccountManagement({ onBack }) {
                     <input id="new-acc-balance" type="number" value={newAccountBalance} onChange={(e) => setNewAccountBalance(e.target.value)} className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" required />
                   </div>
                   <div>
-                    <label htmlFor="new-acc-last4" className="block text-xs text-white/50 mb-1.5">{t('settings.cardLast4')}</label>
-                    <input id="new-acc-last4" type="text" maxLength="4" pattern="\d{4}" value={newAccountCardLast4} onChange={(e) => setNewAccountCardLast4(e.target.value)} placeholder="1234" className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2.5 text-base text-white focus:outline-none focus:border-[#8D6346]/50" />
+                    <label className="block text-xs text-white/50 mb-1.5">{t('settings.linkedCardsLabel') || t('settings.cardLast4')}</label>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {newAccountLinkedCards.map((card, idx) => (
+                        <span key={idx} className="bg-white/10 border border-white/20 text-white text-xs px-2 py-0.5 rounded-lg font-mono flex items-center gap-1.5 shadow-sm">
+                          •••• {card}
+                          <button
+                            type="button"
+                            onClick={() => setNewAccountLinkedCards(newAccountLinkedCards.filter((_, i) => i !== idx))}
+                            className="text-white/40 hover:text-red-400 font-bold ml-0.5"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input 
+                        id="new-acc-last4" 
+                        type="text" 
+                        maxLength="4" 
+                        pattern="\d{4}" 
+                        value={newAccountCardLast4} 
+                        onChange={(e) => setNewAccountCardLast4(e.target.value)} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && /^\d{4}$/.test(newAccountCardLast4.trim())) {
+                            e.preventDefault();
+                            const val = newAccountCardLast4.trim();
+                            if (!newAccountLinkedCards.includes(val)) {
+                              setNewAccountLinkedCards([...newAccountLinkedCards, val]);
+                              setNewAccountCardLast4('');
+                            }
+                          }
+                        }}
+                        placeholder="1234" 
+                        className="w-full bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-[#8D6346]/50" 
+                      />
+                      {newAccountCardLast4.trim().length === 4 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = newAccountCardLast4.trim();
+                            if (/^\d{4}$/.test(val) && !newAccountLinkedCards.includes(val)) {
+                              setNewAccountLinkedCards([...newAccountLinkedCards, val]);
+                              setNewAccountCardLast4('');
+                            }
+                          }}
+                          className="px-3 bg-[#8D6346]/40 hover:bg-[#8D6346]/60 text-white text-xs font-bold rounded-xl border border-[#8D6346]/30 transition-colors"
+                        >
+                          +
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 

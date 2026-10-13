@@ -113,6 +113,11 @@ investment: {
   ref: "Investment",
   required: false
 },
+bill: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Bill",
+  required: false
+},
 }, { timestamps: true });
 
 transactionSchema.index({ user: 1, date: -1 });

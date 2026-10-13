@@ -14,7 +14,7 @@ exports.getBills = async (userId) => {
 };
 
 exports.createBill = async (userId, data) => {
-  const allowedFields = ['name', 'expectedAmount', 'category', 'account', 'notes', 'dueDate', 'repeat', 'reminderEnabled', 'reminderDaysBefore', 'notificationEnabled', 'isActive'];
+  const allowedFields = ['name', 'expectedAmount', 'category', 'account', 'notes', 'keywords', 'dueDate', 'repeat', 'reminderEnabled', 'reminderDaysBefore', 'notificationEnabled', 'isActive'];
   const billData = {};
   for (const field of allowedFields) {
     if (data[field] !== undefined) {
@@ -49,7 +49,7 @@ exports.updateBill = async (userId, id, data) => {
   const bill = await Bill.findOne({ _id: id, user: userId });
   if (!bill) throw new Error('Bill not found');
 
-  const allowedFields = ['name', 'expectedAmount', 'category', 'account', 'notes', 'dueDate', 'repeat', 'reminderEnabled', 'reminderDaysBefore', 'notificationEnabled', 'isActive'];
+  const allowedFields = ['name', 'expectedAmount', 'category', 'account', 'notes', 'keywords', 'dueDate', 'repeat', 'reminderEnabled', 'reminderDaysBefore', 'notificationEnabled', 'isActive'];
   const updateData = {};
   for (const field of allowedFields) {
     if (data[field] !== undefined) {
@@ -120,6 +120,10 @@ exports.markAsPaid = async (userId, id, transactionId) => {
   bill.lastPaymentDate = now;
   if (safeTxId) {
     bill.lastTransactionId = safeTxId;
+    const Transaction = require('../models/Transaction');
+    Transaction.findByIdAndUpdate(safeTxId, { bill: bill._id }).catch(err => 
+      console.error('[BILL] Failed to link bill on transaction:', err.message)
+    );
   }
 
   if (bill.repeat !== 'never') {

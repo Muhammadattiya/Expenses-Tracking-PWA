@@ -99,6 +99,11 @@ exports.handleSmsWebhook = async (req, res, next) => {
       return res.status(200).json({ message: 'Transaction already exists (deduplicated)', id: existingTx._id });
     }
 
+    const { parseSms, isPromotionalOrMarketingSms } = require('../services/smsParser');
+    if (isPromotionalOrMarketingSms(smsText)) {
+      return res.status(200).json({ message: 'Ignored: promotional/marketing message', status: 'ignored' });
+    }
+
     const parsedData = parseSms(smsText);
 
     if (!parsedData) {
@@ -156,6 +161,20 @@ exports.handleSmsWebhook = async (req, res, next) => {
           applyTransactionDelta(candidate.user._id, singleTx, 1).catch(err => console.error('[ANALYTICS] Finalize delta error:', err.message));
           if (singleTx.type === 'expense' && singleTx.category) {
             updateBudgetIncrementally(candidate.user._id, singleTx, 1).catch(err => console.error('[BUDGET] Finalize budget error:', err.message));
+          }
+
+          if (singleTx.type === 'expense') {
+            try {
+              const { matchAndReconcileBill } = require('../services/billReconciliationService');
+              const billRecon = await matchAndReconcileBill(candidate.user._id, singleTx);
+              if (billRecon.matched) {
+                singleTx.bill = billRecon.bill._id;
+                await singleTx.save();
+                console.log(`[SMS Webhook] Bill auto-reconciled on finalized transfer: bill="${billRecon.bill.name}" tx="${singleTx._id}"`);
+              }
+            } catch (billErr) {
+              console.error('[SMS Webhook] Bill reconciliation error in finalizeCallback:', billErr.message);
+            }
           }
 
           const payload = notificationService.buildPayload({
@@ -231,6 +250,19 @@ exports.handleSmsWebhook = async (req, res, next) => {
       }
     } catch (e) {
       // Non-fatal
+    }
+
+    // Auto-reconcile with active unpaid bills if applicable
+    try {
+      const { matchAndReconcileBill } = require('../services/billReconciliationService');
+      const billRecon = await matchAndReconcileBill(user._id, newTx);
+      if (billRecon.matched) {
+        newTx.bill = billRecon.bill._id;
+        await newTx.save();
+        console.log(`[SMS Webhook] Bill auto-reconciled: bill="${billRecon.bill.name}" tx="${newTx._id}"`);
+      }
+    } catch (billErr) {
+      console.error('[SMS Webhook] Bill reconciliation error:', billErr.message);
     }
 
     console.log(`[SMS Webhook] single_tx id="${newTx._id}" amount=${newTx.amount} accountMatched=${!!accountId}`);

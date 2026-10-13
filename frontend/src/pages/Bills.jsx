@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Receipt, Calendar } from 'lucide-react';
+import { Plus, Receipt, Calendar, Link2, PlusCircle, CheckCircle2, ArrowLeft, Search, Loader2, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { BillsSkeleton } from '../components/ui/Skeletons';
 import { getAccounts } from '../api/accounts';
 import { getCategories } from '../api/categories';
-import { getBills, createBill, updateBill, deleteBill, ignoreBill } from '../api/bills';
+import { getBills, createBill, updateBill, deleteBill, ignoreBill, payBill } from '../api/bills';
+import { getTransactions } from '../api/transactions';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import BillCard from '../components/bills/BillCard';
@@ -25,6 +27,15 @@ export default function Bills() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
   const [billToDelete, setBillToDelete] = useState(null);
+
+  // Settle & Link Existing Transaction State
+  const [payOptionsBill, setPayOptionsBill] = useState(null);
+  const [isLinkingExisting, setIsLinkingExisting] = useState(false);
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [loadingTx, setLoadingTx] = useState(false);
+  const [selectedTxId, setSelectedTxId] = useState(null);
+  const [isSettling, setIsSettling] = useState(false);
+  const [txSearch, setTxSearch] = useState('');
 
   const money = (value) =>
     new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
@@ -84,15 +95,56 @@ export default function Bills() {
   };
 
   const handlePayBill = (bill) => {
-    navigate('/add', {
-      state: {
-        billId: bill._id,
-        defaultAmount: bill.expectedAmount,
-        defaultName: bill.name,
-        defaultCategory: bill.category?._id || bill.category,
-        defaultAccount: bill.account?._id || bill.account
-      }
-    });
+    setPayOptionsBill(bill);
+    setIsLinkingExisting(false);
+    setSelectedTxId(null);
+    setTxSearch('');
+  };
+
+  const handleSettleWithoutExpense = async (bill) => {
+    try {
+      setIsSettling(true);
+      await payBill(bill._id);
+      showToast(t('bills.billSettledOnly'), 'success');
+      setPayOptionsBill(null);
+      await load();
+    } catch (err) {
+      console.error('Error marking bill paid:', err);
+      showToast(err.response?.data?.message || t('common.saveError'), 'error');
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
+  const handleOpenLinkExisting = async () => {
+    setIsLinkingExisting(true);
+    setLoadingTx(true);
+    try {
+      const txs = await getTransactions({ limit: 50 });
+      const expenseTxs = (Array.isArray(txs) ? txs : (txs?.transactions || [])).filter(t => t.type === 'expense');
+      setRecentTransactions(expenseTxs);
+    } catch (err) {
+      console.error('Error fetching transactions for bill linking:', err);
+      showToast(t('common.loadError'), 'error');
+    } finally {
+      setLoadingTx(false);
+    }
+  };
+
+  const handleConfirmLinkSettle = async () => {
+    if (!payOptionsBill || !selectedTxId) return;
+    try {
+      setIsSettling(true);
+      await payBill(payOptionsBill._id, selectedTxId);
+      showToast(t('bills.billSettledWithExisting'), 'success');
+      setPayOptionsBill(null);
+      await load();
+    } catch (err) {
+      console.error('Error settling bill with transaction:', err);
+      showToast(err.response?.data?.message || t('common.saveError'), 'error');
+    } finally {
+      setIsSettling(false);
+    }
   };
 
   const handleIgnoreBill = async (bill) => {
@@ -308,6 +360,228 @@ export default function Bills() {
           }}
           onCancel={() => setBillToDelete(null)}
         />
+      )}
+      {/* Settle Bill Options Modal */}
+      {payOptionsBill && createPortal(
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          dir={lang === 'ar' ? 'rtl' : 'ltr'}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-md bg-[#1c1817] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-5"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                {isLinkingExisting && (
+                  <button 
+                    onClick={() => setIsLinkingExisting(false)}
+                    className="p-1 rounded-lg text-white/50 hover:text-white transition-colors"
+                  >
+                    <ArrowLeft size={18} className={lang === 'ar' ? 'rotate-180' : ''} />
+                  </button>
+                )}
+                <h3 className="text-lg font-bold text-white">
+                  {isLinkingExisting ? t('bills.linkExistingTransaction') : t('bills.payBillOptions')}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setPayOptionsBill(null)}
+                className="text-white/40 hover:text-white p-1 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Bill Summary Pill */}
+            <div className="bg-[#2B2321]/60 border border-[#8D6346]/30 rounded-2xl p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-white font-bold text-sm block">{payOptionsBill.name}</span>
+                <span className="text-[11px] text-white/50">
+                  {new Date(payOptionsBill.dueDate).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB')}
+                </span>
+              </div>
+              <span className="text-base font-black text-white tabular-nums">
+                {money(payOptionsBill.expectedAmount)}
+              </span>
+            </div>
+
+            {!isLinkingExisting ? (
+              /* Three Choices */
+              <div className="space-y-3">
+                {/* Option 1: Link Existing Transaction */}
+                <button
+                  type="button"
+                  onClick={handleOpenLinkExisting}
+                  className="w-full text-left rtl:text-right p-4 rounded-2xl bg-white/5 hover:bg-[#8D6346]/20 border border-white/10 hover:border-[#8D6346]/50 transition-all flex items-start gap-3.5 group shadow-sm"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#8D6346]/20 border border-[#8D6346]/30 flex items-center justify-center text-[#8D6346] shrink-0 mt-0.5 shadow-inner">
+                    <Link2 size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm text-white group-hover:text-[#E8C5A8] transition-colors">
+                      {t('bills.linkExistingTransaction')}
+                    </div>
+                    <div className="text-xs text-white/50 leading-relaxed mt-0.5">
+                      {t('bills.linkExistingDesc')}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Option 2: Record New Expense */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const bill = payOptionsBill;
+                    setPayOptionsBill(null);
+                    navigate('/add', {
+                      state: {
+                        billId: bill._id,
+                        defaultAmount: bill.expectedAmount,
+                        defaultName: bill.name,
+                        defaultCategory: bill.category?._id || bill.category,
+                        defaultAccount: bill.account?._id || bill.account
+                      }
+                    });
+                  }}
+                  className="w-full text-left rtl:text-right p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-start gap-3.5 group shadow-sm"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 shrink-0 mt-0.5 shadow-inner">
+                    <PlusCircle size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm text-white">
+                      {t('bills.recordNewExpense')}
+                    </div>
+                    <div className="text-xs text-white/50 leading-relaxed mt-0.5">
+                      {t('bills.payNow')}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Option 3: Mark Paid Only (No Expense) */}
+                <button
+                  type="button"
+                  disabled={isSettling}
+                  onClick={() => handleSettleWithoutExpense(payOptionsBill)}
+                  className="w-full text-left rtl:text-right p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-start gap-3.5 group shadow-sm"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5 shadow-inner">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm text-white">
+                      {t('bills.markPaidOnly')}
+                    </div>
+                    <div className="text-xs text-white/50 leading-relaxed mt-0.5">
+                      {t('bills.markPaid')}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            ) : (
+              /* Link Existing Transaction List */
+              <div className="space-y-3">
+                {/* Search */}
+                <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs">
+                  <Search size={15} className="text-white/40" />
+                  <input
+                    type="text"
+                    value={txSearch}
+                    onChange={(e) => setTxSearch(e.target.value)}
+                    placeholder={t('common.search') || 'Search transactions...'}
+                    className="bg-transparent border-none outline-none text-white text-xs w-full placeholder-white/40"
+                  />
+                  {txSearch && (
+                    <button onClick={() => setTxSearch('')} className="text-white/40 hover:text-white">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Transactions Scroll List */}
+                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                  {loadingTx ? (
+                    <div className="flex flex-col items-center justify-center py-8 gap-2">
+                      <Loader2 className="w-6 h-6 text-[#8D6346] animate-spin" />
+                      <span className="text-xs text-white/50">{t('common.loading')}</span>
+                    </div>
+                  ) : (() => {
+                    const filteredTxs = recentTransactions.filter(t => 
+                      !txSearch.trim() ||
+                      (t.title || '').toLowerCase().includes(txSearch.trim().toLowerCase()) ||
+                      String(t.amount).includes(txSearch.trim())
+                    );
+
+                    if (filteredTxs.length === 0) {
+                      return (
+                        <div className="text-center py-8 px-4 text-xs text-white/40 border border-white/5 rounded-2xl">
+                          {t('bills.noRecentTransactionsFound')}
+                        </div>
+                      );
+                    }
+
+                    return filteredTxs.map(tx => {
+                      const isSelected = selectedTxId === tx._id;
+                      return (
+                        <button
+                          key={tx._id}
+                          type="button"
+                          onClick={() => setSelectedTxId(tx._id)}
+                          className={`w-full text-left rtl:text-right p-3 rounded-xl border transition-all flex items-center justify-between gap-2.5 ${
+                            isSelected 
+                              ? 'bg-[#8D6346]/25 border-[#8D6346] shadow-inner text-white' 
+                              : 'bg-white/5 hover:bg-white/10 border-white/5 text-white/80'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold truncate text-white">{tx.title}</div>
+                            <div className="text-[10px] text-white/40 flex items-center gap-1.5 mt-0.5">
+                              <span>{new Date(tx.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB')}</span>
+                              {tx.account?.name && <span>• {tx.account.name}</span>}
+                            </div>
+                          </div>
+                          <div className="text-right rtl:text-left shrink-0">
+                            <span className="text-xs font-black tabular-nums text-white block">
+                              {money(tx.amount)}
+                            </span>
+                            {isSelected && (
+                              <span className="text-[10px] text-[#E8C5A8] font-bold">✓</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Settle Action Buttons */}
+                <div className="flex gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsLinkingExisting(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 text-xs font-semibold transition-colors"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedTxId || isSettling}
+                    onClick={handleConfirmLinkSettle}
+                    className="flex-1 py-2.5 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 disabled:opacity-40 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-lg"
+                  >
+                    {isSettling && <Loader2 size={14} className="animate-spin" />}
+                    <span>{t('bills.markPaid')}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </div>,
+        document.body
       )}
       </div>
     </div>

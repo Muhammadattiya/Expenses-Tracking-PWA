@@ -18,6 +18,7 @@ export default function CreateAccountModal({ isOpen, onClose, onSuccess }) {
   const [newAccountType, setNewAccountType] = useState('cash');
   const [newAccountBalance, setNewAccountBalance] = useState('');
   const [newAccountCardLast4, setNewAccountCardLast4] = useState('');
+  const [newAccountLinkedCards, setNewAccountLinkedCards] = useState([]);
   const [newAccountExcludeFromTotal, setNewAccountExcludeFromTotal] = useState(false);
   const [newAccountIsSavingsAccount, setNewAccountIsSavingsAccount] = useState(false);
   const [newAccountIcon, setNewAccountIcon] = useState('Wallet');
@@ -31,6 +32,7 @@ export default function CreateAccountModal({ isOpen, onClose, onSuccess }) {
       setNewAccountType('cash');
       setNewAccountBalance('');
       setNewAccountCardLast4('');
+      setNewAccountLinkedCards([]);
       setNewAccountExcludeFromTotal(false);
       setNewAccountIsSavingsAccount(false);
       setNewAccountIcon('Wallet');
@@ -61,12 +63,17 @@ export default function CreateAccountModal({ isOpen, onClose, onSuccess }) {
     setErrorMessage('');
     try {
       triggerHaptic('selection');
+      const allLinked = [...newAccountLinkedCards];
+      if (newAccountCardLast4.trim().length === 4 && !allLinked.includes(newAccountCardLast4.trim())) {
+        allLinked.push(newAccountCardLast4.trim());
+      }
       const savedAccount = await createAccount({
         name: trimmed,
         type: newAccountType,
         balance_adjustment: Number(newAccountBalance) || 0,
         currency: 'EGP',
-        cardLast4: newAccountCardLast4 || undefined,
+        cardLast4: allLinked[0] || newAccountCardLast4 || undefined,
+        linkedCards: allLinked,
         excludeFromTotal: newAccountExcludeFromTotal,
         isSavingsAccount: newAccountIsSavingsAccount,
         icon: newAccountIcon,
@@ -204,19 +211,60 @@ export default function CreateAccountModal({ isOpen, onClose, onSuccess }) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="create-acc-last4" className="block text-xs text-white/60 mb-1.5 font-medium">
-                    {t('settings.cardLast4')}
+                  <label className="block text-xs text-white/60 mb-1.5 font-medium">
+                    {t('settings.linkedCardsLabel') || t('settings.cardLast4')}
                   </label>
-                  <input 
-                    id="create-acc-last4"
-                    type="text" 
-                    maxLength="4" 
-                    pattern="\d{4}" 
-                    value={newAccountCardLast4} 
-                    onChange={(e) => setNewAccountCardLast4(e.target.value)} 
-                    placeholder="1234" 
-                    className="w-full bg-black/20 backdrop-blur-[10px] border border-white/10 shadow-inner rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#8D6346] focus:shadow-[0_0_12px_rgba(141,99,70,0.3)] transition-all" 
-                  />
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {newAccountLinkedCards.map((card, idx) => (
+                      <span key={idx} className="bg-white/10 border border-white/20 text-white text-xs px-2 py-0.5 rounded-lg font-mono flex items-center gap-1.5 shadow-sm">
+                        •••• {card}
+                        <button
+                          type="button"
+                          onClick={() => setNewAccountLinkedCards(newAccountLinkedCards.filter((_, i) => i !== idx))}
+                          className="text-white/40 hover:text-red-400 font-bold ml-0.5"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input 
+                      id="create-acc-last4"
+                      type="text" 
+                      maxLength="4" 
+                      pattern="\d{4}" 
+                      value={newAccountCardLast4} 
+                      onChange={(e) => setNewAccountCardLast4(e.target.value)} 
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && /^\d{4}$/.test(newAccountCardLast4.trim())) {
+                          e.preventDefault();
+                          const val = newAccountCardLast4.trim();
+                          if (!newAccountLinkedCards.includes(val)) {
+                            setNewAccountLinkedCards([...newAccountLinkedCards, val]);
+                            setNewAccountCardLast4('');
+                          }
+                        }
+                      }}
+                      placeholder="1234" 
+                      className="w-full bg-black/20 backdrop-blur-[10px] border border-white/10 shadow-inner rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#8D6346] focus:shadow-[0_0_12px_rgba(141,99,70,0.3)] transition-all" 
+                    />
+                    {newAccountCardLast4.trim().length === 4 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = newAccountCardLast4.trim();
+                          if (/^\d{4}$/.test(val) && !newAccountLinkedCards.includes(val)) {
+                            setNewAccountLinkedCards([...newAccountLinkedCards, val]);
+                            setNewAccountCardLast4('');
+                          }
+                        }}
+                        className="px-3 bg-[#8D6346]/40 hover:bg-[#8D6346]/60 text-white text-xs font-bold rounded-xl border border-[#8D6346]/30 transition-colors"
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
