@@ -602,6 +602,45 @@ const extractAmountFallback = (smsText) => {
 };
 
 /**
+ * Detects whether an SMS is a promotional, discount, or marketing message.
+ * @param {string} text 
+ * @returns {boolean}
+ */
+const isPromotionalOrMarketingSms = (text) => {
+  if (!text) return false;
+
+  // Real transactions with verified transaction references, operation numbers, or bank debit receipts are not spam
+  if (/(?:رقم العملية|Transaction ID|Ref#|مرجع التاجر|رقم مرجعي|رقم المعاملة)/i.test(text)) {
+    return false;
+  }
+  
+  // 1. Promo codes, coupons, vouchers
+  if (/(?:استخدم كود|كود الخصم|كود:|بروموكود|promo\s*code|voucher|كوبون|coupon)/i.test(text)) {
+    return true;
+  }
+
+  // 2. Percentage discounts and promo words
+  if (/(?:خصمك\s+جاهز|خصم\s*%\s*\d+|\d+%\s*خصم|خصم\s+يصل\s+إلى|خصومات\s+تصل|وفر\s+حتى|وفر\s+الآن|أقوى\s+الخصومات|عروض\s+حصرية)/i.test(text)) {
+    return true;
+  }
+
+  // 3. "Up to" thresholds (not actual debits)
+  if (/(?:لحد\s+\d+\s*(?:جنيه|جم|EGP)|حتى\s+\d+\s*(?:جنيه|جم|EGP)|بحد\s+أقصى\s+\d+)/i.test(text)) {
+    return true;
+  }
+
+  // 4. Marketing URLs combined with shop/offer keywords
+  if (/(?:page\.link|eshop|bit\.ly|bit\.do|تسوق\s+الآن|اشتراك\s+شهري)/i.test(text)) {
+    // If it lacks real transaction confirmation phrases like "تم خصم" or "Successful transaction", reject it
+    if (!/(?:تم\s+خصم|تم\s+الآن\s+خصم|تم\s+سحب|تم\s+دفع\s+مبلغ|Successful\s+transaction|debited\s+from)/i.test(text)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
  * Parses an SMS string and returns transaction details if matched.
  * @param {string} smsText 
  * @returns {Object|null} Extracted data or null if not a recognized financial SMS.
@@ -611,6 +650,10 @@ const parseSms = (smsText) => {
 
   const normalized = normalizeSmsText(smsText);
   if (!normalized) return null;
+
+  if (isPromotionalOrMarketingSms(normalized)) {
+    return null;
+  }
 
   for (const pattern of BANK_PATTERNS) {
     if (pattern.match.test(normalized)) {
@@ -689,5 +732,6 @@ module.exports = {
   parseSms,
   normalizeSmsText,
   extractCardLast4,
-  parseEventTimestamp
+  parseEventTimestamp,
+  isPromotionalOrMarketingSms
 };

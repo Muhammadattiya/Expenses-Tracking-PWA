@@ -25,6 +25,11 @@ const billSchema = new mongoose.Schema({
   notes: {
     type: String
   },
+  keywords: {
+    type: [String],
+    default: [],
+    trim: true
+  },
   dueDate: {
     type: Date,
     required: true

@@ -7,6 +7,7 @@ import { getDebts } from '../api/debts';
 import { getInvestments } from '../api/investments';
 import { budgetService } from '../services/budgetService';
 import { getBills } from '../api/bills';
+import { getInstallments } from '../api/installments';
 
 import { getReceivables } from '../api/receivables';
 import { getIncomeProfiles } from '../api/incomeProfiles';
@@ -113,6 +114,7 @@ export default function Analytics() {
   const [incomeProfiles, setIncomeProfiles] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [allDebtTransactions, setAllDebtTransactions] = useState([]);
+  const [allInstallmentTransactions, setAllInstallmentTransactions] = useState([]);
   const [allReceivables, setAllReceivables] = useState([]);
   const [userPrefs, setUserPrefs] = useState(null);
 
@@ -184,7 +186,8 @@ export default function Analytics() {
         billsRes, 
         incomeProfilesRes,
         allTx,
-        receivablesData
+        receivablesData,
+        installmentsRes
       ] = await Promise.all([
         getAccounts(),
         getCategories(),
@@ -194,8 +197,13 @@ export default function Analytics() {
         getBills().catch(() => []),
         getIncomeProfiles().catch(() => []),
         getTransactionsOffline().catch(() => []),
-        getReceivables().catch(() => [])
+        getReceivables().catch(() => []),
+        getInstallments().catch(() => ({ summary: {}, installments: [], transactions: [] }))
       ]);
+
+      if (installmentsRes && installmentsRes.transactions) {
+        setAllInstallmentTransactions(installmentsRes.transactions);
+      }
 
       let goldPriceRes = null;
       try {
@@ -564,7 +572,7 @@ export default function Analytics() {
                   <CustomSelect
                     options={[
                       { value: '', label: t('analytics.allAccounts'), icon: 'Globe', color: '#ffffff' },
-                      ...accounts.map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
+                      ...accounts.filter(acc => !acc.isArchived).map(acc => ({ value: acc._id, label: acc.name, icon: acc.icon, color: acc.color }))
                     ]}
                     value={filters.account}
                     onChange={(val) => setFilters({ ...filters, account: val })}
@@ -661,6 +669,7 @@ export default function Analytics() {
                   filters={filters}
                   allTransactions={allTransactions}
                   allDebtTransactions={allDebtTransactions}
+                  allInstallmentTransactions={allInstallmentTransactions}
                   allReceivables={allReceivables}
                 />
               )}

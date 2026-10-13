@@ -27,6 +27,8 @@ import {
   Command,
   ArrowLeft,
   ArrowRight,
+  Sparkles,
+  Search,
   Settings as SettingsIcon
 } from "lucide-react";
 
@@ -51,7 +53,8 @@ import { subscribeToNotifications, sendNotification } from "../api/notifications
 import { getCurrentUser, deleteAllUserData } from "../api/auth";
 import { 
   getShortcutTokenStatus, generateShortcutToken, revokeShortcutToken,
-  getSmsTokenStatus, generateSmsToken, revokeSmsToken 
+  getSmsTokenStatus, generateSmsToken, revokeSmsToken,
+  getLearnedMerchants, updateLearnedMerchant, deleteLearnedMerchant
 } from "../api/integrations";
 import api from "../api/axios";
 
@@ -160,6 +163,70 @@ const Settings = () => {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Smart Categorization Rules State
+  const [learnedRules, setLearnedRules] = useState([]);
+  const [loadingRules, setLoadingRules] = useState(false);
+  const [ruleSearch, setRuleSearch] = useState('');
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [editingRule, setEditingRule] = useState(null);
+  const [selectedIntentId, setSelectedIntentId] = useState('');
+  const [ruleToDelete, setRuleToDelete] = useState(null);
+  const [isDeletingRule, setIsDeletingRule] = useState(false);
+  const [isUpdatingRule, setIsUpdatingRule] = useState(false);
+
+  const fetchSmartRules = async () => {
+    try {
+      setLoadingRules(true);
+      const [rulesData, catsData] = await Promise.all([
+        getLearnedMerchants(),
+        getCategories()
+      ]);
+      setLearnedRules(rulesData || []);
+      setCategoriesList(catsData || []);
+    } catch (err) {
+      console.error('Failed to fetch smart rules:', err);
+      showToast(t('common.error') || 'Failed to load smart rules', 'error');
+    } finally {
+      setLoadingRules(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeView === 'smartRules') {
+      fetchSmartRules();
+    }
+  }, [activeView]);
+
+  const handleUpdateRule = async () => {
+    if (!editingRule || !selectedIntentId) return;
+    try {
+      setIsUpdatingRule(true);
+      await updateLearnedMerchant(editingRule._id, selectedIntentId);
+      showToast(t('settings.ruleUpdatedSuccess'), 'success');
+      setEditingRule(null);
+      fetchSmartRules();
+    } catch (err) {
+      showToast(t('common.error') || 'Failed to update rule', 'error');
+    } finally {
+      setIsUpdatingRule(false);
+    }
+  };
+
+  const handleDeleteRule = async () => {
+    if (!ruleToDelete) return;
+    try {
+      setIsDeletingRule(true);
+      await deleteLearnedMerchant(ruleToDelete._id);
+      showToast(t('settings.ruleDeletedSuccess'), 'success');
+      setRuleToDelete(null);
+      fetchSmartRules();
+    } catch (err) {
+      showToast(t('common.error') || 'Failed to delete rule', 'error');
+    } finally {
+      setIsDeletingRule(false);
+    }
+  };
 
   const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -457,6 +524,7 @@ const Settings = () => {
           {activeView === 'appSettings' && t('settings.appSettings')}
           {activeView === 'data' && t('settings.dataManagement')}
           {activeView === 'sms' && t('settings.smsIntegration')}
+          {activeView === 'smartRules' && t('settings.smartRules')}
           {activeView === 'appleShortcuts' && t('appleShortcuts.title')}
         </h2>
 
@@ -476,6 +544,7 @@ const Settings = () => {
           {[
             { id: 'appSettings', icon: <SettingsIcon size={20} />, label: t('settings.appSettings') },
             { id: 'sms', icon: <MessageSquare size={20} />, label: t('settings.smsIntegration') },
+            { id: 'smartRules', icon: <Sparkles size={20} />, label: t('settings.smartRules') },
             { id: 'appleShortcuts', icon: <Command size={20} />, label: t('appleShortcuts.title') },
             { id: 'data', icon: <Database size={20} />, label: t('settings.dataManagement') },
           ].map((item) => (
@@ -711,6 +780,128 @@ const Settings = () => {
               </div>
             )}
           </div>
+        </motion.section>
+      ) : activeView === 'smartRules' ? (
+        <motion.section 
+          key="smartRules"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+          className="space-y-4 mb-24 mt-2 px-1 sm:px-2"
+        >
+          {/* Header Description Card */}
+          <div className="relative z-10 bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-5 sm:p-6 rounded-[2.5rem] overflow-hidden">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-[#8D6346]/20 border border-[#8D6346]/30 flex items-center justify-center text-[#8D6346] shadow-inner">
+                <Sparkles size={20} />
+              </div>
+              <h3 className="text-white font-bold text-base sm:text-lg">{t('settings.smartRules')}</h3>
+            </div>
+            <p className="text-xs sm:text-sm text-white/60 leading-relaxed">
+              {t('settings.smartRulesDesc')}
+            </p>
+          </div>
+
+          {/* Search Box */}
+          <div className="relative z-10 flex items-center gap-2 bg-[#2B2321]/30 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3 shadow-inner">
+            <Search size={18} className="text-white/40 shrink-0" />
+            <input
+              type="text"
+              value={ruleSearch}
+              onChange={(e) => setRuleSearch(e.target.value)}
+              placeholder={t('settings.searchMerchants')}
+              className="bg-transparent border-none outline-none text-white text-sm placeholder-white/40 w-full"
+            />
+            {ruleSearch && (
+              <button onClick={() => setRuleSearch('')} className="text-white/40 hover:text-white/80 p-1">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          {/* Rules List */}
+          {loadingRules ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader2 className="w-8 h-8 text-[#8D6346] animate-spin" />
+              <p className="text-xs text-white/50">{t('common.loading')}</p>
+            </div>
+          ) : (
+            (() => {
+              const filtered = learnedRules.filter(r => 
+                !ruleSearch.trim() || 
+                (r.normalizedMerchant || '').toLowerCase().includes(ruleSearch.trim().toLowerCase())
+              );
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-[2rem] bg-white/5 border border-white/10">
+                    <Sparkles className="w-10 h-10 text-[#8D6346]/50 mb-3" />
+                    <p className="text-sm font-medium text-white/70 max-w-sm">
+                      {t('settings.noRulesFound')}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  {filtered.map(rule => (
+                    <div 
+                      key={rule._id}
+                      className="bg-[#2B2321]/30 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm hover:border-[#8D6346]/40 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-white tracking-wide text-sm sm:text-base break-all">
+                            {rule.normalizedMerchant}
+                          </span>
+                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/50">
+                            {rule.intentId}
+                          </span>
+                        </div>
+                        {rule.category ? (
+                          <div className="flex items-center gap-1.5 text-xs text-white/80">
+                            <span 
+                              className="w-2.5 h-2.5 rounded-full shrink-0" 
+                              style={{ backgroundColor: rule.category.color || '#8D6346' }}
+                            />
+                            <span className="truncate">{rule.category.name}</span>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-white/40 italic">
+                            {t('settings.categoryType')}: {rule.intentId}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <motion.button
+                          whileTap={{ scale: 0.92 }}
+                          onClick={() => {
+                            setEditingRule(rule);
+                            setSelectedIntentId(rule.intentId || '');
+                          }}
+                          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors"
+                          title={t('settings.editRule')}
+                        >
+                          <Pencil size={15} />
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.92 }}
+                          onClick={() => setRuleToDelete(rule)}
+                          className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 transition-colors"
+                          title={t('settings.deleteBtn')}
+                        >
+                          <Trash2 size={15} />
+                        </motion.button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
+          )}
         </motion.section>
       ) : activeView === 'data' ? (
         <motion.section 
@@ -982,6 +1173,103 @@ const Settings = () => {
         message={t('settings.wipeWarning')}
         confirmText={t('settings.wipeBtn')}
         isDanger={true}
+      />
+
+      {/* Edit Rule Modal */}
+      {editingRule && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full max-w-md bg-[#1c1817] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-5"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles size={18} className="text-[#8D6346]" />
+                {t('settings.editRule')}
+              </h3>
+              <button 
+                onClick={() => setEditingRule(null)} 
+                className="text-white/40 hover:text-white p-1 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-xs text-white/50 mb-1">{t('common.merchant') || 'Merchant'}</div>
+              <div className="font-mono font-bold text-white text-base">
+                {editingRule.normalizedMerchant}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-white/70 block">
+                {t('settings.selectCategory')}
+              </label>
+              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                {categoriesList.map((cat) => {
+                  const intent = cat.intentId || cat._id;
+                  const isSelected = selectedIntentId === intent;
+                  return (
+                    <button
+                      key={cat._id}
+                      type="button"
+                      onClick={() => setSelectedIntentId(intent)}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${
+                        isSelected 
+                          ? 'bg-[#8D6346]/20 border-[#8D6346] text-white shadow-inner font-semibold' 
+                          : 'bg-white/5 hover:bg-white/10 border-white/5 text-white/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span 
+                          className="w-3 h-3 rounded-full shrink-0" 
+                          style={{ backgroundColor: cat.color || '#8D6346' }} 
+                        />
+                        <span>{cat.name}</span>
+                      </div>
+                      {isSelected && <Check size={16} className="text-[#8D6346]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingRule(null)}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 font-semibold text-sm transition-colors"
+              >
+                {t('settings.cancelBtn')}
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingRule}
+                onClick={handleUpdateRule}
+                className="flex-1 py-3 rounded-xl bg-[#8D6346] hover:bg-[#8D6346]/90 text-white font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
+              >
+                {isUpdatingRule ? <Loader2 size={16} className="animate-spin" /> : null}
+                {t('common.save') || 'Save'}
+              </button>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Rule Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(ruleToDelete)}
+        onClose={() => setRuleToDelete(null)}
+        onConfirm={handleDeleteRule}
+        title={t('settings.deleteBtn')}
+        message={t('settings.deleteRuleConfirm')}
+        confirmText={t('settings.deleteBtn')}
+        danger={true}
+        loading={isDeletingRule}
       />
 
       <ExportModal

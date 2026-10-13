@@ -27,7 +27,10 @@ const resolveUserAccount = async (userId, accountLast4, session = null) => {
 
   const query = {
     user: userId,
-    cardLast4: normalizedLast4,
+    $or: [
+      { linkedCards: normalizedLast4 },
+      { cardLast4: normalizedLast4 }
+    ],
     isArchived: { $ne: true }
   };
 

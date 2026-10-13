@@ -27,6 +27,8 @@ export default function BillModal({
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderDaysBefore, setReminderDaysBefore] = useState(1);
   const [notes, setNotes] = useState('');
+  const [keywords, setKeywords] = useState([]);
+  const [keywordInput, setKeywordInput] = useState('');
   const [errors, setErrors] = useState({});
 
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -48,6 +50,8 @@ export default function BillModal({
         setReminderEnabled(Boolean(bill.reminderEnabled));
         setReminderDaysBefore(bill.reminderDaysBefore ?? 1);
         setNotes(bill.notes || '');
+        setKeywords(Array.isArray(bill.keywords) ? bill.keywords : []);
+        setKeywordInput('');
       } else {
         setName('');
         setExpectedAmount('');
@@ -58,6 +62,8 @@ export default function BillModal({
         setReminderEnabled(false);
         setReminderDaysBefore(1);
         setNotes('');
+        setKeywords([]);
+        setKeywordInput('');
       }
       setErrors({});
 
@@ -110,7 +116,8 @@ export default function BillModal({
         reminderEnabled,
         reminderDaysBefore: Number(reminderDaysBefore),
         notificationEnabled: true,
-        notes: notes.trim()
+        notes: notes.trim(),
+        keywords: keywords
       });
       onClose();
     } catch (err) {
@@ -344,6 +351,50 @@ export default function BillModal({
                   />
                 </div>
               )}
+            </div>
+
+            {/* Row 5: SMS Auto-Match Keywords */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-medium text-white/75 px-1 truncate">
+                {t('bills.smsKeywordsLabel')}
+              </label>
+              <div className="min-h-[46px] p-2 rounded-2xl bg-black/25 border border-white/10 flex flex-wrap gap-1.5 items-center shadow-inner focus-within:border-[#8D6346]/50">
+                {keywords.map((kw, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-[#8D6346]/20 border border-[#8D6346]/35 text-[#E8C5A8] px-2.5 py-1 rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>{kw}</span>
+                    <button
+                      type="button"
+                      onClick={() => setKeywords(keywords.filter((_, i) => i !== idx))}
+                      className="text-white/40 hover:text-white transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      const trimmed = keywordInput.trim().toLowerCase();
+                      if (trimmed && !keywords.includes(trimmed)) {
+                        setKeywords([...keywords, trimmed]);
+                        setKeywordInput('');
+                      }
+                    }
+                  }}
+                  placeholder={keywords.length === 0 ? t('bills.smsKeywordsPlaceholder') : ''}
+                  className="bg-transparent border-none outline-none text-xs text-white placeholder-white/40 flex-1 min-w-[120px] px-1"
+                />
+              </div>
+              <p className="text-[10px] text-white/40 px-1 leading-normal">
+                {t('bills.smsKeywordsHelp')}
+              </p>
             </div>
 
             {/* Action Button - Standardized Save Button */}
