@@ -226,28 +226,33 @@ export default function BottomNav() {
           className={`relative h-12 flex-1 min-w-0 rounded-[24px] flex justify-between items-center px-1.5 overflow-visible select-none touch-none ${liquidGlassClass}`}
         >
           {scrubbing && <LiquidBlob x={blobX} width={blobW} />}
-          {navItems.map((item, index) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              draggable={false}
-              onDragStart={(e) => e.preventDefault()}
-              aria-label={item.label}
-              onClick={(e) => {
-                if (didScrub.current) {
-                  e.preventDefault();
-                  return;
-                }
-                triggerHaptic('selection');
-              }}
-              className="relative min-w-11 h-12 flex-1 flex items-center justify-center rounded-full z-10 group focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]"
-            >
-              {({ isActive }) => {
-                const preview = scrubbing && hoverIndex === index;
-                const lit = preview || (isActive && !scrubbing);
-                return (
-                <>
+          {navItems.map((item, index) => {
+            const isItemActive = item.end
+              ? location.pathname === item.path
+              : pathInFamily(location.pathname, item.path);
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.end}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
+                aria-label={item.label}
+                aria-current={isItemActive ? 'page' : undefined}
+                onClick={(e) => {
+                  if (didScrub.current) {
+                    e.preventDefault();
+                    return;
+                  }
+                  triggerHaptic('selection');
+                }}
+                className="relative min-w-11 h-12 flex-1 flex items-center justify-center rounded-full z-10 group focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(232,197,168,0.55)]"
+              >
+                {({ isActive }) => {
+                  const preview = scrubbing && hoverIndex === index;
+                  const lit = preview || (isActive && !scrubbing);
+                  return (
+                  <>
                   {isActive && !scrubbing && (
                     <motion.div
                       layoutId="pillIndicator"
@@ -280,7 +285,8 @@ export default function BottomNav() {
                 );
               }}
             </NavLink>
-          ))}
+          );
+        })}
         </div>
 
         <button 
