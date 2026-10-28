@@ -41,7 +41,7 @@ export default function AccountBottomSheetModal({
   if (!isOpen) return null;
 
   const filteredAccounts = accounts
-    .filter(acc => !acc.isArchived)
+    .filter(acc => !acc.isArchived && acc.type !== 'investment' && !acc.isSystemAccount)
     .filter(acc => acc.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const formatBalance = (amount) => {

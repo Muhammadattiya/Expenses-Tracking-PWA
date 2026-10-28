@@ -25,6 +25,11 @@ const pickAccountFields = (data) => {
 
 const createAccount = async (userId, data) => {
   const safeData = pickAccountFields(data);
+  if (data.type === 'investment' || data.isSystemAccount === true) {
+    const err = new Error('Investment and system accounts cannot be created manually.');
+    err.statusCode = 400;
+    throw err;
+  }
   if (safeData.isDefault === true) {
     await Account.updateMany({ user: userId }, { $set: { isDefault: false } });
   }
@@ -50,6 +55,22 @@ const createAccount = async (userId, data) => {
 };
 
 const updateAccount = async (userId, id, data) => {
+  const existing = await Account.findOne({ _id: id, user: userId });
+  if (!existing) {
+    const err = new Error('Account not found.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (existing.isSystemAccount || existing.type === 'investment') {
+    const protectedKeys = ['name', 'type', 'balance_adjustment', 'isDefault', 'isEmergencyFund', 'isSavingsAccount', 'isArchived', 'excludeFromTotal'];
+    if (protectedKeys.some((key) => data[key] !== undefined && data[key] !== existing[key])) {
+      const err = new Error('The investment account is managed automatically and cannot be modified directly.');
+      err.statusCode = 403;
+      throw err;
+    }
+  }
+
   const safeData = pickAccountFields(data);
   if (safeData.isDefault === true) {
     await Account.updateMany({ user: userId, _id: { $ne: id } }, { $set: { isDefault: false } });
@@ -73,10 +94,6 @@ const updateAccount = async (userId, id, data) => {
     runValidators: true,
   });
 
-  if (!account) {
-    throw new Error("Account not found.");
-  }
-
   return account;
 };
 
@@ -86,6 +103,12 @@ const deleteAccount = async (userId, id) => {
   if (!account) {
     const err = new Error("Account not found.");
     err.statusCode = 404;
+    throw err;
+  }
+
+  if (account.isSystemAccount || account.type === 'investment') {
+    const err = new Error('The investment account is managed automatically and cannot be deleted.');
+    err.statusCode = 403;
     throw err;
   }
 

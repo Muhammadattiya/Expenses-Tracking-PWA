@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Sparkles
 } from 'lucide-react';
-import { createInvestment, deleteInvestment, getGoldPrice, getInvestments, updateInvestment } from '../api/investments';
+import { createInvestment, deleteInvestment, getGoldPrice, getInvestments, sellInvestment, updateInvestment } from '../api/investments';
+import { getAccounts } from '../api/accounts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import LiveGoldIngotCard from '../components/investments/LiveGoldIngotCard';
@@ -23,6 +24,7 @@ import GoldInvestmentModal from '../components/investments/GoldInvestmentModal';
 import StockInvestmentModal from '../components/investments/StockInvestmentModal';
 import CurrencyInvestmentModal from '../components/investments/CurrencyInvestmentModal';
 import DeleteInvestmentModal from '../components/investments/DeleteInvestmentModal';
+import SellInvestmentModal from '../components/investments/SellInvestmentModal';
 import { InvestmentsSkeleton } from '../components/ui/Skeletons';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import { db } from '../db/db';
@@ -46,6 +48,9 @@ export default function Investments() {
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [sellingItem, setSellingItem] = useState(null);
+  const [sellLoading, setSellLoading] = useState(false);
+  const [accounts, setAccounts] = useState([]);
 
   const money = (value) => new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', { 
     style: 'currency', 
@@ -104,6 +109,7 @@ export default function Investments() {
 
   useEffect(() => { 
     loadData(); 
+    getAccounts().then(setAccounts).catch(() => {});
   }, []);
 
   const getEffectiveItemValue = (item) => {
@@ -210,6 +216,31 @@ export default function Investments() {
       showToast(err.response?.data?.message || err.message || t('investments.deleteError'), 'error');
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const marketPriceFor = (item) => {
+    if (!item) return 0;
+    if (item.type === 'gold') return goldUnitPrice(gold, item.karat) || item.currentPrice || item.purchasePrice;
+    if (item.type === 'currency' && (item.symbol || item.currency) === 'USD') return gold?.usdToEgp || item.currentPrice || item.purchasePrice;
+    return item.currentPrice || item.purchasePrice;
+  };
+
+  const handleSellConfirm = async (sellData) => {
+    if (!sellingItem) return;
+    setSellLoading(true);
+    try {
+      const result = await sellInvestment(sellingItem._id, sellData);
+      setInvestments(previous => result.soldOut
+        ? previous.filter(item => item._id !== sellingItem._id)
+        : previous.map(item => item._id === sellingItem._id ? result.investment : item));
+      setSellingItem(null);
+      showToast(t('investments.saleSuccess'), 'success');
+      window.dispatchEvent(new CustomEvent('finova-data-updated'));
+    } catch (err) {
+      showToast(err.response?.data?.message || t('investments.saleError'), 'error');
+    } finally {
+      setSellLoading(false);
     }
   };
 
@@ -454,6 +485,7 @@ export default function Investments() {
                   liveGoldRate={liveRate}
                   onEdit={handleOpenEditModal}
                   onDelete={() => setDeletingItem(item)}
+                  onSell={setSellingItem}
                 />
               );
             }
@@ -464,6 +496,7 @@ export default function Investments() {
                   item={item}
                   onEdit={handleOpenEditModal}
                   onDelete={() => setDeletingItem(item)}
+                  onSell={setSellingItem}
                 />
               );
             }
@@ -475,6 +508,7 @@ export default function Investments() {
                 liveUsdRate={gold?.usdToEgp}
                 onEdit={handleOpenEditModal}
                 onDelete={() => setDeletingItem(item)}
+                onSell={setSellingItem}
               />
             );
           })}
@@ -538,6 +572,14 @@ export default function Investments() {
         loading={deleteLoading}
         onClose={() => setDeletingItem(null)}
         onConfirm={handleDelete}
+      />
+      <SellInvestmentModal
+        item={sellingItem}
+        accounts={accounts}
+        marketPrice={marketPriceFor(sellingItem)}
+        loading={sellLoading}
+        onClose={() => { if (!sellLoading) setSellingItem(null); }}
+        onConfirm={handleSellConfirm}
       />
     </div>
   );

@@ -64,7 +64,7 @@ const getGoldPrice = async (userId) => {
   }
 };
 
-const list = (userId) => Investment.find({ user: userId }).sort({ purchasedAt: -1 }).lean();
+const list = (userId) => Investment.find({ user: userId, isSold: { $ne: true } }).sort({ purchasedAt: -1 }).lean();
 const create = async (userId, input) => {
   const safeData = {};
   const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'currentPrice', 'purchasedAt', 'notes'];
@@ -141,4 +141,66 @@ const update = async (userId, id, input) => {
   return investment;
 };
 
-module.exports = { getGoldPrice, list, create, update, remove };
+const sell = async (userId, id, input = {}) => {
+  if (!userId) throw new AppError('User ID is required.', 400);
+  const investment = await Investment.findOne({ _id: id, user: userId });
+  if (!investment) throw new AppError('Investment not found.', 404);
+
+  const quantityToSell = Number(input.quantity);
+  const availableQuantity = Number(investment.quantity);
+  if (!Number.isFinite(quantityToSell) || quantityToSell <= 0 || quantityToSell > availableQuantity) {
+    throw new AppError('Invalid sell quantity. It must be greater than zero and cannot exceed your holdings.', 400);
+  }
+
+  const sellPrice = Number(input.sellPrice);
+  if (!Number.isFinite(sellPrice) || sellPrice <= 0) {
+    throw new AppError('Sell price must be greater than zero.', 400);
+  }
+
+  const roundMoney = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+  const totalProceeds = roundMoney(quantityToSell * sellPrice);
+  const costBasis = roundMoney(quantityToSell * Number(investment.purchasePrice));
+  const realizedPnL = roundMoney(totalProceeds - costBasis);
+  let transferTx = null;
+
+  if (input.to_account && totalProceeds > 0) {
+    const targetAccount = await Account.findOne({ _id: input.to_account, user: userId });
+    if (!targetAccount) throw new AppError('Destination account not found.', 404);
+    if (targetAccount.isArchived) throw new AppError('Destination account is archived.', 400);
+    if (targetAccount.type === 'investment' || targetAccount.isSystemAccount) {
+      throw new AppError('Sale proceeds cannot be deposited into the investment account.', 400);
+    }
+
+    let investmentAccount = await Account.findOne({ user: userId, type: 'investment' });
+    if (!investmentAccount) {
+      investmentAccount = await Account.create({
+        user: userId, name: 'Investments', type: 'investment', icon: 'TrendingUp',
+        color: '#8D6346', isSystemAccount: true, excludeFromTotal: true,
+      });
+    }
+
+    transferTx = await transactionService.createTransaction(userId, {
+      type: 'transfer', amount: totalProceeds, from_account: investmentAccount._id,
+      to_account: targetAccount._id, investment: investment._id,
+      title: input.notes || `Sale: ${investment.name}`,
+      date: input.date || new Date(), source: 'system',
+    });
+  }
+
+  const remainingQuantity = Math.round((availableQuantity - quantityToSell) * 100000000) / 100000000;
+  if (remainingQuantity <= 0.00000001) {
+    // Preserve the holding and every linked transaction as immutable financial history.
+    // A sold holding is simply hidden from active portfolio lists.
+    investment.quantity = 0;
+    investment.isSold = true;
+    investment.soldAt = input.date || new Date();
+    await investment.save();
+    return { message: 'Investment fully sold.', soldOut: true, realizedPnL, totalProceeds, transaction: transferTx };
+  }
+
+  investment.quantity = remainingQuantity;
+  await investment.save();
+  return { message: 'Investment partially sold.', soldOut: false, investment, realizedPnL, totalProceeds, transaction: transferTx };
+};
+
+module.exports = { getGoldPrice, list, create, update, remove, sell };
