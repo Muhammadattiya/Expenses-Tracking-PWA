@@ -120,7 +120,8 @@ const AddTransaction = () => {
           getCategories()
         ]);
 
-        setAccounts(accountsData);
+        const usableAccounts = accountsData.filter(account => !account.isArchived && account.type !== 'investment' && !account.isSystemAccount);
+        setAccounts(usableAccounts);
 
         // فصل الفئات لدخل ومصروف بناءً على اللي راجع من الداتا بيز
         const groupedCategories = { expense: [], income: [] };
@@ -131,11 +132,11 @@ const AddTransaction = () => {
         setCategories(groupedCategories);
 
         // تعيين قيم افتراضية للحقول لو في حسابات موجودة
-        if (accountsData.length > 0) {
-          const defaultAcc = accountsData.find(a => a.isDefault) || accountsData[0];
+        if (usableAccounts.length > 0) {
+          const defaultAcc = usableAccounts.find(a => a.isDefault) || usableAccounts[0];
           if (!location.state?.defaultAccount) setAccount(defaultAcc._id);
           setFromAccount(defaultAcc._id);
-          const otherAcc = accountsData.find(a => a._id !== defaultAcc._id) || defaultAcc;
+          const otherAcc = usableAccounts.find(a => a._id !== defaultAcc._id) || defaultAcc;
           setToAccount(otherAcc._id);
         }
 

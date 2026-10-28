@@ -43,5 +43,14 @@ export const deleteInvestment = async (id, revertTransaction = false) => {
   return result;
 };
 
+export const sellInvestment = async (id, data) => {
+  const result = (await api.post(`/investments/${id}/sell`, data)).data;
+  if (db.investments) {
+    if (result.soldOut) await db.investments.delete(id);
+    else if (result.investment) await db.investments.put(result.investment);
+  }
+  return result;
+};
+
 export const getGoldPrice = async () => (await api.get('/investments/gold-price')).data;
 

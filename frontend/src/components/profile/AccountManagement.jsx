@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Wallet, Pencil, Trash2, X, Star, ArrowLeft, Loader2, ArrowUpDown, Check, GripVertical, Shield, Target } from "lucide-react";
+import { Plus, Wallet, Pencil, Trash2, X, Star, ArrowLeft, Loader2, ArrowUpDown, Check, GripVertical, Shield, Target, Lock } from "lucide-react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { getAccounts, createAccount, updateAccount, deleteAccount, reorderAccounts } from "../../api/accounts";
@@ -545,6 +545,12 @@ export default function AccountManagement({ onBack }) {
                       <div className="flex flex-col flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-white/90 font-bold text-base">{isInvestmentAccount(acc) ? t('settings.investmentsAccount') : acc.name}</span>
+                          {isInvestmentAccount(acc) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#8D6346]/20 text-[#E8C5A8] border border-[#8D6346]/30">
+                              <Lock size={10} />
+                              {t('settings.systemManaged')}
+                            </span>
+                          )}
                           {acc.isEmergencyFund && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                               <Shield size={10} />
@@ -560,7 +566,7 @@ export default function AccountManagement({ onBack }) {
                           <span className="text-xs text-[#8D6346]/80 font-bold">{t('settings.egp')}</span>
                         </div>
                         <div className="flex gap-2">
-                          <motion.button
+                          {!isInvestmentAccount(acc) && <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={async () => {
                               if (acc.isDefault) return;
@@ -576,7 +582,7 @@ export default function AccountManagement({ onBack }) {
                             title={t('settings.setAsDefault')}
                           >
                             <Star size={18} fill={acc.isDefault ? "currentColor" : "none"} />
-                          </motion.button>
+                          </motion.button>}
                           {!acc.isSystemAccount && !isInvestmentAccount(acc) && (
                             <>
                               <motion.button

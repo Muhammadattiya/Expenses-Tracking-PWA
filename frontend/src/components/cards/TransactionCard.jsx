@@ -34,13 +34,10 @@ const TransactionCard = ({ transaction, onClick }) => {
     RightIconToRender = CreditCard;
     rightColor = '#ff6b6b';
   } else if (transaction.type === "transfer") {
-    if (transaction.investment) {
-      rightIconName = "TrendingUp";
-      rightColor = "#eab308"; // yellow/gold for investments
-    } else {
-      rightIconName = toAccountObj?.icon;
-      rightColor = toAccountObj?.color || '#3b82f6';
-    }
+    // The destination account is the source of truth. A sale keeps its investment
+    // reference for history, but its destination is the selected cash/bank account.
+    rightIconName = toAccountObj?.icon;
+    rightColor = toAccountObj?.color || '#3b82f6';
   }
   if (!isDebt && !isInstallment && rightIconName) RightIconToRender = getIconComponent(rightIconName, transaction.type === "transfer" ? 'Wallet' : 'Tag');
 
@@ -132,7 +129,7 @@ const TransactionCard = ({ transaction, onClick }) => {
                 <span>{fromAccountName || t('transactions.deletedAccount')}</span>
                 <span className="opacity-50">⟶</span>
                 <span>
-                  {transaction.investment ? t('investments.title') : (toAccountName || t('transactions.deletedAccount'))}
+                  {toAccountName || t('transactions.deletedAccount')}
                 </span>
               </span>
             ) : (

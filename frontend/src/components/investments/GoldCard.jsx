@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Coins, TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react';
+import { Coins, TrendingUp, TrendingDown, Pencil, Trash2, ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export default function GoldCard({ item, liveGoldRate, onEdit, onDelete }) {
+export default function GoldCard({ item, liveGoldRate, onEdit, onDelete, onSell }) {
   const { t, lang } = useLanguage();
   const isRTL = lang === 'ar';
 
@@ -52,6 +52,7 @@ export default function GoldCard({ item, liveGoldRate, onEdit, onDelete }) {
 
         {/* Small Subtle Action Buttons */}
         <div className="flex items-center gap-1 shrink-0">
+          <motion.button whileTap={{ scale: 0.95 }} type="button" onClick={() => onSell(item)} className="w-7 h-7 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 shadow-inner text-emerald-400 hover:text-emerald-300 flex items-center justify-center transition-colors" aria-label={t('investments.sellAction')} title={t('investments.sellAction')}><ArrowUpRight size={13} /></motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             type="button"
