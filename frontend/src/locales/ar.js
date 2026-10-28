@@ -558,6 +558,7 @@ export default {
     "costBasis": "تكلفة الشراء",
     "realizedGain": "الربح / الخسارة المحققة",
     "depositProceedsToggle": "إيداع المتحصلات في حساب",
+    "depositProceedsDesc": "إيداع قيمة البيع تلقائياً في حساب محدد",
     "confirmSale": "تأكيد البيع",
     "saleSuccess": "تم تسجيل بيع الاستثمار بنجاح.",
     "saleError": "تعذر تسجيل بيع الاستثمار.",

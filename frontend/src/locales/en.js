@@ -512,6 +512,7 @@ export default {
     "costBasis": "Cost basis",
     "realizedGain": "Realized gain / loss",
     "depositProceedsToggle": "Deposit proceeds into an account",
+    "depositProceedsDesc": "Automatically credit sale funds into a selected account",
     "confirmSale": "Confirm sale",
     "saleSuccess": "Investment sale recorded successfully.",
     "saleError": "Could not record the investment sale.",
