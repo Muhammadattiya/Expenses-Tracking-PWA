@@ -52,5 +52,28 @@ export const sellInvestment = async (id, data) => {
   return result;
 };
 
-export const getGoldPrice = async () => (await api.get('/investments/gold-price')).data;
+export const buyMoreInvestment = async (id, data) => {
+  const result = (await api.post(`/investments/${id}/buy-more`, data)).data;
+  if (result && db.investments) {
+    await db.investments.put(result);
+  }
+  return result;
+};
 
+export const updateInvestmentBatch = async (id, batchId, data) => {
+  const result = (await api.put(`/investments/${id}/batches/${batchId}`, data)).data;
+  if (result && db.investments) {
+    await db.investments.put(result);
+  }
+  return result;
+};
+
+export const deleteInvestmentBatch = async (id, batchId, revertTransaction = false) => {
+  const result = (await api.delete(`/investments/${id}/batches/${batchId}`, { params: { revertTransaction } })).data;
+  if (result && db.investments) {
+    await db.investments.put(result);
+  }
+  return result;
+};
+
+export const getGoldPrice = async () => (await api.get('/investments/gold-price')).data;

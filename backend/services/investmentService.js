@@ -46,7 +46,7 @@ const getGoldPrice = async (userId) => {
     
     const [goldPerOunceUsd, usdToEgp] = await Promise.all([getPrice('XAU/USD'), getPrice('USD/EGP')]);
     const perGram24 = (goldPerOunceUsd / 31.1034768) * usdToEgp;
-    const newPrice = { currency: 'EGP', usdToEgp, perGram24, perGram21: perGram24 * (21 / 24), updatedAt: now };
+    const newPrice = { currency: 'EGP', usdToEgp, perGram24, perGram21: perGram24 * (21 / 24), perGram18: perGram24 * (18 / 24), updatedAt: now };
 
     user.goldApiLimit = {
       date: todayStr,
@@ -65,13 +65,26 @@ const getGoldPrice = async (userId) => {
 };
 
 const list = (userId) => Investment.find({ user: userId, isSold: { $ne: true } }).sort({ purchasedAt: -1 }).lean();
+
 const create = async (userId, input) => {
   const safeData = {};
   const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'currentPrice', 'purchasedAt', 'notes'];
   for (const key of ALLOWED_KEYS) {
     if (input[key] !== undefined) safeData[key] = input[key];
   }
-  const investment = await Investment.create({ ...safeData, user: userId });
+
+  const initialPurchase = {
+    quantity: Number(safeData.quantity) || 0,
+    price: Number(safeData.purchasePrice) || 0,
+    date: safeData.purchasedAt || new Date(),
+    from_account: input.from_account || null
+  };
+
+  const investment = await Investment.create({
+    ...safeData,
+    user: userId,
+    purchases: [initialPurchase]
+  });
 
   // If a source account is provided, create a transfer transaction
   if (input.from_account) {
@@ -87,7 +100,7 @@ const create = async (userId, input) => {
           name: 'Investments',
           type: 'investment',
           icon: 'TrendingUp',
-          color: '#eab308',
+          color: '#8D6346',
           isSystemAccount: true,
           excludeFromTotal: true
         });
@@ -99,7 +112,7 @@ const create = async (userId, input) => {
       }
 
       const transactionTitle = input.transferTitle || input.title || `Investment: ${safeData.name}`;
-      await transactionService.createTransaction(userId, {
+      const tx = await transactionService.createTransaction(userId, {
         type: 'transfer',
         amount: totalAmount,
         from_account: input.from_account,
@@ -108,11 +121,188 @@ const create = async (userId, input) => {
         title: transactionTitle,
         date: safeData.purchasedAt || new Date()
       });
+
+      if (investment.purchases && investment.purchases[0]) {
+        investment.purchases[0].transactionId = tx._id;
+        await investment.save();
+      }
     }
   }
 
   return investment;
 };
+
+const buyMore = async (userId, id, input = {}) => {
+  if (!userId) throw new AppError('User ID is required.', 400);
+  const investment = await Investment.findOne({ _id: id, user: userId });
+  if (!investment) throw new AppError('Investment not found.', 404);
+  if (investment.isSold) throw new AppError('Cannot add to a sold investment.', 400);
+
+  const newQty = Number(input.quantity);
+  const newPrice = Number(input.purchasePrice);
+  if (!Number.isFinite(newQty) || newQty <= 0) throw new AppError('Invalid quantity.', 400);
+  if (!Number.isFinite(newPrice) || newPrice <= 0) throw new AppError('Invalid price.', 400);
+
+  const currentQty = Number(investment.quantity) || 0;
+  const currentPrice = Number(investment.purchasePrice) || 0;
+
+  const totalQty = Math.round((currentQty + newQty) * 100000000) / 100000000;
+  const totalCost = (currentQty * currentPrice) + (newQty * newPrice);
+  const weightedAvgPrice = Math.round((totalCost / totalQty) * 10000) / 10000;
+
+  let transactionId = null;
+  if (input.from_account) {
+    let invAccount = await Account.findOne({ 
+      user: userId, 
+      $or: [{ type: 'investment' }, { name: 'Investments' }, { name: 'استثمارات' }] 
+    });
+    if (!invAccount) {
+      invAccount = await Account.create({
+        user: userId,
+        name: 'Investments',
+        type: 'investment',
+        icon: 'TrendingUp',
+        color: '#8D6346',
+        isSystemAccount: true,
+        excludeFromTotal: true
+      });
+    }
+
+    const txAmount = Math.round((newQty * newPrice) * 100) / 100;
+    const txTitle = input.title || `Buy: ${investment.name}`;
+    const tx = await transactionService.createTransaction(userId, {
+      type: 'transfer',
+      amount: txAmount,
+      from_account: input.from_account,
+      to_account: invAccount._id,
+      investment: investment._id,
+      title: txTitle,
+      date: input.purchasedAt || new Date()
+    });
+    transactionId = tx._id;
+  }
+
+  // Ensure initial purchases batch exists if legacy record didn't have one
+  if (!Array.isArray(investment.purchases) || investment.purchases.length === 0) {
+    investment.purchases = [{
+      quantity: currentQty,
+      price: currentPrice,
+      date: investment.purchasedAt || investment.createdAt || new Date(),
+    }];
+  }
+
+  investment.purchases.push({
+    quantity: newQty,
+    price: newPrice,
+    date: input.purchasedAt || new Date(),
+    from_account: input.from_account || null,
+    transactionId
+  });
+
+  investment.quantity = totalQty;
+  investment.purchasePrice = weightedAvgPrice;
+  if (input.currentPrice) investment.currentPrice = Number(input.currentPrice);
+
+  await investment.save();
+  return investment;
+};
+
+const updateBatch = async (userId, id, batchId, input = {}) => {
+  if (!userId) throw new AppError('User ID is required.', 400);
+  const investment = await Investment.findOne({ _id: id, user: userId });
+  if (!investment) throw new AppError('Investment not found.', 404);
+
+  // If purchases is empty (legacy), initialize it
+  if (!Array.isArray(investment.purchases) || investment.purchases.length === 0) {
+    investment.purchases = [{
+      quantity: investment.quantity,
+      price: investment.purchasePrice,
+      date: investment.purchasedAt || new Date()
+    }];
+  }
+
+  const batch = investment.purchases.id(batchId);
+  if (!batch) throw new AppError('Batch not found.', 404);
+
+  const newQty = input.quantity !== undefined ? Number(input.quantity) : batch.quantity;
+  const newPrice = input.price !== undefined ? Number(input.price) : batch.price;
+  if (!Number.isFinite(newQty) || newQty <= 0) throw new AppError('Invalid quantity.', 400);
+  if (!Number.isFinite(newPrice) || newPrice <= 0) throw new AppError('Invalid price.', 400);
+
+  batch.quantity = newQty;
+  batch.price = newPrice;
+  if (input.date) batch.date = new Date(input.date);
+
+  // Update linked transaction amount if one exists
+  if (batch.transactionId) {
+    try {
+      const newAmount = Math.round(newQty * newPrice * 100) / 100;
+      await transactionService.updateTransaction(userId, batch.transactionId, {
+        amount: newAmount,
+        date: batch.date
+      });
+    } catch (e) {
+      console.warn('Failed to update linked transaction for batch:', e.message);
+    }
+  }
+
+  // Recalculate total quantity and weighted average
+  let sumQty = 0;
+  let sumCost = 0;
+  for (const p of investment.purchases) {
+    sumQty += Number(p.quantity);
+    sumCost += Number(p.quantity) * Number(p.price);
+  }
+
+  investment.quantity = Math.round(sumQty * 100000000) / 100000000;
+  investment.purchasePrice = sumQty > 0 ? Math.round((sumCost / sumQty) * 10000) / 10000 : 0;
+
+  await investment.save();
+  return investment;
+};
+
+const deleteBatch = async (userId, id, batchId, options = {}) => {
+  if (!userId) throw new AppError('User ID is required.', 400);
+  const investment = await Investment.findOne({ _id: id, user: userId });
+  if (!investment) throw new AppError('Investment not found.', 404);
+
+  if (!Array.isArray(investment.purchases) || investment.purchases.length === 0) {
+    throw new AppError('No batches found on this investment.', 400);
+  }
+
+  const batch = investment.purchases.id(batchId);
+  if (!batch) throw new AppError('Batch not found.', 404);
+
+  if (investment.purchases.length === 1) {
+    throw new AppError('Cannot delete the only batch. Please delete the entire investment instead.', 400);
+  }
+
+  // Reverse linked transaction if requested and exists
+  if (options.revertTransaction && batch.transactionId) {
+    try {
+      await transactionService.deleteTransaction(userId, batch.transactionId);
+    } catch (e) {
+      console.warn('Failed to delete linked transaction for batch:', e.message);
+    }
+  }
+
+  batch.deleteOne();
+
+  // Recalculate total quantity and weighted average
+  let sumQty = 0;
+  let sumCost = 0;
+  for (const p of investment.purchases) {
+    sumQty += Number(p.quantity);
+    sumCost += Number(p.quantity) * Number(p.price);
+  }
+
+  investment.quantity = Math.round(sumQty * 100000000) / 100000000;
+  investment.purchasePrice = sumQty > 0 ? Math.round((sumCost / sumQty) * 10000) / 10000 : 0;
+
+  await investment.save();
+  return investment;
+};
+
 const remove = async (userId, id, options = {}) => {
   const investment = await Investment.findOne({ _id: id, user: userId });
   if (!investment) throw new AppError('Investment not found.', 404);
@@ -130,6 +320,7 @@ const remove = async (userId, id, options = {}) => {
 
   await Investment.deleteOne({ _id: id, user: userId });
 };
+
 const update = async (userId, id, input) => {
   const safeData = {};
   const ALLOWED_KEYS = ['type', 'name', 'quantity', 'symbol', 'currency', 'karat', 'purchasePrice', 'currentPrice', 'purchasedAt', 'notes'];
@@ -203,4 +394,4 @@ const sell = async (userId, id, input = {}) => {
   return { message: 'Investment partially sold.', soldOut: false, investment, realizedPnL, totalProceeds, transaction: transferTx };
 };
 
-module.exports = { getGoldPrice, list, create, update, remove, sell };
+module.exports = { getGoldPrice, list, create, update, remove, sell, buyMore, updateBatch, deleteBatch };

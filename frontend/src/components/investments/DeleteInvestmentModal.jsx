@@ -37,7 +37,7 @@ export default function DeleteInvestmentModal({
   return createPortal(
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 overflow-x-hidden touch-pan-y"
         dir={isRTL ? 'rtl' : 'ltr'}
         role="dialog"
         aria-modal="true"
@@ -60,7 +60,7 @@ export default function DeleteInvestmentModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-          className="relative w-full max-w-md bg-[#141115]/95 backdrop-blur-[32px] rounded-[2.5rem] p-6 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex flex-col gap-5 overflow-hidden"
+          className="relative w-full max-w-md bg-[#141115]/95 backdrop-blur-[32px] rounded-[2.5rem] p-5 sm:p-6 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex flex-col gap-5 overflow-hidden overflow-x-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Subtle Amber/Copper Hairline Accent */}

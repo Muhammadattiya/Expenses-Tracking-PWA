@@ -12,7 +12,17 @@ import {
   RefreshCw,
   Sparkles
 } from 'lucide-react';
-import { createInvestment, deleteInvestment, getGoldPrice, getInvestments, sellInvestment, updateInvestment } from '../api/investments';
+import { 
+  createInvestment, 
+  deleteInvestment, 
+  getGoldPrice, 
+  getInvestments, 
+  sellInvestment, 
+  updateInvestment,
+  buyMoreInvestment,
+  updateInvestmentBatch,
+  deleteInvestmentBatch
+} from '../api/investments';
 import { getAccounts } from '../api/accounts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -23,6 +33,10 @@ import CurrencyCard from '../components/investments/CurrencyCard';
 import GoldInvestmentModal from '../components/investments/GoldInvestmentModal';
 import StockInvestmentModal from '../components/investments/StockInvestmentModal';
 import CurrencyInvestmentModal from '../components/investments/CurrencyInvestmentModal';
+import BuyMoreGoldModal from '../components/investments/BuyMoreGoldModal';
+import BuyMoreStockModal from '../components/investments/BuyMoreStockModal';
+import BuyMoreCurrencyModal from '../components/investments/BuyMoreCurrencyModal';
+import EditBatchModal from '../components/investments/EditBatchModal';
 import DeleteInvestmentModal from '../components/investments/DeleteInvestmentModal';
 import SellInvestmentModal from '../components/investments/SellInvestmentModal';
 import { InvestmentsSkeleton } from '../components/ui/Skeletons';
@@ -51,6 +65,13 @@ export default function Investments() {
   const [sellingItem, setSellingItem] = useState(null);
   const [sellLoading, setSellLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
+
+  // Multi-Buy & Batch Controls
+  const [buyingMoreItem, setBuyingMoreItem] = useState(null);
+  const [buyMoreLoading, setBuyMoreLoading] = useState(false);
+  const [editingBatchInvestment, setEditingBatchInvestment] = useState(null);
+  const [editingBatch, setEditingBatch] = useState(null);
+  const [editBatchLoading, setEditBatchLoading] = useState(false);
 
   const money = (value) => new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', { 
     style: 'currency', 
@@ -119,7 +140,7 @@ export default function Investments() {
     }
     if (item.type === 'currency') {
       const code = item.symbol || item.currency || 'USD';
-      const liveRate = (code === 'USD' && gold?.usdToEgp && !item.currentPrice) ? gold.usdToEgp : (item.currentPrice || item.purchasePrice);
+      const liveRate = (code === 'USD' && gold?.usdToEgp) ? gold.usdToEgp : (item.currentPrice || item.purchasePrice);
       return liveRate * item.quantity;
     }
     // Stock
@@ -241,6 +262,49 @@ export default function Investments() {
       showToast(err.response?.data?.message || t('investments.saleError'), 'error');
     } finally {
       setSellLoading(false);
+    }
+  };
+
+  const handleBuyMoreSave = async (formData) => {
+    if (!buyingMoreItem) return;
+    setBuyMoreLoading(true);
+    try {
+      await buyMoreInvestment(buyingMoreItem._id, formData);
+      showToast(t('investments.buySuccess'), 'success');
+      window.dispatchEvent(new CustomEvent('finova-data-updated'));
+      setBuyingMoreItem(null);
+      await loadData();
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || t('investments.saveError'), 'error');
+    } finally {
+      setBuyMoreLoading(false);
+    }
+  };
+
+  const handleEditBatchSave = async (invId, batchId, batchData) => {
+    setEditBatchLoading(true);
+    try {
+      await updateInvestmentBatch(invId, batchId, batchData);
+      showToast(t('investments.batchUpdated'), 'success');
+      window.dispatchEvent(new CustomEvent('finova-data-updated'));
+      setEditingBatch(null);
+      setEditingBatchInvestment(null);
+      await loadData();
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || t('investments.saveError'), 'error');
+    } finally {
+      setEditBatchLoading(false);
+    }
+  };
+
+  const handleDeleteBatch = async (invId, batchId) => {
+    try {
+      await deleteInvestmentBatch(invId, batchId, true);
+      showToast(t('investments.batchDeleted'), 'success');
+      window.dispatchEvent(new CustomEvent('finova-data-updated'));
+      await loadData();
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || t('investments.deleteError'), 'error');
     }
   };
 
@@ -386,7 +450,7 @@ export default function Investments() {
               )}
             </div>
 
-            {/* Full-Width Asset Allocation Rows (Guaranteed Zero Overflow) */}
+            {/* Full-Width Asset Allocation Rows */}
             <div className="flex flex-col gap-1.5 pt-1">
               {/* Gold Row */}
               <div className="flex items-center justify-between py-1 px-2 rounded-xl bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner">
@@ -434,7 +498,7 @@ export default function Investments() {
         </div>
       </section>
 
-      {/* Realistic Gold Bullion Ingot Live Rates Card (NOT liquidglass) */}
+      {/* Realistic Gold Bullion Ingot Live Rates Card */}
       <LiveGoldIngotCard gold={gold} />
 
       {/* Asset Filter Tabs */}
@@ -472,7 +536,7 @@ export default function Investments() {
         </div>
       </div>
 
-      {/* Investments Grid (Clean Minimalist Cards, NO bloated icons) */}
+      {/* Investments Grid */}
       <section className="flex flex-col gap-3">
         <AnimatePresence mode="popLayout">
           {filteredInvestments.map(item => {
@@ -486,6 +550,9 @@ export default function Investments() {
                   onEdit={handleOpenEditModal}
                   onDelete={() => setDeletingItem(item)}
                   onSell={setSellingItem}
+                  onBuyMore={setBuyingMoreItem}
+                  onEditBatch={(inv, b) => { setEditingBatchInvestment(inv); setEditingBatch(b); }}
+                  onDeleteBatch={(inv, b) => handleDeleteBatch(inv._id, b._id)}
                 />
               );
             }
@@ -497,6 +564,9 @@ export default function Investments() {
                   onEdit={handleOpenEditModal}
                   onDelete={() => setDeletingItem(item)}
                   onSell={setSellingItem}
+                  onBuyMore={setBuyingMoreItem}
+                  onEditBatch={(inv, b) => { setEditingBatchInvestment(inv); setEditingBatch(b); }}
+                  onDeleteBatch={(inv, b) => handleDeleteBatch(inv._id, b._id)}
                 />
               );
             }
@@ -509,6 +579,9 @@ export default function Investments() {
                 onEdit={handleOpenEditModal}
                 onDelete={() => setDeletingItem(item)}
                 onSell={setSellingItem}
+                onBuyMore={setBuyingMoreItem}
+                onEditBatch={(inv, b) => { setEditingBatchInvestment(inv); setEditingBatch(b); }}
+                onDeleteBatch={(inv, b) => handleDeleteBatch(inv._id, b._id)}
               />
             );
           })}
@@ -541,7 +614,7 @@ export default function Investments() {
         )}
       </section>
 
-      {/* Specialized Modals */}
+      {/* Creation & Edit Modals */}
       <GoldInvestmentModal
         isOpen={modalType === 'gold'}
         onClose={() => { setModalType(null); setEditingItem(null); }}
@@ -565,6 +638,51 @@ export default function Investments() {
         liveUsdRate={gold?.usdToEgp}
       />
 
+      {/* Three Separate Buy More Modals */}
+      <BuyMoreGoldModal
+        isOpen={buyingMoreItem?.type === 'gold'}
+        item={buyingMoreItem}
+        accounts={accounts}
+        liveGoldRates={gold}
+        loading={buyMoreLoading}
+        onClose={() => setBuyingMoreItem(null)}
+        onSave={handleBuyMoreSave}
+      />
+
+      <BuyMoreStockModal
+        isOpen={buyingMoreItem?.type === 'stock'}
+        item={buyingMoreItem}
+        accounts={accounts}
+        loading={buyMoreLoading}
+        onClose={() => setBuyingMoreItem(null)}
+        onSave={handleBuyMoreSave}
+      />
+
+      <BuyMoreCurrencyModal
+        isOpen={buyingMoreItem?.type === 'currency'}
+        item={buyingMoreItem}
+        accounts={accounts}
+        liveUsdRate={gold?.usdToEgp}
+        loading={buyMoreLoading}
+        onClose={() => setBuyingMoreItem(null)}
+        onSave={handleBuyMoreSave}
+      />
+
+      {/* Edit Batch Modal */}
+      <EditBatchModal
+        isOpen={Boolean(editingBatch && editingBatchInvestment)}
+        investment={editingBatchInvestment}
+        batch={editingBatch}
+        loading={editBatchLoading}
+        onClose={() => { setEditingBatch(null); setEditingBatchInvestment(null); }}
+        onSave={handleEditBatchSave}
+        onDelete={(invId, batchId) => {
+          handleDeleteBatch(invId, batchId);
+          setEditingBatch(null);
+          setEditingBatchInvestment(null);
+        }}
+      />
+
       {/* Dual-choice Delete Confirmation Modal */}
       <DeleteInvestmentModal
         isOpen={Boolean(deletingItem)}
@@ -573,6 +691,8 @@ export default function Investments() {
         onClose={() => setDeletingItem(null)}
         onConfirm={handleDelete}
       />
+
+      {/* Sell Investment Modal */}
       <SellInvestmentModal
         item={sellingItem}
         accounts={accounts}

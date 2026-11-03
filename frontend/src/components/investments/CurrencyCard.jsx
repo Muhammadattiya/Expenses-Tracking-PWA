@@ -1,11 +1,12 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Banknote, TrendingUp, TrendingDown, Pencil, Trash2, ArrowUpRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Banknote, TrendingUp, TrendingDown, Pencil, Trash2, ArrowUpRight, Plus, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export default function CurrencyCard({ item, liveUsdRate, onEdit, onDelete, onSell }) {
+export default function CurrencyCard({ item, liveUsdRate, onEdit, onDelete, onSell, onBuyMore, onEditBatch, onDeleteBatch }) {
   const { t, lang } = useLanguage();
   const isRTL = lang === 'ar';
+  const [showBatches, setShowBatches] = useState(false);
 
   const moneyEGP = (val) => new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', {
     style: 'currency',
@@ -20,7 +21,7 @@ export default function CurrencyCard({ item, liveUsdRate, onEdit, onDelete, onSe
   }).format(val || 0);
 
   const currCode = item.symbol || item.currency || 'USD';
-  const effectiveRate = (currCode === 'USD' && liveUsdRate && !item.currentPrice)
+  const effectiveRate = (currCode === 'USD' && liveUsdRate)
     ? liveUsdRate
     : (item.currentPrice || item.purchasePrice);
 
@@ -53,15 +54,35 @@ export default function CurrencyCard({ item, liveUsdRate, onEdit, onDelete, onSe
           </div>
         </div>
 
-        {/* Small Subtle Action Buttons */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-1 shrink-0">
-          <motion.button whileTap={{ scale: 0.95 }} type="button" onClick={() => onSell(item)} className="w-7 h-7 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 shadow-inner text-emerald-400 hover:text-emerald-300 flex items-center justify-center transition-colors" aria-label={t('investments.sellAction')} title={t('investments.sellAction')}><ArrowUpRight size={13} /></motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            type="button"
+            onClick={() => onBuyMore(item)}
+            className="w-7 h-7 rounded-lg bg-[#8D6346]/20 hover:bg-[#8D6346]/35 border border-[#8D6346]/40 shadow-inner text-[#E8C5A8] hover:text-white flex items-center justify-center transition-colors"
+            aria-label={t('investments.buyMore')}
+            title={t('investments.buyMore')}
+          >
+            <Plus size={13} />
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            type="button"
+            onClick={() => onSell(item)}
+            className="w-7 h-7 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 shadow-inner text-emerald-400 hover:text-emerald-300 flex items-center justify-center transition-colors"
+            aria-label={t('investments.sellAction')}
+            title={t('investments.sellAction')}
+          >
+            <ArrowUpRight size={13} />
+          </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             type="button"
             onClick={() => onEdit(item)}
             className="w-7 h-7 rounded-lg bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-colors"
             aria-label={t('common.edit')}
+            title={t('common.edit')}
           >
             <Pencil size={12} />
           </motion.button>
@@ -71,6 +92,7 @@ export default function CurrencyCard({ item, liveUsdRate, onEdit, onDelete, onSe
             onClick={() => onDelete(item._id)}
             className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 shadow-inner text-red-400 hover:text-red-300 flex items-center justify-center transition-colors"
             aria-label={t('common.delete')}
+            title={t('common.delete')}
           >
             <Trash2 size={12} />
           </motion.button>
@@ -123,6 +145,89 @@ export default function CurrencyCard({ item, liveUsdRate, onEdit, onDelete, onSe
           </span>
         </div>
       </div>
+
+      {/* Batches Accordion Toggle */}
+      {item.purchases && item.purchases.length > 0 && (
+        <div className="pt-2 border-t border-white/5 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setShowBatches(!showBatches)}
+            className="flex items-center justify-between text-[11px] font-semibold text-white/60 hover:text-white/90 transition-colors py-0.5"
+          >
+            <div className="flex items-center gap-1.5">
+              <span>{t('investments.batchesCount', { count: item.purchases.length })}</span>
+            </div>
+            <ChevronDown size={14} className={`transition-transform duration-200 ${showBatches ? 'rotate-180 text-emerald-300' : ''}`} />
+          </button>
+
+          <AnimatePresence>
+            {showBatches && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden flex flex-col gap-1.5 pt-1"
+              >
+                {item.purchases.map((batch, idx) => (
+                  <div
+                    key={batch._id || idx}
+                    className="p-2.5 rounded-xl bg-black/25 border border-white/5 flex items-center justify-between text-xs"
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-emerald-300 font-mono">
+                          #{idx + 1}
+                        </span>
+                        <span className="text-white font-medium text-[11px] tabular-nums font-mono">
+                          {formatForeign(batch.quantity, currCode)}
+                        </span>
+                        <span className="text-white/40 text-[10px]">@</span>
+                        <span className="text-white/80 font-medium text-[11px] tabular-nums font-mono">
+                          {moneyEGP(batch.price)}
+                        </span>
+                      </div>
+                      <span className="text-[9.5px] text-white/40">
+                        {batch.date ? new Date(batch.date).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US') : ''}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => onEditBatch(item, batch)}
+                        className="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/15 text-white/60 hover:text-white flex items-center justify-center transition-colors"
+                        title={t('investments.editBatch')}
+                      >
+                        <Pencil size={10} />
+                      </button>
+                      {item.purchases.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteBatch(item, batch)}
+                          className="w-6 h-6 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 flex items-center justify-center transition-colors"
+                          title={t('investments.deleteBatch')}
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => onBuyMore(item)}
+                  className="mt-1 py-1.5 px-3 rounded-xl bg-[#8D6346]/15 hover:bg-[#8D6346]/25 border border-[#8D6346]/30 text-[#E8C5A8] hover:text-white text-[11px] font-semibold transition-all flex items-center justify-center gap-1"
+                >
+                  <Plus size={12} />
+                  <span>{t('investments.buyMoreCurrency')}</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </motion.div>
   );
 }
