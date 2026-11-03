@@ -5,3 +5,6 @@ exports.update = async (req, res, next) => { try { res.json(await service.update
 exports.remove = async (req, res, next) => { try { const revertTransaction = req.query.revertTransaction === 'true' || req.body?.revertTransaction === true; await service.remove(req.user.id, req.params.id, { revertTransaction }); res.status(204).end(); } catch (error) { next(error); } };
 exports.goldPrice = async (req, res, next) => { try { res.json(await service.getGoldPrice(req.user.id)); } catch (error) { next(error); } };
 exports.sell = async (req, res, next) => { try { res.json(await service.sell(req.user.id, req.params.id, req.body)); } catch (error) { next(error); } };
+exports.buyMore = async (req, res, next) => { try { res.json(await service.buyMore(req.user.id, req.params.id, req.body)); } catch (error) { next(error); } };
+exports.updateBatch = async (req, res, next) => { try { res.json(await service.updateBatch(req.user.id, req.params.id, req.params.batchId, req.body)); } catch (error) { next(error); } };
+exports.deleteBatch = async (req, res, next) => { try { const revertTransaction = req.query.revertTransaction === 'true' || req.body?.revertTransaction === true; res.json(await service.deleteBatch(req.user.id, req.params.id, req.params.batchId, { revertTransaction })); } catch (error) { next(error); } };

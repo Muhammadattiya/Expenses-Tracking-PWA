@@ -152,7 +152,7 @@ export default function SellInvestmentModal({
     <AnimatePresence>
       {item && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 overflow-x-hidden touch-pan-y"
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           {/* Backdrop */}
@@ -175,7 +175,7 @@ export default function SellInvestmentModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`relative w-full max-w-md bg-[#141115]/95 backdrop-blur-xl rounded-[2.5rem] border ${itemStyle.borderColor} shadow-[0_16px_45px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col overflow-hidden`}
+            className={`relative w-full max-w-md bg-[#141115]/95 backdrop-blur-xl rounded-[2.5rem] border ${itemStyle.borderColor} shadow-[0_16px_45px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col overflow-hidden overflow-x-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Hairline Light */}
@@ -216,7 +216,7 @@ export default function SellInvestmentModal({
             </div>
 
             {/* Scrollable Form Body */}
-            <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
+            <div className="p-5 sm:p-6 overflow-y-auto overflow-x-hidden flex-1 hide-scrollbar">
               {error && (
                 <div className="p-3 mb-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-medium">
                   {error}

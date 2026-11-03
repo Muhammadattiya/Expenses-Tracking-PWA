@@ -139,7 +139,7 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
 
   return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 overflow-x-hidden touch-pan-y" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -158,7 +158,7 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-md bg-[#141115]/95 backdrop-blur-xl rounded-[2.5rem] border border-amber-500/25 shadow-[0_16px_45px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col overflow-hidden"
+          className="relative w-full max-w-md bg-[#141115]/95 backdrop-blur-xl rounded-[2.5rem] border border-amber-500/25 shadow-[0_16px_45px_rgba(0,0,0,0.6)] max-h-[90vh] flex flex-col overflow-hidden overflow-x-hidden"
           onClick={e => e.stopPropagation()}
         >
           {/* Top Hairline Light */}
@@ -191,7 +191,7 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
           </div>
 
           {/* Scrollable Form Body */}
-          <div className="p-6 overflow-y-auto flex-1 hide-scrollbar">
+          <div className="p-5 sm:p-6 overflow-y-auto overflow-x-hidden flex-1 hide-scrollbar">
             {error && (
               <div className="p-3 mb-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-medium">
                 {error}
@@ -310,7 +310,7 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
               )}
 
               {/* Purchase Date */}
-              <div>
+              <div className="w-full min-w-0 max-w-full overflow-hidden">
                 <label htmlFor="gold-purchased-at-input" className="text-xs font-semibold text-white/70 block mb-1.5 px-1">
                   {t('investments.purchaseDate')}
                 </label>
@@ -319,7 +319,7 @@ export default function GoldInvestmentModal({ isOpen, onClose, onSave, initialDa
                   type="date"
                   value={form.purchasedAt}
                   onChange={e => setForm({ ...form, purchasedAt: e.target.value })}
-                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/60 transition-all shadow-inner"
+                  className="w-full min-w-0 max-w-full block bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/60 transition-all shadow-inner [color-scheme:dark]"
                 />
               </div>
 
