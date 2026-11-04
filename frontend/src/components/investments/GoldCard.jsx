@@ -1,12 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, TrendingUp, TrendingDown, Pencil, Trash2, ArrowUpRight, Plus, ChevronDown } from 'lucide-react';
+import { Coins, TrendingUp, TrendingDown, Pencil, Trash2, ArrowUpRight, Plus, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function GoldCard({ item, liveGoldRate, onEdit, onDelete, onSell, onBuyMore, onEditBatch, onDeleteBatch }) {
   const { t, lang } = useLanguage();
   const isRTL = lang === 'ar';
   const [showBatches, setShowBatches] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setShowMenu(false);
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('pointerdown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showMenu]);
 
   const money = (val) => new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', {
     style: 'currency',
@@ -32,67 +52,77 @@ export default function GoldCard({ item, liveGoldRate, onEdit, onDelete, onSell,
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ duration: 0.15 }}
-      className="relative bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-4.5 flex flex-col gap-3.5"
+      className={`relative bg-[#2B2321]/30 backdrop-blur-[32px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-[2rem] p-4.5 flex flex-col gap-3.5 transition-shadow ${
+        showMenu ? 'z-30' : 'z-0'
+      }`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
-            <Coins size={14} />
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
+            <Coins size={15} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <h3 className="font-bold text-white text-sm tracking-tight truncate">{item.name}</h3>
-              <span className="px-2 py-0.2 rounded-md text-[9.5px] font-black bg-amber-500/20 border border-amber-500/35 text-amber-300 uppercase tracking-wider font-mono shrink-0">
+              <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black bg-amber-500/20 border border-amber-500/35 text-amber-300 uppercase tracking-wider font-mono shrink-0">
                 {karat}K • {purityLabel}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1 shrink-0">
+        {/* More Options Dropdown Trigger */}
+        <div className="relative shrink-0" ref={menuRef}>
           <motion.button
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.92 }}
             type="button"
-            onClick={() => onBuyMore(item)}
-            className="w-7 h-7 rounded-lg bg-[#8D6346]/20 hover:bg-[#8D6346]/35 border border-[#8D6346]/40 shadow-inner text-[#E8C5A8] hover:text-white flex items-center justify-center transition-colors"
-            aria-label={t('investments.buyMore')}
-            title={t('investments.buyMore')}
-          >
-            <Plus size={13} />
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            type="button"
-            onClick={() => onSell(item)}
-            className="w-7 h-7 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 shadow-inner text-emerald-400 hover:text-emerald-300 flex items-center justify-center transition-colors"
-            aria-label={t('investments.sellAction')}
-            title={t('investments.sellAction')}
-          >
-            <ArrowUpRight size={13} />
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            type="button"
-            onClick={() => onEdit(item)}
+            onClick={() => setShowMenu(prev => !prev)}
             className="w-7 h-7 rounded-lg bg-black/20 backdrop-blur-[10px] border border-white/5 shadow-inner hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-colors"
-            aria-label={t('common.edit')}
-            title={t('common.edit')}
+            aria-label={t('common.moreOptions') || 'Options'}
+            title={t('common.moreOptions') || 'Options'}
           >
-            <Pencil size={12} />
+            <MoreHorizontal size={15} />
           </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            type="button"
-            onClick={() => onDelete(item._id)}
-            className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 shadow-inner text-red-400 hover:text-red-300 flex items-center justify-center transition-colors"
-            aria-label={t('common.delete')}
-            title={t('common.delete')}
-          >
-            <Trash2 size={12} />
-          </motion.button>
+
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                transition={{ duration: 0.15 }}
+                className={`absolute top-full mt-1.5 z-40 w-36 py-1.5 rounded-2xl bg-[#1D1715]/95 backdrop-blur-2xl border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.6)] flex flex-col ${
+                  isRTL ? 'left-0 origin-top-left' : 'right-0 origin-top-right'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    onEdit(item);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-colors text-start"
+                >
+                  <Pencil size={12} className="text-[#E8C5A8]" />
+                  <span>{t('common.edit')}</span>
+                </button>
+                <div className="h-px bg-white/5 my-0.5" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    onDelete(item._id);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-start"
+                >
+                  <Trash2 size={12} className="text-red-400" />
+                  <span>{t('common.delete')}</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -141,6 +171,29 @@ export default function GoldCard({ item, liveGoldRate, onEdit, onDelete, onSell,
             {money(unitRate)}
           </span>
         </div>
+      </div>
+
+      {/* Dual Trading Action Capsule */}
+      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          type="button"
+          onClick={() => onBuyMore(item)}
+          className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#8D6346]/20 hover:bg-[#8D6346]/35 border border-[#8D6346]/40 text-[#E8C5A8] hover:text-white text-xs font-bold shadow-sm transition-all"
+        >
+          <Plus size={14} className="shrink-0" />
+          <span>{t('investments.buyMore')}</span>
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          type="button"
+          onClick={() => onSell(item)}
+          className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 text-xs font-bold shadow-sm transition-all"
+        >
+          <ArrowUpRight size={14} className="shrink-0" />
+          <span>{t('investments.sellAction')}</span>
+        </motion.button>
       </div>
 
       {/* Batches Accordion Toggle */}

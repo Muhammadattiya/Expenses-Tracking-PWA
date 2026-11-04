@@ -314,7 +314,8 @@ export default {
     "back": "رجوع",
     "deleting": "جارٍ الحذف...",
     "saving": "جارٍ الحفظ...",
-    "months": "أشهر"
+    "months": "أشهر",
+    "moreOptions": "خيارات إضافية"
   },
   "dashboard": {
     "balanceRunsOut": "رصيدك سينفد قبل القبض بـ {{days}} يوم.",
