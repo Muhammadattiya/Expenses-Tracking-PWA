@@ -315,7 +315,8 @@ export default {
     "back": "Back",
     "deleting": "Deleting...",
     "saving": "Saving...",
-    "months": "Months"
+    "months": "Months",
+    "moreOptions": "More options"
   },
   "dashboard": {
     "balanceRunsOut": "Balance runs out {{days}} days before payday.",
