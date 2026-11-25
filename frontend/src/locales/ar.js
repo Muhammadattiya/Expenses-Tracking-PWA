@@ -281,6 +281,7 @@ export default {
     "allAccounts": "جميع الحسابات",
     "success": "تمت العملية بنجاح",
     "addSuccess": "تمت الإضافة بنجاح",
+    "save": "حفظ",
     "saveSuccess": "تم الحفظ بنجاح",
     "saveChanges": "حفظ التعديلات",
     "deleteSuccess": "تم الحذف بنجاح",

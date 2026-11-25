@@ -282,6 +282,7 @@ export default {
     "allAccounts": "All Accounts",
     "success": "Operation successful",
     "addSuccess": "Added successfully",
+    "save": "Save",
     "saveSuccess": "Saved successfully",
     "saveChanges": "Save Changes",
     "fillRequired": "Please fill in all required fields",

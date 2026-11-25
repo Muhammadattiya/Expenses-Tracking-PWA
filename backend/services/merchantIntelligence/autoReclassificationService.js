@@ -31,11 +31,18 @@ async function reclassifyTransactionsForMerchant(userId, rawMerchant, intentId) 
     }
 
     // 2. Iterate and resolve category. We process sequentially to use intentResolver.
+    const UserMerchantKnowledge = require('../../models/UserMerchantKnowledge');
+    const userRule = await UserMerchantKnowledge.findOne({ user: userId, normalizedMerchant: normalizedMerchant }).lean();
     let reclassifiedCount = 0;
     
     for (const tx of eligibleTransactions) {
-      // Find the best deterministic category for this intent and transaction type
-      const resolvedCategory = await resolveCategory(userId, intentId, tx.type);
+      let resolvedCategory = null;
+      if (userRule && userRule.category) {
+        resolvedCategory = await Category.findOne({ _id: userRule.category, user: userId }).lean();
+      }
+      if (!resolvedCategory && intentId) {
+        resolvedCategory = await resolveCategory(userId, intentId, tx.type);
+      }
       
       if (resolvedCategory) {
         // Safe update: only update the category, nothing else.
