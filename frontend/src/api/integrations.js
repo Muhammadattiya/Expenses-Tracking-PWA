@@ -37,8 +37,9 @@ export const getLearnedMerchants = async () => {
   return response.data;
 };
 
-export const updateLearnedMerchant = async (id, intentId) => {
-  const response = await api.put(`/integrations/merchant-knowledge/${id}`, { intentId });
+export const updateLearnedMerchant = async (id, payload) => {
+  const body = typeof payload === 'string' ? { intentId: payload } : payload;
+  const response = await api.put(`/integrations/merchant-knowledge/${id}`, body);
   return response.data;
 };
 

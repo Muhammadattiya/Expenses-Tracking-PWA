@@ -18,36 +18,34 @@ async function learnFromUser(userId, rawMerchant, categoryId) {
   try {
     // 1. Retrieve the selected category and its intentId
     const category = await Category.findOne({ _id: categoryId, user: userId });
-    if (!category || !category.intentId) {
-      // If the category has no universal intent, we cannot learn globally
+    if (!category) {
       return;
     }
-    const intentId = category.intentId;
+    const intentId = category.intentId || 'other';
     const normalized = normalizeMerchantToken(rawMerchant);
 
     // 2. Update User Merchant Knowledge (Upsert)
-    // The user's specific override is always saved.
+    // The user's specific override is always saved with both category and intentId.
     await UserMerchantKnowledge.findOneAndUpdate(
       { user: userId, normalizedMerchant: normalized },
-      { intentId: intentId },
+      { intentId: intentId, category: category._id },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     // 3. Update Global Merchant Knowledge
-    // We only create it if it doesn't exist. First confirmation wins.
-    // If it exists with a different intent, we do NOT blindly overwrite it.
-    // We preserve the existing learned mapping.
-    const globalEntry = await GlobalMerchantKnowledge.findOne({ normalizedMerchant: normalized });
+    // We only create it if it doesn't exist and category has a universal intentId.
+    if (category.intentId) {
+      const globalEntry = await GlobalMerchantKnowledge.findOne({ normalizedMerchant: normalized });
 
-    if (!globalEntry) {
-      await GlobalMerchantKnowledge.create({
-        normalizedMerchant: normalized,
-        intentId: intentId
-      });
-    } else if (globalEntry.intentId !== intentId) {
-       // Log the conflict, but do not overwrite the first learned global intent.
-       // The user still gets their user-specific override from step 2.
-       console.log(`[Merchant Learning] Conflict ignored for ${normalized}: existing=${globalEntry.intentId}, new=${intentId}`);
+      if (!globalEntry) {
+        await GlobalMerchantKnowledge.create({
+          normalizedMerchant: normalized,
+          intentId: category.intentId
+        });
+      } else if (globalEntry.intentId !== category.intentId) {
+         // Log the conflict, but do not overwrite the first learned global intent.
+         console.log(`[Merchant Learning] Conflict ignored for ${normalized}: existing=${globalEntry.intentId}, new=${category.intentId}`);
+      }
     }
 
     // 4. Trigger auto-reclassification for other uncategorized transactions matching this merchant

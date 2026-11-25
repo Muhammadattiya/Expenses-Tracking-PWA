@@ -125,12 +125,19 @@ exports.handleSmsWebhook = async (req, res, next) => {
     let categoryId = null;
     let inferredIntent = null;
     if (parsedData.merchant && parsedData.merchant !== 'Unrecognized SMS') {
-      inferredIntent = await resolveMerchantIntent(parsedData.merchant, user._id);
-      
-      if (inferredIntent) {
-        const resolvedCategory = await resolveCategory(user._id, inferredIntent, parsedData.type);
-        if (resolvedCategory) {
-          categoryId = resolvedCategory._id;
+      const normalized = normalizeMerchantToken(parsedData.merchant);
+      const userRule = await UserMerchantKnowledge.findOne({ user: user._id, normalizedMerchant: normalized }).lean();
+
+      if (userRule && userRule.category) {
+        categoryId = userRule.category;
+      } else {
+        inferredIntent = userRule?.intentId || await resolveMerchantIntent(parsedData.merchant, user._id);
+        
+        if (inferredIntent) {
+          const resolvedCategory = await resolveCategory(user._id, inferredIntent, parsedData.type);
+          if (resolvedCategory) {
+            categoryId = resolvedCategory._id;
+          }
         }
       }
     }

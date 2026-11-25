@@ -170,7 +170,7 @@ const Settings = () => {
   const [ruleSearch, setRuleSearch] = useState('');
   const [categoriesList, setCategoriesList] = useState([]);
   const [editingRule, setEditingRule] = useState(null);
-  const [selectedIntentId, setSelectedIntentId] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [ruleToDelete, setRuleToDelete] = useState(null);
   const [isDeletingRule, setIsDeletingRule] = useState(false);
   const [isUpdatingRule, setIsUpdatingRule] = useState(false);
@@ -199,10 +199,14 @@ const Settings = () => {
   }, [activeView]);
 
   const handleUpdateRule = async () => {
-    if (!editingRule || !selectedIntentId) return;
+    if (!editingRule || !selectedCategoryId) return;
     try {
       setIsUpdatingRule(true);
-      await updateLearnedMerchant(editingRule._id, selectedIntentId);
+      const chosenCat = categoriesList.find(c => c._id === selectedCategoryId);
+      await updateLearnedMerchant(editingRule._id, {
+        categoryId: selectedCategoryId,
+        intentId: chosenCat?.intentId || 'other'
+      });
       showToast(t('settings.ruleUpdatedSuccess'), 'success');
       setEditingRule(null);
       fetchSmartRules();
@@ -880,7 +884,8 @@ const Settings = () => {
                           whileTap={{ scale: 0.92 }}
                           onClick={() => {
                             setEditingRule(rule);
-                            setSelectedIntentId(rule.intentId || '');
+                            const currentCatId = rule.category?._id || categoriesList.find(c => c.intentId === rule.intentId)?._id || '';
+                            setSelectedCategoryId(currentCatId);
                           }}
                           className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors"
                           title={t('settings.editRule')}
@@ -1210,13 +1215,12 @@ const Settings = () => {
               </label>
               <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
                 {categoriesList.map((cat) => {
-                  const intent = cat.intentId || cat._id;
-                  const isSelected = selectedIntentId === intent;
+                  const isSelected = selectedCategoryId === cat._id;
                   return (
                     <button
                       key={cat._id}
                       type="button"
-                      onClick={() => setSelectedIntentId(intent)}
+                      onClick={() => setSelectedCategoryId(cat._id)}
                       className={`w-full flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${
                         isSelected 
                           ? 'bg-[#8D6346]/20 border-[#8D6346] text-white shadow-inner font-semibold' 
